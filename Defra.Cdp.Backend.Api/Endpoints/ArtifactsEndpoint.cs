@@ -6,7 +6,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class ArtifactsEndpoint
 {
-    private const string RequestContentType = "application/json";
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
     private const string FilesBaseRoute = "files";
@@ -46,6 +45,15 @@ public static class ArtifactsEndpoint
             .Produces<List<string>>()
             .WithTags(Tag);
 
+        app.MapGet(ServicesBaseRoute, ListAllServices)
+            .WithName("GetServices")
+            .Produces<List<ServiceInfo>>()
+            .WithTags(Tag);
+
+        app.MapGet($"{ServicesBaseRoute}/{{service}}", ListService)
+            .WithName("GetService")
+            .Produces<ServiceInfo>()
+            .WithTags(Tag);
 
         return app;
     }
@@ -107,9 +115,10 @@ public static class ArtifactsEndpoint
 
     // [HttpGet]
     // [Route("services")]
-    private static async Task<List<ServiceInfo>> ListAllServices(IDeployablesService deployablesService)
+    private static async Task<IResult> ListAllServices(IDeployablesService deployablesService)
     {
-        return await deployablesService.FindAllServices();
+        var services = await deployablesService.FindAllServices();
+        return Results.Ok(services);
     }
 
     //
