@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Artifacts;
+using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -95,8 +95,7 @@ public static class ArtifactsEndpoint
         return Results.Ok(repoNames);
     }
 
-    // [HttpGet]
-    // [Route("deployables/{repo}")]
+    // GET deployables/{repo}
     private static async Task<IResult> ListAvailableTagsForRepo(IDeployablesService deployablesService,
         string repo)
     {
@@ -113,17 +112,14 @@ public static class ArtifactsEndpoint
         return Results.Ok(tags);
     }
 
-    // [HttpGet]
-    // [Route("services")]
+    // GET /services
     private static async Task<IResult> ListAllServices(IDeployablesService deployablesService)
     {
         var services = await deployablesService.FindAllServices();
         return Results.Ok(services);
     }
 
-    //
-    // [HttpGet]
-    // [Route("services/{service}")]
+    // GET /services/{service}
     private static async Task<ServiceInfo?> ListService(IDeployablesService deployablesService, string service)
     {
         return await deployablesService.FindServices(service);

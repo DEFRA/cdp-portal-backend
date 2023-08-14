@@ -2,8 +2,8 @@ using Amazon.ECR;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Repositories.Mongo;
-using Defra.Cdp.Backend.Api.Services.Artifacts;
 using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using FluentValidation;
 using Serilog;
@@ -54,7 +54,6 @@ else
 
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
-builder.Services.AddSingleton<IDeployablesClient, DeployablesClient>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEventsService, EventsService>();

@@ -1,8 +1,10 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -12,7 +14,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 public class EcsEventListener : SqsListener
 {
     private readonly List<string> _containersToIgnore;
-    private readonly IDeployablesClient _deployablesClient;
+    private readonly IDeployablesService _deployablesService;
     private readonly IDeploymentsService _deploymentsService;
     private readonly EnvironmentLookup _environmentLookup;
     private readonly IEventsService _eventsService;
@@ -22,14 +24,14 @@ public class EcsEventListener : SqsListener
         IOptions<EcsEventListenerOptions> config,
         IDeploymentsService deploymentsService,
         EnvironmentLookup environmentLookup,
-        IDeployablesClient deployablesClient,
+        IDeployablesService deployablesService,
         IEventsService eventsService,
         ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl)
     {
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
         _logger = logger;
-        _deployablesClient = deployablesClient;
+        _deployablesService = deployablesService;
         _eventsService = eventsService;
         _containersToIgnore = config.Value.ContainerToIgnore;
         _logger.LogInformation("Listening for deployment events on {}", config.Value.QueueUrl);
@@ -53,7 +55,14 @@ public class EcsEventListener : SqsListener
             try
             {
                 // skip any container that isn't know to deployables.
-                var ids = await _deployablesClient.LookupImage(ecsContainer.Image);
+                var (repo, tag) = SplitImage(ecsContainer.Image);
+                if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
+                {
+                    _logger.LogInformation("Ignoring {}, not a known container", ecsContainer.Image);
+                    continue;
+                }
+
+                var ids = await _deployablesService.FindByTag(repo, tag);
                 if (ids == null)
                 {
                     _logger.LogInformation("Ignoring {}, not a known container", ecsContainer.Image);
@@ -64,7 +73,7 @@ public class EcsEventListener : SqsListener
                     null,
                     ecsEvent.DeploymentId,
                     env,
-                    ids.ServiceName,
+                    ids.ServiceName ?? "unknown",
                     ids.Tag,
                     "TestUser", // TODO: work out where we get the user from 
                     ecsEvent.Detail.CreatedAt,
@@ -79,6 +88,15 @@ public class EcsEventListener : SqsListener
             }
 
         return deployments;
+    }
+
+    private (string?, string?) SplitImage(string image)
+    {
+        var rx = new Regex("^.+\\/(.+):(.+)$");
+        var result = rx.Match(image);
+        if (result.Groups.Count == 3) return (result.Groups[1].Value, result.Groups[2].Value);
+
+        return (null, null);
     }
 
     private async Task ProcessMessageAsync(string id, string messageBody)
