@@ -69,18 +69,18 @@ public class EcsEventListener : SqsListener
                     continue;
                 }
 
-                deployments.Add(new Deployment(
-                    null,
-                    ecsEvent.DeploymentId,
-                    env,
-                    ids.ServiceName ?? "unknown",
-                    ids.Tag,
-                    "TestUser", // TODO: work out where we get the user from 
-                    ecsEvent.Detail.CreatedAt,
-                    ecsContainer.LastStatus,
-                    ecsContainer.Image,
-                    ecsEvent.Detail.TaskDefinitionArn
-                ));
+                deployments.Add(new Deployment
+                {
+                    DeploymentId = ecsEvent.DeploymentId,
+                    Environment = env,
+                    Service = ids.ServiceName ?? "unknown",
+                    Version = ids.Tag,
+                    User = "TestUser", // TODO: work out where we get the user from 
+                    DeployedAt = ecsEvent.Detail.CreatedAt,
+                    Status = ecsContainer.LastStatus,
+                    DockerImage = ecsContainer.Image,
+                    TaskId = ecsEvent.Detail.TaskDefinitionArn
+                });
             }
             catch (Exception ex)
             {

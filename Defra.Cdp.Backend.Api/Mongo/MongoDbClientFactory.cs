@@ -1,7 +1,7 @@
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Repositories.Mongo;
+namespace Defra.Cdp.Backend.Api.Mongo;
 
 public class MongoDbClientFactory : IMongoDbClientFactory
 {
@@ -14,11 +14,11 @@ public class MongoDbClientFactory : IMongoDbClientFactory
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new ArgumentException("MongoDB connection string cannot be empty");
         _connectionString = connectionString;
-        _client = CreateClientAndDatabase();
+        _client = CreateClient();
         _mongoDatabase = _client.GetDatabase("cdp-backend");
     }
 
-    public IMongoClient CreateClientAndDatabase()
+    public IMongoClient CreateClient()
     {
         _client = new MongoClient(_connectionString);
         var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
@@ -29,7 +29,7 @@ public class MongoDbClientFactory : IMongoDbClientFactory
 
     public IMongoCollection<T> GetCollection<T>(string collection)
     {
-        var client = CreateClientAndDatabase();
+        var client = CreateClient();
         return _mongoDatabase.GetCollection<T>(collection);
     }
 }

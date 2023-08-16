@@ -1,34 +1,38 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public record DeployableArtifact
+public sealed class DeployableArtifact
 {
+    [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
+    [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-    public ObjectId? Id { get; set; }
+    public ObjectId? Id { get; init; } = default!;
 
-    public DateTime Created { get; set; } = DateTime.Now;
+    public DateTime Created { get; init; } = DateTime.Now;
 
-    public string Repo { get; set; } = default!;
+    public string Repo { get; init; } = default!;
 
-    public string Tag { get; set; } = default!;
+    public string Tag { get; init; } = default!;
 
-    public string Sha256 { get; set; } = default!;
+    public string Sha256 { get; init; } = default!;
 
-    public string? GithubUrl { get; set; } = default!;
+    public string? GithubUrl { get; init; } = default!;
 
-    public string? ServiceName { get; set; } = default!;
+    public string? ServiceName { get; init; } = default!;
 
-    public int ScannerVersion { get; set; } = default!;
+    public int ScannerVersion { get; init; } = default!;
 
     // TODO: replace this with references to the layers, maybe something like: {filename: layer}?  
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public List<DeployableArtifactFile> Files { get; set; } = new();
+    public List<DeployableArtifactFile> Files { get; init; } = new();
 
-    public long? SemVer { get; set; }
+    public long? SemVer { get; init; }
 }
 
-public record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
+public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
 
-public record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName);
+public sealed record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName);

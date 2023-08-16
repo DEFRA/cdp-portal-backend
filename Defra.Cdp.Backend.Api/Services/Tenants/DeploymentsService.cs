@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Repositories.Mongo;
+using Defra.Cdp.Backend.Api.Mongo;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Tenants;
@@ -10,24 +10,24 @@ public interface IDeploymentsService
     public Task<List<Deployment>> FindLatest(string environment, int offset = 0);
     public Task<List<Deployment>> FindWhatsRunningWhere();
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName);
-    public Task<Deployment> FindDeployment(string deploymentId);
+    public Task<Deployment?> FindDeployment(string deploymentId);
 
     public Task Insert(Deployment deployment);
 }
 
-public class DeploymentsService : IDeploymentsService
+public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 {
-    private readonly IMongoCollection<Deployment> _deployments;
+    private const string CollectionName = "deployments";
 
-    public DeploymentsService(IMongoDbClientFactory connectionFactory)
+    public DeploymentsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
+        connectionFactory,
+        CollectionName, loggerFactory)
     {
-        _deployments = connectionFactory.GetCollection<Deployment>("deployments");
-        EnsureIndexes();
     }
 
     public async Task<List<Deployment>> FindLatest(int offset = 0)
     {
-        return await _deployments
+        return await Collection
             .Find(FilterDefinition<Deployment>.Empty)
             .Skip(offset)
             .Limit(200)
@@ -37,7 +37,7 @@ public class DeploymentsService : IDeploymentsService
 
     public async Task<List<Deployment>> FindLatest(string environment, int offset = 0)
     {
-        return await _deployments
+        return await Collection
             .Find(d => d.Environment == environment)
             .Skip(offset)
             .Limit(200)
@@ -52,7 +52,7 @@ public class DeploymentsService : IDeploymentsService
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
 
-        return await _deployments.Aggregate(pipeline).ToListAsync();
+        return await Collection.Aggregate(pipeline).ToListAsync();
     }
 
     public async Task<List<Deployment>> FindWhatsRunningWhere(string serviceName)
@@ -63,29 +63,25 @@ public class DeploymentsService : IDeploymentsService
             .Group(d => new { d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
 
-        return await _deployments.Aggregate(pipeline).ToListAsync();
+        return await Collection.Aggregate(pipeline).ToListAsync();
     }
 
-    public Task<Deployment> FindDeployment(string deploymentId)
+    public Task<Deployment?> FindDeployment(string deploymentId)
     {
-        return _deployments.Find(d => d.DeploymentId == deploymentId)
-            .Limit(1)
-            .FirstAsync();
+        return Collection.Find(d => d.DeploymentId == deploymentId)
+            .FirstOrDefaultAsync()!;
     }
 
     public async Task Insert(Deployment deployment)
     {
-        await _deployments.InsertOneAsync(deployment);
+        await Collection.InsertOneAsync(deployment);
     }
 
-
-    private IEnumerable<string?> EnsureIndexes()
+    protected override List<CreateIndexModel<Deployment>> DefineIndexes(IndexKeysDefinitionBuilder<Deployment> builder)
     {
-        var builder = Builders<Deployment>.IndexKeys;
         var indexModel = new CreateIndexModel<Deployment>(builder.Combine(builder.Ascending(r => r.Environment),
             builder.Ascending(r => r.Service)));
         var titleModel = new CreateIndexModel<Deployment>(builder.Descending(r => r.DeployedAt));
-        var result = _deployments.Indexes.CreateMany(new[] { indexModel, titleModel });
-        return result;
+        return new List<CreateIndexModel<Deployment>> { indexModel, titleModel };
     }
 }

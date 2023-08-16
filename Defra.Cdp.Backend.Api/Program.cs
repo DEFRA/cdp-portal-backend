@@ -1,7 +1,7 @@
 using Amazon.ECR;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
-using Defra.Cdp.Backend.Api.Repositories.Mongo;
+using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
@@ -71,11 +71,15 @@ builder.Services.AddSwaggerGen();
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
+// Create swagger doc from internal endpoints then add the swagger ui endpoint
+// Under `Endpoints` directory, the `.Produces`, `.WithName` and `.WithTags`
+// extension methods on the `IEndpointRouteBuilder` used as hints to build the swagger UI 
 app.UseSwagger();
 app.UseSwaggerUI();
 
 // Add endpoints
-app.MapDeployments();
+app.MapDeployablesEndpoint();
+app.MapDeploymentsEndpoint();
 app.MapAdminEndpoint();
 
 app.Run();

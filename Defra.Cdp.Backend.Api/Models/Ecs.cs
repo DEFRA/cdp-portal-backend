@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
@@ -32,6 +34,7 @@ public sealed record EcsEventDetail(
 public sealed record EcsEventCopy(
     string MessageId, DateTime Timestamp, string Body)
 {
+    [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-    public ObjectId? Id { get; set; }
+    public ObjectId? Id { get; init; } = default!;
 }

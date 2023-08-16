@@ -13,7 +13,7 @@ public static class ArtifactsEndpoint
     private const string Tag = "Artifacts";
 
     // Todo add 404 for when repo does not exist
-    public static IEndpointRouteBuilder MapDeployments(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(ArtifactsBaseRoute, ListRepos)
             .WithName("GetAllImages")
@@ -28,11 +28,13 @@ public static class ArtifactsEndpoint
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage)
             .WithName("GetImagesForRepoAndTag")
             .Produces<List<DeployableArtifact>>()
+            .Produces(StatusCodes.Status404NotFound)
             .WithTags(Tag);
 
         app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent)
             .WithName("GetFileContent")
             .Produces<LayerFile>()
+            .Produces(StatusCodes.Status404NotFound)
             .WithTags(Tag);
 
         app.MapGet(DeployablesBaseRoute, ListDeployables)
@@ -53,6 +55,7 @@ public static class ArtifactsEndpoint
         app.MapGet($"{ServicesBaseRoute}/{{service}}", ListService)
             .WithName("GetService")
             .Produces<ServiceInfo>()
+            .Produces(StatusCodes.Status404NotFound)
             .WithTags(Tag);
 
         return app;
@@ -83,8 +86,7 @@ public static class ArtifactsEndpoint
     private static async Task<IResult> GetFileContent(ILayerService layerService, string layer, string path)
     {
         var image = await layerService.FindFileAsync(layer, path);
-        if (image?.Content == null) return Results.NotFound($"{layer}/{path} was not found");
-        return Results.Ok(image.Content);
+        return image?.Content == null ? Results.NotFound($"{layer}/{path} was not found") : Results.Ok(image.Content);
     }
 
 
