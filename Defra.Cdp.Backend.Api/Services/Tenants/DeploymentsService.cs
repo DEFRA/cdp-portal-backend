@@ -7,7 +7,7 @@ namespace Defra.Cdp.Backend.Api.Services.Tenants;
 public interface IDeploymentsService
 {
     Task<List<Deployment>> FindLatest(int offset = 0);
-    public Task<List<Deployment>> FindLatest(string environment, int offset = 0);
+    public Task<List<Deployment>> FindLatest(string? environment, int offset = 0);
     public Task<List<Deployment>> FindWhatsRunningWhere();
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName);
     public Task<Deployment?> FindDeployment(string deploymentId);
@@ -35,8 +35,10 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .ToListAsync();
     }
 
-    public async Task<List<Deployment>> FindLatest(string environment, int offset = 0)
+    public async Task<List<Deployment>> FindLatest(string? environment, int offset = 0)
     {
+        if (string.IsNullOrWhiteSpace(environment)) return await FindLatest(offset);
+
         return await Collection
             .Find(d => d.Environment == environment)
             .Skip(offset)

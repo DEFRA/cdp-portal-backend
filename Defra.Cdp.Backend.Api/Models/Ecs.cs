@@ -7,27 +7,36 @@ namespace Defra.Cdp.Backend.Api.Models;
 
 public sealed record EcsEvent(
     [property: JsonPropertyName("id")] string DeploymentId,
+    [property: JsonPropertyName("detail-type")]
     string DetailType,
+    [property: JsonPropertyName("account")]
     string Account,
     [property: JsonPropertyName("time")] DateTime Timestamp,
-    string Region,
-    EcsEventDetail Detail
+    [property: JsonPropertyName("region")] string Region,
+    [property: JsonPropertyName("detail")] EcsEventDetail Detail
 );
 
 public sealed record EcsContainer(
-    string Image,
+    [property: JsonPropertyName("image")] string Image,
+    [property: JsonPropertyName("imageDigest")]
     string ImageDigest,
-    string Name,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("lastStatus")]
     string LastStatus
 );
 
 public sealed record EcsEventDetail(
+    [property: JsonPropertyName("createdAt")]
     DateTime CreatedAt,
-    string Cpu,
-    string Memory,
+    [property: JsonPropertyName("cpu")] string Cpu,
+    [property: JsonPropertyName("memory")] string Memory,
+    [property: JsonPropertyName("lastStatus")]
     string LastStatus,
+    [property: JsonPropertyName("desiredStatus")]
     string DesiredStatus,
+    [property: JsonPropertyName("containers")]
     List<EcsContainer> Containers,
+    [property: JsonPropertyName("taskDefinitionArn")]
     string TaskDefinitionArn
 );
 

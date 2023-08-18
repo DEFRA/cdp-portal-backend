@@ -20,7 +20,8 @@ public class MongoDbClientFactory : IMongoDbClientFactory
 
     public IMongoClient CreateClient()
     {
-        _client = new MongoClient(_connectionString);
+        var settings = MongoClientSettings.FromConnectionString(_connectionString);
+        _client = new MongoClient(settings);
         var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
         // convention must be registered before initialising collection
         ConventionRegistry.Register("CamelCase", camelCaseConvention, type => true);

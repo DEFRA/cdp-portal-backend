@@ -16,8 +16,8 @@ public class EcsEventListener : SqsListener
     private readonly List<string> _containersToIgnore;
     private readonly IDeployablesService _deployablesService;
     private readonly IDeploymentsService _deploymentsService;
+    private readonly IEcsEventsService _ecsEventsService;
     private readonly EnvironmentLookup _environmentLookup;
-    private readonly IEventsService _eventsService;
     private readonly ILogger<EcsEventListener> _logger;
 
     public EcsEventListener(IAmazonSQS sqs,
@@ -25,14 +25,14 @@ public class EcsEventListener : SqsListener
         IDeploymentsService deploymentsService,
         EnvironmentLookup environmentLookup,
         IDeployablesService deployablesService,
-        IEventsService eventsService,
+        IEcsEventsService ecsEventsService,
         ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl)
     {
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
         _logger = logger;
         _deployablesService = deployablesService;
-        _eventsService = eventsService;
+        _ecsEventsService = ecsEventsService;
         _containersToIgnore = config.Value.ContainerToIgnore;
         _logger.LogInformation("Listening for deployment events on {}", config.Value.QueueUrl);
     }
@@ -129,14 +129,14 @@ public class EcsEventListener : SqsListener
     {
         _logger.LogInformation("Receive: {MessageMessageId}: {MessageBody}", message.MessageId, message.Body);
         // keep a backup copy of the event (currently for debug/testing/replaying)
-        await _eventsService.SaveMessage(message.MessageId, message.Body);
+        await _ecsEventsService.SaveMessage(message.MessageId, message.Body);
         await ProcessMessageAsync(message.MessageId, message.Body);
     }
 
     public async Task Backfill()
     {
         _logger.LogInformation("Starting backfill");
-        var cursor = await _eventsService.FindAll();
+        var cursor = await _ecsEventsService.FindAll();
         await cursor.ForEachAsync(async m =>
         {
             _logger.LogInformation("Backfilling {}", m.MessageId);

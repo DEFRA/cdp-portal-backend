@@ -56,9 +56,11 @@ builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
-builder.Services.AddSingleton<IEventsService, EventsService>();
+builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
+builder.Services.AddSingleton<IEcsEventsService, EcsEcsEventsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<EnvironmentLookup>();
+builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
 
 // Validators
@@ -74,12 +76,30 @@ var app = builder.Build();
 // Create swagger doc from internal endpoints then add the swagger ui endpoint
 // Under `Endpoints` directory, the `.Produces`, `.WithName` and `.WithTags`
 // extension methods on the `IEndpointRouteBuilder` used as hints to build the swagger UI 
-app.UseSwagger();
-app.UseSwaggerUI();
+// Todo: opt-in only
+if (builder.IsDevMode())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Path base cdp-portal-backend
+app.UsePathBase("/cdp-portal-backend");
+app.UseRouting();
 
 // Add endpoints
 app.MapDeployablesEndpoint();
 app.MapDeploymentsEndpoint();
 app.MapAdminEndpoint();
+
+// Start the ecs and ecr services
+var ecsSqsEventListener = app.Services.GetService<EcsEventListener>();
+logger.Information("Starting ECS listener - reading service events from SQS");
+Task.Run(() => ecsSqsEventListener?.ReadAsync()); // do not await this, we want it to run in the background
+
+var ecrSqsEventListener = app.Services.GetService<EcrEventListener>();
+logger.Information("Starting ECR listener - reading image creation events from SQS");
+Task.Run(() => ecrSqsEventListener?.ReadAsync()); // do not await this, we want it to run in the background
+
 
 app.Run();

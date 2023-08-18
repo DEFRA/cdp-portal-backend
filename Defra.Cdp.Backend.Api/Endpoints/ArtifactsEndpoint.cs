@@ -9,10 +9,9 @@ public static class ArtifactsEndpoint
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
     private const string FilesBaseRoute = "files";
-    private const string ServicesBaseRoute = "files";
+    private const string ServicesBaseRoute = "services";
     private const string Tag = "Artifacts";
 
-    // Todo add 404 for when repo does not exist
     public static IEndpointRouteBuilder MapDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(ArtifactsBaseRoute, ListRepos)
@@ -79,14 +78,16 @@ public static class ArtifactsEndpoint
     private static async Task<IResult> ListImage(IDeployablesService deployablesService, string repo, string tag)
     {
         var image = await deployablesService.FindByTag(repo, tag);
-        return image == null ? Results.NotFound($"{repo}:{tag} was not found") : Results.Ok(image);
+        return image == null ? Results.NotFound(new { Message = $"{repo}:{tag} was not found" }) : Results.Ok(image);
     }
 
     // GET /files/{layer}
     private static async Task<IResult> GetFileContent(ILayerService layerService, string layer, string path)
     {
         var image = await layerService.FindFileAsync(layer, path);
-        return image?.Content == null ? Results.NotFound($"{layer}/{path} was not found") : Results.Ok(image.Content);
+        return image?.Content == null
+            ? Results.NotFound(new { Message = $"{layer}/{path} was not found" })
+            : Results.Ok(image.Content);
     }
 
 

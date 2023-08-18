@@ -14,10 +14,12 @@ public static class DeploymentsEndpoint
     {
         app.MapGet(DeploymentsBaseRoute,
                 async (IDeploymentsService deploymentsService,
-                    [FromQuery(Name = "offset")] int? offset) =>
+                    [FromQuery(Name = "offset")] int? offset,
+                    [FromQuery(Name = "environment")] string? environment
+                ) =>
                 {
                     var o = offset ?? 0;
-                    return await FindLatestDeployments(deploymentsService, o);
+                    return await FindLatestDeployments(deploymentsService, o, environment);
                 })
             .WithName("GetDeployments")
             .Produces<IEnumerable<Deployment>>()
@@ -44,9 +46,10 @@ public static class DeploymentsEndpoint
     }
 
     // GET /deployments or GET /deployments?offet=23
-    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService, int offset)
+    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService, int offset,
+        string? environment)
     {
-        var deployables = await deploymentsService.FindLatest(offset);
+        var deployables = await deploymentsService.FindLatest(environment, offset);
         return Results.Ok(deployables);
     }
 
@@ -54,7 +57,9 @@ public static class DeploymentsEndpoint
     private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId);
-        return deployment == null ? Results.NotFound() : Results.Ok(deployment);
+        return deployment == null
+            ? Results.NotFound(new { Message = $"{deploymentId} not found" })
+            : Results.Ok(deployment);
     }
 
     private static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService)

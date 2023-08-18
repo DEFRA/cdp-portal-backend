@@ -4,18 +4,18 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
-public interface IEventsService
+public interface IEcsEventsService
 {
     Task SaveMessage(string id, string body);
 
     Task<IAsyncCursor<EcsEventCopy>> FindAll();
 }
 
-public class EventsService : MongoService<EcsEventCopy>, IEventsService
+public class EcsEcsEventsService : MongoService<EcsEventCopy>, IEcsEventsService
 {
     private const string CollectionName = "ecsevents";
 
-    public EventsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
+    public EcsEcsEventsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
         connectionFactory,
         CollectionName, loggerFactory)
     {
