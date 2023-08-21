@@ -90,7 +90,7 @@ public class EcsEventListener : SqsListener
         return deployments;
     }
 
-    private (string?, string?) SplitImage(string image)
+    public static (string?, string?) SplitImage(string image)
     {
         var rx = new Regex("^.+\\/(.+):(.+)$");
         var result = rx.Match(image);
