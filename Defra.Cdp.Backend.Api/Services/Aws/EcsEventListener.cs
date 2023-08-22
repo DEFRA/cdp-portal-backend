@@ -34,7 +34,7 @@ public class EcsEventListener : SqsListener
         _deployablesService = deployablesService;
         _ecsEventsService = ecsEventsService;
         _containersToIgnore = config.Value.ContainerToIgnore;
-        _logger.LogInformation("Listening for deployment events on {}", config.Value.QueueUrl);
+        _logger.LogInformation("Listening for deployment events on {QueueUrl}", config.Value.QueueUrl);
     }
 
     private async Task<List<Deployment>> ConvertToDeployment(EcsEvent ecsEvent)

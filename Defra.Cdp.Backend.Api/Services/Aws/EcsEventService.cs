@@ -11,11 +11,11 @@ public interface IEcsEventsService
     Task<IAsyncCursor<EcsEventCopy>> FindAll();
 }
 
-public class EcsEcsEventsService : MongoService<EcsEventCopy>, IEcsEventsService
+public class EcsEventsService : MongoService<EcsEventCopy>, IEcsEventsService
 {
     private const string CollectionName = "ecsevents";
 
-    public EcsEcsEventsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
+    public EcsEventsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
         connectionFactory,
         CollectionName, loggerFactory)
     {

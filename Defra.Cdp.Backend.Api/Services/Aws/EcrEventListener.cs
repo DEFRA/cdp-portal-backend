@@ -10,30 +10,30 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public class EcrEventListener
 {
+    private readonly IArtifactScanner _docker;
     private readonly IEcrEventsService _ecrEventService;
-    private readonly IArtifactScanner docker;
-    private readonly ILogger logger;
-    private readonly EcrEventListenerOptions options;
+    private readonly ILogger _logger;
+    private readonly EcrEventListenerOptions _options;
 
-    private readonly IAmazonSQS sqs;
+    private readonly IAmazonSQS _sqs;
 
     public EcrEventListener(IAmazonSQS sqs, IArtifactScanner docker, IOptions<EcrEventListenerOptions> config,
         IEcrEventsService ecrEventService,
         ILogger<EcrEventListener> logger)
     {
-        this.sqs = sqs;
-        this.docker = docker;
-        options = config.Value;
+        _sqs = sqs;
+        _docker = docker;
+        _options = config.Value;
         _ecrEventService = ecrEventService;
-        this.logger = logger;
+        _logger = logger;
     }
 
     public async void ReadAsync()
     {
-        logger.LogInformation($"Listening for events on {options.QueueUrl}");
+        _logger.LogInformation("Listening for events on {OptionsQueueUrl}", _options.QueueUrl);
 
         var falloff = 1;
-        while (options.Enabled)
+        while (_options.Enabled)
             try
             {
                 await GetMessages();
@@ -41,7 +41,7 @@ public class EcrEventListener
             }
             catch (Exception e)
             {
-                logger.LogError(e.Message);
+                _logger.LogError(e.Message);
                 Thread.Sleep(1000 * Math.Min(60, falloff));
                 falloff++;
             }
@@ -49,9 +49,9 @@ public class EcrEventListener
 
     private async Task GetMessages()
     {
-        var response = await sqs.ReceiveMessageAsync(new ReceiveMessageRequest
+        var response = await _sqs.ReceiveMessageAsync(new ReceiveMessageRequest
         {
-            QueueUrl = options.QueueUrl, WaitTimeSeconds = options.WaitTimeSeconds, MaxNumberOfMessages = 1
+            QueueUrl = _options.QueueUrl, WaitTimeSeconds = _options.WaitTimeSeconds, MaxNumberOfMessages = 1
         });
 
         if (response == null) return;
@@ -60,7 +60,7 @@ public class EcrEventListener
         {
             if (msg == null) continue;
 
-            logger.LogInformation("Received message: {}", msg.MessageId);
+            _logger.LogInformation("Received message: {}", msg.MessageId);
 
             try
             {
@@ -68,26 +68,26 @@ public class EcrEventListener
             }
             catch (Exception ex)
             {
-                logger.LogError("Failed to persist event: {}", ex);
+                _logger.LogError("Failed to persist event: {}", ex);
             }
 
             try
             {
                 var result = await ProcessMessage(msg.MessageId, msg.Body);
                 if (result == null)
-                    logger.LogInformation("Skipping processing of {}", msg.MessageId);
+                    _logger.LogInformation("Skipping processing of {}", msg.MessageId);
                 else
-                    logger.LogInformation(
+                    _logger.LogInformation(
                         "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
                         msg.MessageId, result.Sha256, result.Repo, result.Tag);
             }
             catch (Exception ex)
             {
-                logger.LogError("Failed to scan image for event {}: {}", msg.MessageId, ex);
+                _logger.LogError("Failed to scan image for event {}: {}", msg.MessageId, ex);
             }
 
             // TODO: better error detection to decide if we delete, dead letter or retry...
-            await sqs.DeleteMessageAsync(options.QueueUrl, msg.ReceiptHandle);
+            await _sqs.DeleteMessageAsync(_options.QueueUrl, msg.ReceiptHandle);
         }
     }
 
@@ -99,29 +99,29 @@ public class EcrEventListener
         // Only scan push event for images that have a semver tag (i.e. ignore latest and anything else)
         if (ecrEvent?.Detail == null)
         {
-            logger.LogInformation("Not processing {}, failed to process json", id);
+            _logger.LogInformation("Not processing {}, failed to process json", id);
             throw new ImageProcessingException($"Not processing {id}, failed to process json");
         }
 
         if (ecrEvent.Detail.Result != "SUCCESS")
         {
-            logger.LogInformation("Not processing {}, result is not a SUCCESS", id);
+            _logger.LogInformation("Not processing {}, result is not a SUCCESS", id);
             return null;
         }
 
         if (ecrEvent.Detail.ActionType != "PUSH")
         {
-            logger.LogInformation("Not processing {}, message is not a PUSH event", id);
+            _logger.LogInformation("Not processing {}, message is not a PUSH event", id);
             return null;
         }
 
         if (!SemVer.IsSemVer(ecrEvent.Detail.ImageTag))
         {
-            logger.LogInformation("Not processing {}, tag [{}] is not semver", id, ecrEvent.Detail.ImageTag);
+            _logger.LogInformation("Not processing {}, tag [{}] is not semver", id, ecrEvent.Detail.ImageTag);
             // TODO: have a better return type that can indicate why it wasnt scanned.
             return null;
         }
 
-        return await docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag);
+        return await _docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag);
     }
 }

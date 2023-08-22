@@ -1,6 +1,7 @@
 using Amazon.ECR;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -39,6 +40,7 @@ builder.Services.AddSqsClient(builder.Configuration, true);
 
 // Setup the services
 builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSection(EcsEventListenerOptions.Prefix));
+builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 
@@ -57,7 +59,7 @@ builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
-builder.Services.AddSingleton<IEcsEventsService, EcsEcsEventsService>();
+builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
