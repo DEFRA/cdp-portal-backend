@@ -28,10 +28,6 @@ builder.Logging.AddSerilog(logger);
 builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
     new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri")));
 
-// http client for deployables, to remove
-builder.Services
-    .AddHttpClient("deployables", client => { client.BaseAddress = new Uri("https://deployables.com/"); });
-
 // SQS provider
 builder.Services.AddSqsClient(builder.Configuration, true);
 
