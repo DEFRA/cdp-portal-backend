@@ -264,3 +264,6 @@ __pycache__/
 .DS_Store
 
 library.db
+
+# AWS logs
+*/aws-logger*.txt
