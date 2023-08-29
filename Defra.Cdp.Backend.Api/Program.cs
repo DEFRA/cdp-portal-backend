@@ -7,6 +7,8 @@ using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using FluentValidation;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 //-------- Configure the WebApplication builder------------------//
@@ -23,6 +25,21 @@ var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
+
+// Add health checks and http client
+builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient();
+
+builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+// Handle requests behind Front Door/Load Balancer etc
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Mongo
 builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
