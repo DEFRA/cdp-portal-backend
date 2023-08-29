@@ -24,9 +24,6 @@ var logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
 
-// Swagger
-builder.Services.AddSwaggerGen();
-
 // Mongo
 builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
     new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri")));
@@ -70,7 +67,7 @@ builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+if (builder.IsDevMode()) builder.Services.AddSwaggerGen();
 
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
