@@ -103,6 +103,7 @@ app.UseRouting();
 app.MapDeployablesEndpoint();
 app.MapDeploymentsEndpoint();
 app.MapAdminEndpoint();
+app.MapHealthChecks("/health");
 
 // Start the ecs and ecr services
 var ecsSqsEventListener = app.Services.GetService<EcsEventListener>();
