@@ -9,7 +9,7 @@ then
 fi 
 
 # TODO: replace these account id's with ones that map to actual environments
-accounts=("111111111" "222222222" "333333333" "444444444" "555555555")
+accounts=("111111111" "222222222" "333333333" "444444444" "555555555" "666666666" "777777777")
 
 TS=$(date +"%Y-%m-%dT%H:%M:%S.000Z")
 IMAGE="${1}"
