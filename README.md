@@ -23,8 +23,8 @@ discovering, persisting and providing access to all deployable artifacts on the 
     - [Setup a local docker registry](#setup-a-local-docker-registry)
     - [Install and run LocalStack AWS](#install-and-run-localstack-aws)
     - [Create local SQS queues](#create-local-sqs-queues)
-    - [Generate fake deployments](#generate-fake-deployments)
     - [Simulating ECR SQS messages locally](#simulating-ecr-sqs-messages-locally)
+    - [Generate fake deployments](#generate-fake-deployments)
 
 ## How does it work
 
@@ -238,22 +238,13 @@ docker run -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:latest
 awslocal sqs create-queue --queue-name ecs-deployments
 ```
 
-### Generate fake deployments
-
-- Generate fake deployments:
-```bash
-cd cdp-portal-backend
-```
-```bash
-./generate-fake-deployments.sh service-name version
-```
-E.g:
-```bash
-./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
-```
-
 ### Simulating ECR SQS messages locally
-This assume the AWS LocalStack Docker container is running and AWS LocalStack is installed.
+Send a message to the `ecr-push-events` queue, simulates a docker image available in the docker registry, for deployment.
+
+This assumes:
+- The AWS LocalStack Docker container is running and AWS LocalStack is installed.
+- The appropriate docker image has been added to your local docker registry.
+
 If you're not using AWS LocalStack, just replace the command with the normal aws command line + localstack connection details.
 
 - Create the `ecr-push-events` queue:
@@ -264,4 +255,23 @@ If you're not using AWS LocalStack, just replace the command with the normal aws
 - Send an event:
 ```bash
  $ awslocal sqs send-message --queue-url "http://127.0.0.1:4566/000000000000/ecr-push-events" --message-body '{"detail": { "result": "SUCCESS", "action-type": "PUSH", "image-tag": "0.1.0", "repository-name": "cdp-portal-frontend"}}'
+```
+
+### Generate fake deployments
+
+To Generate fake deployments across environments.
+
+This assumes:
+- The appropriate docker image has been added to your local docker registry.
+- An `ecr-push-events` SQS queue message has been sent
+
+```bash
+cd cdp-portal-backend
+```
+```bash
+./generate-fake-deployments.sh service-name version
+```
+E.g:
+```bash
+./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
 ```
