@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public static class SqsSetup
 {
-    public static void AddSqsClient(this IServiceCollection service, , bool isDevMode)
+    public static void AddSqsClient(this IServiceCollection service, IConfiguration configuration, bool isDevMode)
     {
         if (isDevMode)
         {
