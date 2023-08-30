@@ -186,11 +186,11 @@ To inspect the Database and Collections locally:
 mongosh
 ```
 
-
 ### Running
 
 Run `cdp-portal-backend` application:
 ```bash
-dotnet run --project Defra.Cdp.Backend.Api --launch-profile Development
+export ASPNETCORE_ENVIRONMENT=Development # optional as it's the default
+dotnet run --project Defra.Cdp.Backend.Api
 ```
 
