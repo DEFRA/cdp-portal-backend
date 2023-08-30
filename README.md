@@ -186,6 +186,25 @@ To inspect the Database and Collections locally:
 mongosh
 ```
 
+### Local docker registry
+
+You should run a local docker registry to grab the manifests from images.
+
+```bash
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+```
+
+You will then need to pull an image from ECR. This assumes you have AWS CLI setup correctly.
+
+```bash
+aws ecr get-login-password --region eu-west-2 --profile management | docker login --username AWS --password-stdin <account_number>.dkr.ecr.eu-west-2.amazonaws.com
+docker pull  <account_number>.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-frontend:<version>
+docker tag <account_number>.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-frontend:<version> localhost:5000/cdp-portal-frontend:<version>  
+docker push localhost:5000/cdp-portal-frontend:<version> 
+```
+
+This will make sure that we have the manifest for the versions we have in our local MongoDB.
+
 ### Running
 
 Run `cdp-portal-backend` application:
