@@ -1,11 +1,34 @@
-# cdp-portal-backend
+# CDP Portal Backend
 
 A service for tracking deployments (what's deployed and where) across environments and for 
 discovering, persisting and providing access to all deployable artifacts on the platform (docker and ECR images).
 
-## How does it work?
+- [How does it work?](#how-does-it-work)
+- [APIs](#apis)
+    - [Find Services](#find-services)
+    - [Get Artifacts](#get-artifacts)
+    - [Getting content of a file](#getting-content-of-a-file)
+    - [Getting lists of deployable artifacts](#getting-lists-of-deployable-artifacts)
+    - [Admin backend](#admin-backend)
+    - [Getting generic lists of deployments](#getting-generic-lists-of-deployments)
+    - [Getting lists of deployments for each environment](#getting-lists-of-deployments-for-each-environment)
+- [Local Development](#local-development)
+    - [Install MongoDB](#install-mongodb)
+        - [Start MongoDB](#start-mongodb)
+            - [Run it natively](#run-it-natively)
+            - [Running it in docker](#running-it-in-docker)
+            - [Running it with Homebrew on Mac](#running-it-with-homebrew-on-mac)
+        - [Inspect MongoDB](#inspect-mongodb)
+    - [Run CDP Portal Backend application](#run-cdp-portal-backend-application)
+    - [Setup a local docker registry](#setup-a-local-docker-registry)
+    - [Install and run LocalStack AWS](#install-and-run-localstack-aws)
+    - [Create local SQS queues](#create-local-sqs-queues)
+    - [Generate fake deployments](#generate-fake-deployments)
+    - [Simulating ECR SQS messages locally](#simulating-ecr-sqs-messages-locally)
 
-tl;dr listens to SQS events for ECR image uploads and ECS deployments, populates a mongodb database with that information,
+## How does it work
+
+TL;DR the CDP Portal Backend listens to SQS events for ECR image uploads and ECS deployments, populates a mongodb database with that information,
 and provides a RESTful API to access that information for the frontend.
 
 **Deployments - the "what is where"**
@@ -129,87 +152,116 @@ Currently it will *not* drop the existing records, that should be done manually.
 
 
 ## Local Development
-- Install [awslocal](https://github.com/localstack/awscli-local)
-- Run localstack Docker container:
-```bash
-docker run -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:latest
-```
-- Create local queue:
-```bash
-awslocal sqs create-queue --queue-name ecs-deployments
-```
-- Generate fake deployments:
-```bash
-./generate-fake-deployments.sh service-name version
-```
-
-## Simulating ECR messages locally
-This assume localstack is running and awslocal is installed. If you're not using awslocal, just replace the command with the normal aws command line + localstack connection details.
-
-Create the queue:
-```bash
- $ awslocal sqs create-queue --queue-name ecr-push-events
-```
-
-Send an event:
-```bash
- $ awslocal sqs send-message --queue-url "http://127.0.0.1:4566/000000000000/ecr-push-events" --message-body '{"detail": { "result": "SUCCESS", "action-type": "PUSH", "image-tag": "1.0.0", "repository-name": "cdp-node-frontend-exemplar"}}'
-```
 
 ### Install MongoDB
 - Install [MongoDB](https://www.mongodb.com/docs/manual/tutorial/#installation) on your local machine
-  - Consider docker if running on Linux or WSL2 for Windows 10/11
-  - Consider Homebrew for MacOS as Mongodb in docker for Apple Silicon can be temperamental
-- Start MongoDB:
+    - Consider docker if running on Linux or WSL2 for Windows 10/11
+    - Consider Homebrew for MacOS as Mongodb in docker for Apple Silicon can be temperamental
 
-Here is a way if you want to run it natively locally
+#### Start MongoDB
+##### Run it natively
 ```bash
 sudo mongod --dbpath ~/mongodb-cdp
 ```
 
-E.g. running it in docker 
+##### Running it in docker
+> Note: using the ubuntu image to avoid licensing issues with the ubi8 (redhat linux) image
 ```bash
 docker run --name mongodb-cdp -d -p 27017:27017 mongodb/mongodb-community-server:6.0.7-ubuntu2204
 ```
 
-Note: using the ubuntu image to avoid licensing issues with the ubi8 (redhat linux) image
+##### Running it with Homebrew on Mac
+> Note: if installing mongodb community edition
 
-E.g. running it with Homebrew on Mac if installing mongodb community edition
 ```bash
 brew services start mongodb-community@6.0
 ```
 
-### Inspect MongoDB
+#### Inspect MongoDB
 
 To inspect the Database and Collections locally:
 ```bash
 mongosh
 ```
 
-### Local docker registry
+### Run CDP Portal Backend application
 
-You should run a local docker registry to grab the manifests from images.
+- Set optional `ASPNETCORE_ENVIRONMENT` environment variable:
+```bash
+export ASPNETCORE_ENVIRONMENT=Development # optional as it's currently the default
+```
+
+- To run the `cdp-portal-backend` application:
+```bash
+dotnet run --project Defra.Cdp.Backend.Api
+```
+
+### Setup a local docker registry
+
+Running a local docker registry enables the `cdp-portal-backend` to obtain the manifests from local registry images.
 
 ```bash
 docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
+> Note: If you need to update the external port also change it in the `Docker.RegistryUrl` property within `appsettings.Development.json`
 
 You will then need to pull an image from ECR. This assumes you have AWS CLI setup correctly.
 
 ```bash
 aws ecr get-login-password --region eu-west-2 --profile management | docker login --username AWS --password-stdin <account_number>.dkr.ecr.eu-west-2.amazonaws.com
+
 docker pull  <account_number>.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-frontend:<version>
-docker tag <account_number>.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-frontend:<version> localhost:5000/cdp-portal-frontend:<version>  
+```
+Then tag the pulled image
+```bash
+docker tag <account_number>.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-frontend:<version> localhost:5000/cdp-portal-frontend:<version>
+```
+The push the tagged image to your local docker registry
+```bash
 docker push localhost:5000/cdp-portal-frontend:<version> 
 ```
 
-This will make sure that we have the manifest for the versions we have in our local MongoDB.
+This will make sure that the `cdp-portal-backend` can obtain the manifest for the versions in our local MongoDB.
 
-### Running
+### Install and run LocalStack AWS
 
-Run `cdp-portal-backend` application:
+- Install [LocalStack AWS CLI](https://github.com/localstack/awscli-local)
+- Run AWS LocalStack Docker container:
 ```bash
-export ASPNETCORE_ENVIRONMENT=Development # optional as it's the default
-dotnet run --project Defra.Cdp.Backend.Api
+docker run -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:latest
 ```
 
+### Create local SQS queues
+
+- Create `ecs-deployments` local SQS queue:
+```bash
+awslocal sqs create-queue --queue-name ecs-deployments
+```
+
+### Generate fake deployments
+
+- Generate fake deployments:
+```bash
+cd cdp-portal-backend
+```
+```bash
+./generate-fake-deployments.sh service-name version
+```
+E.g:
+```bash
+./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
+```
+
+### Simulating ECR SQS messages locally
+This assume the AWS LocalStack Docker container is running and AWS LocalStack is installed.
+If you're not using AWS LocalStack, just replace the command with the normal aws command line + localstack connection details.
+
+- Create the `ecr-push-events` queue:
+```bash
+ $ awslocal sqs create-queue --queue-name ecr-push-events
+```
+
+- Send an event:
+```bash
+ $ awslocal sqs send-message --queue-url "http://127.0.0.1:4566/000000000000/ecr-push-events" --message-body '{"detail": { "result": "SUCCESS", "action-type": "PUSH", "image-tag": "0.1.0", "repository-name": "cdp-portal-frontend"}}'
+```
