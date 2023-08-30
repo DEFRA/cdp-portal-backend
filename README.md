@@ -15,7 +15,7 @@ and provides a RESTful API to access that information for the frontend.
 When an event comes in it will do the following:
 - looks up the aws account id against a list of known environment names
 - extracts the container image name and version from the event
-- discards any containers that dont already exist in cdp-deployables
+- discards any containers that dont already exist 
 - writes the event to the deployments collection
 
 **Artifacts and images - what we can deploy on the portal**
@@ -37,26 +37,26 @@ When an image is scanned its 'service name' is extracted from a docker label (`d
 ```json
 [
     {
-        "serviceName": "cdp-portal-deployables-backend",
-        "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-deployables",
-        "imageName": "cdp-portal-deployables-backend"
+        "serviceName": "cdp-portal-backend",
+        "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-portal-backend",
+        "imageName": "cdp-portal-backend"
     },
     {
-        "serviceName": "cdp-deployments",
-        "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-deployments",
-        "imageName": "cdp-deployments"
+        "serviceName": "cdp-portal-backend",
+        "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-portal-backend",
+        "imageName": "cdp-portal-backend"
     }
 ]
 
 ```
 
-`GET /services/cdp-deployments`
+`GET /services/cdp-portal-backend`
 
 ```json
 {
-    "serviceName": "cdp-deployments",
-    "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-deployments",
-    "imageName": "cdp-deployments"
+    "serviceName": "cdp-portal-backend",
+    "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-portal-backend",
+    "imageName": "cdp-portal-backend"
 }
 ```
 
@@ -70,11 +70,11 @@ When an image is scanned its 'service name' is extracted from a docker label (`d
 
 {
   "created":"2023-05-16T11:03:47.732Z",
-  "repo":"cdp-deployments",
+  "repo":"cdp-portal-backend",
   "tag":"v0.21.0",
   "sha256":"sha256:157e63cedba182003e9831047e3f611c516e8d67a4425dfcb15d7d7295c17872",
-  "githubUrl":"https://github.com/defra-cdp-sandpit/cdp-deployments",
-  "serviceName":"cdp-deployments",
+  "githubUrl":"https://github.com/defra-cdp-sandpit/cdp-portal-backend",
+  "serviceName":"cdp-portal-backend",
   "scannerVersion":1,
   "files":[
     {"fileName":"Defra.Cdp.Deployments.deps.json","path":"app/Defra.Cdp.Deployments.deps.json","layerSha256":"sha256:115ae824b21b9f671e304112f034096061d8d56b655509561207084fd1f3ccde"}
@@ -138,12 +138,10 @@ docker run -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:latest
 ```bash
 awslocal sqs create-queue --queue-name ecs-deployments
 ```
-- Run [cdp-deployables](https://github.com/defra-cdp-sandpit/cdp-deployables) and populate it with some artifacts
 - Generate fake deployments:
 ```bash
 ./generate-fake-deployments.sh service-name version
 ```
-The service-name and version will need to exist in cdp-deployables.
 
 ## Simulating ECR messages locally
 This assume localstack is running and awslocal is installed. If you're not using awslocal, just replace the command with the normal aws command line + localstack connection details.
