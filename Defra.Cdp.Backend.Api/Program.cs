@@ -13,6 +13,8 @@ using Serilog;
 
 //-------- Configure the WebApplication builder------------------//
 
+Console.WriteLine("Testing that logs work when starting");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Grab environment variables
@@ -25,6 +27,9 @@ var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
+
+Console.WriteLine("Logger created.");
+
 
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 
