@@ -26,6 +26,8 @@ var logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
 
+logger.Information("Starting CDP Portal Backend, bootstrapping the services");
+
 // Add health checks and http client
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
@@ -53,6 +55,7 @@ builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 
 // SQS provider
+logger.Information("Attempting to add SQS, ECR and Docker Client");
 builder.Services.AddSqsClient(builder.Configuration, builder.IsDevMode());
 
 if (builder.IsDevMode())
@@ -61,7 +64,9 @@ if (builder.IsDevMode())
 }
 else
 {
+    logger.Information("Connecting to Amazon ECR");
     builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
+    logger.Information("Connecting to ECR as a docker registry");
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
 
