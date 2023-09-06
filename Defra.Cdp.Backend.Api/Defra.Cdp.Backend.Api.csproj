@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWS.Logger.SeriLog" Version="3.2.0"/>
     <PackageReference Include="AWSSDK.ECR" Version="3.7.200.16"/>
     <PackageReference Include="AWSSDK.SQS" Version="3.7.200.15"/>
     <PackageReference Include="Elastic.CommonSchema.Serilog" Version="8.6.1"/>

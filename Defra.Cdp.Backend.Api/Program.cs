@@ -30,7 +30,6 @@ builder.Logging.AddSerilog(logger);
 
 Console.WriteLine("Logger created.");
 
-
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 
 // Add health checks and http client
