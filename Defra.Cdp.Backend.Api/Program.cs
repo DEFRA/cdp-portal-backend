@@ -7,8 +7,10 @@ using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 //-------- Configure the WebApplication builder------------------//
@@ -92,6 +94,35 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 if (builder.IsDevMode()) builder.Services.AddSwaggerGen();
 
+// Add authen
+var tenantId = "6f504113-6b64-43f2-ade9-242e05780007";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.Authority = $"https://login.microsoftonline.com/{tenantId}";
+    options.IncludeErrorDetails = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = $"https://sts.windows.net/{tenantId}/",
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        IssuerSigningKeyResolver = (s, securityToken, identifier, parameters) =>
+        {
+            // Fetch keys from Azure AD's JWKS endpoint
+            var jwksUrl = $"{options.Authority}/discovery/v2.0/keys";
+
+            var httpClient = new HttpClient();
+            var jwksResponse = httpClient.GetStringAsync(jwksUrl).Result;
+
+            // Create a JsonWebKeySet from the fetched JSON
+            var keySet = new JsonWebKeySet(jwksResponse);
+            return keySet.Keys.Where(k => k.Kid == identifier).ToList();
+        }
+    };
+});
+builder.Services.AddAuthorization();
+
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
@@ -108,6 +139,10 @@ if (builder.IsDevMode())
 // Path base cdp-portal-backend
 app.UsePathBase("/cdp-portal-backend");
 app.UseRouting();
+
+// enable auth
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Add endpoints
 app.MapDeployablesEndpoint();

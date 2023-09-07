@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
@@ -61,8 +62,12 @@ public static class ArtifactsEndpoint
     }
 
     // GET /artifacts
-    private static async Task<IResult> ListRepos(IDeployablesService deployablesService)
+    private static async Task<IResult> ListRepos(IDeployablesService deployablesService, HttpContext context,
+        ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger("MoTest");
+        var message = context.User.FindFirst(ClaimTypes.Email)?.Value;
+        logger.LogInformation(message);
         var allRepos = await deployablesService.FindAll();
         return Results.Ok(allRepos);
     }
