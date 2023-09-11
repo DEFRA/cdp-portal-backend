@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +26,6 @@ public static class DeploymentsEndpoint
             .WithTags(DeploymentsTag);
 
         app.MapGet($"{DeploymentsBaseRoute}/{{deploymentId}}", FindDeployment)
-            .RequireAuthorization()
             .WithName("GetDeploymentById")
             .Produces<Deployment>()
             .Produces(StatusCodes.Status404NotFound)
@@ -56,13 +54,8 @@ public static class DeploymentsEndpoint
     }
 
     // Get /deployments/{deploymentId}
-    private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
-        HttpContext context,
-        ILoggerFactory loggerFactory)
+    private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId)
     {
-        var logger = loggerFactory.CreateLogger("MoTest");
-        var message = context.User.FindFirst(ClaimTypes.Email)?.Value;
-        logger.LogInformation(message);
         var deployment = await deploymentsService.FindDeployment(deploymentId);
         return deployment == null
             ? Results.NotFound(new { Message = $"{deploymentId} not found" })
