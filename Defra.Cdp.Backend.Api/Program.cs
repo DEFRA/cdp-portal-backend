@@ -7,8 +7,10 @@ using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Identity.Web;
 using Serilog;
 
 //-------- Configure the WebApplication builder------------------//
@@ -29,7 +31,6 @@ var logger = new LoggerConfiguration()
 builder.Logging.AddSerilog(logger);
 
 Console.WriteLine("Logger created.");
-
 
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 
@@ -93,6 +94,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 if (builder.IsDevMode()) builder.Services.AddSwaggerGen();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+builder.Services.AddAuthorization();
+
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
@@ -109,6 +114,10 @@ if (builder.IsDevMode())
 // Path base cdp-portal-backend
 app.UsePathBase("/cdp-portal-backend");
 app.UseRouting();
+
+// enable auth
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Add endpoints
 app.MapDeployablesEndpoint();
