@@ -22,6 +22,7 @@ public static class DeploymentsEndpoint
                     return await FindLatestDeployments(deploymentsService, o, environment);
                 })
             .RequireAuthorization()
+            .AllowAnonymous()
             .WithName("GetDeployments")
             .Produces<IEnumerable<Deployment>>()
             .WithTags(DeploymentsTag);
