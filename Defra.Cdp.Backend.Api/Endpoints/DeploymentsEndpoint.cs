@@ -21,6 +21,7 @@ public static class DeploymentsEndpoint
                     var o = offset ?? 0;
                     return await FindLatestDeployments(deploymentsService, o, environment);
                 })
+            .RequireAuthorization()
             .WithName("GetDeployments")
             .Produces<IEnumerable<Deployment>>()
             .WithTags(DeploymentsTag);
