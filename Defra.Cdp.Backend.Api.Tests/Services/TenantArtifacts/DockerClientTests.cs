@@ -107,12 +107,16 @@ public class DockerClientTests
 
 
         var res = await _artifactScanner.ScanImage("foo", "1.0.0");
-        Assert.Equal(1, res.ScannerVersion);
-        Assert.Equal("foo", res.Repo);
-        Assert.Equal("1.0.0", res.Tag);
-        Assert.Equal(4294967296, res.SemVer);
-        Assert.Equal("https://github.com/foo/foo", res.GithubUrl);
-        Assert.Equal("foo", res.ServiceName);
-        Assert.Single(res.Files);
+        Assert.True(res.Success);
+        Assert.NotNull(res.Artifact);
+        var artifact = res.Artifact;
+        
+        Assert.Equal(1, artifact?.ScannerVersion);
+        Assert.Equal("foo", artifact?.Repo);
+        Assert.Equal("1.0.0", artifact?.Tag);
+        Assert.Equal(4294967296, artifact?.SemVer);
+        Assert.Equal("https://github.com/foo/foo", artifact?.GithubUrl);
+        Assert.Equal("foo", artifact?.ServiceName);
+        Assert.Single(artifact!.Files);
     }
 }
