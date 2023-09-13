@@ -46,7 +46,7 @@ public static class AdminEndpoint
         return Results.Ok(deployable);
     }
 
-    private static async Task<DeployableArtifact?> RescanImage(IArtifactScanner scanner, string repo, string tag)
+    private static async Task<ArtifactScannerResult> RescanImage(IArtifactScanner scanner, string repo, string tag)
     {
         var deployable = await scanner.ScanImage(repo, tag);
         return deployable;

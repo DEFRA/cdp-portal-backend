@@ -74,12 +74,13 @@ public class EcrEventListener
             try
             {
                 var result = await ProcessMessage(msg.MessageId, msg.Body);
-                if (result == null)
-                    _logger.LogInformation("Skipping processing of {}", msg.MessageId);
-                else
+                if (result.Success && result.Artifact != null)
                     _logger.LogInformation(
                         "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
-                        msg.MessageId, result.Sha256, result.Repo, result.Tag);
+                        msg.MessageId, result.Artifact.Sha256, result.Artifact.Repo, result.Artifact.Tag);
+                else 
+                    _logger.LogInformation("Skipping processing of {}, {}", msg.MessageId, result.Error);
+     
             }
             catch (Exception ex)
             {
@@ -91,7 +92,7 @@ public class EcrEventListener
         }
     }
 
-    public async Task<DeployableArtifact?> ProcessMessage(string id, string body)
+    public async Task<ArtifactScannerResult> ProcessMessage(string id, string body)
     {
         // AWS JSON messages are sent in with their " escaped (\"), in order to parse, they must be unescaped
         var ecrEvent = JsonSerializer.Deserialize<SqsEcrEvent>(body);
@@ -100,26 +101,24 @@ public class EcrEventListener
         if (ecrEvent?.Detail == null)
         {
             _logger.LogInformation("Not processing {}, failed to process json", id);
-            throw new ImageProcessingException($"Not processing {id}, failed to process json");
+            return ArtifactScannerResult.Failure($"Not processing {id}, failed to process json");
         }
 
         if (ecrEvent.Detail.Result != "SUCCESS")
         {
-            _logger.LogInformation("Not processing {}, result is not a SUCCESS", id);
-            return null;
+            return ArtifactScannerResult.Failure($"Not processing {id}, result is not a SUCCESS");
         }
 
         if (ecrEvent.Detail.ActionType != "PUSH")
         {
-            _logger.LogInformation("Not processing {}, message is not a PUSH event", id);
-            return null;
+            return ArtifactScannerResult.Failure($"Not processing {id}, message is not a PUSH event");
         }
 
         if (!SemVer.IsSemVer(ecrEvent.Detail.ImageTag))
         {
             _logger.LogInformation("Not processing {}, tag [{}] is not semver", id, ecrEvent.Detail.ImageTag);
             // TODO: have a better return type that can indicate why it wasnt scanned.
-            return null;
+            return ArtifactScannerResult.Failure($"Not processing {id}, tag [{ecrEvent.Detail.ImageTag}] is not semver");
         }
 
         return await _docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag);

@@ -6,8 +6,34 @@ namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
 public interface IArtifactScanner
 {
-    Task<DeployableArtifact> ScanImage(string repo, string tag);
+    Task<ArtifactScannerResult> ScanImage(string repo, string tag);
     Task<List<RescanRequest>> Backfill();
+}
+
+public class ArtifactScannerResult
+{
+    public readonly DeployableArtifact? Artifact;
+    public readonly bool Success;
+    public readonly string Error;
+
+    public ArtifactScannerResult(DeployableArtifact artifact)
+    {
+        Artifact = artifact;
+        Success = true;
+        Error = "";
+    }
+
+    private ArtifactScannerResult(DeployableArtifact? artifact, bool success, string error)
+    {
+        Artifact = artifact;
+        Success = success;
+        Error = error;
+    }
+
+    public static ArtifactScannerResult Failure(string reason)
+    {
+        return new ArtifactScannerResult(null, false, reason);
+    }
 }
 
 public class ArtifactScanner : IArtifactScanner
@@ -47,7 +73,7 @@ public class ArtifactScanner : IArtifactScanner
         _logger = logger;
     }
 
-    public async Task<DeployableArtifact> ScanImage(string repo, string tag)
+    public async Task<ArtifactScannerResult> ScanImage(string repo, string tag)
     {
         var manifest = await _dockerClient.LoadManifest(repo, tag);
         if (manifest == null) throw new Exception($"Failed to load manifest for {repo}:{tag}");
@@ -58,6 +84,12 @@ public class ArtifactScanner : IArtifactScanner
         var image = await _dockerClient.LoadManifestImage(repo, manifest.config);
         var labels = new Dictionary<string, string>();
         if (image != null) labels = image.config.Labels;
+
+        if (!labels.ContainsKey("defra.cdp.service.name"))
+        {
+            // not a CDP built service!
+            return ArtifactScannerResult.Failure($"Not an CDP service, image {repo}:{tag} is missing label defra.cdp.service.name");
+        }
 
         _logger.LogInformation("Scanning layers in {Repo}:{Tag} for package.json...", repo, tag);
 
@@ -80,9 +112,9 @@ public class ArtifactScanner : IArtifactScanner
         {
             semver = SemVer.SemVerAsLong(tag);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _logger.LogInformation("Invalid semver tag {Repo}:{Tag}", repo, tag);
+            return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
 
         // Persist the results.
@@ -102,7 +134,7 @@ public class ArtifactScanner : IArtifactScanner
         await _deployablesService.CreateAsync(artifact);
 
         _logger.LogInformation("Artifact {Repo}:{Tag} completed", repo, tag);
-        return artifact;
+        return new ArtifactScannerResult(artifact);
     }
 
     // The new backfill just generates a list of curl commands we can run from the terminal to trigger the backfill
