@@ -9,13 +9,13 @@ public class MongoDbClientFactory : IMongoDbClientFactory
     private readonly IMongoDatabase _mongoDatabase;
     private IMongoClient _client;
 
-    public MongoDbClientFactory(string? connectionString)
+    public MongoDbClientFactory(string? connectionString, string? databaseName)
     {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new ArgumentException("MongoDB connection string cannot be empty");
+        if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(databaseName))
+            throw new ArgumentException("MongoDB connection string and database name cannot be empty");
         _connectionString = connectionString;
         _client = CreateClient();
-        _mongoDatabase = _client.GetDatabase("cdp-backend");
+        _mongoDatabase = _client.GetDatabase(databaseName);
     }
 
     public IMongoClient CreateClient()

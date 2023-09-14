@@ -51,7 +51,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 // Mongo
 builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
-    new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri")));
+    new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri"),
+        builder.Configuration.GetValue<string>("Mongo:DatabaseName")));
 
 
 // Setup the services
