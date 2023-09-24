@@ -4,6 +4,8 @@ using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Github;
+using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using FluentValidation;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
+using Quartz;
 using Serilog;
 
 //-------- Configure the WebApplication builder------------------//
@@ -77,6 +80,25 @@ else
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
 
+// Quartz setup for Github scheduler
+builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Github:Scheduler"));
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new JobKey("FetchGithubRepositories");
+    q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(jobKey));
+
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("FetchGithubRepositories-trigger")
+        .WithCronSchedule("0 0/1 * * * ?"));
+});
+builder.Services.AddQuartzHostedService(options =>
+{
+    // when shutting down we want jobs to complete gracefully
+    options.WaitForJobsToComplete = true;
+});
+
+// Setting up our services
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
@@ -87,6 +109,10 @@ builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
+builder.Services.AddSingleton<TemplatesFromConfig>();
+builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
+builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
+
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
@@ -123,6 +149,8 @@ app.UseAuthorization();
 // Add endpoints
 app.MapDeployablesEndpoint();
 app.MapDeploymentsEndpoint();
+app.MapLibrariesEndpoint();
+app.MapRepositoriesEndpoint();
 app.MapAdminEndpoint();
 app.MapHealthChecks("/health");
 
