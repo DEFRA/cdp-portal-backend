@@ -18,6 +18,7 @@ public static class LibrariesEndpoint
 
         app.MapGet($"{LibrariesBaseRoute}/{{serviceId}}", GetLibrariesByServiceId)
             .WithName("GetLibrariesByServiceId")
+            .Produces<LibrariesResult>()
             .Produces(StatusCodes.Status404NotFound) // should be 501 but we don't want to break frontend
             .WithName(LibrariesTag);
 
@@ -27,14 +28,12 @@ public static class LibrariesEndpoint
 
     private static Task<IResult> GetAllLibraries(string? team)
     {
-        return Task.FromResult(string.IsNullOrEmpty(team)
-            ? Results.Ok(new LibrariesResult("success", Array.Empty<string>()))
-            : Results.NotFound());
+        return Task.FromResult(Results.Ok(new LibrariesResult("success", Array.Empty<string>())));
     }
 
     private static Task<IResult> GetLibrariesByServiceId(string? serviceId)
     {
-        return Task.FromResult(Results.NotFound());
+        return Task.FromResult(Results.Ok(new LibrariesResult("success", Array.Empty<string>())));
     }
 
     private record LibrariesResult(string Message, string[] Libraries);

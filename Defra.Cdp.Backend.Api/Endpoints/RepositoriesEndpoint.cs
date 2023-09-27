@@ -9,7 +9,7 @@ public static class RepositoriesEndpoint
     private const string RepositoriesBaseRoute = "repositories";
     private const string RepositoriesTag = "Repositories";
 
-    private const string TemplatesBaseRoute = "tempalates";
+    private const string TemplatesBaseRoute = "templates";
     private const string TemplatesTag = "Templates";
 
     public static IEndpointRouteBuilder MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
@@ -27,16 +27,17 @@ public static class RepositoriesEndpoint
             .Produces(StatusCodes.Status404NotFound)
             .WithTags(RepositoriesTag);
 
+        // return as templates in the body
         app.MapGet(TemplatesBaseRoute,
                 async (ITemplatesService templatesService, [FromQuery(Name = "team")] string? team) =>
                 await GetAllTemplates(templatesService, team))
             .WithName("GetAllTemplates")
-            .Produces<MultipleRepositoriesResponse>()
+            .Produces<MultipleTemplatesResponse>()
             .WithTags(TemplatesTag);
 
         app.MapGet($"{TemplatesBaseRoute}/{{templateId}}", GetTemplateById)
             .WithName("GetTemplateById")
-            .Produces<SingleRepositoryResponse>()
+            .Produces<SingleTemplateResponse>()
             .Produces(StatusCodes.Status404NotFound) // should be 501 but we don't want to break frontend
             .WithName(TemplatesTag);
 
@@ -70,7 +71,7 @@ public static class RepositoriesEndpoint
         var maybeTemplate = await templatesService.FindTemplateById(templateId);
         return maybeTemplate == null
             ? Results.NotFound(new { message = $"{templateId} not found" })
-            : Results.Ok(new SingleRepositoryResponse(maybeTemplate!));
+            : Results.Ok(new SingleTemplateResponse(maybeTemplate!));
     }
 
     private static async Task<IResult> GetAllTemplates(ITemplatesService templatesService, string? team)
@@ -79,7 +80,7 @@ public static class RepositoriesEndpoint
             ? await templatesService.AllTemplates()
             : await templatesService.FindTemplatesByTeam(team);
 
-        return Results.Ok(new MultipleRepositoriesResponse(templates));
+        return Results.Ok(new MultipleTemplatesResponse(templates));
     }
 
     private static Task<IResult> GetAllServicetypes(ITemplatesService templatesService)
@@ -94,9 +95,23 @@ public static class RepositoriesEndpoint
         }
     }
 
+    public sealed record MultipleTemplatesResponse(string Message, IEnumerable<Repository> Templates)
+    {
+        public MultipleTemplatesResponse(IEnumerable<Repository> repositories) : this("success", repositories)
+        {
+        }
+    }
+
     public sealed record SingleRepositoryResponse(string Message, Repository Repository)
     {
         public SingleRepositoryResponse(Repository repository) : this("success", repository)
+        {
+        }
+    }
+
+    public sealed record SingleTemplateResponse(string Message, Repository Template)
+    {
+        public SingleTemplateResponse(Repository repository) : this("success", repository)
         {
         }
     }
