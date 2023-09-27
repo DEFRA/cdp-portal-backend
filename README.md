@@ -150,6 +150,15 @@ Currently it will *not* drop the existing records, that should be done manually.
 
 `GET /whats-running-where/:service` return the most recent deployment for a given service in each environment
 
+### Get list of all Github repositories
+
+`GET /repositories` returns all repositories for the organisation
+
+`GET /repositories?team=exampleTeam` returns repositories owned by this team
+
+`GET /templates` returns all repositories that are templates in the Portal
+
+`GET /templates?team=exampleTeam` returns templates for a specific team
 
 ## Local Development
 
@@ -188,14 +197,20 @@ mongosh
 
 - Set optional `ASPNETCORE_ENVIRONMENT` environment variable:
 ```bash
-export ASPNETCORE_ENVIRONMENT=Development # optional as it's currently the default
+export ASPNETCORE_ENVIRONMENT=Development 
+export GITHUB__TOKEN=<token_from_secret_manager>
 ```
 
 - To run the `cdp-portal-backend` application:
 ```bash
-dotnet run --project Defra.Cdp.Backend.Api
+dotnet run --project Defra.Cdp.Backend.Api --no-launch-profile
 ```
+If you use Jetbrains Rider, make sure you create a configuration for `.NET Project` and not 
+`.NET Launch Setting Profile` so you can add your own environment variable there. It should look 
+something like this:
 
+![img.png](images/rider-settings.png)
+![img_1.png](images/rider-env-settings.png)
 ### Setup a local docker registry
 
 Running a local docker registry enables the `cdp-portal-backend` to obtain the manifests from local registry images.
