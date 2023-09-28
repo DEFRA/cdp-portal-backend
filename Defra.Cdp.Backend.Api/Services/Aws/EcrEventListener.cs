@@ -60,7 +60,7 @@ public class EcrEventListener
         {
             if (msg == null) continue;
 
-            _logger.LogInformation("Received message: {}", msg.MessageId);
+            _logger.LogInformation("Received message: {MessageId}", msg.MessageId);
 
             try
             {
@@ -68,7 +68,7 @@ public class EcrEventListener
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to persist event: {}", ex);
+                _logger.LogError(ex, "Failed to persist event");
             }
 
             try
@@ -78,13 +78,12 @@ public class EcrEventListener
                     _logger.LogInformation(
                         "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
                         msg.MessageId, result.Artifact.Sha256, result.Artifact.Repo, result.Artifact.Tag);
-                else 
-                    _logger.LogInformation("Skipping processing of {}, {}", msg.MessageId, result.Error);
-     
+                else
+                    _logger.LogInformation("Skipping processing of {MessageId}, {Error}", msg.MessageId, result.Error);
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to scan image for event {}: {}", msg.MessageId, ex);
+                _logger.LogError(ex, "Failed to scan image for event {MessageId}", msg.MessageId);
             }
 
             // TODO: better error detection to decide if we delete, dead letter or retry...
@@ -100,25 +99,22 @@ public class EcrEventListener
         // Only scan push event for images that have a semver tag (i.e. ignore latest and anything else)
         if (ecrEvent?.Detail == null)
         {
-            _logger.LogInformation("Not processing {}, failed to process json", id);
+            _logger.LogInformation("Not processing {Id}, failed to process json", id);
             return ArtifactScannerResult.Failure($"Not processing {id}, failed to process json");
         }
 
         if (ecrEvent.Detail.Result != "SUCCESS")
-        {
             return ArtifactScannerResult.Failure($"Not processing {id}, result is not a SUCCESS");
-        }
 
         if (ecrEvent.Detail.ActionType != "PUSH")
-        {
             return ArtifactScannerResult.Failure($"Not processing {id}, message is not a PUSH event");
-        }
 
         if (!SemVer.IsSemVer(ecrEvent.Detail.ImageTag))
         {
-            _logger.LogInformation("Not processing {}, tag [{}] is not semver", id, ecrEvent.Detail.ImageTag);
-            // TODO: have a better return type that can indicate why it wasnt scanned.
-            return ArtifactScannerResult.Failure($"Not processing {id}, tag [{ecrEvent.Detail.ImageTag}] is not semver");
+            _logger.LogInformation("Not processing {Id}, tag [{ImageTag}] is not semver", id, ecrEvent.Detail.ImageTag);
+            // TODO: have a better return type that can indicate why it wasn't scanned.
+            return ArtifactScannerResult.Failure(
+                $"Not processing {id}, tag [{ecrEvent.Detail.ImageTag}] is not semver");
         }
 
         return await _docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag);

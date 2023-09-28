@@ -41,21 +41,22 @@ public class CachingEcrCredentialProvider : IDockerCredentialProvider
     public async Task<string?> GetCredentials()
     {
         if (cachedAuthData != null)
-            logger.LogInformation("ECR token expires at: {}, expired: utc {}", cachedAuthData.ExpiresAt,
+            logger.LogInformation("ECR token expires at: {ExpireAt}, expired: utc {ExpiredTime}",
+                cachedAuthData.ExpiresAt,
                 cachedAuthData.ExpiresAt.AddMinutes(5).CompareTo(DateTime.UtcNow) <= 0);
 
         if (cachedAuthData == null || cachedAuthData.ExpiresAt.AddMinutes(5).CompareTo(DateTime.UtcNow) <= 0)
         {
-            logger.LogInformation("Renewing docker credentials from ECR.");
+            logger.LogInformation("Renewing docker credentials from ECR");
             var resp = await ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
             if (resp == null || resp.AuthorizationData.Count == 0)
             {
-                logger.LogInformation("Failed to get ECR credentials.");
+                logger.LogInformation("Failed to get ECR credentials");
                 throw new Exception("Failed to get ECR credentials");
             }
 
             cachedAuthData = resp.AuthorizationData[0];
-            logger.LogInformation("Got ECS auth token, expires at {}", cachedAuthData.ExpiresAt);
+            logger.LogInformation("Got ECS auth token, expires at {ExpiresAt}", cachedAuthData.ExpiresAt);
         }
 
         return cachedAuthData.AuthorizationToken;
@@ -89,11 +90,11 @@ public class EcrCredentialProvider : IDockerCredentialProvider
         var resp = await ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
         if (resp == null || resp.AuthorizationData.Count == 0)
         {
-            logger.LogInformation("Failed to get ECR credentials.");
+            logger.LogInformation("Failed to get ECR credentials");
             throw new Exception("Failed to get ECR credentials");
         }
 
-        logger.LogInformation("Got ECS auth token, expires at {}", resp.AuthorizationData[0].ExpiresAt);
+        logger.LogInformation("Got ECS auth token, expires at {ExpiresAt}", resp.AuthorizationData[0].ExpiresAt);
 
         return resp.AuthorizationData[0].AuthorizationToken;
     }

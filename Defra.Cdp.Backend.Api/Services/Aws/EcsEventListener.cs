@@ -46,7 +46,7 @@ public class EcsEventListener : SqsListener
         if (env == null)
         {
             _logger.LogError(
-                "Unable to convert {} to a deployment event, unknown environment/account: {} check the mappings!",
+                "Unable to convert {DeploymentId} to a deployment event, unknown environment/account: {Account} check the mappings!",
                 ecsEvent.DeploymentId, ecsEvent.Account);
             return new List<Deployment>();
         }
@@ -58,14 +58,14 @@ public class EcsEventListener : SqsListener
                 var (repo, tag) = SplitImage(ecsContainer.Image);
                 if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
                 {
-                    _logger.LogInformation("Ignoring {}, not a known container", ecsContainer.Image);
+                    _logger.LogInformation("Ignoring {Image}, not a known container", ecsContainer.Image);
                     continue;
                 }
 
                 var ids = await _deployablesService.FindByTag(repo, tag);
                 if (ids == null)
                 {
-                    _logger.LogInformation("Ignoring {}, not a known container", ecsContainer.Image);
+                    _logger.LogInformation("Ignoring {Image}, not a known container", ecsContainer.Image);
                     continue;
                 }
 
@@ -84,7 +84,7 @@ public class EcsEventListener : SqsListener
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to connect to cdp-deployables, {}", ex);
+                _logger.LogError(ex, "Failed to connect to cdp-deployables");
             }
 
         return deployments;
@@ -109,7 +109,8 @@ public class EcsEventListener : SqsListener
             var deployments = await ConvertToDeployment(ecsEvent);
             foreach (var deployment in deployments)
             {
-                _logger.LogInformation("saving deployment event {}:{}:{}", deployment.Environment,
+                _logger.LogInformation("saving deployment event {Environment}:{Service}:{Version}",
+                    deployment.Environment,
                     deployment.Service, deployment.Version);
                 await _deploymentsService.Insert(deployment);
             }
@@ -117,10 +118,10 @@ public class EcsEventListener : SqsListener
         else
         {
             if (ecsEvent?.Detail == null)
-                _logger.LogInformation("Not processing {}, details was null. message was {}", id,
+                _logger.LogInformation("Not processing {Id}, details was null. message was {MessageBody}", id,
                     messageBody);
             else
-                _logger.LogInformation("Not processing {}, detail type was {} last status was {}",
+                _logger.LogInformation("Not processing {Id}, detail type was {DetailType} last status was {LastStatus}",
                     id, ecsEvent.DetailType, ecsEvent.Detail.LastStatus);
         }
     }
@@ -139,14 +140,14 @@ public class EcsEventListener : SqsListener
         var cursor = await _ecsEventsService.FindAll();
         await cursor.ForEachAsync(async m =>
         {
-            _logger.LogInformation("Backfilling {}", m.MessageId);
+            _logger.LogInformation("Backfilling {MessageId}", m.MessageId);
             try
             {
                 await ProcessMessageAsync(m.MessageId, m.Body);
             }
             catch (Exception ex)
             {
-                _logger.LogError("Backfill for message {} failed: {}", m.MessageId, ex);
+                _logger.LogError(ex, "Backfill for message {MessageId} failed", m.MessageId);
             }
         });
         _logger.LogInformation("Finished backfill");
