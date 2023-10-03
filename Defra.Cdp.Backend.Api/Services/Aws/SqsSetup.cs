@@ -14,7 +14,7 @@ public static class SqsSetup
             var sqsConfig = new AmazonSQSConfig
             {
                 RegionEndpoint = RegionEndpoint.USEast1,
-                ServiceURL = "http://127.0.0.1:4566" // Localstack's default port
+                ServiceURL = configuration.GetValue<string>("SqsLocalServiceUrl") // Localstack's default port
             };
             var sqsClient = new AmazonSQSClient(awsCreds, sqsConfig);
             service.AddSingleton<IAmazonSQS>(sqsClient);
