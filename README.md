@@ -264,12 +264,12 @@ If you're not using AWS LocalStack, just replace the command with the normal aws
 
 - Create the `ecr-push-events` queue:
 ```bash
- $ awslocal sqs create-queue --queue-name ecr-push-events
+awslocal sqs create-queue --queue-name ecr-push-events
 ```
 
 - Send an event:
 ```bash
- $ awslocal sqs send-message --queue-url "http://127.0.0.1:4566/000000000000/ecr-push-events" --message-body '{"detail": { "result": "SUCCESS", "action-type": "PUSH", "image-tag": "0.1.0", "repository-name": "cdp-portal-frontend"}}'
+awslocal sqs send-message --queue-url "http://127.0.0.1:4566/000000000000/ecr-push-events" --message-body '{"detail": { "result": "SUCCESS", "action-type": "PUSH", "image-tag": "0.1.0", "repository-name": "cdp-portal-frontend"}}'
 ```
 
 ### Generate fake deployments
