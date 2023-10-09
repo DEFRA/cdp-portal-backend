@@ -16,8 +16,9 @@ public static class RepositoriesEndpoint
     public static IEndpointRouteBuilder MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(RepositoriesBaseRoute,
-                async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team) =>
-                await GetAllRepositories(repositoryService, team))
+                async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team,
+                        [FromQuery(Name = "excludeTemplates")] bool? excludeTemplates) =>
+                    await GetAllRepositories(repositoryService, team, excludeTemplates))
             .WithName("GetAllRepositories")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
@@ -64,11 +65,14 @@ public static class RepositoriesEndpoint
             : Results.Ok(new SingleRepositoryResponse(maybeRepository));
     }
 
-    private static async Task<IResult> GetAllRepositories(IRepositoryService repositoryService, string? team)
+    private static async Task<IResult> GetAllRepositories(IRepositoryService repositoryService, string? team,
+        bool? excludeTemplates)
     {
         var repositories = string.IsNullOrWhiteSpace(team)
-            ? await repositoryService.AllRepositories()
-            : await repositoryService.FindRepositoriesByTeam(team);
+            ? await repositoryService.AllRepositories(excludeTemplates.GetValueOrDefault())
+            : await repositoryService.FindRepositoriesByTeam(team, excludeTemplates.GetValueOrDefault());
+
+        if (excludeTemplates.GetValueOrDefault()) repositories = repositories.Where(r => !r.IsTemplate).ToList();
 
         return Results.Ok(new MultipleRepositoriesResponse(repositories));
     }
@@ -78,7 +82,7 @@ public static class RepositoriesEndpoint
     {
         if (string.IsNullOrWhiteSpace(team)) return Results.BadRequest(new { message = "The team must be specified" });
 
-        var repositories = await repositoryService.FindRepositoriesByTeam(team);
+        var repositories = await repositoryService.FindRepositoriesByTeam(team, true);
 
         var templates = await templatesService.FindTemplatesByTeam(team);
 
