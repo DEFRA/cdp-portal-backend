@@ -49,7 +49,11 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
 
     public async Task<List<Repository>> AllRepositories()
     {
-        var repositories = await Collection.Find(Builders<Repository>.Filter.Empty).ToListAsync();
+        var repositories =
+            await Collection
+                .Find(Builders<Repository>.Filter.Empty)
+                .SortBy(r => r.Id)
+                .ToListAsync();
         return repositories;
     }
 
@@ -58,6 +62,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         var repositories =
             await Collection
                 .Find(Builders<Repository>.Filter.Eq(r => r.Teams, new[] { team }))
+                .SortBy(r => r.Id)
                 .ToListAsync();
         return repositories;
     }
