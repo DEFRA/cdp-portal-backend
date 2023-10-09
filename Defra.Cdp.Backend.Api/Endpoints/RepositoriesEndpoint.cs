@@ -8,6 +8,7 @@ public static class RepositoriesEndpoint
 {
     private const string RepositoriesBaseRoute = "repositories";
     private const string RepositoriesTag = "Repositories";
+    private const string GithubRepositoriesBaseRoute = "gitub-repo";
 
     private const string TemplatesBaseRoute = "templates";
     private const string TemplatesTag = "Templates";
@@ -25,6 +26,12 @@ public static class RepositoriesEndpoint
             .WithName("GetRepositoryById")
             .Produces<SingleRepositoryResponse>()
             .Produces(StatusCodes.Status404NotFound)
+            .WithTags(RepositoriesTag);
+
+        // ALL THE THINGS
+        app.MapGet($"{GithubRepositoriesBaseRoute}/{{team}}", GetAllReposTemplatesLibraries)
+            .WithName("GetRepositoryTemplatesLibrariesByTeam")
+            .Produces<AllRepoTemplatesLibrariesResponse>()
             .WithTags(RepositoriesTag);
 
         // return as templates in the body
@@ -66,6 +73,18 @@ public static class RepositoriesEndpoint
         return Results.Ok(new MultipleRepositoriesResponse(repositories));
     }
 
+    private static async Task<IResult> GetAllReposTemplatesLibraries(IRepositoryService repositoryService,
+        ITemplatesService templatesService, string? team)
+    {
+        if (string.IsNullOrWhiteSpace(team)) return Results.BadRequest(new { message = "The team must be specified" });
+
+        var repositories = await repositoryService.FindRepositoriesByTeam(team);
+
+        var templates = await templatesService.FindTemplatesByTeam(team);
+
+        return Results.Ok(new AllRepoTemplatesLibrariesResponse(repositories, templates));
+    }
+
     private static async Task<IResult> GetTemplateById(ITemplatesService templatesService, string templateId)
     {
         var maybeTemplate = await templatesService.FindTemplateById(templateId);
@@ -91,6 +110,16 @@ public static class RepositoriesEndpoint
     public sealed record MultipleRepositoriesResponse(string Message, IEnumerable<Repository> Repositories)
     {
         public MultipleRepositoriesResponse(IEnumerable<Repository> repositories) : this("success", repositories)
+        {
+        }
+    }
+
+    public sealed record AllRepoTemplatesLibrariesResponse(string Message, IEnumerable<Repository> Repositories,
+        IEnumerable<Repository> Templates, IEnumerable<Repository> Libraries)
+    {
+        public AllRepoTemplatesLibrariesResponse(IEnumerable<Repository> repositories,
+            IEnumerable<Repository> templates) : this("success", repositories, templates,
+            Enumerable.Empty<Repository>())
         {
         }
     }
