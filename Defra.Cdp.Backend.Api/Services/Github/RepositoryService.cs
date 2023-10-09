@@ -10,9 +10,9 @@ public interface IRepositoryService
 
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
 
-    Task<List<Repository>> AllRepositories();
+    Task<List<Repository>> AllRepositories(bool excludeTemplates);
 
-    Task<List<Repository>> FindRepositoriesByTeam(string team);
+    Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates);
 
     Task<Repository?> FindRepositoryById(string id);
 }
@@ -47,26 +47,6 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
     }
 
-    public async Task<List<Repository>> AllRepositories()
-    {
-        var repositories =
-            await Collection
-                .Find(Builders<Repository>.Filter.Empty)
-                .SortBy(r => r.Id)
-                .ToListAsync();
-        return repositories;
-    }
-
-    public async Task<List<Repository>> FindRepositoriesByTeam(string team)
-    {
-        var repositories =
-            await Collection
-                .Find(Builders<Repository>.Filter.Eq(r => r.Teams, new[] { team }))
-                .SortBy(r => r.Id)
-                .ToListAsync();
-        return repositories;
-    }
-
     public async Task<Repository?> FindRepositoryById(string id)
     {
         var repository =
@@ -74,6 +54,36 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
                 .Find(Builders<Repository>.Filter.Eq(r => r.Id, id))
                 .FirstOrDefaultAsync();
         return repository;
+    }
+
+    public async Task<List<Repository>> AllRepositories(bool excludeTemplates)
+    {
+        var findDefinition = excludeTemplates
+            ? Builders<Repository>.Filter.Eq(r => r.IsTemplate, false)
+            : Builders<Repository>.Filter.Empty;
+
+        var repositories =
+            await Collection
+                .Find(findDefinition)
+                .SortBy(r => r.Id)
+                .ToListAsync();
+        return repositories;
+    }
+
+    public async Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates)
+    {
+        var baseFilter = Builders<Repository>.Filter.Eq(r => r.Teams, new[] { team });
+
+        var findDefinition = excludeTemplates
+            ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))
+            : baseFilter;
+
+        var repositories =
+            await Collection
+                .Find(findDefinition)
+                .SortBy(r => r.Id)
+                .ToListAsync();
+        return repositories;
     }
 
     protected override List<CreateIndexModel<Repository>> DefineIndexes(IndexKeysDefinitionBuilder<Repository> builder)
