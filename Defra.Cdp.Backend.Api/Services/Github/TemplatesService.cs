@@ -29,11 +29,10 @@ public class TemplatesService : ITemplatesService
 
     public async Task<IEnumerable<Repository>> AllTemplates()
     {
-        return _templatesFromConfig.Templates
-            .Select(async t => await _repositoryService.FindRepositoryById(t.Key))
-            .Select(t => t.Result)
-            .Where(r => r != null)
-            .Select(r => r!);
+        var availableTemplates =
+            _templatesFromConfig.Templates.Select(t => _repositoryService.FindRepositoryById(t.Key));
+        var repos = await Task.WhenAll(availableTemplates);
+        return repos.Where(r => r != null).Select(r => r!);
     }
 
     public async Task<IEnumerable<Repository>> FindTemplatesByTeam(string team)
