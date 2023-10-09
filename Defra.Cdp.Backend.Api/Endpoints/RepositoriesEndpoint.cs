@@ -8,7 +8,7 @@ public static class RepositoriesEndpoint
 {
     private const string RepositoriesBaseRoute = "repositories";
     private const string RepositoriesTag = "Repositories";
-    private const string GithubRepositoriesBaseRoute = "gitub-repo";
+    private const string GithubRepositoriesBaseRoute = "github-repo";
 
     private const string TemplatesBaseRoute = "templates";
     private const string TemplatesTag = "Templates";
