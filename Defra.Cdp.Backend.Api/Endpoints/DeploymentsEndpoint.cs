@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Tenants;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -43,6 +44,9 @@ public static class DeploymentsEndpoint
             .Produces<IEnumerable<Deployment>>()
             .WithTags(DeploymentsTag);
 
+        app.MapPost($"{DeploymentsBaseRoute}", RegisterDeployment)
+            .WithName("PostDeployments")
+            .WithTags(DeploymentsTag);
 
         return app;
     }
@@ -75,5 +79,32 @@ public static class DeploymentsEndpoint
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service);
         return Results.Ok(deployments);
+    }
+
+    private static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
+        IValidator<RequestedDeployment> validator,
+        RequestedDeployment rd)
+    {
+        
+        var validatedResult = await validator.ValidateAsync(rd);
+
+        if (!validatedResult.IsValid)
+        {
+            return Results.ValidationProblem(validatedResult.ToDictionary());
+        }
+;
+        var deployment = new Deployment
+        {
+            DeployedAt = DateTime.UtcNow,
+            Environment = rd.Environment,
+            Service = rd.Service,
+            Status = "REQUESTED",
+            User = rd.User,
+            Version = rd.Version,
+            DockerImage = rd.Service
+        };
+
+        await deploymentsService.Insert(deployment);
+        return Results.Ok();
     }
 }

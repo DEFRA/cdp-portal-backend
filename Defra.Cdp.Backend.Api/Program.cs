@@ -1,6 +1,7 @@
 using Amazon.ECR;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
+using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
@@ -63,6 +64,7 @@ builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSec
 builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
+builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
 
 // SQS provider
 logger.Information("Attempting to add SQS, ECR and Docker Client");

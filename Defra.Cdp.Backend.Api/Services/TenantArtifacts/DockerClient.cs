@@ -40,7 +40,8 @@ public class DockerClient : IDockerClient
     {
         var req = new HttpRequestMessage
         {
-            Method = HttpMethod.Get, RequestUri = new Uri($"{_baseUrl}/v2/{repo}/tags/list")
+            Method = HttpMethod.Get,
+            RequestUri = new Uri($"{_baseUrl}/v2/{repo}/tags/list")
         };
         req = await AddEcrAuthHeader(req);
 

@@ -17,9 +17,9 @@ public sealed class Deployment
     public string Service { get; init; } = default!;
     public string Version { get; init; } = default!;
 
-    public string? User { get; init; } = default!;
+    public string? User { get; init; }
     public DateTime DeployedAt { get; init; } = default!;
     public string Status { get; init; } = default!;
     public string DockerImage { get; init; } = default!;
-    public string? TaskId { get; init; } = default!;
+    public string? TaskId { get; init; }
 }

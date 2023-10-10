@@ -110,7 +110,7 @@ public class DockerClientTests
         Assert.True(res.Success);
         Assert.NotNull(res.Artifact);
         var artifact = res.Artifact;
-        
+
         Assert.Equal(1, artifact?.ScannerVersion);
         Assert.Equal("foo", artifact?.Repo);
         Assert.Equal("1.0.0", artifact?.Tag);
