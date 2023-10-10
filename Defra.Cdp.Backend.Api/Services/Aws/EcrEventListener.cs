@@ -51,7 +51,9 @@ public class EcrEventListener
     {
         var response = await _sqs.ReceiveMessageAsync(new ReceiveMessageRequest
         {
-            QueueUrl = _options.QueueUrl, WaitTimeSeconds = _options.WaitTimeSeconds, MaxNumberOfMessages = 1
+            QueueUrl = _options.QueueUrl,
+            WaitTimeSeconds = _options.WaitTimeSeconds,
+            MaxNumberOfMessages = 1
         });
 
         if (response == null) return;

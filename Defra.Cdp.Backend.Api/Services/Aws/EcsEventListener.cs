@@ -68,19 +68,34 @@ public class EcsEventListener : SqsListener
                     _logger.LogInformation("Ignoring {Image}, not a known container", ecsContainer.Image);
                     continue;
                 }
+                
+                var deployedAt = ecsEvent.Timestamp;
+                var taskId = ecsEvent.Detail.TaskDefinitionArn;
+                var deploymentId = ecsEvent.DeploymentId;
 
-                deployments.Add(new Deployment
+                // Find the requested deployment so we can fill out the username
+                var requestedDeployment = await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, deploymentId);
+
+                var deployment = new Deployment
                 {
-                    DeploymentId = ecsEvent.DeploymentId,
+                    DeploymentId = deploymentId,
                     Environment = env,
                     Service = ids.ServiceName ?? "unknown",
                     Version = ids.Tag,
-                    User = "TestUser", // TODO: work out where we get the user from 
-                    DeployedAt = ecsEvent.Detail.CreatedAt,
+                    User = requestedDeployment?.User ?? "n/a",
+                    DeployedAt = deployedAt,
                     Status = ecsContainer.LastStatus,
                     DockerImage = ecsContainer.Image,
-                    TaskId = ecsEvent.Detail.TaskDefinitionArn
-                });
+                    TaskId = taskId
+                };
+                
+                if (requestedDeployment is { DeploymentId: null, Id: { } })
+                {
+                    _logger.LogInformation("Linking {Id} to deployment {DeploymentId}", requestedDeployment.Id, deploymentId);
+                    await _deploymentsService.LinkRequestedDeployment(requestedDeployment.Id, deployment);
+                }
+
+                deployments.Add(deployment);
             }
             catch (Exception ex)
             {

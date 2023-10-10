@@ -32,7 +32,8 @@ public abstract class SqsListener : ISqsListener, IDisposable
     {
         var receiveMessageRequest = new ReceiveMessageRequest
         {
-            QueueUrl = QueueUrl, WaitTimeSeconds = WaitTimeoutSeconds
+            QueueUrl = QueueUrl,
+            WaitTimeSeconds = WaitTimeoutSeconds
         };
         var falloff = 1;
         while (Enabled)
@@ -57,7 +58,8 @@ public abstract class SqsListener : ISqsListener, IDisposable
 
                     var deleteRequest = new DeleteMessageRequest
                     {
-                        QueueUrl = QueueUrl, ReceiptHandle = message.ReceiptHandle
+                        QueueUrl = QueueUrl,
+                        ReceiptHandle = message.ReceiptHandle
                     };
 
                     await Sqs.DeleteMessageAsync(deleteRequest);

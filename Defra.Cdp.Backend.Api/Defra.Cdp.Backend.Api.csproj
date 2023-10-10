@@ -15,24 +15,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.ECR" Version="3.7.201.7"/>
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.200.44"/>
-    <PackageReference Include="Elastic.CommonSchema.Serilog" Version="8.6.1"/>
-    <PackageReference Include="ErrorOr" Version="1.2.1"/>
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.7.1"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.22"/>
-    <PackageReference Include="Microsoft.Identity.Web" Version="2.13.4"/>
-    <PackageReference Include="MongoDB.Driver" Version="2.21.0"/>
-    <PackageReference Include="Octokit.GraphQL" Version="0.2.1-beta"/>
-    <PackageReference Include="Quartz" Version="3.7.0"/>
-    <PackageReference Include="Quartz.AspNetCore" Version="3.7.0"/>
-    <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.7.0"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="7.0.0"/>
-    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0"/>
-    <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0"/>
-    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0"/>
-    <PackageReference Include="Serilog.Settings.Configuration" Version="7.0.1"/>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
+    <PackageReference Include="AWSSDK.ECR" Version="3.7.201.7" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.200.44" />
+    <PackageReference Include="Elastic.CommonSchema.Serilog" Version="8.6.1" />
+    <PackageReference Include="ErrorOr" Version="1.2.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.7.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.22" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="2.13.4" />
+    <PackageReference Include="MongoDB.Driver" Version="2.21.0" />
+    <PackageReference Include="Octokit.GraphQL" Version="0.2.1-beta" />
+    <PackageReference Include="Quartz" Version="3.7.0" />
+    <PackageReference Include="Quartz.AspNetCore" Version="3.7.0" />
+    <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.7.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="7.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
 
