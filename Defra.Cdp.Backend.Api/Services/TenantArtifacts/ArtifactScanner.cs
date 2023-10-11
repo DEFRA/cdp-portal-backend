@@ -49,9 +49,10 @@ public class ArtifactScanner : IArtifactScanner
     // I think the path may be important so we dont capture node modules etc
     private readonly List<Regex> _filesToExtract = new()
     {
-        new Regex(".+/.+\\.deps\\.json$"), // TODO: find out what the WORKSPACE is in the c# base image
-        new Regex("home/node.*/package-lock\\.json$"), // TODO: exclude anything in node_modules etc
-        new Regex(".*/pom\\.xml$") // TODO: find out what our jvm image is going to look like and what the build system of choice is
+        // TODO: Uncomment this once we're ready to do something with this data!
+        //new Regex(".+/.+\\.deps\\.json$"),
+        //new Regex("home/node.*/package-lock\\.json$"),
+        //new Regex(".*/pom\\.xml$")
     };
 
     private readonly ILayerService _layerService;

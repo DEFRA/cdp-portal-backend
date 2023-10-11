@@ -74,7 +74,7 @@ public class EcsEventListener : SqsListener
                 var deploymentId = ecsEvent.DeploymentId;
 
                 // Find the requested deployment so we can fill out the username
-                var requestedDeployment = await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, deploymentId);
+                var requestedDeployment = await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, taskId);
 
                 var deployment = new Deployment
                 {

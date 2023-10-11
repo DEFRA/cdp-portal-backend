@@ -12,7 +12,7 @@ public interface IDeploymentsService
     public Task<List<Deployment>> FindWhatsRunningWhere();
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName);
     public Task<Deployment?> FindDeployment(string deploymentId);
-    public Task<Deployment?> FindRequestedDeployment(string service, string version, string environment, DateTime deployedAt, string deploymentId);
+    public Task<Deployment?> FindRequestedDeployment(string service, string version, string environment, DateTime deployedAt, string taskId);
     public Task<UpdateResult> LinkRequestedDeployment(ObjectId? id, Deployment deployment);
 
     public Task Insert(Deployment deployment);
@@ -80,10 +80,10 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     // Used to join up an incoming ECS request with requested deployment from cdp-self-service-ops
     // We look for any task that matches the name/version/env and happened up to 30 minutes before the first deployment 
     // event. 
-    public async Task<Deployment?> FindRequestedDeployment(string service, string version, string environment, DateTime timestamp, string deploymentId)
+    public async Task<Deployment?> FindRequestedDeployment(string service, string version, string environment, DateTime timestamp, string taskId)
     {
         // See if we've already matched the requested deployment via deployment id
-        var requested = await Collection.Find(d => d.DeploymentId == deploymentId && d.Status == "REQUESTED").FirstOrDefaultAsync();
+        var requested = await Collection.Find(d => d.TaskId == taskId && d.Status == "REQUESTED").FirstOrDefaultAsync();
 
         if (requested != null)
         {
