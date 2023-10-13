@@ -100,6 +100,7 @@ public static class DeploymentsEndpoint
             Service = rd.Service,
             Status = "REQUESTED",
             User = rd.User,
+            UserId = rd.UserId,
             Version = rd.Version,
             DockerImage = rd.Service
         };
