@@ -14,5 +14,7 @@ public sealed record RequestedDeployment
     [property: JsonPropertyName("environment")]
     public string Environment { get; set; } = string.Empty;
 
-    [property: JsonPropertyName("user")] public string User { get; set; } = string.Empty;
+    [property: JsonPropertyName("user")] public string? User { get; set; }
+    
+    [property: JsonPropertyName("userId")] public string? UserId { get; set; }
 }

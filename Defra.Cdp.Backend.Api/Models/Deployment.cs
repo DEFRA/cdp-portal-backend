@@ -18,6 +18,8 @@ public sealed class Deployment
     public string Version { get; init; } = default!;
 
     public string? User { get; init; }
+    public string? UserId { get; init; }
+    
     public DateTime DeployedAt { get; init; } = default!;
     public string Status { get; init; } = default!;
     public string DockerImage { get; init; } = default!;
