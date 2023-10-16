@@ -13,7 +13,7 @@ public sealed record TeamResult(string Slug,
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class PopulateGithubRepositories : IJob
 {
-    private readonly Connection _gitHubClient;
+    private readonly GithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
     private readonly ICompiledQuery<IEnumerable<TeamResult>> _query;
     private readonly IRepositoryService _repositoryService;
@@ -22,9 +22,8 @@ public sealed class PopulateGithubRepositories : IJob
         IRepositoryService repositoryService)
     {
         var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
-        var token = configuration.GetValue<string>("Github:Token")!;
+        _githubCredentialAndConnectionFactory = new GithubCredentialAndConnectionFactory(configuration);
 
-        _gitHubClient = new Connection(new ProductHeaderValue(githubOrgName), token);
         _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
         _repositoryService = repositoryService;
 
@@ -62,8 +61,9 @@ public sealed class PopulateGithubRepositories : IJob
     {
         _logger.LogInformation("Repopulating Github repositories");
 
-
-        var queryRun = await _gitHubClient.Run(_query, cancellationToken: context.CancellationToken);
+        var githubConnection = await _githubCredentialAndConnectionFactory.GetGithubConnection();
+        var queryRun = await githubConnection
+            .Run(_query, cancellationToken: context.CancellationToken);
         var result = queryRun.ToList();
 
 
