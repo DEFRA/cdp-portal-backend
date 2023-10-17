@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using GitHubJwt;
 using Octokit.GraphQL;
 using ProductHeaderValue = Octokit.GraphQL.ProductHeaderValue;
@@ -84,5 +85,5 @@ public class GithubCredentialAndConnectionFactory : ICredentialStore
     }
 
     // We just want the installation token
-    private record AppInstallationResult(string Token);
+    private record AppInstallationResult([property: JsonPropertyName("token")] string Token);
 }
