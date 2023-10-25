@@ -9,7 +9,7 @@
     "DatabaseName": "cdp-portal-backend"
   },
   "Github": {
-    "Organisation": "DEFRA",
+    "Organisation": "defra-cdp-sandpit",
     "Scheduler": {
       "quartz.scheduler.instanceName": "Github Scheduler for fetching repositories",
       "quartz.threadPool.maxConcurrency": 4

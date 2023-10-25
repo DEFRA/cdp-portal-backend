@@ -61,12 +61,12 @@ When an image is scanned its 'service name' is extracted from a docker label (`d
 [
     {
         "serviceName": "cdp-portal-backend",
-        "githubUrl": "https://github.com/DEFRA/cdp-portal-backend",
+        "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-portal-backend",
         "imageName": "cdp-portal-backend"
     },
     {
         "serviceName": "cdp-portal-backend",
-        "githubUrl": "https://github.com/DEFRA/cdp-portal-backend",
+        "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-portal-backend",
         "imageName": "cdp-portal-backend"
     }
 ]
@@ -78,7 +78,7 @@ When an image is scanned its 'service name' is extracted from a docker label (`d
 ```json
 {
     "serviceName": "cdp-portal-backend",
-    "githubUrl": "https://github.com/DEFRA/cdp-portal-backend",
+    "githubUrl": "https://github.com/defra-cdp-sandpit/cdp-portal-backend",
     "imageName": "cdp-portal-backend"
 }
 ```
@@ -96,7 +96,7 @@ When an image is scanned its 'service name' is extracted from a docker label (`d
   "repo":"cdp-portal-backend",
   "tag":"v0.21.0",
   "sha256":"sha256:157e63cedba182003e9831047e3f611c516e8d67a4425dfcb15d7d7295c17872",
-  "githubUrl":"https://github.com/DEFRA/cdp-portal-backend",
+  "githubUrl":"https://github.com/defra-cdp-sandpit/cdp-portal-backend",
   "serviceName":"cdp-portal-backend",
   "scannerVersion":1,
   "files":[
