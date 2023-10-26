@@ -290,3 +290,4 @@ E.g:
 ```bash
 ./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
 ```
+
