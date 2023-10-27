@@ -206,8 +206,8 @@ export GITHUB__TOKEN=<token_from_secret_manager>
 dotnet run --project Defra.Cdp.Backend.Api --no-launch-profile
 ```
 If you use Jetbrains Rider, make sure you create a configuration for `.NET Project` and not 
-`.NET Launch Setting Profile` so you can add your own environment variable there. It should look 
-something like this:
+`.NET Launch Setting Profile` so you can add your own environment variable there. 
+It should look something like this:
 
 ![rider-settings](images/rider-settings.png)
 ![rider-env](images/rider-env.png)
@@ -290,4 +290,3 @@ E.g:
 ```bash
 ./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
 ```
-
