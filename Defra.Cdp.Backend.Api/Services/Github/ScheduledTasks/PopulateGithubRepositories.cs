@@ -1,5 +1,5 @@
+using System.Net.Http.Headers;
 using Defra.Cdp.Backend.Api.Models;
-using Octokit.GraphQL;
 using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -13,10 +13,13 @@ public sealed record TeamResult(string Slug,
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class PopulateGithubRepositories : IJob
 {
+    private readonly HttpClient _client = new();
     private readonly GithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
-    private readonly ICompiledQuery<IEnumerable<TeamResult>> _query;
     private readonly IRepositoryService _repositoryService;
+
+    private readonly string _requestString;
+
 
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
         IRepositoryService repositoryService)
@@ -27,45 +30,39 @@ public sealed class PopulateGithubRepositories : IJob
         _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
         _repositoryService = repositoryService;
 
-        // Compile the query once for efficiency
-        _query = new Query()
-            .Organization(githubOrgName)
-            .Teams()
-            .AllPages() //library does the automatic paging calls
-            .Select(t =>
-                new TeamResult(
-                    t.Slug,
-                    // optional arguments are not supported here in C# for some reason
-                    // a limitation for anonymous types inside a LINQ query?
-                    // `null` is the default for all optional parameters and have to be explicitly passed
-                    t.Repositories(null, null, null, null, null, null)
-                        .AllPages()
-                        .Select(r => new
-                        {
-                            r.Name,
-                            r.Description,
-                            PrimaryLanguage = r.PrimaryLanguage.Name,
-                            r.Url,
-                            r.IsArchived,
-                            r.IsTemplate,
-                            r.IsPrivate,
-                            r.CreatedAt
-                        }).ToList().Select(r => new RepositoryResult(
-                            r.Name, r.Description, r.PrimaryLanguage, r.Url, r.IsArchived, r.IsTemplate, r.IsPrivate,
-                            r.CreatedAt
-                        ))
-                )).Compile();
+        _requestString =
+            $@"
+            {{
+              ""query"": 
+                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
+            }}";
+
+
+        _client.DefaultRequestHeaders.Accept.Clear();
+        _client.DefaultRequestHeaders.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
+        _client.DefaultRequestHeaders.Add("User-Agent", "cdp-portal-backend");
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
         _logger.LogInformation("Repopulating Github repositories");
 
-        var githubConnection = await _githubCredentialAndConnectionFactory.GetGithubConnection();
-        var queryRun = await githubConnection
-            .Run(_query, cancellationToken: context.CancellationToken);
-        var result = queryRun.ToList();
-
+        var token = await _githubCredentialAndConnectionFactory.GetToken();
+        if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
+        _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+        var jsonResponse = await _client.PostAsync(
+            "https://api.github.com/graphql",
+            new StringContent(_requestString),
+            context.CancellationToken
+        );
+        var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>();
+        if (result is null)
+        {
+            var jsonString = jsonResponse.Content.ReadAsStringAsync();
+            _logger.LogError("The following was invalid json: {JsonString}", jsonString);
+            throw new ApplicationException("reponse must be parsed correct");
+        }
 
         var repositories = QueryResultToRepositories(result);
 
@@ -101,6 +98,46 @@ public sealed class PopulateGithubRepositories : IJob
                     Url = r.Url,
                     PrimaryLanguage = r.PrimaryLanguage,
                     Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList()
+                });
+        return repositories;
+    }
+
+    public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result)
+    {
+        var teamsAndReposPair =
+            result.data.organization.teams.nodes
+                .SelectMany(t =>
+                    t.repositories.nodes
+                        .Select(r => new { Team = t.slug, Repo = r.name })).Distinct();
+        var repoOwnerPair = teamsAndReposPair.GroupBy(
+                pair => pair.Repo,
+                pair => pair.Team,
+                (repo, teams) => new { repo, teams })
+            .ToDictionary(pair => pair.repo, pair => pair.teams);
+
+        var repositories =
+            result
+                .data
+                .organization
+                .teams
+                .nodes
+                .SelectMany(t => t.repositories.nodes)
+                .DistinctBy(r => r.name)
+                .Select(r =>
+                {
+                    var primaryLanguage = r.primaryLanguage?.name ?? "none";
+                    return new Repository
+                    {
+                        Id = r.name,
+                        CreatedAt = r.createdAt,
+                        Description = r.description,
+                        IsArchived = r.isArchived,
+                        IsPrivate = r.isPrivate,
+                        IsTemplate = r.isTemplate,
+                        Url = r.url,
+                        PrimaryLanguage = primaryLanguage,
+                        Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).ToList()
+                    };
                 });
         return repositories;
     }

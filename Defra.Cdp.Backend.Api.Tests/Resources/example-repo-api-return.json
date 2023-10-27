@@ -1,0 +1,91 @@
+{
+  "data": {
+    "organization": {
+      "id": "MDEyOk9yZ2FuaXphdGlvbjU1Mjg4MjI=",
+      "teams": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "Y3Vyc29yOnYyOpMCsVdhdGVyIEFic3RyYWN0aW9uzgAlEAg="
+        },
+        "nodes": [
+          {
+            "slug": "address-facade-readers",
+            "repositories": {
+              "nodes": []
+            }
+          },
+          {
+            "slug": "analytics-standards",
+            "repositories": {
+              "nodes": [
+                {
+                  "name": "analytics-standards",
+                  "description": "Standards for service analytics",
+                  "primaryLanguage": null,
+                  "url": "https://github.com/DEFRA/analytics-standards",
+                  "isArchived": false,
+                  "isTemplate": false,
+                  "isPrivate": false,
+                  "createdAt": "2020-08-21T10:38:11Z"
+                }
+              ]
+            }
+          },
+          {
+            "slug": "cdp-platform",
+            "repositories": {
+              "nodes": [
+                {
+                  "name": "cdp-node-frontend-template",
+                  "description": "Core delivery platform Node.js Frontend Template. This is the template used to create new Node.js Frontend micro-services via the Core Development Portal.",
+                  "primaryLanguage": {
+                    "name": "JavaScript"
+                  },
+                  "url": "https://github.com/DEFRA/cdp-node-frontend-template",
+                  "isArchived": false,
+                  "isTemplate": true,
+                  "isPrivate": false,
+                  "createdAt": "2023-04-26T15:27:09Z"
+                },
+                {
+                  "name": "cdp-boilerplate",
+                  "description": "Testing repo creation from a GH template with a GH action",
+                  "primaryLanguage": null,
+                  "url": "https://github.com/DEFRA/cdp-boilerplate",
+                  "isArchived": false,
+                  "isTemplate": false,
+                  "isPrivate": true,
+                  "createdAt": "2023-04-27T14:40:32Z"
+                },
+                {
+                  "name": "cdp-user-service-backend",
+                  "description": "Git repository for service cdp-user-service-backend",
+                  "primaryLanguage": {
+                    "name": "JavaScript"
+                  },
+                  "url": "https://github.com/DEFRA/cdp-user-service-backend",
+                  "isArchived": false,
+                  "isTemplate": false,
+                  "isPrivate": true,
+                  "createdAt": "2023-08-08T08:40:23Z"
+                },
+                {
+                  "name": "cdp-dotnet-backend-template",
+                  "description": "C# ASP.NET Minimial API template with MongoDB, FluentValidation, Swagger and Serilog logging",
+                  "primaryLanguage": {
+                    "name": "C#"
+                  },
+                  "url": "https://github.com/DEFRA/cdp-dotnet-backend-template",
+                  "isArchived": false,
+                  "isTemplate": true,
+                  "isPrivate": false,
+                  "createdAt": "2023-08-24T07:08:56Z"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
