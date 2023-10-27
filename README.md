@@ -209,8 +209,8 @@ If you use Jetbrains Rider, make sure you create a configuration for `.NET Proje
 `.NET Launch Setting Profile` so you can add your own environment variable there. It should look 
 something like this:
 
-![img.png](images/rider-settings.png)
-![img_1.png](images/rider-env-settings.png)
+![rider-settings](images/rider-settings.png)
+![rider-env](images/rider-env.png)
 ### Setup a local docker registry
 
 Running a local docker registry enables the `cdp-portal-backend` to obtain the manifests from local registry images.
