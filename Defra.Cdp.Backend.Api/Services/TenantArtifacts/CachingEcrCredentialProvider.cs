@@ -87,15 +87,23 @@ public class EcrCredentialProvider : IDockerCredentialProvider
     public async Task<string?> GetCredentials()
     {
         logger.LogInformation("Renewing docker credentials from ECR.");
-        var resp = await ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
-        if (resp == null || resp.AuthorizationData.Count == 0)
+        try
         {
-            logger.LogInformation("Failed to get ECR credentials");
-            throw new Exception("Failed to get ECR credentials");
+            var resp = await ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
+            if (resp == null || resp.AuthorizationData.Count == 0)
+            {
+                logger.LogInformation("Failed to get ECR credentials");
+                throw new Exception("Failed to get ECR credentials");
+            }
+
+            logger.LogInformation("Got ECS auth token, expires at {ExpiresAt}", resp.AuthorizationData[0].ExpiresAt);
+
+            return resp.AuthorizationData[0].AuthorizationToken;
         }
-
-        logger.LogInformation("Got ECS auth token, expires at {ExpiresAt}", resp.AuthorizationData[0].ExpiresAt);
-
-        return resp.AuthorizationData[0].AuthorizationToken;
+        catch (Exception ex)
+        {
+            logger.LogError("Failed to get docker login {ex}", ex);
+            throw;
+        }
     }
 }

@@ -95,6 +95,7 @@ public class EcrEventListener
 
     public async Task<ArtifactScannerResult> ProcessMessage(string id, string body)
     {
+        _logger.LogInformation("Starting processing ECR Event {Id}", id);
         // AWS JSON messages are sent in with their " escaped (\"), in order to parse, they must be unescaped
         var ecrEvent = JsonSerializer.Deserialize<SqsEcrEvent>(body);
 
