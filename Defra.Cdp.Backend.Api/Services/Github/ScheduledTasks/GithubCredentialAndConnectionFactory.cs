@@ -15,7 +15,9 @@ public class GithubCredentialAndConnectionFactory : ICredentialStore
     private readonly DateTimeOffset _lastConnectionRenewal = DateTimeOffset.MinValue;
     private Connection _githubConnection = null!;
     private DateTimeOffset _lastTokenGeneratedTime = DateTimeOffset.MinValue;
+    private string? _latestInstallationToken;
     private string _latestJwt = null!;
+
 
     public GithubCredentialAndConnectionFactory(IConfiguration configuration)
     {
@@ -56,6 +58,17 @@ public class GithubCredentialAndConnectionFactory : ICredentialStore
         if (DateTimeOffset.Now - _lastConnectionRenewal < TimeSpan.FromHours(1))
             return _githubConnection;
 
+        var token = await GetToken(cancellationToken);
+        _githubConnection =
+            new Connection(new ProductHeaderValue(_githubOrgName), token);
+        return _githubConnection;
+    }
+
+    public async Task<string?> GetToken(CancellationToken cancellationToken = new())
+    {
+        if (DateTimeOffset.Now - _lastConnectionRenewal < TimeSpan.FromHours(1))
+            return _latestInstallationToken;
+
         var token = await GetCredentials(cancellationToken);
         using HttpClient client = new();
         client.DefaultRequestHeaders.Accept.Clear();
@@ -81,7 +94,8 @@ public class GithubCredentialAndConnectionFactory : ICredentialStore
                 cancellationToken: cancellationToken);
         _githubConnection =
             new Connection(new ProductHeaderValue(_githubOrgName), appInstallationResult?.Token);
-        return _githubConnection;
+        _latestInstallationToken = appInstallationResult?.Token;
+        return _latestInstallationToken;
     }
 
     // We just want the installation token

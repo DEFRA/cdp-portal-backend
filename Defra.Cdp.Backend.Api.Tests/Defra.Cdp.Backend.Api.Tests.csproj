@@ -35,6 +35,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Resources\example-repo-api-return.json"/>
+    <Content Include="Resources\example-repo-api-return.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Defra.Cdp.Backend.Api\Defra.Cdp.Backend.Api.csproj"/>
   </ItemGroup>
 
