@@ -38,8 +38,10 @@ public static class AdminEndpoint
     }
 
     // POST /admin/scan?repo={repo}&tag={tag}
-    private static async Task<IResult> RescanImageRequest(IArtifactScanner scanner, string repo, string tag)
+    private static async Task<IResult> RescanImageRequest(IArtifactScanner scanner,  ILoggerFactory loggerFactory, string repo, string tag)
     {
+        var logger = loggerFactory.CreateLogger("AdminEndpoint");
+        logger.LogInformation("Rescanning {repo} {tag}", repo, tag);
         if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace("tag"))
             return Results.BadRequest(new { errorMessage = "repo and tag must be specified" });
         var deployable = await RescanImage(scanner, repo, tag);
