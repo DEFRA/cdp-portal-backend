@@ -57,6 +57,11 @@ public static class ArtifactsEndpoint
             .Produces(StatusCodes.Status404NotFound)
             .WithTags(Tag);
 
+        app.MapPost($"{ArtifactsBaseRoute}/placeholder", CreatePlaceholder)
+            .WithName("CreatePlaceholder")
+            .Produces(StatusCodes.Status200OK)
+            .WithTags(Tag);
+        
         return app;
     }
 
@@ -126,5 +131,12 @@ public static class ArtifactsEndpoint
     private static async Task<ServiceInfo?> ListService(IDeployablesService deployablesService, string service)
     {
         return await deployablesService.FindServices(service);
+    }
+    
+    // POST /artifacts/placeholder
+    private static async Task<IResult> CreatePlaceholder(IDeployablesService deployablesService, string service, string githubUrl)
+    {
+        await deployablesService.CreatePlaceholderAsync(service, githubUrl);
+        return Results.Ok();
     }
 }
