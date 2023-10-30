@@ -8,6 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 public interface IDeployablesService
 {
     Task CreateAsync(DeployableArtifact artifact);
+    Task CreatePlaceholderAsync(string serviceName, string githubUrl);
     Task<DeployableArtifact?> FindByTag(string repo, string tag);
     Task<List<DeployableArtifact>> FindAll();
     Task<List<DeployableArtifact>> FindAll(string repo);
@@ -34,6 +35,31 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             new ReplaceOptions { IsUpsert = true }
         );
     }
+    
+    public async Task CreatePlaceholderAsync(string serviceName, string githubUrl)
+    {
+
+        var artifact = new DeployableArtifact
+        {
+            Created = DateTime.UtcNow,
+            Files = new List<DeployableArtifactFile>(),
+            GithubUrl = githubUrl,
+            Id = null,
+            Repo = serviceName,
+            Sha256 = "",
+            Tag = "0.0.0",
+            ScannerVersion = 1,
+            SemVer = 0,
+            ServiceName = serviceName
+        };
+        
+        await Collection.ReplaceOneAsync(
+            a => a.Repo == artifact.Repo && a.Tag == artifact.Tag,
+            artifact,
+            new ReplaceOptions { IsUpsert = true }
+        );
+    }
+
 
     public async Task<DeployableArtifact?> FindByTag(string repo, string tag)
     {
