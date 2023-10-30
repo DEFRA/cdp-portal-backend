@@ -21,12 +21,15 @@ public class EcrEventsService : MongoService<EcrEventCopy>, IEcrEventsService
 
     public async Task SaveMessage(string id, string body)
     {
-        await Collection.InsertOneAsync(new EcrEventCopy(id, new DateTime(), body));
+        await Collection.InsertOneAsync(new EcrEventCopy(id, new DateTimeOffset(), body));
     }
 
     protected override List<CreateIndexModel<EcrEventCopy>> DefineIndexes(
         IndexKeysDefinitionBuilder<EcrEventCopy> builder)
     {
+        var createdAtIndex = new CreateIndexModel<EcrEventCopy>(builder.Descending(r => r.CreatedAt),
+            new CreateIndexOptions { Sparse = true });
+        var bodyIndex = new CreateIndexModel<EcrEventCopy>(builder.Text(r => r.Body));
         return new List<CreateIndexModel<EcrEventCopy>>();
     }
 }

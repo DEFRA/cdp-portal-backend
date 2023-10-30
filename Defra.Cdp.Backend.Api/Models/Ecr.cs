@@ -27,7 +27,7 @@ public sealed record SqsEcrEvent(
     string DetailType
 );
 
-public sealed record EcrEventCopy(string MessageId, DateTime Timestamp, string Body);
+public sealed record EcrEventCopy(string MessageId, DateTimeOffset? CreatedAt, string Body);
 
 public class ImageProcessingException : Exception
 {

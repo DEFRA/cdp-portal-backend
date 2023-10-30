@@ -58,7 +58,8 @@ public class EcsEventListener : SqsListener
                 var (repo, tag) = SplitImage(ecsContainer.Image);
                 if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
                 {
-                    _logger.LogInformation("Ignoring {Image}, not a known container", ecsContainer.Image);
+                    _logger.LogInformation("Ignoring {Image}, could not extract repo and tag, not a known container",
+                        ecsContainer.Image);
                     continue;
                 }
 
@@ -68,13 +69,14 @@ public class EcsEventListener : SqsListener
                     _logger.LogInformation("Ignoring {Image}, not a known container", ecsContainer.Image);
                     continue;
                 }
-                
+
                 var deployedAt = ecsEvent.Timestamp;
                 var taskId = ecsEvent.Detail.TaskDefinitionArn;
                 var deploymentId = ecsEvent.DeploymentId;
 
                 // Find the requested deployment so we can fill out the username
-                var requestedDeployment = await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, taskId);
+                var requestedDeployment =
+                    await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, taskId);
 
                 var deployment = new Deployment
                 {
@@ -88,10 +90,11 @@ public class EcsEventListener : SqsListener
                     DockerImage = ecsContainer.Image,
                     TaskId = taskId
                 };
-                
-                if (requestedDeployment is { DeploymentId: null, Id: { } })
+
+                if (requestedDeployment is { DeploymentId: null, Id: not null })
                 {
-                    _logger.LogInformation("Linking {Id} to deployment {DeploymentId}", requestedDeployment.Id, deploymentId);
+                    _logger.LogInformation("Linking {Id} to deployment {DeploymentId}", requestedDeployment.Id,
+                        deploymentId);
                     await _deploymentsService.LinkRequestedDeployment(requestedDeployment.Id, deployment);
                 }
 
