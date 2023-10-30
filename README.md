@@ -135,7 +135,7 @@ Both provide a list of docker image names and tags for that image.
 
 ### Admin backend
 `POST /admin/scan?repo=foo&tag=1.2.3`
-Triggers a scan of the given image/tag.
+Triggers a scan of the given image/tag. This will grab the Docker image from ECR, scan the manifest and updates the `artifacts` collection.
 
 `POST /admin/backfill`
 Rescan everything in the docker registry. This will take a long time!
