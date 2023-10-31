@@ -2,18 +2,15 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GitHubJwt;
-using Octokit.GraphQL;
-using ProductHeaderValue = Octokit.GraphQL.ProductHeaderValue;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
-public class GithubCredentialAndConnectionFactory : ICredentialStore
+public class GithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
     private readonly GitHubJwtFactory _generator;
     private readonly string _githubOrgName;
     private readonly DateTimeOffset _lastConnectionRenewal = DateTimeOffset.MinValue;
-    private Connection _githubConnection = null!;
     private DateTimeOffset _lastTokenGeneratedTime = DateTimeOffset.MinValue;
     private string? _latestInstallationToken;
     private string _latestJwt = null!;
@@ -47,23 +44,6 @@ public class GithubCredentialAndConnectionFactory : ICredentialStore
         return Task.FromResult(_latestJwt);
     }
 
-    // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app
-    //curl --request POST \
-    // --url "https://api.github.com/app/installations/<appInstallationId>/access_tokens" \
-    // --header "Accept: application/vnd.github+json" \
-    // --header "Authorization: Bearer <token>" \
-    // --header "X-GitHub-Api-Version: 2022-11-28"
-    public async Task<Connection> GetGithubConnection(CancellationToken cancellationToken = new())
-    {
-        if (DateTimeOffset.Now - _lastConnectionRenewal < TimeSpan.FromHours(1))
-            return _githubConnection;
-
-        var token = await GetToken(cancellationToken);
-        _githubConnection =
-            new Connection(new ProductHeaderValue(_githubOrgName), token);
-        return _githubConnection;
-    }
-
     public async Task<string?> GetToken(CancellationToken cancellationToken = new())
     {
         if (DateTimeOffset.Now - _lastConnectionRenewal < TimeSpan.FromHours(1))
@@ -92,8 +72,6 @@ public class GithubCredentialAndConnectionFactory : ICredentialStore
         var appInstallationResult =
             await JsonSerializer.DeserializeAsync<AppInstallationResult>(responseBodyStream,
                 cancellationToken: cancellationToken);
-        _githubConnection =
-            new Connection(new ProductHeaderValue(_githubOrgName), appInstallationResult?.Token);
         _latestInstallationToken = appInstallationResult?.Token;
         return _latestInstallationToken;
     }
