@@ -51,16 +51,18 @@ public class EcrEventListener
     {
         var response = await _sqs.ReceiveMessageAsync(new ReceiveMessageRequest
         {
-            QueueUrl = _options.QueueUrl,
-            WaitTimeSeconds = _options.WaitTimeSeconds,
-            MaxNumberOfMessages = 1
+            QueueUrl = _options.QueueUrl, WaitTimeSeconds = _options.WaitTimeSeconds, MaxNumberOfMessages = 1
         });
 
         if (response == null) return;
 
         foreach (var msg in response.Messages)
         {
-            if (msg == null) continue;
+            if (msg == null)
+            {
+                _logger.LogInformation("Received a null ECR event, how strange");
+                continue;
+            }
 
             _logger.LogInformation("Received message: {MessageId}", msg.MessageId);
 
