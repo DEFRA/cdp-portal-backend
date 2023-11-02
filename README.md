@@ -289,6 +289,7 @@ cd cdp-portal-backend
 ```bash
 ./generate-fake-deployments.sh service-name version
 ```
+
 E.g:
 ```bash
 ./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
