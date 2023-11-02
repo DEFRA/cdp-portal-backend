@@ -35,10 +35,9 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             new ReplaceOptions { IsUpsert = true }
         );
     }
-    
+
     public async Task CreatePlaceholderAsync(string serviceName, string githubUrl)
     {
-
         var artifact = new DeployableArtifact
         {
             Created = DateTime.UtcNow,
@@ -52,7 +51,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             SemVer = 0,
             ServiceName = serviceName
         };
-        
+
         await Collection.ReplaceOneAsync(
             a => a.Repo == artifact.Repo && a.Tag == artifact.Tag,
             artifact,
@@ -68,12 +67,15 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
 
     public async Task<List<DeployableArtifact>> FindAll()
     {
-        return await Collection.Find(FilterDefinition<DeployableArtifact>.Empty).ToListAsync();
+        return await Collection.Find(a => a.Tag.Trim() != "0.0.0").ToListAsync();
     }
 
     public async Task<List<DeployableArtifact>> FindAll(string repo)
     {
-        return await Collection.Find(a => a.Repo == repo).ToListAsync();
+        return
+            await Collection
+                .Find(a => a.Repo == repo && a.Tag.Trim() != "0.0.0")
+                .ToListAsync();
     }
 
     public async Task<List<string>> FindAllRepoNames()
