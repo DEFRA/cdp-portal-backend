@@ -64,9 +64,10 @@ public sealed class PopulateGithubRepositories : IJob
             throw new ApplicationException("reponse must be parsed correct");
         }
 
-        var repositories = QueryResultToRepositories(result);
+        var repositories = QueryResultToRepositories(result).ToList();
 
         await _repositoryService.UpsertMany(repositories, context.CancellationToken);
+        await _repositoryService.DeleteMany(repositories.Select(r => r.Id), context.CancellationToken);
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result)
