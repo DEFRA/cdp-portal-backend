@@ -56,6 +56,7 @@ For the most up-to-date APIs and schema, run `cdp-portal-backend` locally, as in
 [the Swagger page at http://localhost:5094/swagger](http://localhost:5094/swagger).
 
 ### Find Services
+
 When an image is scanned its 'service name' is extracted from a docker label (`defra.cdp.service.name` see ArtifactScanner.cs).
 
 `GET /services`
