@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
@@ -9,6 +10,8 @@ public interface IRepositoryService
     Task Upsert(Repository repository);
 
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
+
+    Task DeleteMany(IEnumerable<string> excludingIds, CancellationToken cancellationToken);
 
     Task<List<Repository>> AllRepositories(bool excludeTemplates);
 
@@ -84,6 +87,13 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
                 .SortBy(r => r.Id)
                 .ToListAsync();
         return repositories;
+    }
+
+    public async Task DeleteMany(IEnumerable<string> excludingIds, CancellationToken cancellationToken)
+    {
+        var excludingIdsList = excludingIds.ToList();
+        if (excludingIdsList.IsNullOrEmpty()) throw new ArgumentException("excluded repositories cannot be empty");
+        await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id));
     }
 
     protected override List<CreateIndexModel<Repository>> DefineIndexes(IndexKeysDefinitionBuilder<Repository> builder)
