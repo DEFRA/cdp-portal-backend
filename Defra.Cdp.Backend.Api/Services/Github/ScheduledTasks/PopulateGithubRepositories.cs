@@ -67,7 +67,7 @@ public sealed class PopulateGithubRepositories : IJob
         var repositories = QueryResultToRepositories(result).ToList();
 
         await _repositoryService.UpsertMany(repositories, context.CancellationToken);
-        await _repositoryService.DeleteMany(repositories.Select(r => r.Id), context.CancellationToken);
+        await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), context.CancellationToken);
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result)

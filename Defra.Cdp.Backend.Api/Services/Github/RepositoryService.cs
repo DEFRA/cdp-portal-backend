@@ -11,7 +11,7 @@ public interface IRepositoryService
 
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
 
-    Task DeleteMany(IEnumerable<string> excludingIds, CancellationToken cancellationToken);
+    Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken);
 
     Task<List<Repository>> AllRepositories(bool excludeTemplates);
 
@@ -89,9 +89,9 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         return repositories;
     }
 
-    public async Task DeleteMany(IEnumerable<string> excludingIds, CancellationToken cancellationToken)
+    public async Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken)
     {
-        var excludingIdsList = excludingIds.ToList();
+        var excludingIdsList = knownReposIds.ToList();
         if (excludingIdsList.IsNullOrEmpty()) throw new ArgumentException("excluded repositories cannot be empty");
         await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id));
     }
