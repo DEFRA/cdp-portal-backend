@@ -1,20 +1,27 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public sealed record RequestedDeployment
+public sealed class UserDetails
+{
+    [property: JsonPropertyName("id")]
+    public string Id { get; init; } = default!;
+
+    [property: JsonPropertyName("displayName")]
+    public string DisplayName { get; init; } = default!;
+}
+
+public sealed class RequestedDeployment
 {
     [property: JsonPropertyName("service")]
-    public string Service { get; set; } = string.Empty;
+    public string Service { get; init; } = default!;
 
     [property: JsonPropertyName("version")]
-    public string Version { get; set; } = string.Empty;
+    public string Version { get; init; } = default!;
 
     [property: JsonPropertyName("environment")]
-    public string Environment { get; set; } = string.Empty;
+    public string Environment { get; init; } = default!;
 
-    [property: JsonPropertyName("user")] public string? User { get; set; }
-    
-    [property: JsonPropertyName("userId")] public string? UserId { get; set; }
+    [property: JsonPropertyName("user")]
+    public UserDetails? User { get; init; }
 }
