@@ -38,6 +38,8 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
 
     public async Task CreatePlaceholderAsync(string serviceName, string githubUrl)
     {
+        // TODO use same POC work used in Defra.Cdp.Backend.Api/Services/TenantArtifacts/ArtifactScanner.cs to
+        // get team details from the user service
         var artifact = new DeployableArtifact
         {
             Created = DateTime.UtcNow,
@@ -100,7 +102,8 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             .Match(d => d.ServiceName == service)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo)).Limit(1);
+            .Project(grp =>
+                new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Team.TeamName, grp.Root.Team.TeamId)).Limit(1);
         return await Collection.Aggregate(pipeline).FirstOrDefaultAsync();
     }
 
@@ -110,7 +113,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo));
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Team.TeamName, grp.Root.Team.TeamId));
 
         var result = await Collection.Aggregate(pipeline).ToListAsync() ?? new List<ServiceInfo>();
 

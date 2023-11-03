@@ -5,6 +5,13 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
+public sealed class TeamUserService
+{
+    [BsonIgnoreIfDefault]
+    public string TeamId { get; init; } = default!;
+    public string TeamName { get; init; } = default!;
+}
+
 public sealed class DeployableArtifact
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
@@ -24,6 +31,8 @@ public sealed class DeployableArtifact
 
     public string? ServiceName { get; init; } = default!;
 
+    public TeamUserService? Team { get; init; } = default!;
+
     public int ScannerVersion { get; init; } = default!;
 
     // TODO: replace this with references to the layers, maybe something like: {filename: layer}?  
@@ -35,4 +44,4 @@ public sealed class DeployableArtifact
 
 public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
 
-public sealed record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName);
+public sealed record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName, string? TeamName, string? TeamId);

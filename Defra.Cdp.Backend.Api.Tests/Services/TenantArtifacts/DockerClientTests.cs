@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -17,11 +18,12 @@ public class DockerClientTests
 
     private readonly HttpClient _httpMock = Substitute.For<HttpClient>();
     private readonly ILayerService _layerServiceMock = Substitute.For<ILayerService>();
+    private readonly IRepositoryService _repositoryServiceMock = Substitute.For<IRepositoryService>();
 
     public DockerClientTests()
     {
         _artifactScanner = new ArtifactScanner(_deployableServiceMock, _layerServiceMock, _dockerClientMock,
-            ConsoleLogger.CreateLogger<ArtifactScanner>());
+            ConsoleLogger.CreateLogger<ArtifactScanner>(), _repositoryServiceMock, _httpMock);
     }
 
     [Fact]

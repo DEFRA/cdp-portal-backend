@@ -1,5 +1,7 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Utils;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -58,6 +60,8 @@ public class ArtifactScanner : IArtifactScanner
     private readonly ILayerService _layerService;
 
     private readonly ILogger _logger;
+    private readonly IRepositoryService _repositoryService;
+    private readonly HttpClient _sharedClient;
 
     // A list of paths we dont want to scan (stuff in the base image basically, avoids false positives
     private readonly List<Regex> _pathsToIgnore = new() { new Regex("^/?usr/.*") };
@@ -66,13 +70,26 @@ public class ArtifactScanner : IArtifactScanner
         IDeployablesService deployablesService,
         ILayerService layerService,
         IDockerClient dockerClient,
-        ILogger<ArtifactScanner> logger)
+        ILogger<ArtifactScanner> logger,
+        IRepositoryService repositoryService,
+        HttpClient sharedClient)
     {
         _deployablesService = deployablesService;
         _layerService = layerService;
         _dockerClient = dockerClient;
         _logger = logger;
+        _repositoryService = repositoryService;
+        _sharedClient = sharedClient;
     }
+
+    public record UserServiceResponse(
+        UserServiceTeam team
+    );
+
+    public record UserServiceTeam(
+        string name,
+        string teamId
+    );
 
     public async Task<ArtifactScannerResult> ScanImage(string repo, string tag)
     {
@@ -107,6 +124,29 @@ public class ArtifactScanner : IArtifactScanner
 
         labels.TryGetValue("defra.cdp.service.name", out var serviceName);
 
+        // TODO POC code this needs improving once discussed
+        // Add failure
+        // Add auth
+        // Generally improve this code
+        // Check out - https://github.com/DEFRA/cdp-portal-backend/blob/main/Defra.Cdp.Backend.Api/Services/TenantArtifacts/DockerClient.cs#L56-L78
+
+        var maybeRepository = await _repositoryService.FindRepositoryById(serviceName!);
+
+        _logger.LogInformation("Teams ----------- {MaybeRepository}", maybeRepository?.Teams.First());
+
+        var githubTeamId = maybeRepository?.Teams.First();
+
+        var req = new HttpRequestMessage
+        {
+            Method = HttpMethod.Get,
+            RequestUri = new Uri($"http://localhost:3001/cdp-user-service-backend/teams/github/{githubTeamId}")
+        };
+
+        var userServiceResponse = await _sharedClient.SendAsync(req);
+
+        await using var stream = await userServiceResponse.Content.ReadAsStreamAsync();
+        var userServiceJson = await JsonSerializer.DeserializeAsync<UserServiceResponse>(stream);
+
         long semver = 0;
 
         try
@@ -128,7 +168,8 @@ public class ArtifactScanner : IArtifactScanner
             GithubUrl = githubUrl,
             ServiceName = serviceName,
             Files = mergedFiles.Values.ToList(),
-            SemVer = semver
+            SemVer = semver,
+            Team = new TeamUserService { TeamId = userServiceJson.team.teamId, TeamName = userServiceJson.team.name}
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);
