@@ -21,6 +21,8 @@
     <PackageReference Include="ErrorOr" Version="1.2.1"/>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.7.1"/>
     <PackageReference Include="GitHubJwt" Version="0.0.6"/>
+    <PackageReference Include="LocalStack.Client" Version="1.4.1"/>
+    <PackageReference Include="LocalStack.Client.Extensions" Version="1.2.2"/>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.22"/>
     <PackageReference Include="Microsoft.Identity.Web" Version="2.13.4"/>
     <PackageReference Include="MongoDB.Driver" Version="2.21.0"/>
