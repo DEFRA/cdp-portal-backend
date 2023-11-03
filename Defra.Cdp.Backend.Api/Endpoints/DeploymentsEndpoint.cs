@@ -99,8 +99,8 @@ public static class DeploymentsEndpoint
             Environment = rd.Environment,
             Service = rd.Service,
             Status = "REQUESTED",
-            User = rd.User,
-            UserId = rd.UserId,
+            UserId = rd.User?.Id,
+            User = rd.User?.DisplayName,
             Version = rd.Version,
             DockerImage = rd.Service
         };
