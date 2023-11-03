@@ -1,6 +1,5 @@
-using Amazon;
-using Amazon.Runtime;
 using Amazon.SQS;
+using LocalStack.Client.Extensions;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
@@ -10,14 +9,9 @@ public static class SqsSetup
     {
         if (isDevMode)
         {
-            var awsCreds = new BasicAWSCredentials("test", "test");
-            var sqsConfig = new AmazonSQSConfig
-            {
-                RegionEndpoint = RegionEndpoint.USEast1,
-                ServiceURL = configuration.GetValue<string>("SqsLocalServiceUrl") // Localstack's default port
-            };
-            var sqsClient = new AmazonSQSClient(awsCreds, sqsConfig);
-            service.AddSingleton<IAmazonSQS>(sqsClient);
+            service.AddLocalStack(configuration);
+            service.AddDefaultAWSOptions(configuration.GetAWSOptions());
+            service.AddAwsService<IAmazonSQS>();
         }
         else
         {
