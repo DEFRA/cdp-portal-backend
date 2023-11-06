@@ -67,15 +67,12 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
 
     public async Task<List<DeployableArtifact>> FindAll()
     {
-        return await Collection.Find(a => a.Tag.Trim() != "0.0.0").ToListAsync();
+        return await Collection.Find(FilterDefinition<DeployableArtifact>.Empty).ToListAsync();
     }
 
     public async Task<List<DeployableArtifact>> FindAll(string repo)
     {
-        return
-            await Collection
-                .Find(a => a.Repo == repo && a.Tag.Trim() != "0.0.0")
-                .ToListAsync();
+        return await Collection.Find(a => a.Repo == repo).ToListAsync();
     }
 
     public async Task<List<string>> FindAllRepoNames()
