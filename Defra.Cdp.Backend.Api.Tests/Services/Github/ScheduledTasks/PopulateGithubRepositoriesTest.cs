@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Github.ScheduledTasks;
 
 public class PopulateGithubRepositoriesTest
 {
-    private Repository QueryToRepository(RepositoryResult repoResult, IEnumerable<string> teams)
+    private Repository QueryToRepository(RepositoryResult repoResult, IEnumerable<RepositoryTeam> teams)
     {
         return new Repository
         {
@@ -22,7 +22,7 @@ public class PopulateGithubRepositoriesTest
         };
     }
 
-    private Repository QueryToRepository(RepositoryNode repoNode, IEnumerable<string> teams)
+    private Repository QueryToRepository(RepositoryNode repoNode, IEnumerable<RepositoryTeam> teams)
     {
         return new Repository
         {
@@ -53,13 +53,15 @@ public class PopulateGithubRepositoriesTest
                 new("cdp-platform", new[] { repoResult1, repoResult3 }),
                 new("fisheries", new[] { repoResult2, repoResult3 })
             };
+        var githubTeamToCdpMap = new Dictionary<string, string> { { "cdp-platform", "1111" }, { "fisheries", "2222" } };
 
-        var actual = PopulateGithubRepositories.QueryResultToRepositories(fakeQueryResult);
+        var actual = PopulateGithubRepositories.QueryResultToRepositories(fakeQueryResult, githubTeamToCdpMap);
         var expected = new List<Repository>
         {
-            QueryToRepository(repoResult1, new[] { "cdp-platform" }),
-            QueryToRepository(repoResult2, new[] { "fisheries" }),
-            QueryToRepository(repoResult3, new[] { "cdp-platform", "fisheries" })
+            QueryToRepository(repoResult1, new[] { new RepositoryTeam("cdp-platform", "1111") }),
+            QueryToRepository(repoResult2, new[] { new RepositoryTeam("fisheries", "2222") }),
+            QueryToRepository(repoResult3,
+                new[] { new RepositoryTeam("cdp-platform", "1111"), new RepositoryTeam("fisheries", "2222") })
         };
 
         var r1 = actual.First(r => r.Id == "repo1");
@@ -87,7 +89,7 @@ public class PopulateGithubRepositoriesTest
                     new Organization(
                         "some-id",
                         new Teams(
-                            null,
+                            null!,
                             new List<TeamNodes>
                             {
                                 new(
@@ -105,8 +107,8 @@ public class PopulateGithubRepositoriesTest
                             }
                         )
                     )));
-
-        var actual = PopulateGithubRepositories.QueryResultToRepositories(fakeQueryR).ToList();
+        var githubTeamToCdpMap = new Dictionary<string, string> { { "cdp-platform", "1111" }, { "fisheries", "2222" } };
+        var actual = PopulateGithubRepositories.QueryResultToRepositories(fakeQueryR, githubTeamToCdpMap).ToList();
 
         var repoResult1 =
             new RepositoryResult("repo1", "desc1", "Javascript", "https://url1", false, false, true, createdAt);
@@ -115,9 +117,10 @@ public class PopulateGithubRepositoriesTest
 
         var expected = new List<Repository>
         {
-            QueryToRepository(repoResult1, new[] { "cdp-platform" }),
-            QueryToRepository(repoResult2, new[] { "fisheries" }),
-            QueryToRepository(repoResult3, new[] { "cdp-platform", "fisheries" })
+            QueryToRepository(repoResult1, new[] { new RepositoryTeam("cdp-platform", "1111") }),
+            QueryToRepository(repoResult2, new[] { new RepositoryTeam("fisheries", "2222") }),
+            QueryToRepository(repoResult3,
+                new[] { new RepositoryTeam("cdp-platform", "1111"), new RepositoryTeam("fisheries", "2222") })
         };
 
         var r1 = actual.First(r => r.Id == "repo1");

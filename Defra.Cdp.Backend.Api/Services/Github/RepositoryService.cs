@@ -75,7 +75,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
 
     public async Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates)
     {
-        var baseFilter = Builders<Repository>.Filter.Eq(r => r.Teams, new[] { team });
+        var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.GithubId == team);
 
         var findDefinition = excludeTemplates
             ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))

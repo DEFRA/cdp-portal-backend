@@ -49,7 +49,8 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             Tag = "0.0.0",
             ScannerVersion = 1,
             SemVer = 0,
-            ServiceName = serviceName
+            ServiceName = serviceName,
+            RepositoryTeams = new List<RepositoryTeam>()
         };
 
         await Collection.ReplaceOneAsync(
