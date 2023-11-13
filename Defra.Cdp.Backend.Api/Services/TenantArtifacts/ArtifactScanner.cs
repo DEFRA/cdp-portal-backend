@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Utils;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -13,8 +14,8 @@ public interface IArtifactScanner
 public class ArtifactScannerResult
 {
     public readonly DeployableArtifact? Artifact;
-    public readonly bool Success;
     public readonly string Error;
+    public readonly bool Success;
 
     public ArtifactScannerResult(DeployableArtifact artifact)
     {
@@ -62,15 +63,19 @@ public class ArtifactScanner : IArtifactScanner
     // A list of paths we dont want to scan (stuff in the base image basically, avoids false positives
     private readonly List<Regex> _pathsToIgnore = new() { new Regex("^/?usr/.*") };
 
+    private readonly IRepositoryService _repositoryService;
+
     public ArtifactScanner(
         IDeployablesService deployablesService,
         ILayerService layerService,
         IDockerClient dockerClient,
+        IRepositoryService repositoryService,
         ILogger<ArtifactScanner> logger)
     {
         _deployablesService = deployablesService;
         _layerService = layerService;
         _dockerClient = dockerClient;
+        _repositoryService = repositoryService;
         _logger = logger;
     }
 
@@ -87,10 +92,9 @@ public class ArtifactScanner : IArtifactScanner
         if (image != null) labels = image.config.Labels;
 
         if (!labels.ContainsKey("defra.cdp.service.name"))
-        {
             // not a CDP built service!
-            return ArtifactScannerResult.Failure($"Not an CDP service, image {repo}:{tag} is missing label defra.cdp.service.name");
-        }
+            return ArtifactScannerResult.Failure(
+                $"Not an CDP service, image {repo}:{tag} is missing label defra.cdp.service.name");
 
         _logger.LogInformation("Scanning layers in {Repo}:{Tag} for package.json...", repo, tag);
 
@@ -118,6 +122,7 @@ public class ArtifactScanner : IArtifactScanner
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
 
+        var repository = await _repositoryService.FindRepositoryById(repo);
         // Persist the results.
         var artifact = new DeployableArtifact
         {
@@ -128,7 +133,8 @@ public class ArtifactScanner : IArtifactScanner
             GithubUrl = githubUrl,
             ServiceName = serviceName,
             Files = mergedFiles.Values.ToList(),
-            SemVer = semver
+            SemVer = semver,
+            RepositoryTeams = repository?.Teams ?? new List<RepositoryTeam>()
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);

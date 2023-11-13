@@ -8,6 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 public class GithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
+    private readonly HttpClient _client = new();
     private readonly GitHubJwtFactory _generator;
     private readonly string _githubOrgName;
     private readonly DateTimeOffset _lastConnectionRenewal = DateTimeOffset.MinValue;
@@ -32,6 +33,12 @@ public class GithubCredentialAndConnectionFactory
                 ExpirationSeconds = 600 // 10 minutes is the maximum time allowed
             }
         );
+        _client.DefaultRequestHeaders.Accept.Clear();
+        _client.DefaultRequestHeaders.Add(
+            "Accept", "application/vnd.github+json");
+        _client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+        _client.DefaultRequestHeaders.Add("User-Agent",
+            "cdp-portal-backend"); // required by Github API or else you get 403
     }
 
 
@@ -50,21 +57,14 @@ public class GithubCredentialAndConnectionFactory
             return _latestInstallationToken;
 
         var token = await GetCredentials(cancellationToken);
-        using HttpClient client = new();
-        client.DefaultRequestHeaders.Accept.Clear();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        client.DefaultRequestHeaders.Add(
-            "Accept", "application/vnd.github+json");
-        client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-        client.DefaultRequestHeaders.Add("User-Agent",
-            "cdp-portal-backend"); // required by Github API or else you get 403
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // This call is encapsulated in the non-graphql library. To avoid depending on both restful and graphql 
         // libraries, I'm choosing to call this URL directly. You can see the equivalent curl command in the comment
         // above the method
         var uri = $"https://api.github.com/app/installations/{_appInstallationId}/access_tokens";
         var result =
-            await client.PostAsync(uri,
+            await _client.PostAsync(uri,
                 null, cancellationToken);
 
         result.EnsureSuccessStatusCode();

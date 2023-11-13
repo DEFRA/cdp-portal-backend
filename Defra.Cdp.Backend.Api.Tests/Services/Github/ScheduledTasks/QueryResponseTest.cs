@@ -39,7 +39,7 @@ public class QueryResponseTest
                                         new(
                                             "analytics-standards",
                                             "Standards for service analytics",
-                                            null,
+                                            null!,
                                             "https://github.com/DEFRA/analytics-standards",
                                             false,
                                             false,

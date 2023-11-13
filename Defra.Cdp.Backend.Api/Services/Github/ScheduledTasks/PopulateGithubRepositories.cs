@@ -19,6 +19,7 @@ public sealed class PopulateGithubRepositories : IJob
     private readonly IRepositoryService _repositoryService;
 
     private readonly string _requestString;
+    private readonly UserServiceFetcher _userServiceFetcher;
 
 
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
@@ -36,6 +37,8 @@ public sealed class PopulateGithubRepositories : IJob
               ""query"": 
                  ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
             }}";
+
+        _userServiceFetcher = new UserServiceFetcher(configuration);
 
 
         _client.DefaultRequestHeaders.Accept.Clear();
@@ -56,21 +59,24 @@ public sealed class PopulateGithubRepositories : IJob
             new StringContent(_requestString),
             context.CancellationToken
         );
+        var userServiceRecords = _userServiceFetcher.getLatestCdpTeamsInformation();
+        var githubToCdpTeamIdMap = userServiceRecords.Result?.GithubToCdpMap ?? new Dictionary<string, string>();
         var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>();
         if (result is null)
         {
             var jsonString = jsonResponse.Content.ReadAsStringAsync();
-            _logger.LogError("The following was invalid json: {JsonString}", jsonString);
-            throw new ApplicationException("reponse must be parsed correct");
+            _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
+            throw new ApplicationException("response must be parsed correct");
         }
 
-        var repositories = QueryResultToRepositories(result).ToList();
+        var repositories = QueryResultToRepositories(result, githubToCdpTeamIdMap).ToList();
 
         await _repositoryService.UpsertMany(repositories, context.CancellationToken);
         await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), context.CancellationToken);
     }
 
-    public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result)
+    public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result,
+        Dictionary<string, string> githubToCdpTeamMap)
     {
         var teamsAndReposPair =
             result
@@ -98,12 +104,14 @@ public sealed class PopulateGithubRepositories : IJob
                     IsTemplate = r.IsTemplate,
                     Url = r.Url,
                     PrimaryLanguage = r.PrimaryLanguage,
-                    Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList()
+                    Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList().Select(t =>
+                        new RepositoryTeam(t, githubToCdpTeamMap.GetValueOrDefault(t)))
                 });
         return repositories;
     }
 
-    public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result)
+    public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result,
+        Dictionary<string, string> githubToCdpTeamMap)
     {
         var teamsAndReposPair =
             result.data.organization.teams.nodes
@@ -138,6 +146,7 @@ public sealed class PopulateGithubRepositories : IJob
                         Url = r.url,
                         PrimaryLanguage = primaryLanguage,
                         Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).ToList()
+                            .Select(t => new RepositoryTeam(t, githubToCdpTeamMap.GetValueOrDefault(t)))
                     };
                 });
         return repositories;

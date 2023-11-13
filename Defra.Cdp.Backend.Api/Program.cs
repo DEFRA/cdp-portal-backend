@@ -157,6 +157,7 @@ app.MapAdminEndpoint();
 app.MapHealthChecks("/health");
 
 // Start the ecs and ecr services
+#pragma warning disable CS4014
 var ecsSqsEventListener = app.Services.GetService<EcsEventListener>();
 logger.Information("Starting ECS listener - reading service events from SQS");
 Task.Run(() => ecsSqsEventListener?.ReadAsync()); // do not await this, we want it to run in the background
@@ -164,6 +165,6 @@ Task.Run(() => ecsSqsEventListener?.ReadAsync()); // do not await this, we want 
 var ecrSqsEventListener = app.Services.GetService<EcrEventListener>();
 logger.Information("Starting ECR listener - reading image creation events from SQS");
 Task.Run(() => ecrSqsEventListener?.ReadAsync()); // do not await this, we want it to run in the background
-
+#pragma warning restore CS4014
 
 app.Run();
