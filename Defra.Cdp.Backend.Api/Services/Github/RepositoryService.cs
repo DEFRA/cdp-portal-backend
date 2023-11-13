@@ -75,7 +75,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
 
     public async Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates)
     {
-        var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.GithubId == team);
+        var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.Github == team);
 
         var findDefinition = excludeTemplates
             ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))
@@ -103,6 +103,8 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         var languageIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.PrimaryLanguage));
         var isTemplateIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.IsTemplate));
         var isArchivedIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.IsArchived));
+        var teamIdIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.Teams.Select(t => t.TeamId)),
+            new CreateIndexOptions { Sparse = true });
 
         return new List<CreateIndexModel<Repository>>
         {
@@ -110,7 +112,8 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             teamsIndex,
             languageIndex,
             isTemplateIndex,
-            isArchivedIndex
+            isArchivedIndex,
+            teamIdIndex
         };
     }
 }

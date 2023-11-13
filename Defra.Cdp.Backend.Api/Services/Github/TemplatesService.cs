@@ -38,7 +38,7 @@ public class TemplatesService : ITemplatesService
     public async Task<IEnumerable<Repository>> FindTemplatesByTeam(string team)
     {
         var repositories = await AllTemplates();
-        return repositories.Where(r => r.Teams.Any(t => t.GithubId == team));
+        return repositories.Where(r => r.Teams.Any(t => t.Github == team));
     }
 
     public async Task<Repository?> FindTemplateById(string id)

@@ -26,7 +26,7 @@ public sealed class DeployableArtifact
 
     public int ScannerVersion { get; init; } = default!;
 
-    public IEnumerable<RepositoryTeam> RepositoryTeams { get; init; } = default!;
+    public IEnumerable<RepositoryTeam> Teams { get; init; } = default!;
 
     // TODO: replace this with references to the layers, maybe something like: {filename: layer}?  
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -37,4 +37,5 @@ public sealed class DeployableArtifact
 
 public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
 
-public sealed record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName);
+public sealed record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName,
+    IEnumerable<RepositoryTeam> Teams);

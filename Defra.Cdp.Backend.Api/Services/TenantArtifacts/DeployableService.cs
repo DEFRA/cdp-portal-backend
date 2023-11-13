@@ -50,7 +50,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             ScannerVersion = 1,
             SemVer = 0,
             ServiceName = serviceName,
-            RepositoryTeams = new List<RepositoryTeam>()
+            Teams = new List<RepositoryTeam>()
         };
 
         await Collection.ReplaceOneAsync(
@@ -98,7 +98,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             .Match(d => d.ServiceName == service)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo)).Limit(1);
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams)).Limit(1);
         return await Collection.Aggregate(pipeline).FirstOrDefaultAsync();
     }
 
@@ -108,7 +108,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo));
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams));
 
         var result = await Collection.Aggregate(pipeline).ToListAsync() ?? new List<ServiceInfo>();
 
@@ -129,6 +129,12 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             new CreateIndexModel<DeployableArtifact>(builder.Combine(builder.Ascending(r => r.Repo),
                 builder.Ascending(r => r.Tag)));
         var hashIndex = new CreateIndexModel<DeployableArtifact>(builder.Ascending(r => r.Sha256));
-        return new List<CreateIndexModel<DeployableArtifact>> { githubUrlIndex, repoAndTagIndex, hashIndex };
+        var teamIdIndex = new CreateIndexModel<DeployableArtifact>(
+            builder.Ascending(d => d.Teams.Select(t => t.TeamId)),
+            new CreateIndexOptions { Sparse = true });
+        return new List<CreateIndexModel<DeployableArtifact>>
+        {
+            githubUrlIndex, repoAndTagIndex, hashIndex, teamIdIndex
+        };
     }
 }

@@ -53,15 +53,23 @@ public class PopulateGithubRepositoriesTest
                 new("cdp-platform", new[] { repoResult1, repoResult3 }),
                 new("fisheries", new[] { repoResult2, repoResult3 })
             };
-        var githubTeamToCdpMap = new Dictionary<string, string> { { "cdp-platform", "1111" }, { "fisheries", "2222" } };
-
-        var actual = PopulateGithubRepositories.QueryResultToRepositories(fakeQueryResult, githubTeamToCdpMap);
+        var githubTeamToTeamIdMap =
+            new Dictionary<string, string> { { "cdp-platform", "1111" }, { "fisheries", "2222" } };
+        var githubTeamToTeamNameMap =
+            new Dictionary<string, string> { { "cdp-platform", "CDP Team" }, { "fisheries", "Fisheries" } };
+        var actual =
+            PopulateGithubRepositories.QueryResultToRepositories(fakeQueryResult, githubTeamToTeamIdMap,
+                githubTeamToTeamNameMap);
         var expected = new List<Repository>
         {
-            QueryToRepository(repoResult1, new[] { new RepositoryTeam("cdp-platform", "1111") }),
-            QueryToRepository(repoResult2, new[] { new RepositoryTeam("fisheries", "2222") }),
+            QueryToRepository(repoResult1, new[] { new RepositoryTeam("cdp-platform", "1111", "CDP Team") }),
+            QueryToRepository(repoResult2, new[] { new RepositoryTeam("fisheries", "2222", "Fisheries") }),
             QueryToRepository(repoResult3,
-                new[] { new RepositoryTeam("cdp-platform", "1111"), new RepositoryTeam("fisheries", "2222") })
+                new[]
+                {
+                    new RepositoryTeam("cdp-platform", "1111", "CDP Team"),
+                    new RepositoryTeam("fisheries", "2222", "Fisheries")
+                })
         };
 
         var r1 = actual.First(r => r.Id == "repo1");
@@ -107,8 +115,12 @@ public class PopulateGithubRepositoriesTest
                             }
                         )
                     )));
-        var githubTeamToCdpMap = new Dictionary<string, string> { { "cdp-platform", "1111" }, { "fisheries", "2222" } };
-        var actual = PopulateGithubRepositories.QueryResultToRepositories(fakeQueryR, githubTeamToCdpMap).ToList();
+        var githubTeamToTeamIdMap =
+            new Dictionary<string, string> { { "cdp-platform", "1111" }, { "fisheries", "2222" } };
+        var githubTeamToTeamNameMap =
+            new Dictionary<string, string> { { "cdp-platform", "CDP Team" }, { "fisheries", "Fisheries" } };
+        var actual = PopulateGithubRepositories
+            .QueryResultToRepositories(fakeQueryR, githubTeamToTeamIdMap, githubTeamToTeamNameMap).ToList();
 
         var repoResult1 =
             new RepositoryResult("repo1", "desc1", "Javascript", "https://url1", false, false, true, createdAt);
@@ -117,10 +129,14 @@ public class PopulateGithubRepositoriesTest
 
         var expected = new List<Repository>
         {
-            QueryToRepository(repoResult1, new[] { new RepositoryTeam("cdp-platform", "1111") }),
-            QueryToRepository(repoResult2, new[] { new RepositoryTeam("fisheries", "2222") }),
+            QueryToRepository(repoResult1, new[] { new RepositoryTeam("cdp-platform", "1111", "CDP Team") }),
+            QueryToRepository(repoResult2, new[] { new RepositoryTeam("fisheries", "2222", "Fisheries") }),
             QueryToRepository(repoResult3,
-                new[] { new RepositoryTeam("cdp-platform", "1111"), new RepositoryTeam("fisheries", "2222") })
+                new[]
+                {
+                    new RepositoryTeam("cdp-platform", "1111", "CDP Team"),
+                    new RepositoryTeam("fisheries", "2222", "Fisheries")
+                })
         };
 
         var r1 = actual.First(r => r.Id == "repo1");
