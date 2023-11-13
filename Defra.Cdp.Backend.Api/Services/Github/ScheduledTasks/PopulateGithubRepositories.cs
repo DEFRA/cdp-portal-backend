@@ -60,7 +60,8 @@ public sealed class PopulateGithubRepositories : IJob
             context.CancellationToken
         );
         var userServiceRecords = _userServiceFetcher.getLatestCdpTeamsInformation();
-        var githubToCdpTeamIdMap = userServiceRecords.Result?.GithubToCdpMap ?? new Dictionary<string, string>();
+        var githubToTeamIdMap = userServiceRecords.Result?.GithubToTeamIdMap ?? new Dictionary<string, string>();
+        var githubToTeamNameMap = userServiceRecords.Result?.GithubToTeamNameMap ?? new Dictionary<string, string>();
         var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>();
         if (result is null)
         {
@@ -69,14 +70,14 @@ public sealed class PopulateGithubRepositories : IJob
             throw new ApplicationException("response must be parsed correct");
         }
 
-        var repositories = QueryResultToRepositories(result, githubToCdpTeamIdMap).ToList();
+        var repositories = QueryResultToRepositories(result, githubToTeamIdMap, githubToTeamNameMap).ToList();
 
         await _repositoryService.UpsertMany(repositories, context.CancellationToken);
         await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), context.CancellationToken);
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result,
-        Dictionary<string, string> githubToCdpTeamMap)
+        Dictionary<string, string> githubToTeamIdMap, Dictionary<string, string> githubToTeamNameMap)
     {
         var teamsAndReposPair =
             result
@@ -104,14 +105,15 @@ public sealed class PopulateGithubRepositories : IJob
                     IsTemplate = r.IsTemplate,
                     Url = r.Url,
                     PrimaryLanguage = r.PrimaryLanguage,
-                    Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList().Select(t =>
-                        new RepositoryTeam(t, githubToCdpTeamMap.GetValueOrDefault(t)))
+                    Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList()
+                        .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
+                            githubToTeamNameMap.GetValueOrDefault(t)))
                 });
         return repositories;
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result,
-        Dictionary<string, string> githubToCdpTeamMap)
+        Dictionary<string, string> githubToTeamIdMap, Dictionary<string, string> githubToTeamNameMap)
     {
         var teamsAndReposPair =
             result.data.organization.teams.nodes
@@ -146,7 +148,8 @@ public sealed class PopulateGithubRepositories : IJob
                         Url = r.url,
                         PrimaryLanguage = primaryLanguage,
                         Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).ToList()
-                            .Select(t => new RepositoryTeam(t, githubToCdpTeamMap.GetValueOrDefault(t)))
+                            .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
+                                githubToTeamNameMap.GetValueOrDefault(t)))
                     };
                 });
         return repositories;

@@ -5,7 +5,15 @@ public record UserServiceRecord(
     List<UserServiceTeams> teams
 )
 {
-    public Dictionary<string, string> GithubToCdpMap { get; } = teams.ToDictionary(t => t.github, t => t.teamId);
+    public Dictionary<string, string> GithubToTeamIdMap { get; } =
+        teams
+            .Where(t => !string.IsNullOrWhiteSpace(t.github))
+            .ToDictionary(t => t.github, t => t.teamId);
+
+    public Dictionary<string, string> GithubToTeamNameMap { get; } =
+        teams
+            .Where(t => !string.IsNullOrWhiteSpace(t.github))
+            .ToDictionary(t => t.github, t => t.name);
 }
 
 public record UserServiceTeams(

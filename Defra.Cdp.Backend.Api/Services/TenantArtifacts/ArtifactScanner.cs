@@ -134,7 +134,7 @@ public class ArtifactScanner : IArtifactScanner
             ServiceName = serviceName,
             Files = mergedFiles.Values.ToList(),
             SemVer = semver,
-            RepositoryTeams = repository?.Teams ?? new List<RepositoryTeam>()
+            Teams = repository?.Teams ?? new List<RepositoryTeam>()
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);
