@@ -10,8 +10,8 @@ public class UserServiceFetcher
     public UserServiceFetcher(IConfiguration configuration)
     {
         var userServiceBackendUrl = configuration.GetValue<string>("UserServiceBackendUrl")!;
-        if (userServiceBackendUrl == null)
-            throw new ArgumentNullException("_userServiceBackendUrl", "User service backend url cannot be null");
+        if (string.IsNullOrWhiteSpace(userServiceBackendUrl))
+            throw new ArgumentNullException("userServiceBackendUrl", "User service backend url cannot be null");
         _client = new HttpClient();
         _client.BaseAddress = new Uri(userServiceBackendUrl);
         _client.DefaultRequestHeaders.Accept.Clear();
