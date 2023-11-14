@@ -37,11 +37,13 @@ public static class ArtifactsEndpoint
             .WithTags(Tag);
 
         app.MapGet(DeployablesBaseRoute, ListDeployables)
+            .RequireAuthorization()
             .WithName("GetDeployables")
             .Produces<List<string>>()
             .WithTags(Tag);
 
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo)
+            .RequireAuthorization()
             .WithName("GetTagsForRepo")
             .Produces<List<string>>()
             .WithTags(Tag);
@@ -61,7 +63,7 @@ public static class ArtifactsEndpoint
             .WithName("CreatePlaceholder")
             .Produces(StatusCodes.Status200OK)
             .WithTags(Tag);
-        
+
         return app;
     }
 
@@ -97,17 +99,24 @@ public static class ArtifactsEndpoint
 
 
     // GET /deployables
-    private static async Task<IResult> ListDeployables(IDeployablesService deployablesService)
+    private static async Task<IResult> ListDeployables(IDeployablesService deployablesService, HttpContext httpContext,
+        ILoggerFactory loggerFactory)
     {
+        var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
+        if (groups == null) return Results.Forbid();
         var repoNames = await deployablesService.FindAllRepoNames();
         return Results.Ok(repoNames);
     }
 
     // GET deployables/{repo}
     private static async Task<IResult> ListAvailableTagsForRepo(IDeployablesService deployablesService,
+        HttpContext httpContext,
+        ILoggerFactory loggerFactory,
         string repo)
     {
-        var tags = await deployablesService.FindAllTagsForRepo(repo);
+        var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
+        if (groups == null) return Results.Forbid();
+        var tags = await deployablesService.FindAllTagsForRepo(repo, groups);
         tags.Sort((a, b) =>
         {
             var la = SemVer.SemVerAsLong(a);
@@ -132,9 +141,10 @@ public static class ArtifactsEndpoint
     {
         return await deployablesService.FindServices(service);
     }
-    
+
     // POST /artifacts/placeholder
-    private static async Task<IResult> CreatePlaceholder(IDeployablesService deployablesService, string service, string githubUrl)
+    private static async Task<IResult> CreatePlaceholder(IDeployablesService deployablesService, string service,
+        string githubUrl)
     {
         await deployablesService.CreatePlaceholderAsync(service, githubUrl);
         return Results.Ok();
