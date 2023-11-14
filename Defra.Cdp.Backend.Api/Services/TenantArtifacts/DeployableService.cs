@@ -11,6 +11,10 @@ public interface IDeployablesService
     Task CreatePlaceholderAsync(string serviceName, string githubUrl);
     Task<DeployableArtifact?> FindByTag(string repo, string tag);
     Task<List<DeployableArtifact>> FindAll();
+
+    Task UpdateAll(List<Repository> repositories,
+        CancellationToken cancellationToken); // TODO: remove once we migrated old deployable artifacts
+
     Task<List<DeployableArtifact>> FindAll(string repo);
     Task<List<string>> FindAllRepoNames();
     Task<List<string>> FindAllRepoNames(IEnumerable<string> groups);
@@ -130,6 +134,36 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         var result = await Collection.Aggregate(pipeline).ToListAsync() ?? new List<ServiceInfo>();
 
         return result;
+    }
+
+    // TODO: remove once we migrated old deployable artifacts
+    public async Task UpdateAll(List<Repository> repositories, CancellationToken cancellationToken)
+    {
+        var allDeployables = await FindAll();
+        var serviceNames = allDeployables.Select(d => d.ServiceName).Where(d => d != null);
+        var filteredRepositories = repositories.Where(r => serviceNames.Contains(r.Id));
+        var newDeployableArtifacts = allDeployables.Select(d => new DeployableArtifact
+        {
+            Id = d.Id,
+            Created = d.Created,
+            Repo = d.Repo,
+            Tag = d.Tag,
+            Sha256 = d.Sha256,
+            GithubUrl = d.GithubUrl,
+            ServiceName = d.ServiceName,
+            ScannerVersion = d.ScannerVersion,
+            Teams = filteredRepositories.First(r => r.Id == d.ServiceName)?.Teams ?? new List<RepositoryTeam>(),
+            Files = d.Files,
+            SemVer = d.SemVer
+        });
+        var replaceOneModels =
+            newDeployableArtifacts.Select(newDeployableArtifact =>
+            {
+                var filter = Builders<DeployableArtifact>.Filter
+                    .Eq(d => d.Id, newDeployableArtifact.Id);
+                return new ReplaceOneModel<DeployableArtifact>(filter, newDeployableArtifact) { IsUpsert = true };
+            });
+        await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
     }
 
     public async Task<List<string?>> FindAllUniqueGithubRepos()

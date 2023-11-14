@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -14,22 +15,25 @@ public sealed record TeamResult(string Slug,
 public sealed class PopulateGithubRepositories : IJob
 {
     private readonly HttpClient _client = new();
+    private readonly IDeployablesService _deployablesService;
     private readonly GithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
     private readonly IRepositoryService _repositoryService;
 
     private readonly string _requestString;
     private readonly UserServiceFetcher _userServiceFetcher;
+    private bool _canUpdateDeployableArtifacts = true;
 
 
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
-        IRepositoryService repositoryService)
+        IRepositoryService repositoryService, IDeployablesService deployablesService)
     {
         var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubCredentialAndConnectionFactory = new GithubCredentialAndConnectionFactory(configuration);
 
         _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
         _repositoryService = repositoryService;
+        _deployablesService = deployablesService;
 
         _requestString =
             $@"
@@ -74,6 +78,11 @@ public sealed class PopulateGithubRepositories : IJob
 
         await _repositoryService.UpsertMany(repositories, context.CancellationToken);
         await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), context.CancellationToken);
+        if (_canUpdateDeployableArtifacts)
+        {
+            await _deployablesService.UpdateAll(repositories, context.CancellationToken);
+            _canUpdateDeployableArtifacts = false;
+        }
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result,
