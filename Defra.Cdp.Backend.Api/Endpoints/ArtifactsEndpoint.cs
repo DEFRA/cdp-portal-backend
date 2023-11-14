@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -103,8 +104,8 @@ public static class ArtifactsEndpoint
         ILoggerFactory loggerFactory)
     {
         var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
-        if (groups == null) return Results.Forbid();
-        var repoNames = await deployablesService.FindAllRepoNames();
+        if (groups.IsNullOrEmpty()) return Results.Forbid();
+        var repoNames = await deployablesService.FindAllRepoNames(groups);
         return Results.Ok(repoNames);
     }
 
@@ -115,7 +116,7 @@ public static class ArtifactsEndpoint
         string repo)
     {
         var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
-        if (groups == null) return Results.Forbid();
+        if (groups.IsNullOrEmpty()) return Results.Forbid();
         var tags = await deployablesService.FindAllTagsForRepo(repo, groups);
         tags.Sort((a, b) =>
         {
