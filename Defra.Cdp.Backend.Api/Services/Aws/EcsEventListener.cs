@@ -55,6 +55,8 @@ public class EcsEventListener : SqsListener
             try
             {
                 // skip any container that isn't know to deployables.
+                _logger.LogInformation("Received information on following ecs container: {EcsContainerImage}",
+                    ecsContainer.Image);
                 var (repo, tag) = SplitImage(ecsContainer.Image);
                 if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
                 {
