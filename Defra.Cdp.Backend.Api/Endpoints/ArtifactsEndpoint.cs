@@ -100,24 +100,31 @@ public static class ArtifactsEndpoint
 
 
     // GET /deployables
-    private static async Task<IResult> ListDeployables(IDeployablesService deployablesService, HttpContext httpContext,
+    private static async Task<IResult> ListDeployables(IDeployablesService deployablesService,
+        IConfiguration configuration, HttpContext httpContext,
         ILoggerFactory loggerFactory)
     {
+        var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
         var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
         if (groups.IsNullOrEmpty()) return Results.Forbid();
-        var repoNames = await deployablesService.FindAllRepoNames(groups);
+        var repoNames = groups.Contains(adminGroup)
+            ? await deployablesService.FindAllRepoNames()
+            : await deployablesService.FindAllRepoNames(groups);
         return Results.Ok(repoNames);
     }
 
     // GET deployables/{repo}
     private static async Task<IResult> ListAvailableTagsForRepo(IDeployablesService deployablesService,
-        HttpContext httpContext,
+        IConfiguration configuration, HttpContext httpContext,
         ILoggerFactory loggerFactory,
         string repo)
     {
         var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
         if (groups.IsNullOrEmpty()) return Results.Forbid();
-        var tags = await deployablesService.FindAllTagsForRepo(repo, groups);
+        var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
+        var tags = groups.Contains(adminGroup)
+            ? await deployablesService.FindAllTagsForRepo(repo)
+            : await deployablesService.FindAllTagsForRepo(repo, groups);
         tags.Sort((a, b) =>
         {
             var la = SemVer.SemVerAsLong(a);
