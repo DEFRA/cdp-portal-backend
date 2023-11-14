@@ -13,8 +13,10 @@ public interface IDeployablesService
     Task<List<DeployableArtifact>> FindAll();
     Task<List<DeployableArtifact>> FindAll(string repo);
     Task<List<string>> FindAllRepoNames();
+    Task<List<string>> FindAllRepoNames(IEnumerable<string> groups);
     Task<List<ServiceInfo>> FindAllServices();
     Task<List<string>> FindAllTagsForRepo(string repo);
+    Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups);
     Task<ServiceInfo?> FindServices(string service);
 }
 
@@ -83,12 +85,26 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             .ToListAsync();
     }
 
+    public async Task<List<string>> FindAllRepoNames(IEnumerable<string> groups)
+    {
+        return await Collection
+            .Distinct(d => d.Repo, d => d.Teams.Any(t => groups.Contains(t.TeamId)))
+            .ToListAsync();
+    }
+
     public async Task<List<string>> FindAllTagsForRepo(string repo)
     {
         var res = await Collection
             .Find(d => d.Repo == repo)
             .ToListAsync();
-        // TODO: fix this up once we understand why documentdb doesn't like projects 
+        return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
+    }
+
+    public async Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups)
+    {
+        var res = await Collection
+            .Find(d => d.Repo == repo && d.Teams.Any(t => groups.Contains(t.TeamId)))
+            .ToListAsync();
         return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
     }
 
@@ -98,7 +114,8 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             .Match(d => d.ServiceName == service)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams)).Limit(1);
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
+            .Limit(1);
         return await Collection.Aggregate(pipeline).FirstOrDefaultAsync();
     }
 
