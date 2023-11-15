@@ -152,7 +152,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             GithubUrl = d.GithubUrl,
             ServiceName = d.ServiceName,
             ScannerVersion = d.ScannerVersion,
-            Teams = filteredRepositories.First(r => r.Id == d.ServiceName)?.Teams ?? new List<RepositoryTeam>(),
+            Teams = filteredRepositories.FirstOrDefault(r => r.Id == d.ServiceName)?.Teams ?? new List<RepositoryTeam>(),
             Files = d.Files,
             SemVer = d.SemVer
         });
