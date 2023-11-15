@@ -5,7 +5,26 @@ using GitHubJwt;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
-public class GithubCredentialAndConnectionFactory
+public interface IGithubCredentialAndConnectionFactory
+{
+    Task<string> GetCredentials(CancellationToken cancellationToken = new());
+    Task<string?> GetToken(CancellationToken cancellationToken = new());
+}
+
+public class MockGithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
+{
+    public Task<string> GetCredentials(CancellationToken cancellationToken = new CancellationToken())
+    {
+        return Task.FromResult("user:creds");
+    }
+
+    public Task<string?> GetToken(CancellationToken cancellationToken = new CancellationToken())
+    {
+        return Task.FromResult("token")!;
+    }
+}
+
+public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
     private readonly HttpClient _client = new();

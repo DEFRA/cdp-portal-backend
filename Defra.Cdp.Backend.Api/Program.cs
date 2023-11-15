@@ -72,7 +72,10 @@ builder.Services.AddSqsClient(builder.Configuration, builder.IsDevMode());
 
 if (builder.IsDevMode())
 {
+    logger.Information("Using mock Docker Credential Provider");
     builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
+    logger.Information("Using mock Github Credential Provider");
+    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, MockGithubCredentialAndConnectionFactory>();
 }
 else
 {
@@ -80,6 +83,8 @@ else
     builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
     logger.Information("Connecting to ECR as a docker registry");
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
+    logger.Information("Setting up Github App credential provider");
+    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 }
 
 // Quartz setup for Github scheduler

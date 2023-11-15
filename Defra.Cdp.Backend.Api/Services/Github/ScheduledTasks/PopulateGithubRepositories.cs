@@ -1,4 +1,6 @@
 using System.Net.Http.Headers;
+using System.Net.Mime;
+using System.Text;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Quartz;
@@ -16,7 +18,7 @@ public sealed class PopulateGithubRepositories : IJob
 {
     private readonly HttpClient _client = new();
     private readonly IDeployablesService _deployablesService;
-    private readonly GithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
+    private readonly IGithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
     private readonly IRepositoryService _repositoryService;
 
@@ -24,12 +26,18 @@ public sealed class PopulateGithubRepositories : IJob
     private readonly UserServiceFetcher _userServiceFetcher;
     private bool _canUpdateDeployableArtifacts = true;
 
-
+    private readonly string _githubApiUrl;
+    private readonly string _githubOrgName;
+    
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
-        IRepositoryService repositoryService, IDeployablesService deployablesService)
+        IRepositoryService repositoryService, 
+        IDeployablesService deployablesService,
+        IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
-        var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
-        _githubCredentialAndConnectionFactory = new GithubCredentialAndConnectionFactory(configuration);
+        _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
+        _githubApiUrl = configuration.GetValue<string>("Github:ApiUrl")!;
+
+        _githubCredentialAndConnectionFactory = githubCredentialAndConnectionFactory;
 
         _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
         _repositoryService = repositoryService;
@@ -39,7 +47,7 @@ public sealed class PopulateGithubRepositories : IJob
             $@"
             {{
               ""query"": 
-                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
+                 ""query {{ organization(login: \""{_githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
             }}";
 
         _userServiceFetcher = new UserServiceFetcher(configuration);
@@ -54,13 +62,14 @@ public sealed class PopulateGithubRepositories : IJob
     public async Task Execute(IJobExecutionContext context)
     {
         _logger.LogInformation("Repopulating Github repositories");
-
+        
+        
         var token = await _githubCredentialAndConnectionFactory.GetToken();
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
         var jsonResponse = await _client.PostAsync(
-            "https://api.github.com/graphql",
-            new StringContent(_requestString),
+           _githubApiUrl,
+            new StringContent(_requestString, Encoding.UTF8, "application/json"),
             context.CancellationToken
         );
         var userServiceRecords = _userServiceFetcher.getLatestCdpTeamsInformation();
