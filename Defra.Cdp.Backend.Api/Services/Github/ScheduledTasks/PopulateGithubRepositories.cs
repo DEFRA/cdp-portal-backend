@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using System.Net.Mime;
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -27,14 +26,13 @@ public sealed class PopulateGithubRepositories : IJob
     private bool _canUpdateDeployableArtifacts = true;
 
     private readonly string _githubApiUrl;
-    private readonly string _githubOrgName;
-    
+
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
         IRepositoryService repositoryService, 
         IDeployablesService deployablesService,
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
-        _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
+        var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubApiUrl = configuration.GetValue<string>("Github:ApiUrl")!;
 
         _githubCredentialAndConnectionFactory = githubCredentialAndConnectionFactory;
@@ -47,7 +45,7 @@ public sealed class PopulateGithubRepositories : IJob
             $@"
             {{
               ""query"": 
-                 ""query {{ organization(login: \""{_githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
+                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
             }}";
 
         _userServiceFetcher = new UserServiceFetcher(configuration);
