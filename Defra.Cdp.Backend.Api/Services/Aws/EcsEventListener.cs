@@ -41,7 +41,7 @@ public class EcsEventListener : SqsListener
     {
         var deployments = new List<Deployment>();
         var env = _environmentLookup.FindEnv(ecsEvent.Account);
-        var containersToScan = ecsEvent.Detail.Containers.Where(c => !_containersToIgnore.Contains(c.Name));
+        var containersToScan = ecsEvent.Detail.Containers;
 
         if (env == null)
         {
@@ -54,12 +54,20 @@ public class EcsEventListener : SqsListener
         foreach (var ecsContainer in containersToScan)
             try
             {
-                // skip any container that isn't know to deployables.
+                
+                // skip any container name that can't be parsed
                 var (repo, tag) = SplitImage(ecsContainer.Image);
                 if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
                 {
                     _logger.LogInformation("Ignoring {Image}, could not extract repo and tag, not a known container",
                         ecsContainer.Image);
+                    continue;
+                }
+                
+                // skip any containers in the ignore list
+                if(_containersToIgnore.Contains(repo))
+                {
+                    _logger.LogInformation("Ignoring {Image}, as its on the ignore list", ecsContainer.Image);
                     continue;
                 }
 
@@ -108,8 +116,12 @@ public class EcsEventListener : SqsListener
         return deployments;
     }
 
-    public static (string?, string?) SplitImage(string image)
+    public static (string?, string?) SplitImage(string? image)
     {
+        if (image == null)
+        {
+            return (null, null);
+        }
         var rx = new Regex("^.+\\/(.+):(.+)$");
         var result = rx.Match(image);
         if (result.Groups.Count == 3) return (result.Groups[1].Value, result.Groups[2].Value);
