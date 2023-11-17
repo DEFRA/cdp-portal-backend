@@ -6,9 +6,9 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public interface IEcsEventsService
 {
-    Task SaveMessage(string id, string body);
+    Task SaveMessage(string id, string body, CancellationToken cancellationToken);
 
-    Task<IAsyncCursor<EcsEventCopy>> FindAll();
+    Task<IAsyncCursor<EcsEventCopy>> FindAll(CancellationToken cancellationToken);
 }
 
 public class EcsEventsService : MongoService<EcsEventCopy>, IEcsEventsService
@@ -21,14 +21,15 @@ public class EcsEventsService : MongoService<EcsEventCopy>, IEcsEventsService
     {
     }
 
-    public async Task SaveMessage(string id, string body)
+    public async Task SaveMessage(string id, string body, CancellationToken cancellationToken)
     {
-        await Collection.InsertOneAsync(new EcsEventCopy(id, new DateTime(), body));
+        await Collection.InsertOneAsync(new EcsEventCopy(id, new DateTime(), body),
+            cancellationToken: cancellationToken);
     }
 
-    public async Task<IAsyncCursor<EcsEventCopy>> FindAll()
+    public async Task<IAsyncCursor<EcsEventCopy>> FindAll(CancellationToken cancellationToken)
     {
-        return await Collection.Find(FilterDefinition<EcsEventCopy>.Empty).ToCursorAsync();
+        return await Collection.Find(FilterDefinition<EcsEventCopy>.Empty).ToCursorAsync(cancellationToken);
     }
 
     protected override List<CreateIndexModel<EcsEventCopy>> DefineIndexes(

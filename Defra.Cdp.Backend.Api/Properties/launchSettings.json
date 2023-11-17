@@ -8,9 +8,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "Mongo__DatabaseUri": "mongodb://127.0.0.1:27017",
-        "AzureAd__Instance": "https://login.microsoftonline.com/",
-        "AzureAd__TenantId": "6f504113-6b64-43f2-ade9-242e05780007",
-        "AzureAd__ClientId": "63983fc2-cfff-45bb-8ec2-959e21062b9a"
+        "AzureAd__Instance": "https://login.microsoftonline.com/"
       }
     }
   }

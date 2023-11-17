@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public interface IEcrEventsService
 {
-    Task SaveMessage(string id, string body);
+    Task SaveMessage(string id, string body, CancellationToken cancellationToken);
 }
 
 public class EcrEventsService : MongoService<EcrEventCopy>, IEcrEventsService
@@ -19,9 +19,10 @@ public class EcrEventsService : MongoService<EcrEventCopy>, IEcrEventsService
     {
     }
 
-    public async Task SaveMessage(string id, string body)
+    public async Task SaveMessage(string id, string body, CancellationToken cancellationToken)
     {
-        await Collection.InsertOneAsync(new EcrEventCopy(id, new DateTimeOffset(), body));
+        await Collection.InsertOneAsync(new EcrEventCopy(id, new DateTimeOffset(), body),
+            cancellationToken: cancellationToken);
     }
 
     protected override List<CreateIndexModel<EcrEventCopy>> DefineIndexes(

@@ -17,8 +17,9 @@ public static class RepositoriesEndpoint
     {
         app.MapGet(RepositoriesBaseRoute,
                 async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team,
-                        [FromQuery(Name = "excludeTemplates")] bool? excludeTemplates) =>
-                    await GetAllRepositories(repositoryService, team, excludeTemplates))
+                        [FromQuery(Name = "excludeTemplates")] bool? excludeTemplates,
+                        CancellationToken cancellationToken) =>
+                    await GetAllRepositories(repositoryService, team, excludeTemplates, cancellationToken))
             .WithName("GetAllRepositories")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
@@ -37,8 +38,9 @@ public static class RepositoriesEndpoint
 
         // return as templates in the body
         app.MapGet(TemplatesBaseRoute,
-                async (ITemplatesService templatesService, [FromQuery(Name = "team")] string? team) =>
-                await GetAllTemplates(templatesService, team))
+                async (ITemplatesService templatesService, [FromQuery(Name = "team")] string? team,
+                        CancellationToken cancellationToken) =>
+                    await GetAllTemplates(templatesService, team, cancellationToken))
             .WithName("GetAllTemplates")
             .Produces<MultipleTemplatesResponse>()
             .WithTags(TemplatesTag);
@@ -57,20 +59,22 @@ public static class RepositoriesEndpoint
         return app;
     }
 
-    private static async Task<IResult> GetRepositoryById(IRepositoryService repositoryService, string id)
+    private static async Task<IResult> GetRepositoryById(IRepositoryService repositoryService, string id,
+        CancellationToken cancellationToken)
     {
-        var maybeRepository = await repositoryService.FindRepositoryById(id);
+        var maybeRepository = await repositoryService.FindRepositoryById(id, cancellationToken);
         return maybeRepository == null
             ? Results.NotFound(new { message = $"{id} not found" })
             : Results.Ok(new SingleRepositoryResponse(maybeRepository));
     }
 
     private static async Task<IResult> GetAllRepositories(IRepositoryService repositoryService, string? team,
-        bool? excludeTemplates)
+        bool? excludeTemplates, CancellationToken cancellationToken)
     {
         var repositories = string.IsNullOrWhiteSpace(team)
-            ? await repositoryService.AllRepositories(excludeTemplates.GetValueOrDefault())
-            : await repositoryService.FindRepositoriesByTeam(team, excludeTemplates.GetValueOrDefault());
+            ? await repositoryService.AllRepositories(excludeTemplates.GetValueOrDefault(), cancellationToken)
+            : await repositoryService.FindRepositoriesByTeam(team, excludeTemplates.GetValueOrDefault(),
+                cancellationToken);
 
         if (excludeTemplates.GetValueOrDefault()) repositories = repositories.Where(r => !r.IsTemplate).ToList();
 
@@ -78,30 +82,32 @@ public static class RepositoriesEndpoint
     }
 
     private static async Task<IResult> GetAllReposTemplatesLibraries(IRepositoryService repositoryService,
-        ITemplatesService templatesService, string? team)
+        ITemplatesService templatesService, string? team, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(team)) return Results.BadRequest(new { message = "The team must be specified" });
 
-        var repositories = await repositoryService.FindRepositoriesByTeam(team, true);
+        var repositories = await repositoryService.FindRepositoriesByTeam(team, true, cancellationToken);
 
-        var templates = await templatesService.FindTemplatesByTeam(team);
+        var templates = await templatesService.FindTemplatesByTeam(team, cancellationToken);
 
         return Results.Ok(new AllRepoTemplatesLibrariesResponse(repositories, templates));
     }
 
-    private static async Task<IResult> GetTemplateById(ITemplatesService templatesService, string templateId)
+    private static async Task<IResult> GetTemplateById(ITemplatesService templatesService, string templateId,
+        CancellationToken cancellationToken)
     {
-        var maybeTemplate = await templatesService.FindTemplateById(templateId);
+        var maybeTemplate = await templatesService.FindTemplateById(templateId, cancellationToken);
         return maybeTemplate == null
             ? Results.NotFound(new { message = $"{templateId} not found" })
             : Results.Ok(new SingleTemplateResponse(maybeTemplate!));
     }
 
-    private static async Task<IResult> GetAllTemplates(ITemplatesService templatesService, string? team)
+    private static async Task<IResult> GetAllTemplates(ITemplatesService templatesService, string? team,
+        CancellationToken cancellationToken)
     {
         var templates = string.IsNullOrWhiteSpace(team)
-            ? await templatesService.AllTemplates()
-            : await templatesService.FindTemplatesByTeam(team);
+            ? await templatesService.AllTemplates(cancellationToken)
+            : await templatesService.FindTemplatesByTeam(team, cancellationToken);
 
         return Results.Ok(new MultipleTemplatesResponse(templates));
     }

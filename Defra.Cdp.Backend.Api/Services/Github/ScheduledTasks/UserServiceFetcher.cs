@@ -21,11 +21,11 @@ public class UserServiceFetcher
             "cdp-portal-backend");
     }
 
-    public async Task<UserServiceRecord?> getLatestCdpTeamsInformation()
+    public async Task<UserServiceRecord?> getLatestCdpTeamsInformation(CancellationToken cancellationToken)
     {
-        var result = await _client.GetAsync("/cdp-user-service-backend/teams");
+        var result = await _client.GetAsync("/cdp-user-service-backend/teams", cancellationToken);
         result.EnsureSuccessStatusCode();
-        var response = await result.Content.ReadAsStreamAsync();
-        return await JsonSerializer.DeserializeAsync<UserServiceRecord>(response);
+        var response = await result.Content.ReadAsStreamAsync(cancellationToken);
+        return await JsonSerializer.DeserializeAsync<UserServiceRecord>(response, cancellationToken: cancellationToken);
     }
 }

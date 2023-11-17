@@ -37,7 +37,7 @@ public class EcsEventListener : SqsListener
         _logger.LogInformation("Listening for deployment events on {QueueUrl}", config.Value.QueueUrl);
     }
 
-    private async Task<List<Deployment>> ConvertToDeployment(EcsEvent ecsEvent)
+    private async Task<List<Deployment>> ConvertToDeployment(EcsEvent ecsEvent, CancellationToken cancellationToken)
     {
         var deployments = new List<Deployment>();
         var env = _environmentLookup.FindEnv(ecsEvent.Account);
@@ -63,7 +63,7 @@ public class EcsEventListener : SqsListener
                     continue;
                 }
 
-                var ids = await _deployablesService.FindByTag(repo, tag);
+                var ids = await _deployablesService.FindByTag(repo, tag, cancellationToken);
                 if (ids == null)
                 {
                     _logger.LogInformation("Ignoring {Image}, not a known container", ecsContainer.Image);
@@ -76,7 +76,8 @@ public class EcsEventListener : SqsListener
 
                 // Find the requested deployment so we can fill out the username
                 var requestedDeployment =
-                    await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, taskId);
+                    await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, taskId,
+                        cancellationToken);
 
                 var deployment = new Deployment
                 {
@@ -95,7 +96,8 @@ public class EcsEventListener : SqsListener
                 {
                     _logger.LogInformation("Linking {Id} to deployment {DeploymentId}", requestedDeployment.Id,
                         deploymentId);
-                    await _deploymentsService.LinkRequestedDeployment(requestedDeployment.Id, deployment);
+                    await _deploymentsService.LinkRequestedDeployment(requestedDeployment.Id, deployment,
+                        cancellationToken);
                 }
 
                 deployments.Add(deployment);
@@ -117,20 +119,20 @@ public class EcsEventListener : SqsListener
         return (null, null);
     }
 
-    private async Task ProcessMessageAsync(string id, string messageBody)
+    private async Task ProcessMessageAsync(string id, string messageBody, CancellationToken cancellationToken)
     {
         var ecsEvent = JsonSerializer.Deserialize<EcsEvent>(messageBody);
 
         // TODO: consider tracking destroy etc so we can mark the end date on the deployment
         if (ecsEvent is { DetailType: "ECS Task State Change", Detail.DesiredStatus: "RUNNING" })
         {
-            var deployments = await ConvertToDeployment(ecsEvent);
+            var deployments = await ConvertToDeployment(ecsEvent, cancellationToken);
             foreach (var deployment in deployments)
             {
                 _logger.LogInformation("saving deployment event {Environment}:{Service}:{Version}",
                     deployment.Environment,
                     deployment.Service, deployment.Version);
-                await _deploymentsService.Insert(deployment);
+                await _deploymentsService.Insert(deployment, cancellationToken);
             }
         }
         else
@@ -144,24 +146,24 @@ public class EcsEventListener : SqsListener
         }
     }
 
-    public override async Task HandleMessageAsync(Message message)
+    public override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Receive: {MessageMessageId}: {MessageBody}", message.MessageId, message.Body);
         // keep a backup copy of the event (currently for debug/testing/replaying)
-        await _ecsEventsService.SaveMessage(message.MessageId, message.Body);
-        await ProcessMessageAsync(message.MessageId, message.Body);
+        await _ecsEventsService.SaveMessage(message.MessageId, message.Body, cancellationToken);
+        await ProcessMessageAsync(message.MessageId, message.Body, cancellationToken);
     }
 
-    public async Task Backfill()
+    public async Task Backfill(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting backfill");
-        var cursor = await _ecsEventsService.FindAll();
+        var cursor = await _ecsEventsService.FindAll(cancellationToken);
         await cursor.ForEachAsync(async m =>
         {
             _logger.LogInformation("Backfilling {MessageId}", m.MessageId);
             try
             {
-                await ProcessMessageAsync(m.MessageId, m.Body);
+                await ProcessMessageAsync(m.MessageId, m.Body, cancellationToken);
             }
             catch (Exception ex)
             {

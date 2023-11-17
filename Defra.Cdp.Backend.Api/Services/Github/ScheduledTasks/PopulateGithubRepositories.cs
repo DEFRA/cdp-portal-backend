@@ -17,6 +17,8 @@ public sealed class PopulateGithubRepositories : IJob
 {
     private readonly HttpClient _client = new();
     private readonly IDeployablesService _deployablesService;
+
+    private readonly string _githubApiUrl;
     private readonly IGithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
     private readonly IRepositoryService _repositoryService;
@@ -25,10 +27,8 @@ public sealed class PopulateGithubRepositories : IJob
     private readonly UserServiceFetcher _userServiceFetcher;
     private bool _canUpdateDeployableArtifacts = true;
 
-    private readonly string _githubApiUrl;
-
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
-        IRepositoryService repositoryService, 
+        IRepositoryService repositoryService,
         IDeployablesService deployablesService,
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
@@ -60,34 +60,35 @@ public sealed class PopulateGithubRepositories : IJob
     public async Task Execute(IJobExecutionContext context)
     {
         _logger.LogInformation("Repopulating Github repositories");
-        
-        
-        var token = await _githubCredentialAndConnectionFactory.GetToken();
+        var cancellationToken = context.CancellationToken;
+
+        var token = await _githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
         var jsonResponse = await _client.PostAsync(
-           _githubApiUrl,
+            _githubApiUrl,
             new StringContent(_requestString, Encoding.UTF8, "application/json"),
-            context.CancellationToken
+            cancellationToken
         );
-        var userServiceRecords = _userServiceFetcher.getLatestCdpTeamsInformation();
+        jsonResponse.EnsureSuccessStatusCode();
+        var userServiceRecords = _userServiceFetcher.getLatestCdpTeamsInformation(cancellationToken);
         var githubToTeamIdMap = userServiceRecords.Result?.GithubToTeamIdMap ?? new Dictionary<string, string>();
         var githubToTeamNameMap = userServiceRecords.Result?.GithubToTeamNameMap ?? new Dictionary<string, string>();
-        var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>();
+        var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken: cancellationToken);
         if (result is null)
         {
-            var jsonString = jsonResponse.Content.ReadAsStringAsync();
+            var jsonString = jsonResponse.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
             throw new ApplicationException("response must be parsed correct");
         }
 
         var repositories = QueryResultToRepositories(result, githubToTeamIdMap, githubToTeamNameMap).ToList();
 
-        await _repositoryService.UpsertMany(repositories, context.CancellationToken);
-        await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), context.CancellationToken);
+        await _repositoryService.UpsertMany(repositories, cancellationToken);
+        await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
         if (_canUpdateDeployableArtifacts)
         {
-            await _deployablesService.UpdateAll(repositories, context.CancellationToken);
+            await _deployablesService.UpdateAll(repositories, cancellationToken);
             _canUpdateDeployableArtifacts = false;
         }
     }
