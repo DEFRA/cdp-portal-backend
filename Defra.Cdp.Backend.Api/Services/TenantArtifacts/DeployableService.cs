@@ -162,8 +162,12 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
                 var filter = Builders<DeployableArtifact>.Filter
                     .Eq(d => d.Id, newDeployableArtifact.Id);
                 return new ReplaceOneModel<DeployableArtifact>(filter, newDeployableArtifact) { IsUpsert = true };
-            });
-        await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
+            }).ToList();
+
+        if (replaceOneModels.Any())
+        {
+            await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);    
+        }
     }
 
     public async Task<List<string?>> FindAllUniqueGithubRepos()
