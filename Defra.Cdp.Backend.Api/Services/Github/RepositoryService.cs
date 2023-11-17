@@ -46,8 +46,13 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
                 var filter = Builders<Repository>.Filter
                     .Eq(r => r.Id, repository.Id);
                 return new ReplaceOneModel<Repository>(filter, repository) { IsUpsert = true };
-            });
-        await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
+            }).ToList();
+
+        if (replaceOneModels.Any())
+        {
+            // BulkWrite fails if its called with a zero length array
+            await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);    
+        }
     }
 
     public async Task<Repository?> FindRepositoryById(string id)
