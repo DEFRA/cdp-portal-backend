@@ -33,7 +33,7 @@ public sealed class PopulateGithubRepositories : IJob
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
         var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
-        _githubApiUrl = configuration.GetValue<string>("Github:ApiUrl")!;
+        _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
 
         _githubCredentialAndConnectionFactory = githubCredentialAndConnectionFactory;
 
@@ -91,6 +91,8 @@ public sealed class PopulateGithubRepositories : IJob
             await _deployablesService.UpdateAll(repositories, cancellationToken);
             _canUpdateDeployableArtifacts = false;
         }
+
+        _logger.LogInformation("Successfully repopulated repositories and team information");
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result,

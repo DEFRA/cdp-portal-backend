@@ -11,38 +11,24 @@ public interface IGithubCredentialAndConnectionFactory
     Task<string?> GetToken(CancellationToken cancellationToken = new());
 }
 
-public class MockGithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
-{
-    public Task<string> GetCredentials(CancellationToken cancellationToken = new CancellationToken())
-    {
-        return Task.FromResult("user:creds");
-    }
-
-    public Task<string?> GetToken(CancellationToken cancellationToken = new CancellationToken())
-    {
-        return Task.FromResult("token")!;
-    }
-}
-
 public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
     private readonly HttpClient _client = new();
     private readonly GitHubJwtFactory _generator;
-    private readonly string _githubOrgName;
+    private readonly string _githubApiUrl;
     private readonly DateTimeOffset _lastConnectionRenewal = DateTimeOffset.MinValue;
     private DateTimeOffset _lastTokenGeneratedTime = DateTimeOffset.MinValue;
     private string? _latestInstallationToken;
     private string _latestJwt = null!;
 
-
     public GithubCredentialAndConnectionFactory(IConfiguration configuration)
     {
         var encodedPem = configuration.GetValue<string>("Github:AppKey")!;
         var keySource = new Base64StringPrivateKeySource(encodedPem);
+        _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
         var appId = configuration.GetValue<int>("Github:AppId")!;
         _appInstallationId = configuration.GetValue<int>("Github:AppInstallationId");
-        _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _generator = new GitHubJwtFactory(
             keySource,
             new GitHubJwtFactoryOptions
@@ -81,7 +67,7 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
         // This call is encapsulated in the non-graphql library. To avoid depending on both restful and graphql 
         // libraries, I'm choosing to call this URL directly. You can see the equivalent curl command in the comment
         // above the method
-        var uri = $"https://api.github.com/app/installations/{_appInstallationId}/access_tokens";
+        var uri = $"{_githubApiUrl}/app/installations/{_appInstallationId}/access_tokens";
         var result =
             await _client.PostAsync(uri,
                 null, cancellationToken);

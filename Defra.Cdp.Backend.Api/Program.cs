@@ -71,12 +71,13 @@ builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentV
 logger.Information("Attempting to add SQS, ECR and Docker Client");
 builder.Services.AddSqsClient(builder.Configuration, builder.IsDevMode());
 
+// Github credential factory for the cron job
+builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
+
 if (builder.IsDevMode())
 {
     logger.Information("Using mock Docker Credential Provider");
     builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
-    logger.Information("Using mock Github Credential Provider");
-    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 }
 else
 {
