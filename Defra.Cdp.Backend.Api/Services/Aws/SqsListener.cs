@@ -5,7 +5,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public interface ISqsListener
 {
-    Task ReadAsync();
+    Task ReadAsync(CancellationToken cancellationToken);
 }
 
 public abstract class SqsListener : ISqsListener, IDisposable
@@ -28,12 +28,11 @@ public abstract class SqsListener : ISqsListener, IDisposable
         Sqs.Dispose();
     }
 
-    public async Task ReadAsync()
+    public async Task ReadAsync(CancellationToken cancellationToken)
     {
         var receiveMessageRequest = new ReceiveMessageRequest
         {
-            QueueUrl = QueueUrl,
-            WaitTimeSeconds = WaitTimeoutSeconds
+            QueueUrl = QueueUrl, WaitTimeSeconds = WaitTimeoutSeconds
         };
         var falloff = 1;
         while (Enabled)
@@ -47,7 +46,7 @@ public abstract class SqsListener : ISqsListener, IDisposable
                 {
                     try
                     {
-                        await HandleMessageAsync(message);
+                        await HandleMessageAsync(message, cancellationToken);
                     }
                     catch (Exception exception)
                     {
@@ -58,8 +57,7 @@ public abstract class SqsListener : ISqsListener, IDisposable
 
                     var deleteRequest = new DeleteMessageRequest
                     {
-                        QueueUrl = QueueUrl,
-                        ReceiptHandle = message.ReceiptHandle
+                        QueueUrl = QueueUrl, ReceiptHandle = message.ReceiptHandle
                     };
 
                     await Sqs.DeleteMessageAsync(deleteRequest);
@@ -75,5 +73,5 @@ public abstract class SqsListener : ISqsListener, IDisposable
             }
     }
 
-    public abstract Task HandleMessageAsync(Message message);
+    public abstract Task HandleMessageAsync(Message message, CancellationToken cancellationToken);
 }

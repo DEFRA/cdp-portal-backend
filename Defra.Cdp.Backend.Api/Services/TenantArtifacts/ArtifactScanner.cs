@@ -7,8 +7,8 @@ namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
 public interface IArtifactScanner
 {
-    Task<ArtifactScannerResult> ScanImage(string repo, string tag);
-    Task<List<RescanRequest>> Backfill();
+    Task<ArtifactScannerResult> ScanImage(string repo, string tag, CancellationToken cancellationToken);
+    Task<List<RescanRequest>> Backfill(CancellationToken cancellationToken);
 }
 
 public class ArtifactScannerResult
@@ -79,7 +79,7 @@ public class ArtifactScanner : IArtifactScanner
         _logger = logger;
     }
 
-    public async Task<ArtifactScannerResult> ScanImage(string repo, string tag)
+    public async Task<ArtifactScannerResult> ScanImage(string repo, string tag, CancellationToken cancellationToken)
     {
         var manifest = await _dockerClient.LoadManifest(repo, tag);
         if (manifest == null) throw new Exception($"Failed to load manifest for {repo}:{tag}");
@@ -99,7 +99,7 @@ public class ArtifactScanner : IArtifactScanner
         _logger.LogInformation("Scanning layers in {Repo}:{Tag} for package.json...", repo, tag);
 
         // Search all the layers for files of interest.
-        var searchLayerTasks = manifest.layers.Select(blob => SearchLayerUsingCache(repo, blob));
+        var searchLayerTasks = manifest.layers.Select(blob => SearchLayerUsingCache(repo, blob, cancellationToken));
         var searchLayerResults = await Task.WhenAll(searchLayerTasks);
 
 
@@ -122,7 +122,7 @@ public class ArtifactScanner : IArtifactScanner
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
 
-        var repository = await _repositoryService.FindRepositoryById(repo);
+        var repository = await _repositoryService.FindRepositoryById(repo, cancellationToken);
         // Persist the results.
         var artifact = new DeployableArtifact
         {
@@ -138,18 +138,18 @@ public class ArtifactScanner : IArtifactScanner
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);
-        await _deployablesService.CreateAsync(artifact);
+        await _deployablesService.CreateAsync(artifact, cancellationToken);
 
         _logger.LogInformation("Artifact {Repo}:{Tag} completed", repo, tag);
         return new ArtifactScannerResult(artifact);
     }
 
     // The new backfill just generates a list of curl commands we can run from the terminal to trigger the backfill
-    public async Task<List<RescanRequest>> Backfill()
+    public async Task<List<RescanRequest>> Backfill(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Generating backfill script");
 
-        var catalog = await _dockerClient.LoadCatalog();
+        var catalog = await _dockerClient.LoadCatalog(cancellationToken);
 
         _logger.LogInformation("Backfill found {RepositoriesCount} repos to backfill", catalog.repositories.Count);
 
@@ -170,14 +170,14 @@ public class ArtifactScanner : IArtifactScanner
     }
 
 
-    private async Task<Layer> SearchLayerUsingCache(string repo, Blob blob)
+    private async Task<Layer> SearchLayerUsingCache(string repo, Blob blob, CancellationToken cancellationToken)
     {
-        var layer = await _layerService.Find(blob.digest);
+        var layer = await _layerService.Find(blob.digest, cancellationToken);
         if (layer == null)
         {
             _logger.LogDebug("Layer {BlobDigest} not in cache, scanning...", blob.digest);
             layer = await _dockerClient.SearchLayer(repo, blob, _filesToExtract, _pathsToIgnore);
-            await _layerService.CreateAsync(layer);
+            await _layerService.CreateAsync(layer, cancellationToken);
         }
 
         _logger.LogDebug("Layer {BlobDigest} loaded from cache", blob.digest);

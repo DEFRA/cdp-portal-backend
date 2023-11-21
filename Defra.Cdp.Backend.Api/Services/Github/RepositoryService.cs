@@ -7,17 +7,18 @@ namespace Defra.Cdp.Backend.Api.Services.Github;
 
 public interface IRepositoryService
 {
-    Task Upsert(Repository repository);
+    Task Upsert(Repository repository, CancellationToken cancellationToken);
 
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
 
     Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken);
 
-    Task<List<Repository>> AllRepositories(bool excludeTemplates);
+    Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken);
 
-    Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates);
+    Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates,
+        CancellationToken cancellationToken);
 
-    Task<Repository?> FindRepositoryById(string id);
+    Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
 }
 
 public class RepositoryService : MongoService<Repository>, IRepositoryService
@@ -25,15 +26,6 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
     public RepositoryService(IMongoDbClientFactory connectionFactory,
         ILoggerFactory loggerFactory) : base(connectionFactory, "repositories", loggerFactory)
     {
-    }
-
-
-    public async Task Upsert(Repository repository)
-    {
-        // because we constantly refresh the database, we are looking to upsert the record here
-        var filter = Builders<Repository>.Filter
-            .Eq(r => r.Id, repository.Id);
-        await Collection.ReplaceOneAsync(filter, repository, new ReplaceOptions { IsUpsert = true });
     }
 
     public async Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken)
@@ -55,16 +47,16 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         }
     }
 
-    public async Task<Repository?> FindRepositoryById(string id)
+    public async Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken)
     {
         var repository =
             await Collection
                 .Find(Builders<Repository>.Filter.Eq(r => r.Id, id))
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
         return repository;
     }
 
-    public async Task<List<Repository>> AllRepositories(bool excludeTemplates)
+    public async Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken)
     {
         var findDefinition = excludeTemplates
             ? Builders<Repository>.Filter.Eq(r => r.IsTemplate, false)
@@ -74,11 +66,12 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             await Collection
                 .Find(findDefinition)
                 .SortBy(r => r.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         return repositories;
     }
 
-    public async Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates)
+    public async Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates,
+        CancellationToken cancellationToken)
     {
         var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.Github == team);
 
@@ -90,7 +83,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             await Collection
                 .Find(findDefinition)
                 .SortBy(r => r.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         return repositories;
     }
 
@@ -98,7 +91,16 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
     {
         var excludingIdsList = knownReposIds.ToList();
         if (excludingIdsList.IsNullOrEmpty()) throw new ArgumentException("excluded repositories cannot be empty");
-        await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id));
+        await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id), cancellationToken);
+    }
+
+
+    public async Task Upsert(Repository repository, CancellationToken cancellationToken)
+    {
+        // because we constantly refresh the database, we are looking to upsert the record here
+        var filter = Builders<Repository>.Filter
+            .Eq(r => r.Id, repository.Id);
+        await Collection.ReplaceOneAsync(filter, repository, new ReplaceOptions { IsUpsert = true }, cancellationToken);
     }
 
     protected override List<CreateIndexModel<Repository>> DefineIndexes(IndexKeysDefinitionBuilder<Repository> builder)

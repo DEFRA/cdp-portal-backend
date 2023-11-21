@@ -108,7 +108,7 @@ public class DockerClientTests
             );
 
 
-        var res = await _artifactScanner.ScanImage("foo", "1.0.0");
+        var res = await _artifactScanner.ScanImage("foo", "1.0.0", CancellationToken.None);
         Assert.True(res.Success);
         Assert.NotNull(res.Artifact);
         var artifact = res.Artifact;

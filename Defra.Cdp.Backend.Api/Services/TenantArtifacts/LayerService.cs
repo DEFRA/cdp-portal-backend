@@ -6,9 +6,9 @@ namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
 public interface ILayerService
 {
-    Task CreateAsync(Layer layer);
-    Task<Layer?> Find(string digest);
-    Task<LayerFile?> FindFileAsync(string layerDigest, string fileName);
+    Task CreateAsync(Layer layer, CancellationToken cancellationToken);
+    Task<Layer?> Find(string digest, CancellationToken cancellationToken);
+    Task<LayerFile?> FindFileAsync(string layerDigest, string fileName, CancellationToken cancellationToken);
 }
 
 public sealed class LayerService : MongoService<Layer>, ILayerService
@@ -20,23 +20,23 @@ public sealed class LayerService : MongoService<Layer>, ILayerService
     {
     }
 
+    public async Task<Layer?> Find(string digest, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(l => l.Digest == digest).SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<LayerFile?> FindFileAsync(string layerDigest, string path, CancellationToken cancellationToken)
+    {
+        var layer = await Collection.Find(l => l.Digest == layerDigest).FirstAsync(cancellationToken);
+        return layer?.Files.Find(lf => lf.FileName == path);
+    }
+
     // TODO: Transform this into a binary where we can store it as compressed or binary with MongoDB
     // explore the options and see what's the best
     // We could also use the digest hash from image on dockerhub 
-    public async Task CreateAsync(Layer layer)
+    public async Task CreateAsync(Layer layer, CancellationToken cancellationToken)
     {
-        await Collection.InsertOneAsync(layer);
-    }
-
-    public async Task<Layer?> Find(string digest)
-    {
-        return await Collection.Find(l => l.Digest == digest).SingleOrDefaultAsync();
-    }
-
-    public async Task<LayerFile?> FindFileAsync(string layerDigest, string path)
-    {
-        var layer = await Collection.Find(l => l.Digest == layerDigest).FirstAsync();
-        return layer?.Files.Find(lf => lf.FileName == path);
+        await Collection.InsertOneAsync(layer, cancellationToken: cancellationToken);
     }
 
     protected override List<CreateIndexModel<Layer>> DefineIndexes(IndexKeysDefinitionBuilder<Layer> builder)

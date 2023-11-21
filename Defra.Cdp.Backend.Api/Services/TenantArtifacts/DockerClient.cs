@@ -15,7 +15,7 @@ public interface IDockerClient
     Task<Manifest?> LoadManifest(string repo, string tag);
     Task<ManifestImage?> LoadManifestImage(string repo, Blob blob);
     Task<Layer> SearchLayer(string repo, Blob blob, List<Regex> filesToExtract, List<Regex> pathsToIgnore);
-    Task<Catalog> LoadCatalog();
+    Task<Catalog> LoadCatalog(CancellationToken cancellationToken);
 }
 
 public class DockerClient : IDockerClient
@@ -40,8 +40,7 @@ public class DockerClient : IDockerClient
     {
         var req = new HttpRequestMessage
         {
-            Method = HttpMethod.Get,
-            RequestUri = new Uri($"{_baseUrl}/v2/{repo}/tags/list")
+            Method = HttpMethod.Get, RequestUri = new Uri($"{_baseUrl}/v2/{repo}/tags/list")
         };
         req = await AddEcrAuthHeader(req);
 
@@ -115,14 +114,14 @@ public class DockerClient : IDockerClient
         return new Layer(blob.digest, layerFiles);
     }
 
-    public async Task<Catalog> LoadCatalog()
+    public async Task<Catalog> LoadCatalog(CancellationToken cancellationToken)
     {
         var req = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = new Uri($"{_baseUrl}/v2/_catalog") };
         req = await AddEcrAuthHeader(req);
 
         var response = await _client.SendAsync(req);
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        var catalog = await JsonSerializer.DeserializeAsync<Catalog>(stream);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        var catalog = await JsonSerializer.DeserializeAsync<Catalog>(stream, cancellationToken: cancellationToken);
 
         if (catalog == null) throw new Exception($"Failed to deserialize {req.RequestUri}");
 

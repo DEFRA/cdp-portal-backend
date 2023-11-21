@@ -7,42 +7,164 @@ namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
 public interface IDeployablesService
 {
-    Task CreateAsync(DeployableArtifact artifact);
-    Task CreatePlaceholderAsync(string serviceName, string githubUrl);
-    Task<DeployableArtifact?> FindByTag(string repo, string tag);
-    Task<List<DeployableArtifact>> FindAll();
+    Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken);
+    Task CreatePlaceholderAsync(string serviceName, string githubUrl, CancellationToken cancellationToken);
+    Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
+    Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken);
+    Task<List<string>> DeployableEnvironments(bool isAdmin);
 
     Task UpdateAll(List<Repository> repositories,
         CancellationToken cancellationToken); // TODO: remove once we migrated old deployable artifacts
 
-    Task<List<DeployableArtifact>> FindAll(string repo);
-    Task<List<string>> FindAllRepoNames();
-    Task<List<string>> FindAllRepoNames(IEnumerable<string> groups);
-    Task<List<ServiceInfo>> FindAllServices();
-    Task<List<string>> FindAllTagsForRepo(string repo);
-    Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups);
-    Task<ServiceInfo?> FindServices(string service);
+    Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken);
+    Task<List<string>> FindAllRepoNames(CancellationToken cancellationToken);
+    Task<List<string>> FindAllRepoNames(IEnumerable<string> groups, CancellationToken cancellationToken);
+    Task<List<ServiceInfo>> FindAllServices(CancellationToken cancellationToken);
+    Task<List<string>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
+    Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups, CancellationToken cancellationToken);
+    Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
 }
 
 public class DeployablesService : MongoService<DeployableArtifact>, IDeployablesService
 {
     private const string CollectionName = "artifacts";
+    private readonly List<string> _adminEnvironments;
+    private readonly List<string> _allEnvironments;
+    private readonly List<string> _tenantEnvironments;
 
-    public DeployablesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
+    public DeployablesService(IMongoDbClientFactory connectionFactory, IConfiguration configuration,
+        ILoggerFactory loggerFactory) : base(
         connectionFactory, CollectionName, loggerFactory)
     {
+        _adminEnvironments = configuration.GetSection("DeploymentEnvironments:Admin").Get<List<string>>()!;
+        _tenantEnvironments = configuration.GetSection("DeploymentEnvironments:Tenants").Get<List<string>>()!;
+        _allEnvironments = _adminEnvironments.Concat(_tenantEnvironments).Distinct().ToList();
     }
 
-    public async Task CreateAsync(DeployableArtifact artifact)
+
+    public async Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(d => d.Repo == repo && d.Tag == tag).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken)
+    {
+        return await Collection.Find(FilterDefinition<DeployableArtifact>.Empty).ToListAsync(cancellationToken);
+    }
+
+    public Task<List<string>> DeployableEnvironments(bool isAdmin)
+    {
+        return Task.FromResult(isAdmin ? _allEnvironments : _tenantEnvironments);
+    }
+
+    public async Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(a => a.Repo == repo).ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<string>> FindAllRepoNames(CancellationToken cancellationToken)
+    {
+        return await Collection
+            .Distinct(d => d.Repo, FilterDefinition<DeployableArtifact>.Empty)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<string>> FindAllRepoNames(IEnumerable<string> groups, CancellationToken cancellationToken)
+    {
+        return await Collection
+            .Distinct(d => d.Repo, d => d.Teams.Any(t => groups.Contains(t.TeamId)))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<string>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken)
+    {
+        var res = await Collection
+            .Find(d => d.Repo == repo)
+            .ToListAsync(cancellationToken);
+        return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
+    }
+
+    public async Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups,
+        CancellationToken cancellationToken)
+    {
+        var res = await Collection
+            .Find(d => d.Repo == repo && d.Teams.Any(t => groups.Contains(t.TeamId)))
+            .ToListAsync(cancellationToken);
+        return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
+    }
+
+    // TODO: remove once we migrated old deployable artifacts
+    public async Task UpdateAll(List<Repository> repositories, CancellationToken cancellationToken)
+    {
+        var allDeployables = await FindAll(cancellationToken);
+        var serviceNames = allDeployables.Select(d => d.ServiceName).Where(d => d != null);
+        var filteredRepositories = repositories.Where(r => serviceNames.Contains(r.Id));
+        var newDeployableArtifacts = allDeployables.Select(d => new DeployableArtifact
+        {
+            Id = d.Id,
+            Created = d.Created,
+            Repo = d.Repo,
+            Tag = d.Tag,
+            Sha256 = d.Sha256,
+            GithubUrl = d.GithubUrl,
+            ServiceName = d.ServiceName,
+            ScannerVersion = d.ScannerVersion,
+            Teams = filteredRepositories.FirstOrDefault(r => r.Id == d.ServiceName)?.Teams ??
+                    new List<RepositoryTeam>(),
+            Files = d.Files,
+            SemVer = d.SemVer
+        });
+        var replaceOneModels =
+            newDeployableArtifacts.Select(newDeployableArtifact =>
+            {
+                var filter = Builders<DeployableArtifact>.Filter
+                    .Eq(d => d.Id, newDeployableArtifact.Id);
+                return new ReplaceOneModel<DeployableArtifact>(filter, newDeployableArtifact) { IsUpsert = true };
+            }).ToList();
+
+        if (replaceOneModels.Any())
+        {
+            await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);    
+        }
+    }
+
+    public async Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken)
     {
         await Collection.ReplaceOneAsync(
             a => a.Repo == artifact.Repo && a.Tag == artifact.Tag,
             artifact,
-            new ReplaceOptions { IsUpsert = true }
+            new ReplaceOptions { IsUpsert = true },
+            cancellationToken
         );
     }
 
-    public async Task CreatePlaceholderAsync(string serviceName, string githubUrl)
+    public async Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken)
+    {
+        var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
+            .Match(d => d.ServiceName == service)
+            .Group(d => d.ServiceName,
+                grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
+            .Limit(1);
+        return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken).FirstOrDefaultAsync();
+    }
+
+
+    public async Task<List<ServiceInfo>> FindAllServices(CancellationToken cancellationToken)
+    {
+        var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
+            .Group(d => d.ServiceName,
+                grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams));
+
+        var result = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
+                         .ToListAsync(cancellationToken) ??
+                     new List<ServiceInfo>();
+
+        return result;
+    }
+
+    public async Task CreatePlaceholderAsync(string serviceName, string githubUrl, CancellationToken cancellationToken)
     {
         var artifact = new DeployableArtifact
         {
@@ -62,118 +184,17 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         await Collection.ReplaceOneAsync(
             a => a.Repo == artifact.Repo && a.Tag == artifact.Tag,
             artifact,
-            new ReplaceOptions { IsUpsert = true }
+            new ReplaceOptions { IsUpsert = true },
+            cancellationToken
         );
     }
 
-
-    public async Task<DeployableArtifact?> FindByTag(string repo, string tag)
-    {
-        return await Collection.Find(d => d.Repo == repo && d.Tag == tag).FirstOrDefaultAsync();
-    }
-
-    public async Task<List<DeployableArtifact>> FindAll()
-    {
-        return await Collection.Find(FilterDefinition<DeployableArtifact>.Empty).ToListAsync();
-    }
-
-    public async Task<List<DeployableArtifact>> FindAll(string repo)
-    {
-        return await Collection.Find(a => a.Repo == repo).ToListAsync();
-    }
-
-    public async Task<List<string>> FindAllRepoNames()
+    public async Task<List<string?>> FindAllUniqueGithubRepos(CancellationToken cancellationToken)
     {
         return await Collection
-            .Distinct(d => d.Repo, FilterDefinition<DeployableArtifact>.Empty)
-            .ToListAsync();
-    }
-
-    public async Task<List<string>> FindAllRepoNames(IEnumerable<string> groups)
-    {
-        return await Collection
-            .Distinct(d => d.Repo, d => d.Teams.Any(t => groups.Contains(t.TeamId)))
-            .ToListAsync();
-    }
-
-    public async Task<List<string>> FindAllTagsForRepo(string repo)
-    {
-        var res = await Collection
-            .Find(d => d.Repo == repo)
-            .ToListAsync();
-        return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
-    }
-
-    public async Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups)
-    {
-        var res = await Collection
-            .Find(d => d.Repo == repo && d.Teams.Any(t => groups.Contains(t.TeamId)))
-            .ToListAsync();
-        return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
-    }
-
-    public async Task<ServiceInfo?> FindServices(string service)
-    {
-        var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(d => d.ServiceName == service)
-            .Group(d => d.ServiceName,
-                grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
-            .Limit(1);
-        return await Collection.Aggregate(pipeline).FirstOrDefaultAsync();
-    }
-
-
-    public async Task<List<ServiceInfo>> FindAllServices()
-    {
-        var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Group(d => d.ServiceName,
-                grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams));
-
-        var result = await Collection.Aggregate(pipeline).ToListAsync() ?? new List<ServiceInfo>();
-
-        return result;
-    }
-
-    // TODO: remove once we migrated old deployable artifacts
-    public async Task UpdateAll(List<Repository> repositories, CancellationToken cancellationToken)
-    {
-        var allDeployables = await FindAll();
-        var serviceNames = allDeployables.Select(d => d.ServiceName).Where(d => d != null);
-        var filteredRepositories = repositories.Where(r => serviceNames.Contains(r.Id));
-        var newDeployableArtifacts = allDeployables.Select(d => new DeployableArtifact
-        {
-            Id = d.Id,
-            Created = d.Created,
-            Repo = d.Repo,
-            Tag = d.Tag,
-            Sha256 = d.Sha256,
-            GithubUrl = d.GithubUrl,
-            ServiceName = d.ServiceName,
-            ScannerVersion = d.ScannerVersion,
-            Teams = filteredRepositories.FirstOrDefault(r => r.Id == d.ServiceName)?.Teams ?? new List<RepositoryTeam>(),
-            Files = d.Files,
-            SemVer = d.SemVer
-        });
-        var replaceOneModels =
-            newDeployableArtifacts.Select(newDeployableArtifact =>
-            {
-                var filter = Builders<DeployableArtifact>.Filter
-                    .Eq(d => d.Id, newDeployableArtifact.Id);
-                return new ReplaceOneModel<DeployableArtifact>(filter, newDeployableArtifact) { IsUpsert = true };
-            }).ToList();
-
-        if (replaceOneModels.Any())
-        {
-            await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);    
-        }
-    }
-
-    public async Task<List<string?>> FindAllUniqueGithubRepos()
-    {
-        return await Collection.Distinct(d => d.GithubUrl, FilterDefinition<DeployableArtifact>.Empty)
-            .ToListAsync();
+            .Distinct(d => d.GithubUrl, FilterDefinition<DeployableArtifact>.Empty,
+                cancellationToken: cancellationToken)
+            .ToListAsync(cancellationToken);
     }
 
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(

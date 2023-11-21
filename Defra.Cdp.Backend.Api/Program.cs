@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Quartz;
 using Serilog;
+using Serilog.Extensions.Logging;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -70,12 +71,13 @@ builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentV
 logger.Information("Attempting to add SQS, ECR and Docker Client");
 builder.Services.AddSqsClient(builder.Configuration, builder.IsDevMode());
 
+// Github credential factory for the cron job
+builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
+
 if (builder.IsDevMode())
 {
     logger.Information("Using mock Docker Credential Provider");
     builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
-    logger.Information("Using mock Github Credential Provider");
-    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, MockGithubCredentialAndConnectionFactory>();
 }
 else
 {
@@ -107,17 +109,17 @@ builder.Services.AddQuartzHostedService(options =>
 
 // Setting up our services
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
-builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
+builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
+builder.Services.AddSingleton<ILayerService, LayerService>();
+builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
 builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
-builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
-builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 
 
@@ -154,7 +156,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Add endpoints
-app.MapDeployablesEndpoint();
+app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
+    .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDeploymentsEndpoint();
 app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();
@@ -165,11 +168,15 @@ app.MapHealthChecks("/health");
 #pragma warning disable CS4014
 var ecsSqsEventListener = app.Services.GetService<EcsEventListener>();
 logger.Information("Starting ECS listener - reading service events from SQS");
-Task.Run(() => ecsSqsEventListener?.ReadAsync()); // do not await this, we want it to run in the background
+Task.Run(() =>
+    ecsSqsEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var ecrSqsEventListener = app.Services.GetService<EcrEventListener>();
 logger.Information("Starting ECR listener - reading image creation events from SQS");
-Task.Run(() => ecrSqsEventListener?.ReadAsync()); // do not await this, we want it to run in the background
+Task.Run(() =>
+    ecrSqsEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
 #pragma warning restore CS4014
 
 app.Run();

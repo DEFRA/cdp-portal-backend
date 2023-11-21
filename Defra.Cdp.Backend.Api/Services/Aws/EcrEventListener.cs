@@ -12,7 +12,7 @@ public class EcrEventListener
 {
     private readonly IArtifactScanner _docker;
     private readonly IEcrEventsService _ecrEventService;
-    private readonly ILogger _logger;
+    private readonly ILogger<EcrEventListener> _logger;
     private readonly EcrEventListenerOptions _options;
 
     private readonly IAmazonSQS _sqs;
@@ -28,26 +28,26 @@ public class EcrEventListener
         _logger = logger;
     }
 
-    public async void ReadAsync()
+    public async void ReadAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Listening for events on {OptionsQueueUrl}", _options.QueueUrl);
 
         var falloff = 1;
-        while (_options.Enabled)
+        while (_options.Enabled && !cancellationToken.IsCancellationRequested)
             try
             {
-                await GetMessages();
+                await GetMessages(cancellationToken);
                 falloff = 1;
             }
             catch (Exception e)
             {
-                _logger.LogError(e.Message);
+                _logger.LogError(e, "Cannot read ECR messages");
                 Thread.Sleep(1000 * Math.Min(60, falloff));
                 falloff++;
             }
     }
 
-    private async Task GetMessages()
+    private async Task GetMessages(CancellationToken cancellationToken)
     {
         var response = await _sqs.ReceiveMessageAsync(new ReceiveMessageRequest
         {
@@ -68,7 +68,7 @@ public class EcrEventListener
 
             try
             {
-                await _ecrEventService.SaveMessage(msg.MessageId, msg.Body);
+                await _ecrEventService.SaveMessage(msg.MessageId, msg.Body, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -77,7 +77,7 @@ public class EcrEventListener
 
             try
             {
-                var result = await ProcessMessage(msg.MessageId, msg.Body);
+                var result = await ProcessMessage(msg.MessageId, msg.Body, cancellationToken);
                 if (result.Success && result.Artifact != null)
                     _logger.LogInformation(
                         "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
@@ -91,11 +91,11 @@ public class EcrEventListener
             }
 
             // TODO: better error detection to decide if we delete, dead letter or retry...
-            await _sqs.DeleteMessageAsync(_options.QueueUrl, msg.ReceiptHandle);
+            await _sqs.DeleteMessageAsync(_options.QueueUrl, msg.ReceiptHandle, cancellationToken);
         }
     }
 
-    public async Task<ArtifactScannerResult> ProcessMessage(string id, string body)
+    public async Task<ArtifactScannerResult> ProcessMessage(string id, string body, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting processing ECR Event {Id}", id);
         // AWS JSON messages are sent in with their " escaped (\"), in order to parse, they must be unescaped
@@ -122,6 +122,6 @@ public class EcrEventListener
                 $"Not processing {id}, tag [{ecrEvent.Detail.ImageTag}] is not semver");
         }
 
-        return await _docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag);
+        return await _docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
     }
 }

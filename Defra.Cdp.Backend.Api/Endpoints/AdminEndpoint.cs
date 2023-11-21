@@ -27,30 +27,34 @@ public static class AdminEndpoint
 
     // POST /admin/backfill
     private static async Task<IResult> Backfill(EcsEventListener eventListener, IArtifactScanner scanner,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory, CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoint");
         logger.LogInformation("Starting back-fill operation");
-        await eventListener.Backfill();
-        var rescanRequest = await scanner.Backfill();
-        var deployables = await Task.WhenAll(rescanRequest.Select(d => RescanImage(scanner, d.Repo, d.Tag)));
+        await eventListener.Backfill(cancellationToken);
+        var rescanRequest = await scanner.Backfill(cancellationToken);
+        var deployables =
+            await Task.WhenAll(rescanRequest.Select(d => RescanImage(scanner, d.Repo, d.Tag, cancellationToken)));
         return Results.Ok(deployables);
     }
 
     // POST /admin/scan?repo={repo}&tag={tag}
-    private static async Task<IResult> RescanImageRequest(IArtifactScanner scanner,  ILoggerFactory loggerFactory, string repo, string tag)
+    private static async Task<IResult> RescanImageRequest(IArtifactScanner scanner, ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken,
+        string repo, string tag)
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoint");
         logger.LogInformation("Rescanning {repo} {tag}", repo, tag);
         if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace("tag"))
             return Results.BadRequest(new { errorMessage = "repo and tag must be specified" });
-        var deployable = await RescanImage(scanner, repo, tag);
+        var deployable = await RescanImage(scanner, repo, tag, cancellationToken);
         return Results.Ok(deployable);
     }
 
-    private static async Task<ArtifactScannerResult> RescanImage(IArtifactScanner scanner, string repo, string tag)
+    private static async Task<ArtifactScannerResult> RescanImage(IArtifactScanner scanner, string repo, string tag,
+        CancellationToken cancellationToken)
     {
-        var deployable = await scanner.ScanImage(repo, tag);
+        var deployable = await scanner.ScanImage(repo, tag, cancellationToken);
         return deployable;
     }
 }

@@ -21,13 +21,13 @@ public static class SqsSetup
         }
     }
 
-    public static void StartSqsListeners(this IServiceProvider service)
+    public static void StartSqsListeners(this IServiceProvider service, CancellationToken cancellationToken)
     {
         var listeners = service.GetServices<ISqsListener>();
         foreach (var sqsListener in listeners)
         {
             Console.WriteLine($"starting {sqsListener}");
-            Task.Run(() => sqsListener.ReadAsync());
+            Task.Run(() => sqsListener.ReadAsync(cancellationToken));
         }
     }
 }
