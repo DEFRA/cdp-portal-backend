@@ -9,7 +9,7 @@ public interface IDeploymentsService
 {
     Task<List<Deployment>> FindLatest(int offset = 0, CancellationToken cancellationToken = new());
 
-    public Task<List<Deployment>> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
+    public Task<DeploymentsPage> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
         CancellationToken cancellationToken = new());
 
     public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
@@ -37,18 +37,29 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     {
     }
 
-    public async Task<List<Deployment>> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
+    public async Task<DeploymentsPage> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
         CancellationToken cancellationToken = new())
     {
-        if (string.IsNullOrWhiteSpace(environment)) return await FindLatest(offset, cancellationToken);
         page = page == 0 ? DefaultPage : page;
         size = size == 0 ? DefaultPageSize : size;
+        if (size <= 0) throw new ArgumentException("page size cannot be less than zero");
+        var filterDefinition = string.IsNullOrWhiteSpace(environment)
+            ? FilterDefinition<Deployment>.Empty
+            : new FilterDefinitionBuilder<Deployment>().Where(d => d.Environment == environment);
 
-        return await Collection
-            .Find(d => d.Environment == environment)
-            .Skip(offset + size * (page - 1))
+        var deployments = await Collection
+            .Find(filterDefinition)
+            .Skip(offset + size * (page - DefaultPage))
             .Limit(size)
-            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt)).ToListAsync(cancellationToken);
+            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
+            .ToListAsync(cancellationToken);
+
+        var totalDeployments = await Collection.CountDocumentsAsync(filterDefinition,
+            cancellationToken: cancellationToken);
+
+        var totalPages = (int)Math.Ceiling((double)totalDeployments / size);
+
+        return new DeploymentsPage(deployments, page, size, totalPages);
     }
 
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken)

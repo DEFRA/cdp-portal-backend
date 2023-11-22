@@ -62,8 +62,8 @@ public static class DeploymentsEndpoint
         CancellationToken cancellationToken, int offset,
         string? environment, int page, int size)
     {
-        var deployables = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
-        return Results.Ok(deployables);
+        var deploymentsPage = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
+        return Results.Ok(deploymentsPage);
     }
 
     // Get /deployments/{deploymentId}
