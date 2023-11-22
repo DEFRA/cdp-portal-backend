@@ -33,7 +33,6 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
             keySource,
             new GitHubJwtFactoryOptions
             {
-                // AppIntegrationId = 38398116, // The GitHub App Id
                 AppIntegrationId = appId, // The GitHub App Id
                 ExpirationSeconds = 600 // 10 minutes is the maximum time allowed
             }
