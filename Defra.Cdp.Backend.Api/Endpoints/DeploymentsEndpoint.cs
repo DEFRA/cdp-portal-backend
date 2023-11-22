@@ -17,11 +17,16 @@ public static class DeploymentsEndpoint
                 async (IDeploymentsService deploymentsService,
                     CancellationToken cancellationToken,
                     [FromQuery(Name = "offset")] int? offset,
-                    [FromQuery(Name = "environment")] string? environment
+                    [FromQuery(Name = "environment")] string? environment,
+                    [FromQuery(Name = "page")] int? page,
+                    [FromQuery(Name = "size")] int? size
                 ) =>
                 {
                     var o = offset ?? 0;
-                    return await FindLatestDeployments(deploymentsService, cancellationToken, o, environment);
+                    var p = page ?? 0;
+                    var s = size ?? 0;
+                    return await FindLatestDeployments(deploymentsService, cancellationToken, o, environment, p,
+                        s);
                 })
             .RequireAuthorization()
             .AllowAnonymous()
@@ -55,9 +60,9 @@ public static class DeploymentsEndpoint
     // GET /deployments or GET /deployments?offet=23
     private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
         CancellationToken cancellationToken, int offset,
-        string? environment)
+        string? environment, int page, int size)
     {
-        var deployables = await deploymentsService.FindLatest(environment, offset, cancellationToken);
+        var deployables = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
         return Results.Ok(deployables);
     }
 

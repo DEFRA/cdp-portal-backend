@@ -9,7 +9,7 @@ public interface IDeploymentsService
 {
     Task<List<Deployment>> FindLatest(int offset = 0, CancellationToken cancellationToken = new());
 
-    public Task<List<Deployment>> FindLatest(string? environment, int offset = 0,
+    public Task<List<Deployment>> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
         CancellationToken cancellationToken = new());
 
     public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
@@ -28,6 +28,8 @@ public interface IDeploymentsService
 public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 {
     private const string CollectionName = "deployments";
+    public static readonly int DefaultPageSize = 20;
+    public static readonly int DefaultPage = 1;
 
     public DeploymentsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
         connectionFactory,
@@ -35,15 +37,17 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     {
     }
 
-    public async Task<List<Deployment>> FindLatest(string? environment, int offset = 0,
+    public async Task<List<Deployment>> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
         CancellationToken cancellationToken = new())
     {
         if (string.IsNullOrWhiteSpace(environment)) return await FindLatest(offset, cancellationToken);
+        page = page == 0 ? DefaultPage : page;
+        size = size == 0 ? DefaultPageSize : size;
 
         return await Collection
             .Find(d => d.Environment == environment)
-            .Skip(offset)
-            .Limit(200)
+            .Skip(offset + size * (page - 1))
+            .Limit(size)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt)).ToListAsync(cancellationToken);
     }
 
