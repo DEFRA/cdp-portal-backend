@@ -23,8 +23,8 @@ public static class DeploymentsEndpoint
                 ) =>
                 {
                     var o = offset ?? 0;
-                    var p = page ?? 0;
-                    var s = size ?? 0;
+                    var p = page ?? DeploymentsService.DefaultPage;
+                    var s = size ?? DeploymentsService.DefaultPageSize;
                     return await FindLatestDeployments(deploymentsService, cancellationToken, o, environment, p,
                         s);
                 })
