@@ -58,7 +58,7 @@ public static class DeploymentsEndpoint
     }
 
     // GET /deployments or GET /deployments?offet=23
-    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
         CancellationToken cancellationToken, int offset,
         string? environment, int page, int size)
     {
@@ -67,7 +67,7 @@ public static class DeploymentsEndpoint
     }
 
     // Get /deployments/{deploymentId}
-    private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
+    internal static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
@@ -76,21 +76,21 @@ public static class DeploymentsEndpoint
             : Results.Ok(deployment);
     }
 
-    private static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
         CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(cancellationToken);
         return Results.Ok(deployments);
     }
 
-    private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> WhatsRunningWhereForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
         return Results.Ok(deployments);
     }
 
-    private static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
         IValidator<RequestedDeployment> validator,
         RequestedDeployment rd,
         CancellationToken cancellationToken)
@@ -108,7 +108,8 @@ public static class DeploymentsEndpoint
             UserId = rd.User?.Id,
             User = rd.User?.DisplayName,
             Version = rd.Version,
-            DockerImage = rd.Service
+            DockerImage = rd.Service,
+            InstanceCount = rd.InstanceCount
         };
 
         await deploymentsService.Insert(deployment, cancellationToken);

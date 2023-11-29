@@ -37,7 +37,9 @@ public sealed record EcsEventDetail(
     [property: JsonPropertyName("containers")]
     List<EcsContainer> Containers,
     [property: JsonPropertyName("taskDefinitionArn")]
-    string TaskDefinitionArn
+    string TaskDefinitionArn,
+    [property: JsonPropertyName("taskArn")]
+    string TaskArn
 );
 
 public sealed record EcsEventCopy(

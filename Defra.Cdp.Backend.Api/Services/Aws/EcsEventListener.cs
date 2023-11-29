@@ -72,6 +72,7 @@ public class EcsEventListener : SqsListener
 
                 var deployedAt = ecsEvent.Timestamp;
                 var taskId = ecsEvent.Detail.TaskDefinitionArn;
+                var instanceTaskId = ecsEvent.Detail.TaskArn;
                 var deploymentId = ecsEvent.DeploymentId;
 
                 // Find the requested deployment so we can fill out the username
@@ -89,7 +90,9 @@ public class EcsEventListener : SqsListener
                     DeployedAt = deployedAt,
                     Status = ecsContainer.LastStatus,
                     DockerImage = ecsContainer.Image,
-                    TaskId = taskId
+                    TaskId = taskId,
+                    InstanceTaskId = instanceTaskId,
+                    InstanceCount = requestedDeployment?.InstanceCount
                 };
 
                 if (requestedDeployment is { DeploymentId: null, Id: not null })

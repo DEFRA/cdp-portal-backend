@@ -6,10 +6,18 @@ using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
-public sealed record RepositoryResult(string Name, string Description, string PrimaryLanguage, string Url,
-    bool IsArchived, bool IsTemplate, bool IsPrivate, DateTimeOffset CreatedAt);
+public sealed record RepositoryResult(
+    string Name,
+    string Description,
+    string PrimaryLanguage,
+    string Url,
+    bool IsArchived,
+    bool IsTemplate,
+    bool IsPrivate,
+    DateTimeOffset CreatedAt);
 
-public sealed record TeamResult(string Slug,
+public sealed record TeamResult(
+    string Slug,
     IEnumerable<RepositoryResult> Repositories);
 
 // ReSharper disable once ClassNeverInstantiated.Global
@@ -41,6 +49,9 @@ public sealed class PopulateGithubRepositories : IJob
         _repositoryService = repositoryService;
         _deployablesService = deployablesService;
 
+        // Request based on this GraphQL query.
+        // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
+        // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
         _requestString =
             $@"
             {{
@@ -71,7 +82,7 @@ public sealed class PopulateGithubRepositories : IJob
             cancellationToken
         );
         jsonResponse.EnsureSuccessStatusCode();
-        var userServiceRecords = _userServiceFetcher.getLatestCdpTeamsInformation(cancellationToken);
+        var userServiceRecords = _userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         var githubToTeamIdMap = userServiceRecords.Result?.GithubToTeamIdMap ?? new Dictionary<string, string>();
         var githubToTeamNameMap = userServiceRecords.Result?.GithubToTeamNameMap ?? new Dictionary<string, string>();
         var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken: cancellationToken);
