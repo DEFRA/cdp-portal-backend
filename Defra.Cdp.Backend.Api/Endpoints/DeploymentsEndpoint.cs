@@ -17,11 +17,16 @@ public static class DeploymentsEndpoint
                 async (IDeploymentsService deploymentsService,
                     CancellationToken cancellationToken,
                     [FromQuery(Name = "offset")] int? offset,
-                    [FromQuery(Name = "environment")] string? environment
+                    [FromQuery(Name = "environment")] string? environment,
+                    [FromQuery(Name = "page")] int? page,
+                    [FromQuery(Name = "size")] int? size
                 ) =>
                 {
                     var o = offset ?? 0;
-                    return await FindLatestDeployments(deploymentsService, cancellationToken, o, environment);
+                    var p = page ?? DeploymentsService.DefaultPage;
+                    var s = size ?? DeploymentsService.DefaultPageSize;
+                    return await FindLatestDeployments(deploymentsService, cancellationToken, o, environment, p,
+                        s);
                 })
             .RequireAuthorization()
             .AllowAnonymous()
@@ -53,16 +58,16 @@ public static class DeploymentsEndpoint
     }
 
     // GET /deployments or GET /deployments?offet=23
-    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
         CancellationToken cancellationToken, int offset,
-        string? environment)
+        string? environment, int page, int size)
     {
-        var deployables = await deploymentsService.FindLatest(environment, offset, cancellationToken);
-        return Results.Ok(deployables);
+        var deploymentsPage = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
+        return Results.Ok(deploymentsPage);
     }
 
     // Get /deployments/{deploymentId}
-    private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
+    internal static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
@@ -71,21 +76,21 @@ public static class DeploymentsEndpoint
             : Results.Ok(deployment);
     }
 
-    private static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
         CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(cancellationToken);
         return Results.Ok(deployments);
     }
 
-    private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> WhatsRunningWhereForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
         return Results.Ok(deployments);
     }
 
-    private static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
         IValidator<RequestedDeployment> validator,
         RequestedDeployment rd,
         CancellationToken cancellationToken)
@@ -103,7 +108,8 @@ public static class DeploymentsEndpoint
             UserId = rd.User?.Id,
             User = rd.User?.DisplayName,
             Version = rd.Version,
-            DockerImage = rd.Service
+            DockerImage = rd.Service,
+            InstanceCount = rd.InstanceCount
         };
 
         await deploymentsService.Insert(deployment, cancellationToken);

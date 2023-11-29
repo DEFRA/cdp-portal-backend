@@ -21,7 +21,7 @@ public class UserServiceFetcher
             "cdp-portal-backend");
     }
 
-    public async Task<UserServiceRecord?> getLatestCdpTeamsInformation(CancellationToken cancellationToken)
+    public async Task<UserServiceRecord?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken)
     {
         var result = await _client.GetAsync("/cdp-user-service-backend/teams", cancellationToken);
         result.EnsureSuccessStatusCode();

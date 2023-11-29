@@ -4,8 +4,7 @@ namespace Defra.Cdp.Backend.Api.Models;
 
 public sealed class UserDetails
 {
-    [property: JsonPropertyName("id")]
-    public string Id { get; init; } = default!;
+    [property: JsonPropertyName("id")] public string Id { get; init; } = default!;
 
     [property: JsonPropertyName("displayName")]
     public string DisplayName { get; init; } = default!;
@@ -22,6 +21,8 @@ public sealed class RequestedDeployment
     [property: JsonPropertyName("environment")]
     public string Environment { get; init; } = default!;
 
-    [property: JsonPropertyName("user")]
-    public UserDetails? User { get; init; }
+    [property: JsonPropertyName("user")] public UserDetails? User { get; init; }
+
+    [property: JsonPropertyName("instanceCount")]
+    public int InstanceCount { get; init; }
 }

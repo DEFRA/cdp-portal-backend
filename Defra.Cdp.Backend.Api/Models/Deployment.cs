@@ -19,9 +19,37 @@ public sealed class Deployment
 
     public string? User { get; init; }
     public string? UserId { get; init; }
-    
+
     public DateTime DeployedAt { get; init; } = default!;
     public string Status { get; init; } = default!;
     public string DockerImage { get; init; } = default!;
     public string? TaskId { get; init; }
+
+    public string? InstanceTaskId { get; init; }
+
+    public int? InstanceCount { get; init; } = 1; // default value is 1 if we don't get it from legacy calls
+}
+
+public sealed class DeploymentsPage
+{
+    public DeploymentsPage(List<Deployment> deployments, int page, int pageSize, int totalPages)
+    {
+        Deployments = deployments;
+        Page = page;
+        PageSize = pageSize;
+        TotalPages = totalPages;
+    }
+
+    public List<Deployment> Deployments { get; init; }
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public int TotalPages { get; init; }
+
+    public void Deconstruct(out List<Deployment> deployments, out int page, out int pageSize, out int totalPages)
+    {
+        deployments = Deployments;
+        page = Page;
+        pageSize = PageSize;
+        totalPages = TotalPages;
+    }
 }
