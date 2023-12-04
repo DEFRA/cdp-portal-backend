@@ -96,12 +96,24 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                             UserId = grp.First().UserId
                         }
                     })
-            .Project(p => p.Root);
+            .Project(p => p.Root)
+            .Skip(offset + size * (page - DefaultPage))
+            .Limit(size);
 
         var result = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
 
-        return new SquashedDeploymentsPage(result!, page, size, 100);
+        // Todo: is there a way to get total page?
+        var totalsProjection = new EmptyPipelineDefinition<Deployment>()
+            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
+            .Group(
+                d => new { d.Status, d.TaskId, d.InstanceCount }, grp => new { Root = 1 })
+            .Count();
+        var totalDeployments = await Collection.Aggregate(totalsProjection, cancellationToken: cancellationToken)
+            .ToListAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling((double)totalDeployments.First().Count / size);
+
+        return new SquashedDeploymentsPage(result!, page, size, totalPages);
     }
 
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken)
