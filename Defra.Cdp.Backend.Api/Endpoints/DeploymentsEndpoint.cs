@@ -8,6 +8,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class DeploymentsEndpoint
 {
     private const string DeploymentsBaseRoute = "deployments";
+    private const string SquashedDeploymentsBaseRoute = "squashed-deployments";
     private const string WhatsRunningWhereRoute = "whats-running-where";
     private const string DeploymentsTag = "Deployments";
 
@@ -31,7 +32,28 @@ public static class DeploymentsEndpoint
             .RequireAuthorization()
             .AllowAnonymous()
             .WithName("GetDeployments")
-            .Produces<IEnumerable<Deployment>>()
+            .Produces<DeploymentsPage>()
+            .WithTags(DeploymentsTag);
+
+        app.MapGet(SquashedDeploymentsBaseRoute,
+                async (IDeploymentsService deploymentsService,
+                    CancellationToken cancellationToken,
+                    [FromQuery(Name = "offset")] int? offset,
+                    [FromQuery(Name = "environment")] string? environment,
+                    [FromQuery(Name = "page")] int? page,
+                    [FromQuery(Name = "size")] int? size
+                ) =>
+                {
+                    var o = offset ?? 0;
+                    var p = page ?? DeploymentsService.DefaultPage;
+                    var s = size ?? DeploymentsService.DefaultPageSize;
+                    return await FindSquashedLatestDeployments(deploymentsService, cancellationToken, o, environment, p,
+                        s);
+                })
+            .RequireAuthorization()
+            .AllowAnonymous()
+            .WithName("GetSquashedDeployments")
+            .Produces<SquashedDeploymentsPage>()
             .WithTags(DeploymentsTag);
 
         app.MapGet($"{DeploymentsBaseRoute}/{{deploymentId}}", FindDeployment)
@@ -63,6 +85,15 @@ public static class DeploymentsEndpoint
         string? environment, int page, int size)
     {
         var deploymentsPage = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
+        return Results.Ok(deploymentsPage);
+    }
+
+    internal static async Task<IResult> FindSquashedLatestDeployments(IDeploymentsService deploymentsService,
+        CancellationToken cancellationToken, int offset,
+        string? environment, int page, int size)
+    {
+        var deploymentsPage =
+            await deploymentsService.FindLatestSquashed(environment, offset, page, size, cancellationToken);
         return Results.Ok(deploymentsPage);
     }
 
