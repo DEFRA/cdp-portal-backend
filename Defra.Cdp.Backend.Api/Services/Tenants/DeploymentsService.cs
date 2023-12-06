@@ -57,7 +57,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         var totalDeployments = await Collection.CountDocumentsAsync(filterDefinition,
             cancellationToken: cancellationToken);
 
-        var totalPages = (int)Math.Ceiling((double)totalDeployments / size);
+        var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
 
         return new DeploymentsPage(deployments, page, size, totalPages);
     }
