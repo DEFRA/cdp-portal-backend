@@ -10,6 +10,23 @@
         "Mongo__DatabaseUri": "mongodb://127.0.0.1:27017",
         "AzureAd__Instance": "https://login.microsoftonline.com/"
       }
+    },
+    "Stubbed": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5094",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Docker__RegistryUrl": "http://localhost:3939",
+        "Mongo__DatabaseUri": "mongodb://127.0.0.1:27017",
+        "AzureAd__Instance": "http://localhost:3939/",
+        "AzureAd__RequireHttpsMetadata": "false",
+        "AzureAd__TenantId": "63983fc2-cfff-45bb-8ec2-959e21062b9a",
+        "AzureAd__ClientId": "63983fc2-cfff-45bb-8ec2-959e21062b9a",
+        "Github__AppKey": "// generate a random key for local testing using `ssh-keygen -t rsa -b 4096 -m PEM -f /tmp/mock.key -q -P '' && cat /tmp/mock.key | base64 -w0`",
+        "Github__ApiUrl": "http://localhost:3939"
+      }
     }
   }
 }
