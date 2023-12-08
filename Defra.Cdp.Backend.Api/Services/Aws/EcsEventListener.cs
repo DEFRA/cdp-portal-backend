@@ -82,6 +82,7 @@ public class EcsEventListener : SqsListener
                 var instanceTaskId = ecsEvent.Detail.TaskArn;
 
                 string? deploymentId = null;
+                _logger.LogInformation("attempting to request task definition information");
                 try
                 {
                     var definitionDescription = await _ecs.DescribeTaskDefinitionAsync(
@@ -135,6 +136,7 @@ public class EcsEventListener : SqsListener
                 }
 
                 deployments.Add(deployment);
+                _logger.LogInformation("Updated deployment");
             }
             catch (Exception ex)
             {
