@@ -94,6 +94,8 @@ public class EcsEventListener : SqsListener
                         },
                         cancellationToken);
                     var definitionTags = definitionDescription?.Tags;
+                    _logger.LogInformation(
+                        $"tags for {definitionDescription?.TaskDefinition} >> {string.Join(":: ", definitionTags.Select(t => $"{t.Key} {t.Value}"))}");
                     var definitionTag = definitionTags?.Find(t => t.Key == "DEPLOYMENT_ID");
                     deploymentId = definitionTag?.Value;
                 }
