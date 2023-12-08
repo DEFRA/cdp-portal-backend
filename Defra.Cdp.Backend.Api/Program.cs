@@ -1,4 +1,5 @@
 using Amazon.ECR;
+using Amazon.ECS;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
@@ -89,6 +90,7 @@ else
     builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 }
 
+
 // Quartz setup for Github scheduler
 builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Github:Scheduler"));
 builder.Services.AddQuartz(q =>
@@ -108,6 +110,7 @@ builder.Services.AddQuartzHostedService(options =>
 });
 
 // Setting up our services
+builder.Services.AddSingleton<IAmazonECS, AmazonECSClient>();
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();

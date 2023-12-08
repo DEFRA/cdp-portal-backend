@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Amazon.ECS;
+using Amazon.ECS.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
@@ -8,6 +10,8 @@ using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using Deployment = Defra.Cdp.Backend.Api.Models.Deployment;
+using Task = System.Threading.Tasks.Task;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
@@ -16,11 +20,13 @@ public class EcsEventListener : SqsListener
     private readonly List<string> _containersToIgnore;
     private readonly IDeployablesService _deployablesService;
     private readonly IDeploymentsService _deploymentsService;
+    private readonly IAmazonECS _ecs;
     private readonly IEcsEventsService _ecsEventsService;
     private readonly EnvironmentLookup _environmentLookup;
     private readonly ILogger<EcsEventListener> _logger;
 
     public EcsEventListener(IAmazonSQS sqs,
+        IAmazonECS ecs,
         IOptions<EcsEventListenerOptions> config,
         IDeploymentsService deploymentsService,
         EnvironmentLookup environmentLookup,
@@ -28,6 +34,7 @@ public class EcsEventListener : SqsListener
         IEcsEventsService ecsEventsService,
         ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl)
     {
+        _ecs = ecs;
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
         _logger = logger;
@@ -73,12 +80,36 @@ public class EcsEventListener : SqsListener
                 var deployedAt = ecsEvent.Timestamp;
                 var taskId = ecsEvent.Detail.TaskDefinitionArn;
                 var instanceTaskId = ecsEvent.Detail.TaskArn;
-                var deploymentId = ecsEvent.DeploymentId;
+
+                string? deploymentId = null;
+                try
+                {
+                    var definitionDescription = await _ecs.DescribeTaskDefinitionAsync(
+                        new DescribeTaskDefinitionRequest { TaskDefinition = ecsEvent.Detail.TaskDefinitionArn },
+                        cancellationToken);
+                    var definitionTags = definitionDescription.Tags;
+                    var definitionTag = definitionTags?.Find(t => t.Key == "DEPLOYMENT_ID");
+                    deploymentId = definitionTag?.Value;
+                    if (deploymentId == null)
+                        _logger.LogError("Could not get deployment ID for task definition {DetailTaskDefinitionArn}",
+                            ecsEvent.Detail.TaskDefinitionArn);
+                    else
+                        _logger.LogInformation("Successfully retrieved deploymentId from {DeploymentId} from event",
+                            deploymentId);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Error trying to retrieve task definition information");
+                }
+
+                deploymentId ??= ecsEvent.DeploymentId;
 
                 // Find the requested deployment so we can fill out the username
                 var requestedDeployment =
-                    await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, taskId,
+                    await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, deploymentId,
                         cancellationToken);
+
+                // Todo: find a way to deal with case when `deploymentId` is null
 
                 var deployment = new Deployment
                 {

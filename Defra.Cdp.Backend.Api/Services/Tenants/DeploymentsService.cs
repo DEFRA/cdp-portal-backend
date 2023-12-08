@@ -21,7 +21,7 @@ public interface IDeploymentsService
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken);
 
     public Task<Deployment?> FindRequestedDeployment(string service, string version, string environment,
-        DateTime deployedAt, string taskId, CancellationToken cancellationToken);
+        DateTime deployedAt, string deploymentId, CancellationToken cancellationToken);
 
     public Task<UpdateResult> LinkRequestedDeployment(ObjectId? id, Deployment deployment,
         CancellationToken cancellationToken);
@@ -114,10 +114,10 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     // We look for any task that matches the name/version/env and happened up to 30 minutes before the first deployment 
     // event. 
     public async Task<Deployment?> FindRequestedDeployment(string service, string version, string environment,
-        DateTime timestamp, string taskId, CancellationToken cancellationToken)
+        DateTime timestamp, string deploymentId, CancellationToken cancellationToken)
     {
         // See if we've already matched the requested deployment via deployment id
-        var requested = await Collection.Find(d => d.TaskId == taskId && d.Status == "REQUESTED")
+        var requested = await Collection.Find(d => d.DeploymentId == deploymentId && d.Status == "REQUESTED")
             .FirstOrDefaultAsync(cancellationToken);
 
         if (requested != null) return requested;
