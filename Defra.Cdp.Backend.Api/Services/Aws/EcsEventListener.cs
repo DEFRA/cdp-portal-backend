@@ -91,18 +91,18 @@ public class EcsEventListener : SqsListener
                     var definitionTags = definitionDescription.Tags;
                     var definitionTag = definitionTags?.Find(t => t.Key == "DEPLOYMENT_ID");
                     deploymentId = definitionTag?.Value;
-                    if (deploymentId == null)
-                        _logger.LogError("Could not get deployment ID for task definition {DetailTaskDefinitionArn}",
-                            ecsEvent.Detail.TaskDefinitionArn);
-                    else
-                        _logger.LogInformation("Successfully retrieved deploymentId from {DeploymentId} from event",
-                            deploymentId);
                 }
                 catch (Exception e)
                 {
                     _logger.LogError(e, "Error trying to retrieve task definition information");
                 }
 
+                if (deploymentId == null)
+                    _logger.LogError("Could not get deployment ID for task definition {DetailTaskDefinitionArn}",
+                        ecsEvent.Detail.TaskDefinitionArn);
+                else
+                    _logger.LogInformation("Successfully retrieved deploymentId from {DeploymentId} from event",
+                        deploymentId);
                 deploymentId ??= ecsEvent.DeploymentId;
 
                 // Find the requested deployment so we can fill out the username
