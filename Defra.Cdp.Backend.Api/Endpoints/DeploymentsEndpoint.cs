@@ -124,11 +124,15 @@ public static class DeploymentsEndpoint
     internal static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
         IValidator<RequestedDeployment> validator,
         RequestedDeployment rd,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var validatedResult = await validator.ValidateAsync(rd, cancellationToken);
 
         if (!validatedResult.IsValid) return Results.ValidationProblem(validatedResult.ToDictionary());
+
+        var logger = loggerFactory.CreateLogger("RegisterDeployment");
+        logger.LogInformation("Registering deployment {RdDeploymentId}", rd.DeploymentId);
 
         var deployment = new Deployment
         {
@@ -140,7 +144,8 @@ public static class DeploymentsEndpoint
             User = rd.User?.DisplayName,
             Version = rd.Version,
             DockerImage = rd.Service,
-            InstanceCount = rd.InstanceCount
+            InstanceCount = rd.InstanceCount,
+            DeploymentId = rd.DeploymentId
         };
 
         await deploymentsService.Insert(deployment, cancellationToken);
