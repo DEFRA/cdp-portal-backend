@@ -1,5 +1,4 @@
 using Amazon.ECR;
-using Amazon.ECS;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
@@ -110,7 +109,6 @@ builder.Services.AddQuartzHostedService(options =>
 });
 
 // Setting up our services
-builder.Services.AddSingleton<IAmazonECS, AmazonECSClient>();
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
