@@ -71,9 +71,14 @@ public class EcsEventListener : SqsListener
                             InstanceCount = d.InstanceCount
                         }).ToList();
 
+            if (updatedRequested.Count > 0)
+                _logger.LogInformation($"Matching id {cdpDeploymentId} to deployer {ecsSvcDeploymentId}");
+            else _logger.LogInformation("couldn't find anything to match");
             foreach (var deployment in updatedRequested)
                 await _deploymentsService.Insert(deployment, cancellationToken);
         }
+
+        _logger.LogWarning("Could not match an ecs lambda deployment to an existing request");
     }
 
     private async Task<List<Deployment>> ConvertToDeployment(EcsEvent ecsEvent, CancellationToken cancellationToken)
