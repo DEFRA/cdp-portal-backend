@@ -73,7 +73,9 @@ public class EcsEventListener : SqsListener
 
             if (updatedRequested.Count > 0)
                 _logger.LogInformation($"Matching id {cdpDeploymentId} to deployer {ecsSvcDeploymentId}");
-            else _logger.LogInformation("couldn't find anything to match");
+            else
+                _logger.LogInformation(
+                    $"couldn't find anything to match for {cdpDeploymentId} to deployer {ecsSvcDeploymentId} from {requestedDeployment.Count} deployments ");
             foreach (var deployment in updatedRequested)
                 await _deploymentsService.Insert(deployment, cancellationToken);
         }
