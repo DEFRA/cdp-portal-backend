@@ -14,6 +14,8 @@ public sealed record EcsEvent(
     [property: JsonPropertyName("time")] DateTime Timestamp,
     [property: JsonPropertyName("region")] string Region,
     [property: JsonPropertyName("detail")] EcsEventDetail Detail,
+    [property: JsonPropertyName("deployed_by")]
+    string? DeployedBy,
     [property: JsonPropertyName("cdp_deployment_id")]
     string? CdpDeploymentId
 );
