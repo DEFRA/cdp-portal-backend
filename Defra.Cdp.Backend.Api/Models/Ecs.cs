@@ -43,6 +43,8 @@ public sealed record EcsEventDetail(
     [property: JsonPropertyName("taskArn")]
     string TaskArn,
     [property: JsonPropertyName("reason")] string Reason,
+    [property: JsonPropertyName("startedBy")]
+    string StartedBy,
     [property: JsonPropertyName("deploymentId")]
     string? EcsSvcDeploymentId
 );

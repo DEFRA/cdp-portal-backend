@@ -116,7 +116,8 @@ public class EcsEventListener : SqsListener
 
                 // Find the requested deployment so we can fill out the username
                 var requestedDeployment =
-                    (await _deploymentsService.FindDeployments("unknown", ecsEvent.DeploymentId, cancellationToken))
+                    (await _deploymentsService.FindDeployments("unknown", ecsEvent.Detail.StartedBy,
+                        cancellationToken))
                     .First();
 
                 var deployment = new Deployment
@@ -132,7 +133,7 @@ public class EcsEventListener : SqsListener
                     TaskId = taskId,
                     InstanceTaskId = instanceTaskId,
                     InstanceCount = requestedDeployment?.InstanceCount,
-                    EcsSvcDeploymentId = requestedDeployment?.EcsSvcDeploymentId
+                    EcsSvcDeploymentId = ecsEvent.Detail.StartedBy
                 };
 
                 if (requestedDeployment is { DeploymentId: null, Id: not null })
