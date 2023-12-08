@@ -86,9 +86,12 @@ public class EcsEventListener : SqsListener
                 try
                 {
                     var definitionDescription = await _ecs.DescribeTaskDefinitionAsync(
-                        new DescribeTaskDefinitionRequest { TaskDefinition = ecsEvent.Detail.TaskDefinitionArn },
+                        new DescribeTaskDefinitionRequest
+                        {
+                            TaskDefinition = ecsEvent.Detail.TaskDefinitionArn.Split("/").Last()
+                        },
                         cancellationToken);
-                    var definitionTags = definitionDescription.Tags;
+                    var definitionTags = definitionDescription?.Tags;
                     var definitionTag = definitionTags?.Find(t => t.Key == "DEPLOYMENT_ID");
                     deploymentId = definitionTag?.Value;
                 }
