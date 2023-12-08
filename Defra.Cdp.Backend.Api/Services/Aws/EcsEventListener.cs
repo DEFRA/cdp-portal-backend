@@ -43,12 +43,12 @@ public class EcsEventListener : SqsListener
     private async Task UpdateDeploymentIds(EcsEvent ecsEvent, CancellationToken cancellationToken)
     {
         var cdpDeploymentId = ecsEvent.CdpDeploymentId;
-        var ecsSvcDeploymentId = ecsEvent.Detail.EcsSvcDeploymentId;
+        var ecsSvcDeploymentId = ecsEvent.Detail.EcsSvcDeploymentId?.Trim();
 
         if (!string.IsNullOrWhiteSpace(cdpDeploymentId) && !string.IsNullOrWhiteSpace(ecsSvcDeploymentId))
         {
             var requestedDeployment =
-                await _deploymentsService.FindDeployments(cdpDeploymentId, ecsSvcDeploymentId,
+                await _deploymentsService.FindDeploymentByEcsSvcDeploymentId(ecsSvcDeploymentId,
                     cancellationToken);
 
             var d = await _deploymentsService.FindDeployment(cdpDeploymentId, cancellationToken);
@@ -76,7 +76,7 @@ public class EcsEventListener : SqsListener
             else
             {
                 _logger.LogInformation(
-                    $"couldn't find anything to match for {cdpDeploymentId} to deployer {ecsSvcDeploymentId} from {requestedDeployment.Count} deployments ");
+                    $"couldn't find anything to match for {cdpDeploymentId} to deployer {ecsSvcDeploymentId} ");
             }
         }
 
@@ -123,9 +123,8 @@ public class EcsEventListener : SqsListener
 
                 // Find the requested deployment so we can fill out the username
                 var requestedDeployment =
-                    (await _deploymentsService.FindDeployments("unknown", ecsEvent.Detail.StartedBy,
-                        cancellationToken))
-                    .First();
+                    await _deploymentsService.FindDeploymentByEcsSvcDeploymentId(ecsEvent.Detail.StartedBy.Trim(),
+                        cancellationToken);
 
                 var deployment = new Deployment
                 {
