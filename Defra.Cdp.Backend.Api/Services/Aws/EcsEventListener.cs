@@ -83,12 +83,14 @@ public class EcsEventListener : SqsListener
 
                 string? deploymentId = null;
                 _logger.LogInformation("attempting to request task definition information");
+                var requestTaskDefinition = ecsEvent.Detail.TaskDefinitionArn.Split("/").Last();
                 try
                 {
                     var definitionDescription = await _ecs.DescribeTaskDefinitionAsync(
                         new DescribeTaskDefinitionRequest
                         {
-                            TaskDefinition = ecsEvent.Detail.TaskDefinitionArn.Split("/").Last()
+                            TaskDefinition = requestTaskDefinition,
+                            Include = new List<string> { "TAGS", "DEPLOYMENT_ID" }
                         },
                         cancellationToken);
                     var definitionTags = definitionDescription?.Tags;
@@ -102,7 +104,7 @@ public class EcsEventListener : SqsListener
 
                 if (deploymentId == null)
                     _logger.LogError(
-                        $"Could not get deployment ID for task definition {ecsEvent.Detail.TaskDefinitionArn}"
+                        $"Could not get deployment ID for task definition {requestTaskDefinition}"
                     );
                 else
                     _logger.LogInformation($"Successfully retrieved deploymentId from {deploymentId} from event");
