@@ -90,7 +90,7 @@ public class EcsEventListener : SqsListener
                         new DescribeTaskDefinitionRequest
                         {
                             TaskDefinition = requestTaskDefinition,
-                            Include = new List<string> { "TAGS", "DEPLOYMENT_ID" }
+                            Include = new List<string> { "TAGS"}
                         },
                         cancellationToken);
                     var definitionTags = definitionDescription?.Tags;
