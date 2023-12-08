@@ -20,7 +20,7 @@ public interface IDeploymentsService
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken);
 
-    public Task<List<Deployment>> FindDeployments(string deploymentId, string ecsSvcDeploymentId,
+    public Task<Deployment?> FindDeploymentByEcsSvcDeploymentId(string ecsSvcDeploymentId,
         CancellationToken cancellationToken);
 
     public Task<Deployment?> FindRequestedDeployment(string service, string version, string environment,
@@ -113,14 +113,6 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .FirstOrDefaultAsync(cancellationToken)!;
     }
 
-    public async Task<List<Deployment>> FindDeployments(string deploymentId, string ecsSvcDeploymentId,
-        CancellationToken cancellationToken)
-    {
-        return await Collection
-            .Find(d => d.DeploymentId == deploymentId || d.EcsSvcDeploymentId == ecsSvcDeploymentId)
-            .ToListAsync(cancellationToken);
-    }
-
     // Used to join up an incoming ECS request with requested deployment from cdp-self-service-ops
     // We look for any task that matches the name/version/env and happened up to 30 minutes before the first deployment 
     // event. 
@@ -197,6 +189,14 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Deployment?> FindDeploymentByEcsSvcDeploymentId(string ecsSvcDeploymentId,
+        CancellationToken cancellationToken)
+    {
+        return await Collection
+            .Find(d => d.EcsSvcDeploymentId == ecsSvcDeploymentId)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     protected override List<CreateIndexModel<Deployment>> DefineIndexes(
