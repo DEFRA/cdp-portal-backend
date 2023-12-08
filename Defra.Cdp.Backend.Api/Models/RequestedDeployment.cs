@@ -25,4 +25,7 @@ public sealed class RequestedDeployment
 
     [property: JsonPropertyName("instanceCount")]
     public int InstanceCount { get; init; }
+
+    [property: JsonPropertyName("deploymentId")]
+    public string DeploymentId { get; init; }
 }

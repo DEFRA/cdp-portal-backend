@@ -186,7 +186,7 @@ public class EcsEventListener : SqsListener
                 await _deploymentsService.Insert(deployment, cancellationToken);
             }
         }
-        else if (ecsEvent is { DetailType: "ECS Lambda Deployment Event" })
+        else if (ecsEvent is { DetailType: "ECS Lambda Deployment Updated" })
         {
             await UpdateDeploymentIds(ecsEvent, cancellationToken);
         }
