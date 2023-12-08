@@ -82,7 +82,6 @@ public class EcsEventListener : SqsListener
                 var instanceTaskId = ecsEvent.Detail.TaskArn;
 
                 string? deploymentId = null;
-                _logger.LogInformation("attempting to request task definition information");
                 var requestTaskDefinition = ecsEvent.Detail.TaskDefinitionArn.Split("/").Last();
                 try
                 {
@@ -94,8 +93,6 @@ public class EcsEventListener : SqsListener
                         },
                         cancellationToken);
                     var definitionTags = definitionDescription?.Tags;
-                    _logger.LogInformation(
-                        $"tags for {definitionDescription?.TaskDefinition} >> {string.Join(":: ", definitionTags.Select(t => $"{t.Key} {t.Value}"))}");
                     var definitionTag = definitionTags?.Find(t => t.Key == "DEPLOYMENT_ID");
                     deploymentId = definitionTag?.Value;
                 }
