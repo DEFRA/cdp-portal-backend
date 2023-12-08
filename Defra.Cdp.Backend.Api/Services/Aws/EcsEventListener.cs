@@ -55,6 +55,8 @@ public class EcsEventListener : SqsListener
 
             if (d != null)
             {
+                var userName = d.User;
+                if (string.IsNullOrWhiteSpace(userName) || userName == "n/a") userName = ecsEvent.DeployedBy;
                 _logger.LogInformation($"Matching id {cdpDeploymentId} to deployer {ecsSvcDeploymentId}");
                 var updatedDeployment = new Deployment
                 {
@@ -63,7 +65,8 @@ public class EcsEventListener : SqsListener
                     Environment = d.Environment,
                     Service = d.Service,
                     Version = d.Version,
-                    User = d.User,
+                    User = userName,
+                    UserId = d.UserId,
                     DeployedAt = d.DeployedAt,
                     Status = d.Status,
                     DockerImage = d.DockerImage,
