@@ -20,6 +20,9 @@ public interface IDeploymentsService
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken);
 
+    public Task<List<Deployment>> FindDeployments(string deploymentId, string ecsSvcDeploymentId,
+        CancellationToken cancellationToken);
+
     public Task<Deployment?> FindRequestedDeployment(string service, string version, string environment,
         DateTime deployedAt, string deploymentId, CancellationToken cancellationToken);
 
@@ -110,6 +113,14 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .FirstOrDefaultAsync(cancellationToken)!;
     }
 
+    public async Task<List<Deployment>> FindDeployments(string deploymentId, string ecsSvcDeploymentId,
+        CancellationToken cancellationToken)
+    {
+        return await Collection
+            .Find(d => d.DeploymentId == deploymentId || d.EcsSvcDeploymentId == ecsSvcDeploymentId)
+            .ToListAsync(cancellationToken);
+    }
+
     // Used to join up an incoming ECS request with requested deployment from cdp-self-service-ops
     // We look for any task that matches the name/version/env and happened up to 30 minutes before the first deployment 
     // event. 
@@ -170,7 +181,11 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
     public async Task Insert(Deployment deployment, CancellationToken cancellationToken)
     {
-        await Collection.InsertOneAsync(deployment, cancellationToken: cancellationToken);
+        if (deployment.Id != null)
+            await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment,
+                cancellationToken: cancellationToken);
+        else
+            await Collection.InsertOneAsync(deployment, cancellationToken: cancellationToken);
     }
 
     public async Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken)

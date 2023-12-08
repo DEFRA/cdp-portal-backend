@@ -1,7 +1,5 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Amazon.ECS;
-using Amazon.ECS.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
@@ -17,16 +15,15 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public class EcsEventListener : SqsListener
 {
+    private const string Requested = "REQUESTED";
     private readonly List<string> _containersToIgnore;
     private readonly IDeployablesService _deployablesService;
     private readonly IDeploymentsService _deploymentsService;
-    private readonly IAmazonECS _ecs;
     private readonly IEcsEventsService _ecsEventsService;
     private readonly EnvironmentLookup _environmentLookup;
     private readonly ILogger<EcsEventListener> _logger;
 
     public EcsEventListener(IAmazonSQS sqs,
-        IAmazonECS ecs,
         IOptions<EcsEventListenerOptions> config,
         IDeploymentsService deploymentsService,
         EnvironmentLookup environmentLookup,
@@ -34,7 +31,6 @@ public class EcsEventListener : SqsListener
         IEcsEventsService ecsEventsService,
         ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl)
     {
-        _ecs = ecs;
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
         _logger = logger;
@@ -42,6 +38,42 @@ public class EcsEventListener : SqsListener
         _ecsEventsService = ecsEventsService;
         _containersToIgnore = config.Value.ContainerToIgnore;
         _logger.LogInformation("Listening for deployment events on {QueueUrl}", config.Value.QueueUrl);
+    }
+
+    private async Task UpdateDeploymentIds(EcsEvent ecsEvent, CancellationToken cancellationToken)
+    {
+        var cdpDeploymentId = ecsEvent.CdpDeploymentId;
+        var ecsSvcDeploymentId = ecsEvent.Detail.EcsSvcDeploymentId;
+
+        if (!string.IsNullOrWhiteSpace(cdpDeploymentId) && !string.IsNullOrWhiteSpace(ecsSvcDeploymentId))
+        {
+            var requestedDeployment =
+                await _deploymentsService.FindDeployments(cdpDeploymentId, ecsSvcDeploymentId,
+                    cancellationToken);
+
+            var updatedRequested =
+                requestedDeployment
+                    .Where(d => d.Status == Requested)
+                    .Select(d =>
+                        new Deployment
+                        {
+                            Id = d.Id,
+                            DeploymentId = d.DeploymentId,
+                            Environment = d.Environment,
+                            Service = d.Service,
+                            Version = d.Version,
+                            User = d.User,
+                            DeployedAt = d.DeployedAt,
+                            Status = d.Status,
+                            DockerImage = d.DockerImage,
+                            TaskId = d.TaskId,
+                            InstanceTaskId = d.InstanceTaskId,
+                            InstanceCount = d.InstanceCount
+                        }).ToList();
+
+            foreach (var deployment in updatedRequested)
+                await _deploymentsService.Insert(deployment, cancellationToken);
+        }
     }
 
     private async Task<List<Deployment>> ConvertToDeployment(EcsEvent ecsEvent, CancellationToken cancellationToken)
@@ -80,42 +112,12 @@ public class EcsEventListener : SqsListener
                 var deployedAt = ecsEvent.Timestamp;
                 var taskId = ecsEvent.Detail.TaskDefinitionArn;
                 var instanceTaskId = ecsEvent.Detail.TaskArn;
-
-                string? deploymentId = null;
-                var requestTaskDefinition = ecsEvent.Detail.TaskDefinitionArn.Split("/").Last();
-                try
-                {
-                    var definitionDescription = await _ecs.DescribeTaskDefinitionAsync(
-                        new DescribeTaskDefinitionRequest
-                        {
-                            TaskDefinition = requestTaskDefinition,
-                            Include = new List<string> { "TAGS"}
-                        },
-                        cancellationToken);
-                    var definitionTags = definitionDescription?.Tags;
-                    var definitionTag = definitionTags?.Find(t => t.Key == "DEPLOYMENT_ID");
-                    deploymentId = definitionTag?.Value;
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, "Error trying to retrieve task definition information");
-                }
-
-                if (deploymentId == null)
-                    _logger.LogError(
-                        $"Could not get deployment ID for task definition {requestTaskDefinition}"
-                    );
-                else
-                    _logger.LogInformation($"Successfully retrieved deploymentId from {deploymentId} from event");
-                _logger.LogInformation(deploymentId);
-                deploymentId ??= ecsEvent.DeploymentId;
+                var deploymentId = ecsEvent.DeploymentId;
 
                 // Find the requested deployment so we can fill out the username
                 var requestedDeployment =
-                    await _deploymentsService.FindRequestedDeployment(repo, tag, env, deployedAt, deploymentId,
-                        cancellationToken);
-
-                // Todo: find a way to deal with case when `deploymentId` is null
+                    (await _deploymentsService.FindDeployments("unknown", ecsEvent.DeploymentId, cancellationToken))
+                    .First();
 
                 var deployment = new Deployment
                 {
@@ -129,7 +131,8 @@ public class EcsEventListener : SqsListener
                     DockerImage = ecsContainer.Image,
                     TaskId = taskId,
                     InstanceTaskId = instanceTaskId,
-                    InstanceCount = requestedDeployment?.InstanceCount
+                    InstanceCount = requestedDeployment?.InstanceCount,
+                    EcsSvcDeploymentId = requestedDeployment?.EcsSvcDeploymentId
                 };
 
                 if (requestedDeployment is { DeploymentId: null, Id: not null })
@@ -141,7 +144,6 @@ public class EcsEventListener : SqsListener
                 }
 
                 deployments.Add(deployment);
-                _logger.LogInformation("Updated deployment");
             }
             catch (Exception ex)
             {
@@ -175,6 +177,10 @@ public class EcsEventListener : SqsListener
                     deployment.Service, deployment.Version);
                 await _deploymentsService.Insert(deployment, cancellationToken);
             }
+        }
+        else if (ecsEvent is { DetailType: "ECS Lambda Deployment Event" })
+        {
+            await UpdateDeploymentIds(ecsEvent, cancellationToken);
         }
         else
         {

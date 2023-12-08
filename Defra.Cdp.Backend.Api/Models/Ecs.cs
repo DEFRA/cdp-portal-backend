@@ -13,7 +13,9 @@ public sealed record EcsEvent(
     string Account,
     [property: JsonPropertyName("time")] DateTime Timestamp,
     [property: JsonPropertyName("region")] string Region,
-    [property: JsonPropertyName("detail")] EcsEventDetail Detail
+    [property: JsonPropertyName("detail")] EcsEventDetail Detail,
+    [property: JsonPropertyName("cdp_deployment_id")]
+    string? CdpDeploymentId
 );
 
 public sealed record EcsContainer(
@@ -39,11 +41,16 @@ public sealed record EcsEventDetail(
     [property: JsonPropertyName("taskDefinitionArn")]
     string TaskDefinitionArn,
     [property: JsonPropertyName("taskArn")]
-    string TaskArn
+    string TaskArn,
+    [property: JsonPropertyName("reason")] string Reason,
+    [property: JsonPropertyName("deploymentId")]
+    string? EcsSvcDeploymentId
 );
 
 public sealed record EcsEventCopy(
-    string MessageId, DateTime Timestamp, string Body)
+    string MessageId,
+    DateTime Timestamp,
+    string Body)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]

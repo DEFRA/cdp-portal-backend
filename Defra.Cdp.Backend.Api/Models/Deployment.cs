@@ -25,6 +25,8 @@ public sealed class Deployment
     public string DockerImage { get; init; } = default!;
     public string? TaskId { get; init; }
 
+    public string? EcsSvcDeploymentId { get; init; }
+
     public string? InstanceTaskId { get; init; }
 
     public int? InstanceCount { get; init; } = -1; // default value is -1 if we don't get it from legacy calls
