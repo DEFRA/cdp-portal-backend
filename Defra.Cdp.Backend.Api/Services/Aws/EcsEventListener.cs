@@ -51,33 +51,33 @@ public class EcsEventListener : SqsListener
                 await _deploymentsService.FindDeployments(cdpDeploymentId, ecsSvcDeploymentId,
                     cancellationToken);
 
-            var updatedRequested =
-                requestedDeployment
-                    .Where(d => d.Status == Requested)
-                    .Select(d =>
-                        new Deployment
-                        {
-                            Id = d.Id,
-                            DeploymentId = d.DeploymentId,
-                            Environment = d.Environment,
-                            Service = d.Service,
-                            Version = d.Version,
-                            User = d.User,
-                            DeployedAt = d.DeployedAt,
-                            Status = d.Status,
-                            DockerImage = d.DockerImage,
-                            TaskId = d.TaskId,
-                            InstanceTaskId = d.InstanceTaskId,
-                            InstanceCount = d.InstanceCount
-                        }).ToList();
+            var d = await _deploymentsService.FindDeployment(cdpDeploymentId, cancellationToken);
 
-            if (updatedRequested.Count > 0)
+            if (d != null)
+            {
                 _logger.LogInformation($"Matching id {cdpDeploymentId} to deployer {ecsSvcDeploymentId}");
+                var updatedDeployment = new Deployment
+                {
+                    Id = d.Id,
+                    DeploymentId = d.DeploymentId,
+                    Environment = d.Environment,
+                    Service = d.Service,
+                    Version = d.Version,
+                    User = d.User,
+                    DeployedAt = d.DeployedAt,
+                    Status = d.Status,
+                    DockerImage = d.DockerImage,
+                    TaskId = d.TaskId,
+                    InstanceTaskId = d.InstanceTaskId,
+                    InstanceCount = d.InstanceCount
+                };
+                await _deploymentsService.Insert(updatedDeployment, cancellationToken);
+            }
             else
+            {
                 _logger.LogInformation(
                     $"couldn't find anything to match for {cdpDeploymentId} to deployer {ecsSvcDeploymentId} from {requestedDeployment.Count} deployments ");
-            foreach (var deployment in updatedRequested)
-                await _deploymentsService.Insert(deployment, cancellationToken);
+            }
         }
 
         _logger.LogWarning("Could not match an ecs lambda deployment to an existing request");
