@@ -69,7 +69,8 @@ public class EcsEventListener : SqsListener
                     DockerImage = d.DockerImage,
                     TaskId = d.TaskId,
                     InstanceTaskId = d.InstanceTaskId,
-                    InstanceCount = d.InstanceCount
+                    InstanceCount = d.InstanceCount,
+                    EcsSvcDeploymentId = ecsSvcDeploymentId
                 };
                 await _deploymentsService.Insert(updatedDeployment, cancellationToken);
             }
