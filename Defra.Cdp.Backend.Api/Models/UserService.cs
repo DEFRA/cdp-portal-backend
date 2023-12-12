@@ -8,11 +8,13 @@ public record UserServiceRecord(
     public Dictionary<string, string> GithubToTeamIdMap { get; } =
         teams
             .Where(t => !string.IsNullOrWhiteSpace(t.github))
+            .DistinctBy(t => t.github)
             .ToDictionary(t => t.github, t => t.teamId);
 
     public Dictionary<string, string> GithubToTeamNameMap { get; } =
         teams
             .Where(t => !string.IsNullOrWhiteSpace(t.github))
+            .DistinctBy(t => t.github)
             .ToDictionary(t => t.github, t => t.name);
 }
 
