@@ -26,7 +26,8 @@ public sealed class Deployment
     public string? TaskId { get; init; }
 
     public string? EcsSvcDeploymentId { get; init; }
-
+    public string? Cpu { get; init; }
+    public string? Memory { get; init; }
     public string? InstanceTaskId { get; init; }
 
     public int? InstanceCount { get; init; } = -1; // default value is -1 if we don't get it from legacy calls
@@ -66,6 +67,9 @@ public sealed class SquashedDeployment
     public string? User { get; init; }
     public string? UserId { get; init; }
 
+    public string? Cpu { get; init; }
+    public string? Memory { get; init; }
+    
     public DateTime DeployedAt { get; init; } = default!;
     public string Status { get; init; } = default!;
     public string DockerImage { get; init; } = default!;
