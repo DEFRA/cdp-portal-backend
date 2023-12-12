@@ -1,4 +1,4 @@
-name: Integration Tests (defra/cdp-portal-tests)
+name: Integration Tests
 
 on:
   workflow_dispatch:
