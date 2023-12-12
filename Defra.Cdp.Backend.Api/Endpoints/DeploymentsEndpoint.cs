@@ -56,7 +56,7 @@ public static class DeploymentsEndpoint
             .Produces<SquashedDeploymentsPage>()
             .WithTags(DeploymentsTag);
 
-        app.MapGet($"{DeploymentsBaseRoute}/{{deploymentId}}", FindDeployment)
+        app.MapGet($"{DeploymentsBaseRoute}/{{deploymentId}}", FindDeployments)
             .WithName("GetDeploymentById")
             .Produces<Deployment>()
             .Produces(StatusCodes.Status404NotFound)
@@ -98,13 +98,11 @@ public static class DeploymentsEndpoint
     }
 
     // Get /deployments/{deploymentId}
-    internal static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
+    internal static async Task<IResult> FindDeployments(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
-    {
-        var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
-        return deployment == null
-            ? Results.NotFound(new { Message = $"{deploymentId} not found" })
-            : Results.Ok(deployment);
+   {
+        var deployment = await deploymentsService.FindDeployments(deploymentId, cancellationToken);
+        return Results.Ok(deployment);
     }
 
     internal static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,

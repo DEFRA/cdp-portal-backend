@@ -7,8 +7,6 @@ namespace Defra.Cdp.Backend.Api.Services.Tenants;
 
 public interface IDeploymentsService
 {
-    Task<List<Deployment>> FindLatest(int offset = 0, CancellationToken cancellationToken = new());
-
     public Task<DeploymentsPage> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
         CancellationToken cancellationToken = new());
 
@@ -17,19 +15,19 @@ public interface IDeploymentsService
         CancellationToken cancellationToken = new());
 
     public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
+    
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
+    
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken);
 
     public Task<Deployment?> FindDeploymentByEcsSvcDeploymentId(string ecsSvcDeploymentId,
         CancellationToken cancellationToken);
 
-    public Task<Deployment?> FindRequestedDeployment(string service, string version, string environment,
-        DateTime deployedAt, string deploymentId, CancellationToken cancellationToken);
-
     public Task<UpdateResult> LinkRequestedDeployment(ObjectId? id, Deployment deployment,
         CancellationToken cancellationToken);
 
     public Task Insert(Deployment deployment, CancellationToken cancellationToken);
+    Task<List<Deployment>> FindDeployments(string deploymentId, CancellationToken cancellationToken);
 }
 
 public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
@@ -76,7 +74,16 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         page = page == 0 ? DefaultPage : page;
         size = size == 0 ? DefaultPageSize : size;
         if (size <= 0) throw new ArgumentException("page size cannot be less than zero");
+        
+        var environmentFilter = new FilterDefinitionBuilder<Deployment>().Empty;
+        if (environment != null)
+        {
+            environmentFilter = new FilterDefinitionBuilder<Deployment>().Eq(d => d.Environment, environment);
+        }
+             
+        
         var pipeline = new EmptyPipelineDefinition<Deployment>()
+            .Match(environmentFilter)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
             .Group(
                 d => new { d.Status, d.TaskId, d.InstanceCount },
@@ -96,7 +103,9 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                             Status = grp.First().Status,
                             TaskId = grp.First().TaskId,
                             User = grp.First().User,
-                            UserId = grp.First().UserId
+                            UserId = grp.First().UserId,
+                            Cpu = grp.First().Cpu,
+                            Memory = grp.First().Memory
                         }
                     })
             .Project(p => p.Root);
@@ -111,41 +120,6 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     {
         return Collection.Find(d => d.DeploymentId == deploymentId).SortBy(d => d.DeployedAt)
             .FirstOrDefaultAsync(cancellationToken)!;
-    }
-
-    // Used to join up an incoming ECS request with requested deployment from cdp-self-service-ops
-    // We look for any task that matches the name/version/env and happened up to 30 minutes before the first deployment 
-    // event. 
-    public async Task<Deployment?> FindRequestedDeployment(string service, string version, string environment,
-        DateTime timestamp, string deploymentId, CancellationToken cancellationToken)
-    {
-        // See if we've already matched the requested deployment via deployment id
-        var requested = await Collection.Find(d => d.DeploymentId == deploymentId && d.Status == "REQUESTED")
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (requested != null) return requested;
-
-        var filterBuilder = Builders<Deployment>.Filter;
-
-        var filter = filterBuilder.And(
-            filterBuilder.Eq(d => d.Service, service),
-            filterBuilder.Eq(d => d.Version, version),
-            filterBuilder.Eq(d => d.Environment, environment),
-            filterBuilder.Eq(d => d.DeploymentId, null),
-            filterBuilder.Gt(d => d.DeployedAt, timestamp.AddMinutes(-30)),
-            filterBuilder.Lte(d => d.DeployedAt, timestamp)
-        );
-
-        return await Collection.Find(filter).SortBy(d => d.DeployedAt).FirstOrDefaultAsync(cancellationToken)!;
-    }
-
-    public async Task<List<Deployment>> FindLatest(int offset = 0, CancellationToken cancellationToken = new())
-    {
-        return await Collection
-            .Find(FilterDefinition<Deployment>.Empty)
-            .Skip(offset)
-            .Limit(200)
-            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt)).ToListAsync(cancellationToken);
     }
 
     public async Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken)
@@ -178,6 +152,14 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                 cancellationToken: cancellationToken);
         else
             await Collection.InsertOneAsync(deployment, cancellationToken: cancellationToken);
+    }
+
+    public async Task<List<Deployment>> FindDeployments(string deploymentId, CancellationToken cancellationToken)
+    {
+        var filter = new FilterDefinitionBuilder<Deployment>().Eq(d => d.DeploymentId, deploymentId);
+        var result = await Collection.Find(filter).ToListAsync(cancellationToken);
+
+        return result;
     }
 
     public async Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken)
