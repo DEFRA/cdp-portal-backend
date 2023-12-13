@@ -188,7 +188,7 @@ public class EcsEventListener : SqsListener
                 await _deploymentsService.Insert(deployment, cancellationToken);
             }
         }
-        else if (ecsEvent is { DetailType: "ECS Lambda Deployment Updated" })
+        else if (ecsEvent is { DetailType: "ECS Lambda Deployment Updated" } or {DetailType: "ECS Lambda Deployment Created"})
         {
             // These come from the deployment lambda and allow us to link the startedBy id in ECS to our deployment id
             await UpdateDeploymentIds(ecsEvent, cancellationToken);
