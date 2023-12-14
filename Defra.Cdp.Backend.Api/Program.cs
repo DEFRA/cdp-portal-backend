@@ -97,10 +97,13 @@ builder.Services.AddQuartz(q =>
     var jobKey = new JobKey("FetchGithubRepositories");
     q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(jobKey));
 
+    int interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
+    logger.Information("Fetching github repositories and teams every {interval} seconds", interval);
     q.AddTrigger(opts => opts
         .ForJob(jobKey)
         .WithIdentity("FetchGithubRepositories-trigger")
-        .WithCronSchedule("0 0/1 * * * ?"));
+        .WithSimpleSchedule(d => d.WithIntervalInSeconds(interval).RepeatForever().Build()));
+        
 });
 builder.Services.AddQuartzHostedService(options =>
 {
