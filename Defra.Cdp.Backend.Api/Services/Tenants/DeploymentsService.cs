@@ -10,7 +10,7 @@ public interface IDeploymentsService
     public Task<DeploymentsPage> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
         CancellationToken cancellationToken = new());
 
-    public Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int offset = 0, int page = 0,
+    public Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int page = 0,
         int size = 0,
         CancellationToken cancellationToken = new());
 
@@ -67,49 +67,49 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return new DeploymentsPage(deployments, page, size, totalPages);
     }
 
-    public async Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int offset = 0, int page = 0,
-        int size = 0,
+    public async Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int page = 1,
+        int size = 20,
         CancellationToken cancellationToken = new())
     {
-        page = page == 0 ? DefaultPage : page;
-        size = size == 0 ? DefaultPageSize : size;
-        if (size <= 0) throw new ArgumentException("page size cannot be less than zero");
+        var skip = size * (page -1);
+        var limit = size;
         
         var environmentFilter = new FilterDefinitionBuilder<Deployment>().Empty;
         if (environment != null)
         {
             environmentFilter = new FilterDefinitionBuilder<Deployment>().Eq(d => d.Environment, environment);
         }
-             
-        
+
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(environmentFilter)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
             .Group(
                 d => new { d.Status, d.TaskId, d.InstanceCount },
                 grp =>
-                    new
+                    new SquashedDeployment
                     {
-                        Root = new SquashedDeployment
-                        {
-                            Count = grp.Count(),
-                            DeployedAt = grp.Max(d => d.DeployedAt),
-                            DeploymentId = grp.First().DeploymentId,
-                            DockerImage = grp.First().DockerImage,
-                            Environment = grp.First().Environment,
-                            RequestedCount = grp.First().InstanceCount,
-                            Service = grp.First().Service,
-                            Version = grp.First().Version,
-                            Status = grp.First().Status,
-                            TaskId = grp.First().TaskId,
-                            User = grp.First().User,
-                            UserId = grp.First().UserId,
-                            Cpu = grp.First().Cpu,
-                            Memory = grp.First().Memory
-                        }
+                        Count = grp.Count(),
+                        CreatedAt = grp.Last().DeployedAt,
+                        UpdatedAt = grp.First().DeployedAt,
+                        DeploymentId = grp.First().DeploymentId,
+                        DockerImage = grp.First().DockerImage,
+                        Environment = grp.First().Environment,
+                        RequestedCount = grp.First().InstanceCount,
+                        Service = grp.First().Service,
+                        Version = grp.First().Version,
+                        Status = grp.First().Status,
+                        TaskId = grp.First().TaskId,
+                        User = grp.First().User,
+                        UserId = grp.First().UserId,
+                        Cpu = grp.First().Cpu,
+                        Memory = grp.First().Memory
                     })
-            .Project(p => p.Root);
-
+            .Project(p => p)
+            .Sort(new SortDefinitionBuilder<SquashedDeployment>().Descending(d => d.UpdatedAt))
+            .Skip(skip)
+            .Limit(limit)
+            ;
+            
         var result = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
 
