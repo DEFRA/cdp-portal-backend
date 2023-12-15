@@ -93,7 +93,7 @@ public static class DeploymentsEndpoint
         string? environment, int page, int size)
     {
         var deploymentsPage =
-            await deploymentsService.FindLatestSquashed(environment, offset, page, size, cancellationToken);
+            await deploymentsService.FindLatestSquashed(environment, page, size, cancellationToken);
         return Results.Ok(deploymentsPage);
     }
 
