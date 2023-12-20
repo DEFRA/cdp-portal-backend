@@ -72,19 +72,22 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     {
         var skip = size * (page -1);
         var limit = size;
+        var fd = new FilterDefinitionBuilder<Deployment>();
         var environmentFilter = string.IsNullOrWhiteSpace(environment)
-            ? new FilterDefinitionBuilder<Deployment>().Empty
-            : new FilterDefinitionBuilder<Deployment>().Eq(d => d.Environment, environment);
+            ? fd.Empty
+            : fd.And(
+                fd.Eq(d => d.Environment, environment),
+                fd.Ne(d => d.EcsSvcDeploymentId, null)
+            );
 
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(environmentFilter)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
             .Group(
-                d => d.DeploymentId,
+                d => d.EcsSvcDeploymentId,
                 grp =>
                     new SquashedDeployment
                     {
-                        Count = grp.Count(),
                         CreatedAt = grp.Last().DeployedAt,
                         UpdatedAt = grp.First().DeployedAt,
                         DeploymentId = grp.First().DeploymentId,

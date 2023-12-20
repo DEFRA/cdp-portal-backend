@@ -76,7 +76,6 @@ public sealed class SquashedDeployment
     public string DockerImage { get; init; } = default!;
     public string? TaskId { get; init; }
 
-    public int Count { get; init; }
     public int? RequestedCount { get; init; } = -1; // default value is -1 if we don't get it from legacy calls
 }
 
