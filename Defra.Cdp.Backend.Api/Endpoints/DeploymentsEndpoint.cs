@@ -143,7 +143,9 @@ public static class DeploymentsEndpoint
             Version = rd.Version,
             DockerImage = rd.Service,
             InstanceCount = rd.InstanceCount,
-            DeploymentId = rd.DeploymentId
+            DeploymentId = rd.DeploymentId,
+            Cpu = rd.Cpu,
+            Memory = rd.Memory
         };
 
         await deploymentsService.Insert(deployment, cancellationToken);
