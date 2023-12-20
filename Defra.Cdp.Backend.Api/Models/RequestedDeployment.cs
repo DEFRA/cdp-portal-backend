@@ -28,10 +28,4 @@ public sealed class RequestedDeployment
 
     [property: JsonPropertyName("deploymentId")]
     public string DeploymentId { get; init; }
-
-    [property: JsonPropertyName("cpu")]
-    public string? Cpu { get; init; }
-
-    [property: JsonPropertyName("memory")]
-    public string? Memory { get; init; }
 }
