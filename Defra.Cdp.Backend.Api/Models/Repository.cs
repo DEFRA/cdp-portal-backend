@@ -27,6 +27,8 @@ public sealed class Repository : IEquatable<Repository>
 
     public IEnumerable<RepositoryTeam> Teams { get; init; } = null!;
 
+    public IEnumerable<string> Topics { get; init; } = null!;
+
     public bool Equals(Repository? other)
     {
         return other != null &&

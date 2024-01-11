@@ -32,8 +32,21 @@ public record Repositories(
     IEnumerable<RepositoryNode> nodes
 );
 
+public record RepositoryTopics(
+    IEnumerable<RepositoryTopicNode> nodes
+);
+
+public record RepositoryTopicNode(
+    Topic topic
+);
+
+public record Topic(
+    string name
+);
+
 public record RepositoryNode(
     string name,
+    RepositoryTopics repositoryTopics,
     string description,
     PrimaryLanguage primaryLanguage,
     string url,

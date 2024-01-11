@@ -8,6 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 public sealed record RepositoryResult(
     string Name,
+    RepositoryTopics Topics,
     string Description,
     string PrimaryLanguage,
     string Url,
@@ -51,12 +52,12 @@ public sealed class PopulateGithubRepositories : IJob
 
         // Request based on this GraphQL query.
         // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
-        // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
+        // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
         _requestString =
             $@"
             {{
               ""query"": 
-                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
+                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name repositoryTopics(first: 30) {{ nodes {{ topic {{ name }} }} }} description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
             }}";
 
         _userServiceFetcher = new UserServiceFetcher(configuration);
@@ -179,7 +180,8 @@ public sealed class PopulateGithubRepositories : IJob
                         PrimaryLanguage = primaryLanguage,
                         Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).ToList()
                             .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
-                                githubToTeamNameMap.GetValueOrDefault(t)))
+                                githubToTeamNameMap.GetValueOrDefault(t))),
+                        Topics = r.repositoryTopics.nodes.Select(t => t.topic.name)
                     };
                 });
         return repositories;
