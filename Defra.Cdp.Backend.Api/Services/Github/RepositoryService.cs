@@ -18,6 +18,8 @@ public interface IRepositoryService
     Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken);
 
+    Task<List<Repository>> FindRepositoriesByTopic(string topic, CancellationToken cancellationToken);
+
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
 }
 
@@ -45,6 +47,19 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             // BulkWrite fails if its called with a zero length array
             await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);    
         }
+    }
+
+    public async Task<List<Repository>> FindRepositoriesByTopic(string topic, CancellationToken cancellationToken)
+    {
+        var topics = new List<string>() { "cdp", topic };
+
+        var repositories =
+            await Collection
+                .Find(Builders<Repository>.Filter.All(r => r.Topics, topics))
+                .SortBy(r => r.Id)
+                .ToListAsync(cancellationToken);
+
+        return repositories;
     }
 
     public async Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken)
