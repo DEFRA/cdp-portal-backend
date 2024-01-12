@@ -172,13 +172,19 @@ public static class RepositoriesEndpoint
     private static async Task<IResult> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
         CancellationToken cancellationToken)
     {
+        var libraries = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Library,
+            cancellationToken);
+
         var services = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Service,
             cancellationToken);
 
         var templates = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Template,
             cancellationToken);
 
-        return Results.Ok(new AllTeamRepositoriesResponse(services, templates));
+        var tests = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Test,
+            cancellationToken);
+
+        return Results.Ok(new AllTeamRepositoriesResponse(libraries, services, templates, tests));
     }
 
     private static async Task<IResult> GetAllReposTemplatesLibraries(IRepositoryService repositoryService,
@@ -234,11 +240,13 @@ public static class RepositoriesEndpoint
         }
     }
 
-    public sealed record AllTeamRepositoriesResponse(string Message, IEnumerable<Repository> Services,
-        IEnumerable<Repository> Templates)
+    public sealed record AllTeamRepositoriesResponse(string Message, IEnumerable<Repository> Libraries,
+        IEnumerable<Repository> Services,
+        IEnumerable<Repository> Templates, IEnumerable<Repository> Tests)
     {
-        public AllTeamRepositoriesResponse(IEnumerable<Repository> services,
-            IEnumerable<Repository> templates) : this("success", services, templates)
+        public AllTeamRepositoriesResponse(IEnumerable<Repository> libraries, IEnumerable<Repository> services,
+            IEnumerable<Repository> templates, IEnumerable<Repository> tests) : this("success", libraries, services,
+            templates, tests)
         {
         }
     }
