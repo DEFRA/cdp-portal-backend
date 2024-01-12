@@ -18,6 +18,9 @@ public interface IRepositoryService
     Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken);
 
+    Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, string topic,
+        CancellationToken cancellationToken);
+
     Task<List<Repository>> FindRepositoriesByTopic(string topic, CancellationToken cancellationToken);
 
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
@@ -61,6 +64,22 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
 
         return repositories;
     }
+
+    public async Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, string topic,
+        CancellationToken cancellationToken)
+    {
+        var topics = new List<string>() { "cdp", topic };
+        var teamFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.TeamId == teamId);
+        var topicFilter = Builders<Repository>.Filter.All(r => r.Topics, topics);
+
+        var repositories =
+            await Collection
+                .Find(teamFilter & topicFilter)
+                .SortBy(r => r.Id)
+                .ToListAsync(cancellationToken);
+        return repositories;
+    }
+
 
     public async Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken)
     {

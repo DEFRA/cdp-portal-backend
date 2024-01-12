@@ -13,7 +13,6 @@ public class QueryResponseTest
 
         var topics = new List<RepositoryTopicNode>();
         topics.Add(new RepositoryTopicNode(new Topic("cdp")));
-
         var cdpRepositoryTopics = new RepositoryTopics(topics);
 
         var queryJsonString = File.ReadAllText("Resources/example-repo-api-return.json");

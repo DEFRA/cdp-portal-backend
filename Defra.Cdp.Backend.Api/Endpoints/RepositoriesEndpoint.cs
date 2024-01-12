@@ -25,13 +25,16 @@ public static class RepositoriesEndpoint
             .WithTags(RepositoriesTag);
 
         app.MapGet($"{RepositoriesBaseRoute}/services",
-                async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team,
-                        CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, "service", team, cancellationToken))
+                async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
+                    await GetRepositoriesByTopic(repositoryService, "service", cancellationToken))
             .WithName("GetAllRepositoriesWithServiceTopic")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
 
+        app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories)
+            .WithName("GetTeamRepositories")
+            .Produces<AllTeamRepositoriesResponse>()
+            .WithTags(RepositoriesTag);
 
         app.MapGet($"{RepositoriesBaseRoute}/{{id}}", GetRepositoryById)
             .WithName("GetRepositoryById")
@@ -91,11 +94,23 @@ public static class RepositoriesEndpoint
     }
 
     private static async Task<IResult> GetRepositoriesByTopic(IRepositoryService repositoryService, string topic,
-        string? team, CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         var repositories = await repositoryService.FindRepositoriesByTopic(topic, cancellationToken);
 
         return Results.Ok(new MultipleRepositoriesResponse(repositories));
+    }
+
+    private static async Task<IResult> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
+        CancellationToken cancellationToken)
+    {
+        var services = await repositoryService.FindTeamRepositoriesByTopic(teamId, "service",
+            cancellationToken);
+
+        var templates = await repositoryService.FindTeamRepositoriesByTopic(teamId, "template",
+            cancellationToken);
+
+        return Results.Ok(new AllTeamRepositoriesResponse(services, templates));
     }
 
     private static async Task<IResult> GetAllReposTemplatesLibraries(IRepositoryService repositoryService,
@@ -147,6 +162,15 @@ public static class RepositoriesEndpoint
         public AllRepoTemplatesLibrariesResponse(IEnumerable<Repository> repositories,
             IEnumerable<Repository> templates) : this("success", repositories, templates,
             Enumerable.Empty<Repository>())
+        {
+        }
+    }
+
+    public sealed record AllTeamRepositoriesResponse(string Message, IEnumerable<Repository> Services,
+        IEnumerable<Repository> Templates)
+    {
+        public AllTeamRepositoriesResponse(IEnumerable<Repository> services,
+            IEnumerable<Repository> templates) : this("success", services, templates)
         {
         }
     }
