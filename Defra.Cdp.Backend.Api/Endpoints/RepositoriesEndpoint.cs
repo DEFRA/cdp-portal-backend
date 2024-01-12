@@ -13,11 +13,6 @@ public static class RepositoriesEndpoint
     private const string TemplatesBaseRoute = "templates";
     private const string TemplatesTag = "Templates";
 
-    private const string ServiceTopic = "service";
-    private const string TestTopic = "test";
-    private const string TemplateTopic = "template";
-    private const string LibraryTopic = "library";
-
     public static IEndpointRouteBuilder MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(RepositoriesBaseRoute,
@@ -32,7 +27,8 @@ public static class RepositoriesEndpoint
         // Service repositories
         app.MapGet($"{RepositoriesBaseRoute}/services",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, ServiceTopic, cancellationToken))
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Service,
+                        cancellationToken))
             .WithName("GetAllRepositoriesWithServiceTopic")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
@@ -40,7 +36,7 @@ public static class RepositoriesEndpoint
         // Service repository
         app.MapGet($"{RepositoriesBaseRoute}/services/{{id}}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, ServiceTopic, cancellationToken))
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Service, cancellationToken))
             .WithName("GetServiceRepositoryById")
             .Produces<SingleRepositoryResponse>()
             .WithTags(RepositoriesTag);
@@ -48,7 +44,7 @@ public static class RepositoriesEndpoint
         // Test repositories
         app.MapGet($"{RepositoriesBaseRoute}/tests",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, TestTopic, cancellationToken))
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Test, cancellationToken))
             .WithName("GetAllRepositoriesWithTestTopic")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
@@ -56,7 +52,7 @@ public static class RepositoriesEndpoint
         // Test repository
         app.MapGet($"{RepositoriesBaseRoute}/tests/{{id}}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, TestTopic, cancellationToken))
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Test, cancellationToken))
             .WithName("GetTestRepositoryById")
             .Produces<SingleRepositoryResponse>()
             .WithTags(RepositoriesTag);
@@ -64,7 +60,7 @@ public static class RepositoriesEndpoint
         // Template repositories
         app.MapGet($"{RepositoriesBaseRoute}/templates",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, TemplateTopic, cancellationToken))
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Template, cancellationToken))
             .WithName("GetAllRepositoriesWithTemplateTopic")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
@@ -72,7 +68,7 @@ public static class RepositoriesEndpoint
         // Template repository
         app.MapGet($"{RepositoriesBaseRoute}/templates/{{id}}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, TemplateTopic, cancellationToken))
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Template, cancellationToken))
             .WithName("GetTemplateRepositoryById")
             .Produces<SingleRepositoryResponse>()
             .WithTags(RepositoriesTag);
@@ -80,7 +76,7 @@ public static class RepositoriesEndpoint
         // Library repositories
         app.MapGet($"{RepositoriesBaseRoute}/libraries",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, LibraryTopic, cancellationToken))
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Library, cancellationToken))
             .WithName("GetAllRepositoriesWithLibraryTopic")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
@@ -88,7 +84,7 @@ public static class RepositoriesEndpoint
         // Library repository
         app.MapGet($"{RepositoriesBaseRoute}/libraries/{{id}}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, LibraryTopic, cancellationToken))
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Library, cancellationToken))
             .WithName("GetLibraryRepositoryById")
             .Produces<SingleRepositoryResponse>()
             .WithTags(RepositoriesTag);
@@ -157,7 +153,7 @@ public static class RepositoriesEndpoint
     }
 
     private static async Task<IResult> GetRepositoryWithTopicById(IRepositoryService repositoryService, string id,
-        string topic, CancellationToken cancellationToken)
+        CdpTopic topic, CancellationToken cancellationToken)
     {
         var maybeRepository = await repositoryService.FindRepositoryWithTopicById(topic, id, cancellationToken);
         return maybeRepository == null
@@ -165,7 +161,7 @@ public static class RepositoriesEndpoint
             : Results.Ok(new SingleRepositoryResponse(maybeRepository));
     }
 
-    private static async Task<IResult> GetRepositoriesByTopic(IRepositoryService repositoryService, string topic,
+    private static async Task<IResult> GetRepositoriesByTopic(IRepositoryService repositoryService, CdpTopic topic,
         CancellationToken cancellationToken)
     {
         var repositories = await repositoryService.FindRepositoriesByTopic(topic, cancellationToken);
@@ -176,10 +172,10 @@ public static class RepositoriesEndpoint
     private static async Task<IResult> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
         CancellationToken cancellationToken)
     {
-        var services = await repositoryService.FindTeamRepositoriesByTopic(teamId, "service",
+        var services = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Service,
             cancellationToken);
 
-        var templates = await repositoryService.FindTeamRepositoriesByTopic(teamId, "template",
+        var templates = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Template,
             cancellationToken);
 
         return Results.Ok(new AllTeamRepositoriesResponse(services, templates));
