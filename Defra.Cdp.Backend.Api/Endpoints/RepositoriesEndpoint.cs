@@ -13,6 +13,9 @@ public static class RepositoriesEndpoint
     private const string TemplatesBaseRoute = "templates";
     private const string TemplatesTag = "Templates";
 
+    private const string ServiceTopic = "service";
+    private const string TestTopic = "test";
+
     public static IEndpointRouteBuilder MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(RepositoriesBaseRoute,
@@ -24,17 +27,35 @@ public static class RepositoriesEndpoint
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
 
+        // Service repositories
         app.MapGet($"{RepositoriesBaseRoute}/services",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, "service", cancellationToken))
+                    await GetRepositoriesByTopic(repositoryService, ServiceTopic, cancellationToken))
             .WithName("GetAllRepositoriesWithServiceTopic")
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
 
+        // Service repository
         app.MapGet($"{RepositoriesBaseRoute}/services/{{id}}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, "service", cancellationToken))
+                    await GetRepositoryWithTopicById(repositoryService, id, ServiceTopic, cancellationToken))
             .WithName("GetServiceRepositoryById")
+            .Produces<SingleRepositoryResponse>()
+            .WithTags(RepositoriesTag);
+
+        // Test repositories
+        app.MapGet($"{RepositoriesBaseRoute}/tests",
+                async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
+                    await GetRepositoriesByTopic(repositoryService, TestTopic, cancellationToken))
+            .WithName("GetAllRepositoriesWithTestTopic")
+            .Produces<MultipleRepositoriesResponse>()
+            .WithTags(RepositoriesTag);
+
+        // Test repository
+        app.MapGet($"{RepositoriesBaseRoute}/tests/{{id}}",
+                async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
+                    await GetRepositoryWithTopicById(repositoryService, id, TestTopic, cancellationToken))
+            .WithName("GetTestRepositoryById")
             .Produces<SingleRepositoryResponse>()
             .WithTags(RepositoriesTag);
 
