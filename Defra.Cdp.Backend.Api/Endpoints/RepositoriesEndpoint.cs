@@ -31,6 +31,13 @@ public static class RepositoriesEndpoint
             .Produces<MultipleRepositoriesResponse>()
             .WithTags(RepositoriesTag);
 
+        app.MapGet($"{RepositoriesBaseRoute}/services/{{id}}",
+                async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
+                    await GetRepositoryWithTopicById(repositoryService, id, "service", cancellationToken))
+            .WithName("GetServiceRepositoryById")
+            .Produces<SingleRepositoryResponse>()
+            .WithTags(RepositoriesTag);
+
         app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories)
             .WithName("GetTeamRepositories")
             .Produces<AllTeamRepositoriesResponse>()
@@ -91,6 +98,15 @@ public static class RepositoriesEndpoint
         if (excludeTemplates.GetValueOrDefault()) repositories = repositories.Where(r => !r.IsTemplate).ToList();
 
         return Results.Ok(new MultipleRepositoriesResponse(repositories));
+    }
+
+    private static async Task<IResult> GetRepositoryWithTopicById(IRepositoryService repositoryService, string id,
+        string topic, CancellationToken cancellationToken)
+    {
+        var maybeRepository = await repositoryService.FindRepositoryWithTopicById(topic, id, cancellationToken);
+        return maybeRepository == null
+            ? Results.NotFound(new { message = $"{id} not found" })
+            : Results.Ok(new SingleRepositoryResponse(maybeRepository));
     }
 
     private static async Task<IResult> GetRepositoriesByTopic(IRepositoryService repositoryService, string topic,
