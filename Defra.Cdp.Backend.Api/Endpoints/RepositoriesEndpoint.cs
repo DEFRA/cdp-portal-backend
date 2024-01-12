@@ -93,6 +93,7 @@ public static class RepositoriesEndpoint
             .Produces<SingleRepositoryResponse>()
             .WithTags(RepositoriesTag);
 
+        // Get a Teams repositories
         app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories)
             .WithName("GetTeamRepositories")
             .Produces<AllTeamRepositoriesResponse>()
