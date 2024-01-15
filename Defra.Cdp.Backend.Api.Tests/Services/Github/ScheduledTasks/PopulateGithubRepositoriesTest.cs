@@ -42,15 +42,16 @@ public class PopulateGithubRepositoriesTest
     [Fact]
     public void ConvertGithubQueryResultToRepositoriesCorrectly()
     {
-        var repositoryTopics = new List<RepositoryTopicNode>();
-        repositoryTopics.Add(new RepositoryTopicNode(new Topic("cdp")));
-        var cdpRepositoryTopics = new RepositoryTopics(repositoryTopics);
+        var mockTopics = Topics.CreateMockTopics();
 
         var createdAt = DateTimeOffset.Now;
         var repoResult1 =
-            new RepositoryResult("repo1", cdpRepositoryTopics, "desc1", "Javascript", "https://url1", false, false, true, createdAt);
-        var repoResult2 = new RepositoryResult("repo2", cdpRepositoryTopics,"desc2", "C#", "https://url2", false, true, true, createdAt);
-        var repoResult3 = new RepositoryResult("repo3", cdpRepositoryTopics,"desc3", "Java", "https://url3", false, true, false, createdAt);
+            new RepositoryResult("repo1", mockTopics, "desc1", "Javascript", "https://url1", false, false,
+                true, createdAt);
+        var repoResult2 = new RepositoryResult("repo2", mockTopics, "desc2", "C#", "https://url2", false, true,
+            true, createdAt);
+        var repoResult3 = new RepositoryResult("repo3", mockTopics, "desc3", "Java", "https://url3", false,
+            true, false, createdAt);
 
         var fakeQueryResult =
             new List<TeamResult>
@@ -87,18 +88,19 @@ public class PopulateGithubRepositoriesTest
     [Fact]
     public void ConvertHttpGraphResultToRepositoriesCorrectly()
     {
-        var repositoryTopics = new List<RepositoryTopicNode>();
-        repositoryTopics.Add(new RepositoryTopicNode(new Topic("cdp")));
-        var cdpRepositoryTopics = new RepositoryTopics(repositoryTopics);
+        var mockTopics = Topics.CreateMockTopics();
 
         var createdAt = DateTimeOffset.Now;
 
         var repoNod1 =
-            new RepositoryNode("repo1", cdpRepositoryTopics,"desc1", new PrimaryLanguage("Javascript"), "https://url1", false, false, true,
+            new RepositoryNode("repo1", mockTopics, "desc1", new PrimaryLanguage("Javascript"), "https://url1",
+                false, false, true,
                 createdAt);
-        var repoNod2 = new RepositoryNode("repo2", cdpRepositoryTopics,"desc2", new PrimaryLanguage("C#"), "https://url2", false, true,
+        var repoNod2 = new RepositoryNode("repo2", mockTopics, "desc2", new PrimaryLanguage("C#"),
+            "https://url2", false, true,
             true, createdAt);
-        var repoNod3 = new RepositoryNode("repo3", cdpRepositoryTopics, "desc3", new PrimaryLanguage("Java"), "https://url3", false, true,
+        var repoNod3 = new RepositoryNode("repo3", mockTopics, "desc3", new PrimaryLanguage("Java"),
+            "https://url3", false, true,
             false, createdAt);
 
         var fakeQueryR =
@@ -133,9 +135,12 @@ public class PopulateGithubRepositoriesTest
             .QueryResultToRepositories(fakeQueryR, githubTeamToTeamIdMap, githubTeamToTeamNameMap).ToList();
 
         var repoResult1 =
-            new RepositoryResult("repo1", cdpRepositoryTopics, "desc1", "Javascript", "https://url1", false, false, true, createdAt);
-        var repoResult2 = new RepositoryResult("repo2", cdpRepositoryTopics,"desc2", "C#", "https://url2", false, true, true, createdAt);
-        var repoResult3 = new RepositoryResult("repo3", cdpRepositoryTopics,"desc3", "Java", "https://url3", false, true, false, createdAt);
+            new RepositoryResult("repo1", mockTopics, "desc1", "Javascript", "https://url1", false, false,
+                true, createdAt);
+        var repoResult2 = new RepositoryResult("repo2", mockTopics, "desc2", "C#", "https://url2", false, true,
+            true, createdAt);
+        var repoResult3 = new RepositoryResult("repo3", mockTopics, "desc3", "Java", "https://url3", false,
+            true, false, createdAt);
 
         var expected = new List<Repository>
         {

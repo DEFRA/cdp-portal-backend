@@ -9,11 +9,8 @@ public class QueryResponseTest
     [Fact]
     public void QueryResponseFromJson()
     {
-        var emptyRepositoryTopics = new RepositoryTopics(Enumerable.Empty<RepositoryTopicNode>());
-
-        var topics = new List<RepositoryTopicNode>();
-        topics.Add(new RepositoryTopicNode(new Topic("cdp")));
-        var cdpRepositoryTopics = new RepositoryTopics(topics);
+        var emptyRepositoryTopics = Topics.CreateMockEmptyTopics();
+        var mockTopics = Topics.CreateMockTopics();
 
         var queryJsonString = File.ReadAllText("Resources/example-repo-api-return.json");
         var response = JsonSerializer.Deserialize<QueryResponse>(queryJsonString);
@@ -63,7 +60,7 @@ public class QueryResponseTest
                                     {
                                         new(
                                             "cdp-node-frontend-template",
-                                            cdpRepositoryTopics,
+                                            mockTopics,
                                             "Core delivery platform Node.js Frontend Template. This is the template used to create new Node.js Frontend micro-services via the Core Development Portal.",
                                             new PrimaryLanguage("JavaScript"),
                                             "https://github.com/DEFRA/cdp-node-frontend-template",
