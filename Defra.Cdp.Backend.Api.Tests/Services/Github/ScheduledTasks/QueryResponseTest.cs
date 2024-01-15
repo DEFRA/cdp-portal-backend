@@ -9,6 +9,9 @@ public class QueryResponseTest
     [Fact]
     public void QueryResponseFromJson()
     {
+        var emptyRepositoryTopics = Topics.CreateMockEmptyTopics();
+        var mockTopics = Topics.CreateMockTopics();
+
         var queryJsonString = File.ReadAllText("Resources/example-repo-api-return.json");
         var response = JsonSerializer.Deserialize<QueryResponse>(queryJsonString);
         // Create a new ScheduledTasks instance
@@ -38,6 +41,7 @@ public class QueryResponseTest
                                     {
                                         new(
                                             "analytics-standards",
+                                            emptyRepositoryTopics,
                                             "Standards for service analytics",
                                             null!,
                                             "https://github.com/DEFRA/analytics-standards",
@@ -56,6 +60,7 @@ public class QueryResponseTest
                                     {
                                         new(
                                             "cdp-node-frontend-template",
+                                            mockTopics,
                                             "Core delivery platform Node.js Frontend Template. This is the template used to create new Node.js Frontend micro-services via the Core Development Portal.",
                                             new PrimaryLanguage("JavaScript"),
                                             "https://github.com/DEFRA/cdp-node-frontend-template",
@@ -66,6 +71,7 @@ public class QueryResponseTest
                                         ),
                                         new(
                                             "cdp-boilerplate",
+                                            emptyRepositoryTopics,
                                             "Testing repo creation from a GH template with a GH action",
                                             null!,
                                             "https://github.com/DEFRA/cdp-boilerplate",
@@ -76,6 +82,7 @@ public class QueryResponseTest
                                         ),
                                         new(
                                             "cdp-user-service-backend",
+                                            emptyRepositoryTopics,
                                             "Git repository for service cdp-user-service-backend",
                                             new PrimaryLanguage("JavaScript"),
                                             "https://github.com/DEFRA/cdp-user-service-backend",
@@ -86,6 +93,7 @@ public class QueryResponseTest
                                         ),
                                         new(
                                             "cdp-dotnet-backend-template",
+                                            emptyRepositoryTopics,
                                             "C# ASP.NET Minimial API template with MongoDB, FluentValidation, Swagger and Serilog logging",
                                             new PrimaryLanguage("C#"),
                                             "https://github.com/DEFRA/cdp-dotnet-backend-template",

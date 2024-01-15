@@ -20,6 +20,9 @@
               "nodes": [
                 {
                   "name": "analytics-standards",
+                  "repositoryTopics": {
+                    "nodes": []
+                  },
                   "description": "Standards for service analytics",
                   "primaryLanguage": null,
                   "url": "https://github.com/DEFRA/analytics-standards",
@@ -37,6 +40,15 @@
               "nodes": [
                 {
                   "name": "cdp-node-frontend-template",
+                  "repositoryTopics": {
+                    "nodes": [
+                      {
+                        "topic": {
+                          "name": "cdp"
+                        }
+                      }
+                    ]
+                  },
                   "description": "Core delivery platform Node.js Frontend Template. This is the template used to create new Node.js Frontend micro-services via the Core Development Portal.",
                   "primaryLanguage": {
                     "name": "JavaScript"
@@ -49,6 +61,9 @@
                 },
                 {
                   "name": "cdp-boilerplate",
+                  "repositoryTopics": {
+                    "nodes": []
+                  },
                   "description": "Testing repo creation from a GH template with a GH action",
                   "primaryLanguage": null,
                   "url": "https://github.com/DEFRA/cdp-boilerplate",
@@ -59,6 +74,9 @@
                 },
                 {
                   "name": "cdp-user-service-backend",
+                  "repositoryTopics": {
+                    "nodes": []
+                  },
                   "description": "Git repository for service cdp-user-service-backend",
                   "primaryLanguage": {
                     "name": "JavaScript"
@@ -71,6 +89,9 @@
                 },
                 {
                   "name": "cdp-dotnet-backend-template",
+                  "repositoryTopics": {
+                    "nodes": []
+                  },
                   "description": "C# ASP.NET Minimial API template with MongoDB, FluentValidation, Swagger and Serilog logging",
                   "primaryLanguage": {
                     "name": "C#"
