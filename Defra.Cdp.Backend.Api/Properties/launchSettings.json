@@ -26,7 +26,7 @@
         "AzureAd__ClientId": "63983fc2-cfff-45bb-8ec2-959e21062b9a",
         "Github__AppKey": "// generate a random key for local testing using `ssh-keygen -t rsa -b 4096 -m PEM -f /tmp/mock.key -q -P '' && cat /tmp/mock.key | base64 -w0`",
         "Github__ApiUrl": "http://localhost:3939",
-        "UserServiceBackendUrl": "http://localhost:3002"
+        "UserServiceBackendUrl": "http://localhost:3001"
       }
     }
   }
