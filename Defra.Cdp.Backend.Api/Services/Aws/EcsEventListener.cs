@@ -177,7 +177,8 @@ public class EcsEventListener : SqsListener
         var ecsEvent = JsonSerializer.Deserialize<EcsEvent>(messageBody);
 
         // TODO: consider tracking destroy etc so we can mark the end date on the deployment
-        if (ecsEvent is { DetailType: "ECS Task State Change", Detail.DesiredStatus: "RUNNING" })
+        if (ecsEvent is { DetailType: "ECS Task State Change", Detail.DesiredStatus: "RUNNING" } or
+            { DetailType: "ECS Task State Change", Detail.DesiredStatus: "STOPPED" })
         {
             var deployments = await ConvertToDeployment(ecsEvent, cancellationToken);
             foreach (var deployment in deployments)
