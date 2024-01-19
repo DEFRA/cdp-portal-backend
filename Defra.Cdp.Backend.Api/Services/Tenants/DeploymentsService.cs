@@ -15,9 +15,9 @@ public interface IDeploymentsService
         CancellationToken cancellationToken = new());
 
     public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
-    
+
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
-    
+
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken);
 
     public Task<Deployment?> FindDeploymentByEcsSvcDeploymentId(string ecsSvcDeploymentId,
@@ -105,12 +105,13 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                     })
             .Project(p => p)
             .Sort(new SortDefinitionBuilder<SquashedDeployment>().Descending(d => d.UpdatedAt));
-            
+
         var result = await Collection.Aggregate(
                 pipeline.Skip(skip).Limit(limit), cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
 
-        var totalSquashedDeployments = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken).ToListAsync(cancellationToken);
+        var totalSquashedDeployments = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
+            .ToListAsync(cancellationToken);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalSquashedDeployments.Count() / size));
 
