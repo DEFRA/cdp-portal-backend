@@ -15,9 +15,9 @@ public interface IDeploymentsService
         CancellationToken cancellationToken = new());
 
     public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
-    
+
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
-    
+
     public Task<Deployment?> FindDeployment(string deploymentId, CancellationToken cancellationToken);
 
     public Task<Deployment?> FindDeploymentByEcsSvcDeploymentId(string ecsSvcDeploymentId,
@@ -33,7 +33,7 @@ public interface IDeploymentsService
 public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 {
     private const string CollectionName = "deployments";
-    public static readonly int DefaultPageSize = 20;
+    public static readonly int DefaultPageSize = 100;
     public static readonly int DefaultPage = 1;
 
     public DeploymentsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
@@ -67,10 +67,10 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return new DeploymentsPage(deployments, page, size, totalPages);
     }
 
-    public async Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int page = 1, int size = 20,
+    public async Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int page = 1, int size = 100,
         CancellationToken cancellationToken = new())
     {
-        var skip = size * (page -1);
+        var skip = size * (page - 1);
         var limit = size;
         var fd = new FilterDefinitionBuilder<Deployment>();
         var environmentFilter = string.IsNullOrWhiteSpace(environment)
@@ -105,12 +105,13 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                     })
             .Project(p => p)
             .Sort(new SortDefinitionBuilder<SquashedDeployment>().Descending(d => d.UpdatedAt));
-            
+
         var result = await Collection.Aggregate(
                 pipeline.Skip(skip).Limit(limit), cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
 
-        var totalSquashedDeployments = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken).ToListAsync(cancellationToken);
+        var totalSquashedDeployments = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
+            .ToListAsync(cancellationToken);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalSquashedDeployments.Count() / size));
 
