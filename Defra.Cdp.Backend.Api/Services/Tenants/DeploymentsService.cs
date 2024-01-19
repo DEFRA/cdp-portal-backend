@@ -33,7 +33,7 @@ public interface IDeploymentsService
 public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 {
     private const string CollectionName = "deployments";
-    public static readonly int DefaultPageSize = 20;
+    public static readonly int DefaultPageSize = 100;
     public static readonly int DefaultPage = 1;
 
     public DeploymentsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
@@ -67,10 +67,10 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return new DeploymentsPage(deployments, page, size, totalPages);
     }
 
-    public async Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int page = 1, int size = 20,
+    public async Task<SquashedDeploymentsPage> FindLatestSquashed(string? environment, int page = 1, int size = 100,
         CancellationToken cancellationToken = new())
     {
-        var skip = size * (page -1);
+        var skip = size * (page - 1);
         var limit = size;
         var fd = new FilterDefinitionBuilder<Deployment>();
         var environmentFilter = string.IsNullOrWhiteSpace(environment)
