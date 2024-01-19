@@ -104,7 +104,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                         Memory = grp.First().Memory
                     })
             .Project(p => p)
-            .Sort(new SortDefinitionBuilder<SquashedDeployment>().Descending(d => d.UpdatedAt));
+            .Sort(new SortDefinitionBuilder<SquashedDeployment>().Descending(d => d.CreatedAt));
 
         var result = await Collection.Aggregate(
                 pipeline.Skip(skip).Limit(limit), cancellationToken: cancellationToken)
