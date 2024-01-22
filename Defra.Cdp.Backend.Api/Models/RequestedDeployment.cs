@@ -26,6 +26,9 @@ public sealed class RequestedDeployment
     [property: JsonPropertyName("instanceCount")]
     public int InstanceCount { get; init; }
 
+    [property: JsonPropertyName("cpu")] public string Cpu { get; init; } = default!;
+    [property: JsonPropertyName("memory")] public string Memory { get; init; } = default!;
+
     [property: JsonPropertyName("deploymentId")]
-    public string DeploymentId { get; init; }
+    public string DeploymentId { get; init; } = default!;
 }

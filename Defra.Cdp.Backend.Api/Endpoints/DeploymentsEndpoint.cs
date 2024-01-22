@@ -100,7 +100,7 @@ public static class DeploymentsEndpoint
     // Get /deployments/{deploymentId}
     internal static async Task<IResult> FindDeployments(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
-   {
+    {
         var deployment = await deploymentsService.FindDeployments(deploymentId, cancellationToken);
         return Results.Ok(deployment);
     }
@@ -143,6 +143,8 @@ public static class DeploymentsEndpoint
             Version = rd.Version,
             DockerImage = rd.Service,
             InstanceCount = rd.InstanceCount,
+            Cpu = rd.Cpu,
+            Memory = rd.Memory,
             DeploymentId = rd.DeploymentId
         };
 
