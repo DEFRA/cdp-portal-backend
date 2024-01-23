@@ -22,6 +22,7 @@ public sealed class Deployment
 
     public DateTime DeployedAt { get; init; } = default!;
     public string Status { get; init; } = default!;
+    public string? DesiredStatus { get; init; }
     public string DockerImage { get; init; } = default!;
     public string? TaskId { get; init; }
 
@@ -69,10 +70,12 @@ public sealed class SquashedDeployment
 
     public string? Cpu { get; init; }
     public string? Memory { get; init; }
-    
+
     public DateTime? CreatedAt { get; init; } = default!;
     public DateTime? UpdatedAt { get; init; } = default!;
     public string Status { get; init; } = default!;
+
+    public string? DesiredStatus { get; init; }
     public string DockerImage { get; init; } = default!;
     public string? TaskId { get; init; }
 

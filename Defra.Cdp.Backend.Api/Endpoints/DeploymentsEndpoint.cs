@@ -138,6 +138,7 @@ public static class DeploymentsEndpoint
             Environment = rd.Environment,
             Service = rd.Service,
             Status = "REQUESTED",
+            DesiredStatus = "RUNNING",
             UserId = rd.User?.Id,
             User = rd.User?.DisplayName,
             Version = rd.Version,
