@@ -128,7 +128,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     public async Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken)
     {
         var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Match(d => d.Service == serviceName && d.Status == "RUNNING")
+            .Match(d => d.Service == serviceName && d.Status == "RUNNING" && d.DesiredStatus != "STOPPED")
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
             .Group(d => new { d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
@@ -169,7 +169,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     public async Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken)
     {
         var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Match(d => d.Status == "RUNNING")
+            .Match(d => d.Status == "RUNNING" && d.DesiredStatus != "STOPPED")
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
