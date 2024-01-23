@@ -109,8 +109,9 @@ public class ArtifactScanner : IArtifactScanner
 
         labels.TryGetValue("defra.cdp.git.repo.url", out var githubUrl);
 
-        labels.TryGetValue("defra.cdp.service.name", out var serviceName);
-
+        var isService = labels.TryGetValue("defra.cdp.service.name", out var serviceName);
+        var isTestSuite = labels.TryGetValue("defra.cdp.test.name", out var testName);
+        
         long semver = 0;
 
         try
@@ -122,6 +123,14 @@ public class ArtifactScanner : IArtifactScanner
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
 
+        
+        // TODO: Figure out what to do with test suites (their own collection, a flag on artifact etc?), skip for now.
+        if (isTestSuite || !isService)
+        {
+            _logger.LogInformation("Skipping processing of {}, test suite processing is still TBC", testName);
+            return ArtifactScannerResult.Failure($"Not processing {testName}, only services are supported for now");
+        }
+        
         var repository = await _repositoryService.FindRepositoryById(repo, cancellationToken);
         // Persist the results.
         var artifact = new DeployableArtifact
