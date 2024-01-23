@@ -17,6 +17,7 @@ using Microsoft.Identity.Web;
 using Quartz;
 using Serilog;
 using Serilog.Extensions.Logging;
+using Environment = System.Environment;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -42,6 +43,8 @@ logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 // Add health checks and http client
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
+
+logger.Information($"Proxy Config: HTTPS: {Environment.GetEnvironmentVariable("HTTPS_PROXY")}, HTTP: {Environment.GetEnvironmentVariable("HTTP_PROXY")}");
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
