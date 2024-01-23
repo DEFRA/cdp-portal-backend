@@ -26,7 +26,9 @@ public sealed record EcsContainer(
     string ImageDigest,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("lastStatus")]
-    string LastStatus
+    string LastStatus,
+    [property: JsonPropertyName("desiredStatus")]
+    string DesiredStatus
 );
 
 public sealed record EcsEventDetail(

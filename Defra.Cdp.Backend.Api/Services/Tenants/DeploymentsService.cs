@@ -97,6 +97,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                         Service = grp.First().Service,
                         Version = grp.First().Version,
                         Status = grp.First().Status,
+                        DesiredStatus = grp.First().DesiredStatus,
                         TaskId = grp.First().TaskId,
                         User = grp.First().User,
                         UserId = grp.First().UserId,

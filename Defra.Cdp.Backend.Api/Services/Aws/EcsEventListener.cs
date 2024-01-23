@@ -67,6 +67,7 @@ public class EcsEventListener : SqsListener
                     UserId = d.UserId,
                     DeployedAt = d.DeployedAt,
                     Status = d.Status,
+                    DesiredStatus = ecsEvent.Detail.DesiredStatus,
                     DockerImage = d.DockerImage,
                     TaskId = d.TaskId,
                     InstanceTaskId = d.InstanceTaskId,
@@ -120,7 +121,7 @@ public class EcsEventListener : SqsListener
                     _logger.LogDebug("Ignoring {Image}, not a known container", ecsContainer.Image);
                     continue;
                 }
-                
+
                 var deployedAt = ecsEvent.Timestamp;
                 var taskId = ecsEvent.Detail.TaskDefinitionArn;
                 var instanceTaskId = ecsEvent.Detail.TaskArn;
@@ -144,6 +145,7 @@ public class EcsEventListener : SqsListener
                     UserId = requestedDeployment?.UserId,
                     DeployedAt = deployedAt,
                     Status = ecsContainer.LastStatus,
+                    DesiredStatus = ecsEvent.Detail.DesiredStatus,
                     DockerImage = ecsContainer.Image,
                     TaskId = taskId,
                     InstanceTaskId = instanceTaskId,
