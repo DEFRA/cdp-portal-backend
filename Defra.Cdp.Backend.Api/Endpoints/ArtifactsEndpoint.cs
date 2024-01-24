@@ -121,9 +121,10 @@ public static class ArtifactsEndpoint
         var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
         var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
         if (groups.IsNullOrEmpty()) return Results.Forbid();
+        // TODO: extend this to support different run modes
         var repoNames = groups!.Contains(adminGroup)
-            ? await deployablesService.FindAllRepoNames(cancellationToken)
-            : await deployablesService.FindAllRepoNames(groups, cancellationToken);
+            ? await deployablesService.FindAllRepoNames(ArtifactRunMode.Service, cancellationToken)
+            : await deployablesService.FindAllRepoNames(ArtifactRunMode.Service, groups, cancellationToken);
         return Results.Ok(repoNames);
     }
 
@@ -182,9 +183,13 @@ public static class ArtifactsEndpoint
 
     // POST /artifacts/placeholder
     private static async Task<IResult> CreatePlaceholder(IDeployablesService deployablesService, string service,
-        string githubUrl, CancellationToken cancellationToken)
+        string githubUrl, string? runMode, CancellationToken cancellationToken)
     {
-        await deployablesService.CreatePlaceholderAsync(service, githubUrl, cancellationToken);
+        if (!Enum.TryParse(runMode, true, out ArtifactRunMode mode))
+        {
+            mode = ArtifactRunMode.Service;
+        }
+        await deployablesService.CreatePlaceholderAsync(service, githubUrl, mode, cancellationToken);
         return Results.Ok();
     }
 }

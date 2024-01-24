@@ -111,6 +111,12 @@ public class ArtifactScanner : IArtifactScanner
 
         var isService = labels.TryGetValue("defra.cdp.service.name", out var serviceName);
         var isTestSuite = labels.TryGetValue("defra.cdp.test.name", out var testName);
+
+        var runMode = ArtifactRunMode.Service;
+        if (labels.TryGetValue("defra.cdp.run_mode", out var sRunMode))
+        {
+            Enum.TryParse(sRunMode, true, out runMode);
+        }
         
         long semver = 0;
 
@@ -121,14 +127,6 @@ public class ArtifactScanner : IArtifactScanner
         catch (Exception ex)
         {
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
-        }
-
-        
-        // TODO: Figure out what to do with test suites (their own collection, a flag on artifact etc?), skip for now.
-        if (isTestSuite || !isService)
-        {
-            _logger.LogInformation("Skipping processing of {}, test suite processing is still TBC", testName);
-            return ArtifactScannerResult.Failure($"Not processing {testName}, only services are supported for now");
         }
         
         var repository = await _repositoryService.FindRepositoryById(repo, cancellationToken);
@@ -143,7 +141,8 @@ public class ArtifactScanner : IArtifactScanner
             ServiceName = serviceName,
             Files = mergedFiles.Values.ToList(),
             SemVer = semver,
-            Teams = repository?.Teams ?? new List<RepositoryTeam>()
+            Teams = repository?.Teams ?? new List<RepositoryTeam>(),
+            RunMode = runMode.ToString().ToLower()
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);
