@@ -67,7 +67,7 @@ public class EcsEventListener : SqsListener
                     UserId = d.UserId,
                     DeployedAt = d.DeployedAt,
                     Status = d.Status,
-                    DesiredStatus = d.DesiredStatus,
+                    DesiredStatus = "RUNNING",
                     DockerImage = d.DockerImage,
                     TaskId = d.TaskId,
                     InstanceTaskId = d.InstanceTaskId,
