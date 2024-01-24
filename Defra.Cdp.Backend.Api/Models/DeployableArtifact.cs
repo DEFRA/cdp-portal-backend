@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -33,6 +34,9 @@ public sealed class DeployableArtifact
     public List<DeployableArtifactFile> Files { get; init; } = new();
 
     public long? SemVer { get; init; }
+
+    // Is it a microservice or a test job
+    public string? RunMode { get; init; } = default;
 }
 
 public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
