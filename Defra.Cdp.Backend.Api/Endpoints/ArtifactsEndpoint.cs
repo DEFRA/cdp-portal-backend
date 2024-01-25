@@ -1,7 +1,8 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Defra.Cdp.Backend.Api.Utils;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver.Linq;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -42,13 +43,11 @@ public static class ArtifactsEndpoint
             .WithTags(Tag);
 
         app.MapGet(DeployablesBaseRoute, ListDeployables)
-            .RequireAuthorization()
             .WithName("GetDeployables")
             .Produces<List<string>>()
             .WithTags(Tag);
 
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo)
-            .RequireAuthorization()
             .WithName("GetTagsForRepo")
             .Produces<List<string>>()
             .WithTags(Tag);
@@ -112,19 +111,27 @@ public static class ArtifactsEndpoint
             : Results.Ok(image.Content);
     }
 
-
+    
     // GET /deployables
-    private static async Task<IResult> ListDeployables(IDeployablesService deployablesService,
-        IConfiguration configuration, HttpContext httpContext,
-        ILoggerFactory loggerFactory, CancellationToken cancellationToken)
+    private static async Task<IResult> ListDeployables(
+        IDeployablesService deployablesService,
+        IConfiguration configuration, 
+        HttpContext httpContext,
+        ILoggerFactory loggerFactory, 
+        [FromQuery] string? type, 
+        CancellationToken cancellationToken)
     {
+        List<string> groups = httpContext.Request.Query["groups"].Where(g => g != null).ToList()!;
         var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
-        var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
-        if (groups.IsNullOrEmpty()) return Results.Forbid();
-        // TODO: extend this to support different run modes
+
+        if (!Enum.TryParse(type ?? ArtifactRunMode.Service.ToString(), true, out ArtifactRunMode runMode))
+        {
+            return Results.BadRequest("Invalid type parameter, requires either: [service, job]");
+        }
+
         var repoNames = groups!.Contains(adminGroup)
-            ? await deployablesService.FindAllRepoNames(ArtifactRunMode.Service, cancellationToken)
-            : await deployablesService.FindAllRepoNames(ArtifactRunMode.Service, groups, cancellationToken);
+            ? await deployablesService.FindAllRepoNames(runMode, cancellationToken)
+            : await deployablesService.FindAllRepoNames(runMode, groups, cancellationToken);
         return Results.Ok(repoNames);
     }
 
@@ -135,21 +142,7 @@ public static class ArtifactsEndpoint
         string repo,
         CancellationToken cancellationToken)
     {
-        var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
-        if (groups.IsNullOrEmpty()) return Results.Forbid();
-        var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
-        var tags = groups!.Contains(adminGroup)
-            ? await deployablesService.FindAllTagsForRepo(repo, cancellationToken)
-            : await deployablesService.FindAllTagsForRepo(repo, groups, cancellationToken);
-        tags.Sort((a, b) =>
-        {
-            var la = SemVer.SemVerAsLong(a);
-            var lb = SemVer.SemVerAsLong(b);
-            if (la == lb) return 0;
-            if (la > lb) return -1;
-
-            return 1;
-        });
+        var tags = await deployablesService.FindAllTagsForRepo(repo, cancellationToken);
         return Results.Ok(tags);
     }
 

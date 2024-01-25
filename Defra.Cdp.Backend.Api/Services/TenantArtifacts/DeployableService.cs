@@ -82,8 +82,10 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
 
     public async Task<List<string>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken)
     {
+        var sort = Builders<DeployableArtifact>.Sort.Descending(d => d.SemVer); // Replace "fieldName" with the actual field name you want to sort by
         var res = await Collection
             .Find(d => d.Repo == repo)
+            .Sort(sort)
             .ToListAsync(cancellationToken);
         return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
     }
