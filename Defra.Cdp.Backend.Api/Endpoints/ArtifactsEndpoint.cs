@@ -2,7 +2,6 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver.Linq;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
