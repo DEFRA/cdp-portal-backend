@@ -117,20 +117,20 @@ public static class ArtifactsEndpoint
         IConfiguration configuration, 
         HttpContext httpContext,
         ILoggerFactory loggerFactory, 
-        [FromQuery] string? type, 
+        [FromQuery] string? runMode, 
         CancellationToken cancellationToken)
     {
         List<string> groups = httpContext.Request.Query["groups"].Where(g => g != null).ToList()!;
         var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
 
-        if (!Enum.TryParse(type ?? ArtifactRunMode.Service.ToString(), true, out ArtifactRunMode runMode))
+        if (!Enum.TryParse(runMode ?? ArtifactRunMode.Service.ToString(), true, out ArtifactRunMode artifactRunMode))
         {
             return Results.BadRequest("Invalid type parameter, requires either: [service, job]");
         }
 
         var repoNames = groups!.Contains(adminGroup)
-            ? await deployablesService.FindAllRepoNames(runMode, cancellationToken)
-            : await deployablesService.FindAllRepoNames(runMode, groups, cancellationToken);
+            ? await deployablesService.FindAllRepoNames(artifactRunMode, cancellationToken)
+            : await deployablesService.FindAllRepoNames(artifactRunMode, groups, cancellationToken);
         return Results.Ok(repoNames);
     }
 
