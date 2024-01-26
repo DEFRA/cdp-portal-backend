@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -14,7 +15,7 @@ public interface IGithubCredentialAndConnectionFactory
 public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
-    private readonly HttpClient _client = new();
+    private readonly HttpClient _client = new(new HttpClientHandler {Proxy = new WebProxy()});
     private readonly GitHubJwtFactory _generator;
     private readonly string _githubApiUrl;
     private readonly DateTimeOffset _lastConnectionRenewal = DateTimeOffset.MinValue;

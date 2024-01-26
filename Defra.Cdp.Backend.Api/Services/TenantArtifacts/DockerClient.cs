@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -26,14 +27,14 @@ public class DockerClient : IDockerClient
     private readonly IDockerCredentialProvider _credentialProvider;
     private readonly ILogger _logger;
 
-    public DockerClient(HttpClient client, IOptions<DockerServiceOptions> options,
+    public DockerClient(IOptions<DockerServiceOptions> options,
         IDockerCredentialProvider credentialProvider, ILogger<DockerClient> logger)
     {
-        _client = client;
+        _client = new HttpClient(new HttpClientHandler{Proxy = new WebProxy()});
         _logger = logger;
         _baseUrl = options.Value.RegistryUrl;
         _credentialProvider = credentialProvider;
-        client.DefaultRequestHeaders.Accept.Clear();
+        _client.DefaultRequestHeaders.Accept.Clear();
     }
 
     public async Task<ImageTagList> FindTags(string repo)

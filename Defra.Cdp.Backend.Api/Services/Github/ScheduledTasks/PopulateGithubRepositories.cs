@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
@@ -24,7 +25,7 @@ public sealed record TeamResult(
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class PopulateGithubRepositories : IJob
 {
-    private readonly HttpClient _client = new();
+    private readonly HttpClient _client; 
     private readonly IDeployablesService _deployablesService;
 
     private readonly string _githubApiUrl;
@@ -41,6 +42,7 @@ public sealed class PopulateGithubRepositories : IJob
         IDeployablesService deployablesService,
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
+        _client = new(new HttpClientHandler {Proxy = new WebProxy()});
         var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
 
@@ -61,7 +63,7 @@ public sealed class PopulateGithubRepositories : IJob
             }}";
 
         _userServiceFetcher = new UserServiceFetcher(configuration);
-
+        
 
         _client.DefaultRequestHeaders.Accept.Clear();
         _client.DefaultRequestHeaders.Accept.Add(
