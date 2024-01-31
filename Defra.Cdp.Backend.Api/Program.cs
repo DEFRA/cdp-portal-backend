@@ -1,4 +1,6 @@
+using System.Net;
 using Amazon.ECR;
+using Amazon.Runtime.Internal.Util;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
@@ -48,8 +50,14 @@ builder.SetupTrustStore(logger);
 // Add health checks and http client
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler(() =>
+{
+    var proxy = new System.Net.WebProxy();
+    return new HttpClientHandler { Proxy = proxy };
+});
+    
+    
 
-logger.Information($"Proxy Config: HTTPS: {Environment.GetEnvironmentVariable("HTTPS_PROXY")}, HTTP: {Environment.GetEnvironmentVariable("HTTP_PROXY")}");
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 

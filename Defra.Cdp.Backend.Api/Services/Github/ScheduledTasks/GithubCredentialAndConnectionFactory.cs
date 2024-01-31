@@ -15,7 +15,7 @@ public interface IGithubCredentialAndConnectionFactory
 public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
-    private readonly HttpClient _client = new(new HttpClientHandler {Proxy = new WebProxy()});
+    private readonly HttpClient _client;
     private readonly GitHubJwtFactory _generator;
     private readonly string _githubApiUrl;
     private readonly DateTimeOffset _lastConnectionRenewal = DateTimeOffset.MinValue;
@@ -23,8 +23,9 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
     private string? _latestInstallationToken;
     private string _latestJwt = null!;
 
-    public GithubCredentialAndConnectionFactory(IConfiguration configuration)
+    public GithubCredentialAndConnectionFactory(IHttpClientFactory clientFactory, IConfiguration configuration)
     {
+        _client = clientFactory.CreateClient("proxy");
         var encodedPem = configuration.GetValue<string>("Github:AppKey")!;
         var keySource = new Base64StringPrivateKeySource(encodedPem);
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
