@@ -28,8 +28,6 @@ ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 
 FROM base AS final
 WORKDIR /app
-COPY certificates/cdp-ca-certs.crt /usr/local/share/ca-certificates/cdp-ca-certs.crt
-RUN chmod 644 /usr/local/share/ca-certificates/cdp-ca-certs.crt && update-ca-certificates
 COPY --from=publish /app/publish .
 EXPOSE 8085
 ENTRYPOINT ["dotnet", "Defra.Cdp.Backend.Api.dll"]

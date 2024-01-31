@@ -9,6 +9,7 @@ using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
+using Defra.Cdp.Backend.Api.Utils;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -106,7 +107,6 @@ builder.Services.AddQuartz(q =>
         .ForJob(jobKey)
         .WithIdentity("FetchGithubRepositories-trigger")
         .WithSimpleSchedule(d => d.WithIntervalInSeconds(interval).RepeatForever().Build()));
-        
 });
 builder.Services.AddQuartzHostedService(options =>
 {
@@ -143,6 +143,9 @@ builder.Services.AddAuthorization();
 
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
+
+// Load certificates into trust store
+app.SetupTrustStore();
 
 // Create swagger doc from internal endpoints then add the swagger ui endpoint
 // Under `Endpoints` directory, the `.Produces`, `.WithName` and `.WithTags`
