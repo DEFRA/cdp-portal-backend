@@ -40,9 +40,10 @@ public sealed class PopulateGithubRepositories : IJob
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
         IRepositoryService repositoryService,
         IDeployablesService deployablesService,
+        IHttpClientFactory clientFactory,
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
-        _client = new(new HttpClientHandler {Proxy = new WebProxy()});
+        _client = clientFactory.CreateClient("proxy");
         var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
 
