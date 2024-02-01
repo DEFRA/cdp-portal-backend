@@ -41,6 +41,9 @@ Console.WriteLine("Logger created.");
 
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 
+// Load certificates into Trust Store - Note must happen before Mongo and Http client connections 
+builder.SetupTrustStore(logger);
+
 // Add health checks and http client
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
@@ -143,9 +146,6 @@ builder.Services.AddAuthorization();
 
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
-
-// Load certificates into trust store
-app.SetupTrustStore();
 
 // Create swagger doc from internal endpoints then add the swagger ui endpoint
 // Under `Endpoints` directory, the `.Produces`, `.WithName` and `.WithTags`
