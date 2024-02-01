@@ -24,7 +24,7 @@ public interface IDeployablesService
     Task<List<string>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
     Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups, CancellationToken cancellationToken);
 
-    Task<List<ServiceInfo>> FindAllServices(CancellationToken cancellationToken);
+    Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken);
     Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
 }
 
@@ -148,7 +148,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
     public async Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken)
     {
         var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(d => d.ServiceName == service && d.RunMode == ArtifactRunMode.Service.ToString().ToLower())
+            .Match(d => d.ServiceName == service)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
             .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
@@ -156,11 +156,17 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken).FirstOrDefaultAsync();
     }
 
-
-    public async Task<List<ServiceInfo>> FindAllServices(CancellationToken cancellationToken)
+    public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken)
     {
+        var fd = new FilterDefinitionBuilder<DeployableArtifact>();
+        var filter = fd.Empty;
+        if (runMode != null)
+        {
+            filter = fd.Eq(d => d.RunMode, runMode.ToString()?.ToLower());
+        }
+
         var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(d => d.RunMode == ArtifactRunMode.Service.ToString().ToLower())
+            .Match(filter)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
             .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams));

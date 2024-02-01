@@ -9,6 +9,7 @@ using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
+using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -131,6 +132,7 @@ builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
+builder.Services.AddSingleton<ITestRunService, TestRunService>();
 
 
 // Validators
@@ -171,6 +173,7 @@ app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
 app.MapDeploymentsEndpoint();
 app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();
+app.MapTestSuiteEndpoint();
 app.MapAdminEndpoint();
 app.MapHealthChecks("/health");
 
