@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Serilog.Core;
 
 namespace Defra.Cdp.Backend.Api.Utils;
 
@@ -7,14 +8,14 @@ public static class TrustStore
 {
     private const string ConfigKey = "TrustStore";
 
-    public static void SetupTrustStore(this WebApplication app)
+    public static void SetupTrustStore(this WebApplicationBuilder builder, Logger logger)
     {
-        app.Logger.LogInformation($"Loading Certificates into Trust store");
-        var certificates = GetCertificates(app.Configuration, app.Logger);
+        logger.Information("Loading Certificates into Trust store");
+        var certificates = GetCertificates(builder.Configuration, logger);
         AddCertificates(certificates);
     }
 
-    private static List<string> GetCertificates(IConfiguration configuration, ILogger logger)
+    private static List<string> GetCertificates(IConfiguration configuration, Logger logger)
     {
         return configuration.GetSection(ConfigKey).GetChildren()
             .Where(config => config.Value != null && IsBase64String(config.Value))
@@ -22,7 +23,7 @@ public static class TrustStore
             {
                 var configValue = config.Value;
                 var data = Convert.FromBase64String(configValue!);
-                logger.LogInformation($"{ConfigKey}.{config.Key} certificate decoded");
+                logger.Information($"{ConfigKey}.{config.Key} certificate decoded");
                 return Encoding.UTF8.GetString(data);
             }).ToList();
     }
