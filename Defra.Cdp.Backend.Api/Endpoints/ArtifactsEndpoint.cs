@@ -162,7 +162,7 @@ public static class ArtifactsEndpoint
     private static async Task<IResult> ListAllServices(IDeployablesService deployablesService,
         CancellationToken cancellationToken)
     {
-        var services = await deployablesService.FindAllServices(cancellationToken);
+        var services = await deployablesService.FindAllServices(ArtifactRunMode.Service, cancellationToken);
         return Results.Ok(services);
     }
 
