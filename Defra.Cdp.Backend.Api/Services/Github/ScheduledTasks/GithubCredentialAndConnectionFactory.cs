@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Utils;
 using GitHubJwt;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -25,7 +26,7 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
 
     public GithubCredentialAndConnectionFactory(IHttpClientFactory clientFactory, IConfiguration configuration)
     {
-        _client = clientFactory.CreateClient("proxy");
+        _client = clientFactory.CreateClient(Proxy.ProxyClient);
         var encodedPem = configuration.GetValue<string>("Github:AppKey")!;
         var keySource = new Base64StringPrivateKeySource(encodedPem);
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";

@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Options;
 using SharpCompress.Readers.Tar;
 
@@ -33,7 +34,7 @@ public class DockerClient : IDockerClient
         IDockerCredentialProvider credentialProvider,
         ILogger<DockerClient> logger)
     {
-        _client = clientFactory.CreateClient("proxy");
+        _client = clientFactory.CreateClient(Proxy.ProxyClient);
         _logger = logger;
         _baseUrl = options.Value.RegistryUrl;
         _credentialProvider = credentialProvider;
