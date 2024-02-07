@@ -50,14 +50,7 @@ builder.SetupTrustStore(logger);
 // Add health checks and http client
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler(() =>
-{
-    var proxy = new System.Net.WebProxy();
-    return new HttpClientHandler { Proxy = proxy };
-});
-    
-    
-
+builder.Services.AddHttpProxyClient(logger);
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 

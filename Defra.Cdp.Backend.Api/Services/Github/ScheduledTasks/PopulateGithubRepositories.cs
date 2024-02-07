@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Utils;
 using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -43,7 +44,7 @@ public sealed class PopulateGithubRepositories : IJob
         IHttpClientFactory clientFactory,
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
-        _client = clientFactory.CreateClient("proxy");
+        _client = clientFactory.CreateClient(Proxy.ProxyClient);
         var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
 
