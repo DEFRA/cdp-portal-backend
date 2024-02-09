@@ -1,6 +1,4 @@
-using System.Net;
 using Amazon.ECR;
-using Amazon.Runtime.Internal.Util;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
@@ -21,7 +19,6 @@ using Microsoft.Identity.Web;
 using Quartz;
 using Serilog;
 using Serilog.Extensions.Logging;
-using Environment = System.Environment;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -45,7 +42,7 @@ Console.WriteLine("Logger created.");
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 
 // Load certificates into Trust Store - Note must happen before Mongo and Http client connections 
-builder.SetupTrustStore(logger);
+TrustStore.SetupTrustStore(logger);
 
 // Add health checks and http client
 builder.Services.AddHealthChecks();
