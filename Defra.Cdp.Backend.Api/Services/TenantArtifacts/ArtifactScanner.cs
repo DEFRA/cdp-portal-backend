@@ -90,11 +90,13 @@ public class ArtifactScanner : IArtifactScanner
         var image = await _dockerClient.LoadManifestImage(repo, manifest.config);
         var labels = new Dictionary<string, string>();
         if (image != null) labels = image.config.Labels;
-
-        if (!labels.ContainsKey("defra.cdp.service.name"))
-            // not a CDP built service!
-            return ArtifactScannerResult.Failure(
-                $"Not an CDP service, image {repo}:{tag} is missing label defra.cdp.service.name");
+        
+        
+        var isService = labels.TryGetValue("defra.cdp.service.name", out var serviceName);
+        var isTestSuite = labels.TryGetValue("defra.cdp.testsuite.name", out var testName);
+        
+        if (!isService && !isTestSuite)
+            return ArtifactScannerResult.Failure($"Not an CDP service or test suite, image {repo}:{tag} is missing label defra.cdp.service.name or defra.cdp.testsuite.name");
 
         _logger.LogInformation("Scanning layers in {Repo}:{Tag} for package.json...", repo, tag);
 
@@ -109,8 +111,6 @@ public class ArtifactScanner : IArtifactScanner
 
         labels.TryGetValue("defra.cdp.git.repo.url", out var githubUrl);
 
-        var isService = labels.TryGetValue("defra.cdp.service.name", out var serviceName);
-        var isTestSuite = labels.TryGetValue("defra.cdp.test.name", out var testName);
 
         var runMode = ArtifactRunMode.Service;
         if (labels.TryGetValue("defra.cdp.run_mode", out var sRunMode))
@@ -138,7 +138,7 @@ public class ArtifactScanner : IArtifactScanner
             Tag = tag,
             Sha256 = manifest.config.digest,
             GithubUrl = githubUrl,
-            ServiceName = serviceName,
+            ServiceName = serviceName ?? testName,
             Files = mergedFiles.Values.ToList(),
             SemVer = semver,
             Teams = repository?.Teams ?? new List<RepositoryTeam>(),
