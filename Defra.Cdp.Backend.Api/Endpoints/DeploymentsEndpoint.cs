@@ -76,6 +76,11 @@ public static class DeploymentsEndpoint
             .WithName("PostDeployments")
             .WithTags(DeploymentsTag);
 
+        app.MapGet("/deployment-config/{service}/{environment}", DeploymentConfig)
+            .WithName("GetDeploymentConfig")
+            .Produces<IEnumerable<Deployment>>()
+            .WithTags(DeploymentsTag);
+        
         return app;
     }
 
@@ -104,7 +109,7 @@ public static class DeploymentsEndpoint
         var deployment = await deploymentsService.FindDeployments(deploymentId, cancellationToken);
         return Results.Ok(deployment);
     }
-
+    
     internal static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
         CancellationToken cancellationToken)
     {
@@ -151,5 +156,15 @@ public static class DeploymentsEndpoint
 
         await deploymentsService.Insert(deployment, cancellationToken);
         return Results.Ok();
+    }
+
+    static async Task<IResult> DeploymentConfig(
+        IDeploymentsService deploymentsService, 
+        string service, 
+        string environment, 
+        CancellationToken cancellationToken)
+    {
+        var result = await deploymentsService.FindDeploymentConfig(service, environment, cancellationToken);
+        return result == null ? Results.NotFound(new ApiError("Not found")) : Results.Ok(result);
     }
 }
