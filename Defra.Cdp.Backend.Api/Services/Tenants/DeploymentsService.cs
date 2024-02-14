@@ -28,6 +28,8 @@ public interface IDeploymentsService
 
     public Task Insert(Deployment deployment, CancellationToken cancellationToken);
     Task<List<Deployment>> FindDeployments(string deploymentId, CancellationToken cancellationToken);
+
+    public Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken cancellationToken);
 }
 
 public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
@@ -164,6 +166,22 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         var result = await Collection.Find(filter).ToListAsync(cancellationToken);
 
         return result;
+    }
+
+    public async Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken cancellationToken)
+    {
+        var fb = new FilterDefinitionBuilder<Deployment>();
+        var filter = fb.And(fb.Eq(d => d.Service, service), fb.Eq(d => d.Environment, environment));
+        var sort = new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt);
+
+        return  await Collection
+            .Find(d => d.Environment == environment && d.Service == service && d.Status == "REQUESTED")
+            .Sort(sort)
+            .Project(d => new DeploymentSettings
+            {
+                Cpu = d.Cpu, Memory = d.Memory, InstanceCount = d.InstanceCount
+            })
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken)
