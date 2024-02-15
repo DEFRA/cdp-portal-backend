@@ -33,7 +33,7 @@ public static class TestSuiteEndpoint
     static async Task<IResult> FindTestRunsForSuite( [FromServices] ITestRunService testRunService, string name,
         CancellationToken cancellationToken)
     {
-        var result = await testRunService.FindTestRunsForTestSuite(name, cancellationToken);
+        var result = await testRunService.FindTestRunsForTestSuite(name, cancellationToken, 100);
         return Results.Ok(result);
     }
 
