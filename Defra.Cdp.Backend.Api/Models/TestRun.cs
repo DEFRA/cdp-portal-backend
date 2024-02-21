@@ -25,4 +25,13 @@ public sealed class TestRun
     
     [property: JsonPropertyName("created")]
     public DateTime Created  { get; init; } = DateTime.Now;
+    
+    [property: JsonPropertyName("taskArn")]
+    public string? TaskArn { get; set; }
+    
+    [property: JsonPropertyName("taskStatus")]    
+    public string? TaskStatus { get; set; }
+
+    [property: JsonPropertyName("taskLastUpdated")]
+    public DateTime? TaskLastUpdate { get; set; }
 }

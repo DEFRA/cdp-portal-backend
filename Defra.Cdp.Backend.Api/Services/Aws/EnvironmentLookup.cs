@@ -1,6 +1,11 @@
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
-public class EnvironmentLookup
+public interface IEnvironmentLookup
+{
+    string? FindEnv(string account);
+}
+
+public class EnvironmentLookup : IEnvironmentLookup
 {
     private readonly Dictionary<string, string> _envs = new();
 
@@ -8,7 +13,7 @@ public class EnvironmentLookup
     {
         var section = cfg.GetSection("EnvironmentMappings");
         foreach (var env in section.GetChildren())
-            _envs.Add(env.Key, env.Value!); // we're telling the compiler that environment values can never be null
+            _envs.Add(env.Key, env.Value!);
     }
 
     public string? FindEnv(string account)

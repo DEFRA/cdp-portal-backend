@@ -20,14 +20,4 @@ public static class SqsSetup
             service.AddSingleton<IAmazonSQS>(sqsClient);
         }
     }
-
-    public static void StartSqsListeners(this IServiceProvider service, CancellationToken cancellationToken)
-    {
-        var listeners = service.GetServices<ISqsListener>();
-        foreach (var sqsListener in listeners)
-        {
-            Console.WriteLine($"starting {sqsListener}");
-            Task.Run(() => sqsListener.ReadAsync(cancellationToken));
-        }
-    }
 }

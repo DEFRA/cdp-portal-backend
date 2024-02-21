@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
-public class EcrEventListener
+public class EcrEventListener : SqsListener
 {
     private readonly IArtifactScanner _docker;
     private readonly IEcrEventsService _ecrEventService;
@@ -19,7 +19,7 @@ public class EcrEventListener
 
     public EcrEventListener(IAmazonSQS sqs, IArtifactScanner docker, IOptions<EcrEventListenerOptions> config,
         IEcrEventsService ecrEventService,
-        ILogger<EcrEventListener> logger)
+        ILogger<EcrEventListener> logger)  : base(sqs, config.Value.QueueUrl, logger)
     {
         _sqs = sqs;
         _docker = docker;
@@ -28,74 +28,40 @@ public class EcrEventListener
         _logger = logger;
     }
 
-    public async void ReadAsync(CancellationToken cancellationToken)
+    public override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Listening for events on {OptionsQueueUrl}", _options.QueueUrl);
+        _logger.LogInformation("Received message: {MessageId}", message.MessageId);
 
-        var falloff = 1;
-        while (_options.Enabled && !cancellationToken.IsCancellationRequested)
-            try
-            {
-                await GetMessages(cancellationToken);
-                falloff = 1;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Cannot read ECR messages");
-                Thread.Sleep(1000 * Math.Min(60, falloff));
-                falloff++;
-            }
-    }
-
-    private async Task GetMessages(CancellationToken cancellationToken)
-    {
-        var response = await _sqs.ReceiveMessageAsync(new ReceiveMessageRequest
+        try
         {
-            QueueUrl = _options.QueueUrl, WaitTimeSeconds = _options.WaitTimeSeconds, MaxNumberOfMessages = 1
-        });
-
-        if (response == null) return;
-
-        foreach (var msg in response.Messages)
-        {
-            if (msg == null)
-            {
-                _logger.LogInformation("Received a null ECR event, how strange");
-                continue;
-            }
-
-            _logger.LogInformation("Received message: {MessageId}", msg.MessageId);
-
-            try
-            {
-                await _ecrEventService.SaveMessage(msg.MessageId, msg.Body, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to persist event");
-            }
-
-            try
-            {
-                var result = await ProcessMessage(msg.MessageId, msg.Body, cancellationToken);
-                if (result.Success && result.Artifact != null)
-                    _logger.LogInformation(
-                        "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
-                        msg.MessageId, result.Artifact.Sha256, result.Artifact.Repo, result.Artifact.Tag);
-                else
-                    _logger.LogInformation("Skipping processing of {MessageId}, {Error}", msg.MessageId, result.Error);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to scan image for event {MessageId}", msg.MessageId);
-            }
-
-            // TODO: better error detection to decide if we delete, dead letter or retry...
-            await _sqs.DeleteMessageAsync(_options.QueueUrl, msg.ReceiptHandle, cancellationToken);
+            await _ecrEventService.SaveMessage(message.MessageId, message.Body, cancellationToken);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to persist event");
+        }
+
+        try
+        {
+            var result = await HandleEcrMessage(message.MessageId, message.Body, cancellationToken);
+            if (result.Success && result.Artifact != null)
+                _logger.LogInformation(
+                    "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
+                    message.MessageId, result.Artifact.Sha256, result.Artifact.Repo, result.Artifact.Tag);
+            else
+                _logger.LogInformation("Skipping processing of {MessageId}, {Error}", message.MessageId, result.Error);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to scan image for event {MessageId}", message.MessageId);
+        }
+
+        // TODO: better error detection to decide if we delete, dead letter or retry...
+        await _sqs.DeleteMessageAsync(_options.QueueUrl, message.ReceiptHandle, cancellationToken);
     }
 
-    public async Task<ArtifactScannerResult> ProcessMessage(string id, string body, CancellationToken cancellationToken)
+
+    public async Task<ArtifactScannerResult> HandleEcrMessage(string id, string body, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting processing ECR Event {Id}", id);
         // AWS JSON messages are sent in with their " escaped (\"), in order to parse, they must be unescaped
