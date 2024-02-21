@@ -20,7 +20,8 @@ public interface IDeployablesService
     Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, CancellationToken cancellationToken);
     Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, IEnumerable<string> groups, CancellationToken cancellationToken);
     
-    Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);    
+    Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
+    Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
     Task<List<string>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
     Task<List<string>> FindAllTagsForRepo(string repo, IEnumerable<string> groups, CancellationToken cancellationToken);
 
@@ -48,6 +49,11 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
     public async Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken)
     {
         return await Collection.Find(d => d.Repo == repo && d.Tag == tag).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(d => d.Repo == repo).SortByDescending(d => d.SemVer).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken)
@@ -153,7 +159,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
             .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
             .Limit(1);
-        return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken).FirstOrDefaultAsync();
+        return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken)

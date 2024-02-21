@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -125,13 +126,14 @@ builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
 builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
-builder.Services.AddSingleton<EnvironmentLookup>();
+builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
-
+builder.Services.AddSingleton<DeploymentEventHandler>();
+builder.Services.AddSingleton<LambdaMessageHandler>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program

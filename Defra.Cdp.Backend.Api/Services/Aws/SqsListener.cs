@@ -15,11 +15,14 @@ public abstract class SqsListener : ISqsListener, IDisposable
     protected bool Enabled;
     protected int WaitTimeoutSeconds = 15;
 
-    protected SqsListener(IAmazonSQS sqs, string queueUrl, bool enabled = true)
+    private ILogger Logger;
+    
+    protected SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logger, bool enabled = true)
     {
         Sqs = sqs;
         QueueUrl = queueUrl;
         Enabled = enabled;
+        Logger = logger;
     }
 
     public void Dispose()
@@ -34,11 +37,14 @@ public abstract class SqsListener : ISqsListener, IDisposable
         {
             QueueUrl = QueueUrl, WaitTimeSeconds = WaitTimeoutSeconds
         };
+        
+        Logger.LogInformation("Listening for events on {queue}", QueueUrl);
+        
         var falloff = 1;
         while (Enabled)
             try
             {
-                var receiveMessageResponse = await Sqs.ReceiveMessageAsync(receiveMessageRequest);
+                var receiveMessageResponse = await Sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
 
                 if (receiveMessageResponse.Messages.Count == 0) continue;
 
@@ -50,8 +56,8 @@ public abstract class SqsListener : ISqsListener, IDisposable
                     }
                     catch (Exception exception)
                     {
-                        Console.Error.WriteLine(message.Body);
-                        Console.Error.WriteLine(exception);
+                        Logger.LogError(message.Body);
+                        Logger.LogError(exception.Message);
                         // TODO: support Dead Letter Queue 
                     }
 
@@ -60,14 +66,14 @@ public abstract class SqsListener : ISqsListener, IDisposable
                         QueueUrl = QueueUrl, ReceiptHandle = message.ReceiptHandle
                     };
 
-                    await Sqs.DeleteMessageAsync(deleteRequest);
+                    await Sqs.DeleteMessageAsync(deleteRequest, cancellationToken);
                     falloff = 1;
                 }
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine(exception.Message);
-                Thread.Sleep(1000 * Math.Min(60, falloff));
+                Logger.LogError(exception.Message);
+                await Task.Delay(1000 * Math.Min(60, falloff), cancellationToken);
                 falloff++;
                 // TODO: decide how to handle failures here. what kind of failures are they? AWS connection stuff?
             }

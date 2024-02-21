@@ -31,7 +31,7 @@ public static class AdminEndpoint
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoint");
         logger.LogInformation("Starting back-fill operation");
-        await eventListener.Backfill(cancellationToken);
+        await eventListener.BackFill(cancellationToken);
         var rescanRequest = await scanner.Backfill(cancellationToken);
         var deployables =
             await Task.WhenAll(rescanRequest.Select(d => RescanImage(scanner, d.Repo, d.Tag, cancellationToken)));
