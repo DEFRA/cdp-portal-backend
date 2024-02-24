@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
@@ -78,8 +79,11 @@ public class DockerClient : IDockerClient
             return null;
         }
 
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        return await JsonSerializer.DeserializeAsync<Manifest>(stream);
+        var content = await response.Content.ReadAsByteArrayAsync();
+        var manifest = JsonSerializer.Deserialize<Manifest>(content);
+        if(manifest != null)
+            manifest.digest = Convert.ToHexString(SHA256.Create().ComputeHash(content));
+        return manifest;
     }
 
     public async Task<ManifestImage?> LoadManifestImage(string repo, Blob blob)
@@ -125,7 +129,7 @@ public class DockerClient : IDockerClient
         var req = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = new Uri($"{_baseUrl}/v2/_catalog") };
         req = await AddEcrAuthHeader(req);
 
-        var response = await _client.SendAsync(req);
+        var response = await _client.SendAsync(req, cancellationToken);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         var catalog = await JsonSerializer.DeserializeAsync<Catalog>(stream, cancellationToken: cancellationToken);
 

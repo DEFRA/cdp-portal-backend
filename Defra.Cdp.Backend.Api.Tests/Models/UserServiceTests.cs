@@ -27,8 +27,9 @@ public class UserServiceTests
             "9999",
             new()
         );
-
-        new UserServiceRecord("", new List<UserServiceTeams>() {teamA1, teamA2});
+        
+        var user = new UserServiceRecord("", new List<UserServiceTeams>() {teamA1, teamA2});
+        Assert.NotNull(user);
 
     }
     

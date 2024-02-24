@@ -87,11 +87,13 @@ public class DockerClientTests
         _dockerClientMock
             .LoadManifest("foo", "1.0.0")!
             .Returns(
-                Task.FromResult(new Manifest(
-                    "foo",
-                    "1.0.0",
-                    cfg,
-                    new List<Blob> { files }))
+                Task.FromResult(new Manifest {
+                    name = "foo",
+                    tag = "1.0.0",
+                    digest = "sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+                    config = cfg,
+                    layers = new List<Blob> { files }
+                })
             );
 
         // mock reading cfg layer
@@ -127,5 +129,6 @@ public class DockerClientTests
         Assert.Equal("https://github.com/foo/foo", artifact?.GithubUrl);
         Assert.Equal("foo", artifact?.ServiceName);
         Assert.Single(artifact!.Files);
+        Assert.Equal("sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c", artifact.Sha256);
     }
 }

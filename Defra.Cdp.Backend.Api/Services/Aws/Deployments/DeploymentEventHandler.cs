@@ -1,6 +1,4 @@
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using Amazon.SQS;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -70,99 +68,6 @@ public class DeploymentEventHandler
         _logger.LogWarning("Artifact {artifactName} was not a known runMode {runMode}", artifact.ServiceName, artifact.RunMode);
     }
 
-
-    private async Task<DeployableArtifact?> FindArtifact(EcsEvent ecsEvent, CancellationToken cancellationToken)
-    {
-        foreach (var ecsContainer in ecsEvent.Detail.Containers)
-        {
-            var (repo, tag) = SplitImage(ecsContainer.Image);
-            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
-            {
-                _logger.LogDebug("skipping empty {repo} {tag}", repo, tag);
-                continue;
-            }
-
-            if (_containersToIgnore.Contains(repo))
-            {
-                _logger.LogDebug("skipping ignored {repo} {tag}", repo, tag);
-                continue;
-            }
-            _logger.LogDebug("looking for container {repo} {tag}", repo, tag);
-
-            var artifact = tag switch
-            {
-                "latest" => await _deployablesService.FindLatest(repo, cancellationToken),
-                _        => await _deployablesService.FindByTag(repo, tag, cancellationToken)
-            };
-
-            if (artifact != null)
-            {
-                _logger.LogInformation("found artifact for {repo}:{tag}", repo, tag);
-                return artifact;
-            }
-        }
-        return null;
-    }
-
-    public async Task UpdateTestSuite(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var env = _environmentLookup.FindEnv(ecsEvent.Account);
-
-            // find the test run linked with this task
-            var taskArn = ecsEvent.Detail.TaskArn;
-
-            // see if we've already linked a test run to the arn
-            var testRun = await _testRunService.FindByTaskArn(taskArn, cancellationToken);
-
-            // if its not there, find a candidate to link it to
-            if (testRun == null)
-            {
-                testRun = await _testRunService.Link(
-                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsEvent.Timestamp), taskArn, cancellationToken);
-            }
-
-            // and if we can't link it, fail.
-            if (testRun == null)
-            {
-                _logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
-                return;
-            }
-
-            // otherwise update the status
-            var status = GenerateTestSuiteStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
-            _logger.LogInformation("Updating {name} test-suite {runId} status to {status}", testRun.TestSuite,
-                testRun.RunId, status);
-            await _testRunService.UpdateStatus(taskArn, status, ecsEvent.Timestamp, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Failed to update test suite: {ex}", ex);
-        }
-
-    }
-
-    public static string GenerateTestSuiteStatus(string desired, string last)
-    {
-        return desired switch
-        {
-            "RUNNING" => last switch
-            {
-                "PROVISIONING" => "starting",
-                "PENDING"      => "starting",
-                "STOPPED"      => "failed",
-                _              => "in-progress"
-            },
-            "STOPPED" => last switch
-            {
-                "STOPPED" => "finished",
-                _         => "stopping"
-            },
-            _ => "unknown"
-        };
-    }
-
     public async Task UpdateDeployment(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
     {
         try
@@ -219,6 +124,100 @@ public class DeploymentEventHandler
         }
     }
 
+    public async Task UpdateTestSuite(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var env = _environmentLookup.FindEnv(ecsEvent.Account);
+            
+            var taskArn = ecsEvent.Detail.TaskArn;
+
+            // see if we've already linked a test run to the arn
+            var testRun = await _testRunService.FindByTaskArn(taskArn, cancellationToken);
+
+            // if its not there, find a candidate to link it to
+            if (testRun == null)
+            {
+                testRun = await _testRunService.Link(
+                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsEvent.Timestamp), taskArn, cancellationToken);
+            }
+            
+            // if the linking fails, we have nothing to write the data to
+            if (testRun == null)
+            {
+                _logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
+                return;
+            }
+
+            // otherwise update the status
+            var status = GenerateTestSuiteStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+            _logger.LogInformation("Updating {name} test-suite {runId} status to {status}", testRun.TestSuite,
+                testRun.RunId, status);
+            await _testRunService.UpdateStatus(taskArn, status, ecsEvent.Timestamp, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Failed to update test suite: {ex}", ex);
+        }
+    }
+
+    private async Task<DeployableArtifact?> FindArtifact(EcsEvent ecsEvent, CancellationToken cancellationToken)
+    {
+        // iterate over all the containers, discarding known side-cars until we fine one we know about.
+        foreach (var ecsContainer in ecsEvent.Detail.Containers)
+        {
+            var (repo, tag) = SplitImage(ecsContainer.Image);
+            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
+            {
+                _logger.LogDebug("skipping empty {repo} {tag}", repo, tag);
+                continue;
+            }
+
+            if (_containersToIgnore.Contains(repo))
+            {
+                _logger.LogDebug("skipping ignored {repo} {tag}", repo, tag);
+                continue;
+            }
+            _logger.LogDebug("looking for container {repo} {tag}", repo, tag);
+
+            
+            var artifact = tag switch
+            {
+                // We don't store the latest tag, so we just the highest semver
+                "latest" => await _deployablesService.FindLatest(repo, cancellationToken),
+                _        => await _deployablesService.FindByTag(repo, tag, cancellationToken)
+            };
+
+            if (artifact != null)
+            {
+                _logger.LogInformation("found artifact for {repo}:{tag}", repo, tag);
+                return artifact;
+            }
+        }
+        return null;
+    }
+    
+    public static string GenerateTestSuiteStatus(string desired, string last)
+    {
+        return desired switch
+        {
+            "RUNNING" => last switch
+            {
+                "PROVISIONING" => "starting",
+                "PENDING"      => "starting",
+                "STOPPED"      => "failed",
+                _              => "in-progress"
+            },
+            "STOPPED" => last switch
+            {
+                "DEPROVISIONING" => "finished", 
+                "STOPPED"        => "finished",
+                _                => "stopping"
+            },
+            _ => "unknown"
+        };
+    }
+    
     public static (string?, string?) SplitImage(string image)
     {
         var rx = new Regex("^.+\\/(.+):(.+)$");

@@ -9,7 +9,14 @@ public sealed record ManifestImage(ManifestImageConfig config, string created, s
 
 public sealed record Blob(string mediaType, int size, string digest);
 
-public sealed record Manifest(string name, string tag, Blob config, List<Blob> layers);
+public sealed record Manifest
+{
+    public string name { get; init; } 
+    public string tag { get; init; }
+    public Blob config { get; init; }
+    public List<Blob> layers { get; init; }
+    public string? digest { get; set; }
+}
 
 public sealed record Catalog(List<string> repositories);
 
