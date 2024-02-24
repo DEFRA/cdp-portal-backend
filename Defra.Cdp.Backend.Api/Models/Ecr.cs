@@ -18,7 +18,9 @@ public record SqsEcrEventDetail(
     [property: JsonPropertyName("image-tag")]
     string ImageTag,
     [property: JsonPropertyName("action-type")]
-    string ActionType
+    string ActionType,
+    [property: JsonPropertyName("image-digest")]
+    string ImageDigest
 );
 
 public sealed record SqsEcrEvent(

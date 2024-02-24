@@ -136,7 +136,7 @@ public class ArtifactScanner : IArtifactScanner
             ScannerVersion = DockerScannerVersion,
             Repo = repo,
             Tag = tag,
-            Sha256 = manifest.config.digest,
+            Sha256 = manifest.digest!,
             GithubUrl = githubUrl,
             ServiceName = serviceName ?? testName,
             Files = mergedFiles.Values.ToList(),
