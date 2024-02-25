@@ -82,7 +82,7 @@ public class DockerClient : IDockerClient
         var content = await response.Content.ReadAsByteArrayAsync();
         var manifest = JsonSerializer.Deserialize<Manifest>(content);
         if(manifest != null)
-            manifest.digest = Convert.ToHexString(SHA256.Create().ComputeHash(content));
+            manifest.digest = "sha256:" + Convert.ToHexString(SHA256.Create().ComputeHash(content));
         return manifest;
     }
 
