@@ -34,4 +34,10 @@ public sealed class TestRun
 
     [property: JsonPropertyName("taskLastUpdated")]
     public DateTime? TaskLastUpdate { get; set; }
+
+    [property: JsonPropertyName("testStatus")]
+    public string? TestStatus { get; set; }
+    
+    [property: JsonPropertyName("tag")]
+    public string? Tag { get; set; }
 }

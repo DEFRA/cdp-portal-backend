@@ -68,6 +68,9 @@ public class DeploymentEventHandler
         _logger.LogWarning("Artifact {artifactName} was not a known runMode {runMode}", artifact.ServiceName, artifact.RunMode);
     }
 
+    /**
+     * Handle events related to a deployed microservice
+     */
     public async Task UpdateDeployment(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
     {
         try
@@ -124,10 +127,14 @@ public class DeploymentEventHandler
         }
     }
 
+    /**
+     * Handle events related to a test suite. Unlike a service these are expected to run then exit. 
+     */
     public async Task UpdateTestSuite(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
     {
         try
         {
+            // TODO: have an allow-list of events we can process
             var env = _environmentLookup.FindEnv(ecsEvent.Account);
             
             var taskArn = ecsEvent.Detail.TaskArn;
@@ -138,22 +145,29 @@ public class DeploymentEventHandler
             // if its not there, find a candidate to link it to
             if (testRun == null)
             {
+                _logger.LogInformation("trying to link {id}", artifact.ServiceName);
                 testRun = await _testRunService.Link(
-                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsEvent.Timestamp), taskArn, cancellationToken);
+                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsEvent.Timestamp), artifact, taskArn, cancellationToken);
             }
             
-            // if the linking fails, we have nothing to write the data to
+            // if the linking fails, we have nothing to write the data to so bail
             if (testRun == null)
             {
                 _logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
                 return;
             }
 
-            // otherwise update the status
-            var status = GenerateTestSuiteStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
-            _logger.LogInformation("Updating {name} test-suite {runId} status to {status}", testRun.TestSuite,
-                testRun.RunId, status);
-            await _testRunService.UpdateStatus(taskArn, status, ecsEvent.Timestamp, cancellationToken);
+            // use the container exit code to figure out if the tests passed. non-zero exit code == failure. 
+            // TODO: this might not work in every case, other options are to parse the results from s3 when job is done
+            // TODO: use sha256 instead once data is fixed
+            var container = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Name == artifact.Repo);
+            var testResults = GenerateTestSuiteStatus(container);
+            
+            var taskStatus = GenerateTestSuiteTaskStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+            
+            _logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
+                testRun.RunId, taskStatus, testResults);
+            await _testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsEvent.Timestamp, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -161,9 +175,11 @@ public class DeploymentEventHandler
         }
     }
 
+    /**
+     * Find the artifact belonging to an ECS event by matching the non-sidecar ECS container.
+     */
     private async Task<DeployableArtifact?> FindArtifact(EcsEvent ecsEvent, CancellationToken cancellationToken)
     {
-        // iterate over all the containers, discarding known side-cars until we fine one we know about.
         foreach (var ecsContainer in ecsEvent.Detail.Containers)
         {
             var (repo, tag) = SplitImage(ecsContainer.Image);
@@ -184,20 +200,36 @@ public class DeploymentEventHandler
             var artifact = tag switch
             {
                 // We don't store the latest tag, so we just the highest semver
-                "latest" => await _deployablesService.FindLatest(repo, cancellationToken),
+                "latest" => await _deployablesService.FindLatest(repo, cancellationToken), // TODO: once we fix the image hash, search on the image hash
                 _        => await _deployablesService.FindByTag(repo, tag, cancellationToken)
             };
 
             if (artifact != null)
             {
-                _logger.LogInformation("found artifact for {repo}:{tag}", repo, tag);
+                _logger.LogDebug("found artifact {hash} for {repo}:{tag}", artifact.Sha256, repo, tag);
                 return artifact;
             }
         }
         return null;
     }
+
+    /**
+     * Interpret the status of the test suit based on the exit code of the test container
+     */
+    public static string? GenerateTestSuiteStatus(EcsContainer? container)
+    {
+        return container?.ExitCode switch
+        {
+            null => null,
+            0    => "passed",
+            _    => "failed"
+        };
+    }
     
-    public static string GenerateTestSuiteStatus(string desired, string last)
+    /**
+     * Interpret the overall status of the test run's ECS task 
+     */
+    public static string GenerateTestSuiteTaskStatus(string desired, string last)
     {
         return desired switch
         {
@@ -218,6 +250,9 @@ public class DeploymentEventHandler
         };
     }
     
+    /**
+     * Extract the name and tag from a full docker image url 
+     */
     public static (string?, string?) SplitImage(string image)
     {
         var rx = new Regex("^.+\\/(.+):(.+)$");
