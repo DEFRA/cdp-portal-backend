@@ -5,10 +5,8 @@ using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Tenants;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using NSubstitute.ReceivedExtensions;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws.Deployments;
 
@@ -65,12 +63,12 @@ public class DeploymentEventsHandlerTests
         // Set up mocks
         var artifact = new DeployableArtifact { Repo = name, ServiceName = name, Tag = "0.1.0", RunMode = "job" };
         _testRunService.FindByTaskArn(taskArn, Arg.Any<CancellationToken>()).Returns(Task.FromResult<TestRun?>(null));
-        _testRunService.Link(new TestRunMatchIds(name, "dev", now), taskArn, Arg.Any<CancellationToken>())
+        _testRunService.Link(new TestRunMatchIds(name, "dev", now), artifact, taskArn, Arg.Any<CancellationToken>())
             .Returns(new TestRun()
             {
                 Created = now.Subtract(TimeSpan.FromSeconds(10)) , Environment = "dev" , User = new UserDetails(), RunId = "1234"
             });
-        _testRunService.UpdateStatus(taskArn, "in-progress", now, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _testRunService.UpdateStatus(taskArn, "in-progress", null, now, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         
         // Run the method
         await handler.UpdateTestSuite(ecsEvent, artifact, new CancellationToken());
@@ -78,8 +76,8 @@ public class DeploymentEventsHandlerTests
         // Validate mock calls
         await _testRunService.Received().FindByTaskArn(taskArn, Arg.Any<CancellationToken>());
         await _testRunService.Received()
-            .Link(new TestRunMatchIds(name, "dev", now), taskArn, Arg.Any<CancellationToken>());
-        await _testRunService.Received().UpdateStatus(taskArn, "in-progress", now, Arg.Any<CancellationToken>());
+            .Link(new TestRunMatchIds(name, "dev", now), artifact, taskArn, Arg.Any<CancellationToken>());
+        await _testRunService.Received().UpdateStatus(taskArn, "in-progress", null, now, Arg.Any<CancellationToken>());
     }
     
     
@@ -113,13 +111,13 @@ public class DeploymentEventsHandlerTests
             Created = now.Subtract(TimeSpan.FromSeconds(10)) , Environment = "dev" , User = new UserDetails(), RunId = "1234"
         });
 
-        _testRunService.UpdateStatus(taskArn, "in-progress", now, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _testRunService.UpdateStatus(taskArn, "in-progress", null, now, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         await handler.UpdateTestSuite(ecsEvent, artifact, new CancellationToken());
         
         // Check stubs were all called
         await _testRunService.Received().FindByTaskArn(taskArn, Arg.Any<CancellationToken>());
-        await _testRunService.DidNotReceiveWithAnyArgs().Link(Arg.Any<TestRunMatchIds>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await _testRunService.Received().UpdateStatus(taskArn, "in-progress", now, Arg.Any<CancellationToken>());
+        await _testRunService.DidNotReceiveWithAnyArgs().Link(Arg.Any<TestRunMatchIds>(), Arg.Any<DeployableArtifact>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _testRunService.Received().UpdateStatus(taskArn, "in-progress", null, now, Arg.Any<CancellationToken>());
     }
 
     [Fact]

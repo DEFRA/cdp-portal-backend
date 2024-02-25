@@ -28,7 +28,9 @@ public sealed record EcsContainer(
     [property: JsonPropertyName("lastStatus")]
     string LastStatus,
     [property: JsonPropertyName("desiredStatus")]
-    string DesiredStatus
+    string DesiredStatus,
+    [property: JsonPropertyName("exitCode")]       
+    int? ExitCode = null
 );
 
 public sealed record EcsEventDetail(

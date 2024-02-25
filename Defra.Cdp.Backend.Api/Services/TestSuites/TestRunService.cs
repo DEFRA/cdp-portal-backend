@@ -10,8 +10,8 @@ public interface ITestRunService
     public Task<List<TestRun>> FindTestRunsForTestSuite(string suite, CancellationToken cancellationToken, int limit);
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken cancellationToken);
     public Task CreateTestRun(TestRun testRun, CancellationToken cancellationToken);
-    public Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken cancellationToken);
-    public Task UpdateStatus(string taskArn, string status, DateTime ecsEventTimestamp , CancellationToken cancellationToken);
+    public Task<TestRun?> Link(TestRunMatchIds ids,  DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken);
+    public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp , CancellationToken cancellationToken);
 }
 
 public class TestRunService : MongoService<TestRun>, ITestRunService
@@ -51,54 +51,37 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         await Collection.InsertOneAsync(testRun, new InsertOneOptions(), cancellationToken);
    }
 
-    public async Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken cancellationToken)
+    public async Task<TestRun?> Link(TestRunMatchIds ids, DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken)
     {
-        var transaction = await Collection.Database.Client.StartSessionAsync(cancellationToken: cancellationToken);
-        try
-        {
-            // Until we setup the lambda like we have with other deployments, we're going to do a 'best effort' match,
-            // which basically means taking the first unlinked record that happened up to N minutes before we received the
-            // ECS event.
-            var testRun = await Collection
-                .Find(t => 
-                    t.Environment == ids.Environment 
-                    && t.TestSuite   == ids.TestSuite 
-                    && t.Created     <= ids.EventTime 
-                    && t.Created     >= ids.EventTime.Subtract(_ecsLinkTimeWindow) 
-                    && t.TaskArn     == null)
-                .SortBy(t => t.Created)
-                .FirstOrDefaultAsync(cancellationToken);
+        var fb = new FilterDefinitionBuilder<TestRun>();
 
-            if (testRun == null)
-            {
-                Logger.LogWarning("Failed to link test suite ${env} ${testSuite} to ${taskArn}", ids.Environment, ids.TestSuite, taskArn);
-                await transaction.AbortTransactionAsync(cancellationToken);
-                return null;
-            }
-            
-            var update = Builders<TestRun>
-                .Update
-                .Set(d => d.TaskArn, taskArn);
-            
-            await Collection.UpdateOneAsync(d => d.RunId == testRun.RunId, update, cancellationToken: cancellationToken);
-            await transaction.CommitTransactionAsync(cancellationToken);
-            
-            Logger.LogInformation("Linked TestRun ${runId} to taskArn ${taskArn}", testRun.RunId, taskArn);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError("Error while linking test job to taskArn ${taskArn}: ${e}", taskArn, e);
-            await transaction.AbortTransactionAsync(cancellationToken);
-        }
+        var filter = fb.And(
+            fb.Eq(t => t.TestSuite, ids.TestSuite),
+            fb.Eq(t => t.Environment, ids.Environment),
+            fb.Lte(t => t.Created, ids.EventTime),
+            fb.Gte(t => t.Created,  ids.EventTime.Subtract(_ecsLinkTimeWindow)),
+            fb.Eq(t => t.TaskArn, null)
+        );
 
-        return null;
+        var update = Builders<TestRun>
+            .Update
+            .Set(d => d.TaskArn, taskArn)
+            .Set(d => d.Tag, artifact.Tag);
+
+        return await Collection.FindOneAndUpdateAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateStatus(string taskArn, string status, DateTime ecsEventTimestamp, CancellationToken cancellationToken)
+    public async Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp, CancellationToken cancellationToken)
     {
         var update = Builders<TestRun>.Update
-            .Set(d => d.TaskStatus, status)
-            .Set(d => d.TaskLastUpdate, ecsEventTimestamp);
+            .Set(t => t.TaskStatus, taskStatus)
+            .Set(t => t.TaskLastUpdate, ecsEventTimestamp);
+
+        if (testStatus != null)
+        {
+            update = update.Set(t => t.TestStatus, testStatus);
+        }
+        
         await Collection.UpdateOneAsync(t => t.TaskArn == taskArn, update, cancellationToken: cancellationToken);
     }
 }
