@@ -80,7 +80,7 @@ public static class DeploymentsEndpoint
             .WithName("GetDeploymentConfig")
             .Produces<IEnumerable<Deployment>>()
             .WithTags(DeploymentsTag);
-        
+
         return app;
     }
 
@@ -158,10 +158,10 @@ public static class DeploymentsEndpoint
         return Results.Ok();
     }
 
-    static async Task<IResult> DeploymentConfig(
-        IDeploymentsService deploymentsService, 
-        string service, 
-        string environment, 
+    private static async Task<IResult> DeploymentConfig(
+        IDeploymentsService deploymentsService,
+        string service,
+        string environment,
         CancellationToken cancellationToken)
     {
         var result = await deploymentsService.FindDeploymentConfig(service, environment, cancellationToken);
