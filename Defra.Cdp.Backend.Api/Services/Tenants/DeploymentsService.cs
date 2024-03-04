@@ -14,7 +14,8 @@ public interface IDeploymentsService
         int size = 0,
         CancellationToken cancellationToken = new());
 
-    public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
+    public Task<List<Deployment>> FindWhatsRunningWhere(List<string> environments,
+        CancellationToken cancellationToken);
 
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
 
@@ -191,8 +192,24 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<List<Deployment>> FindWhatsRunningWhere(List<string> envs, CancellationToken
+        cancellationToken)
+    {
+        var fd = new FilterDefinitionBuilder<Deployment>();
+        var environmentsFilter = envs.Any()
+            ? fd.And(
+                fd.Eq(d => d.Status, "RUNNING"),
+                fd.Where(d => envs.Contains(d.Environment)),
+                fd.Ne(d => d.DesiredStatus, "STOPPED")
+            )
+            : fd.And(
+                fd.Eq(d => d.Status, "RUNNING"),
+                fd.Ne(d => d.DesiredStatus, "STOPPED")
+            );
+
+
         var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Match(d => d.Status == "RUNNING" && d.DesiredStatus != "STOPPED")
+            .Match(environmentsFilter)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);

@@ -109,11 +109,13 @@ public static class DeploymentsEndpoint
         var deployment = await deploymentsService.FindDeployments(deploymentId, cancellationToken);
         return Results.Ok(deployment);
     }
-    
+
     internal static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        var deployments = await deploymentsService.FindWhatsRunningWhere(cancellationToken);
+        List<string> envs = httpContext.Request.Query["envs"].Where(g => g != null).ToList()!;
+        var deployments = await deploymentsService.FindWhatsRunningWhere(envs, cancellationToken);
         return Results.Ok(deployments);
     }
 
