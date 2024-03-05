@@ -80,7 +80,7 @@ public static class DeploymentsEndpoint
             .WithName("GetDeploymentConfig")
             .Produces<IEnumerable<Deployment>>()
             .WithTags(DeploymentsTag);
-        
+
         return app;
     }
 
@@ -109,11 +109,13 @@ public static class DeploymentsEndpoint
         var deployment = await deploymentsService.FindDeployments(deploymentId, cancellationToken);
         return Results.Ok(deployment);
     }
-    
+
     internal static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        var deployments = await deploymentsService.FindWhatsRunningWhere(cancellationToken);
+        List<string> envs = httpContext.Request.Query["envs"].Where(g => g != null).ToList()!;
+        var deployments = await deploymentsService.FindWhatsRunningWhere(envs, cancellationToken);
         return Results.Ok(deployments);
     }
 
@@ -158,10 +160,10 @@ public static class DeploymentsEndpoint
         return Results.Ok();
     }
 
-    static async Task<IResult> DeploymentConfig(
-        IDeploymentsService deploymentsService, 
-        string service, 
-        string environment, 
+    private static async Task<IResult> DeploymentConfig(
+        IDeploymentsService deploymentsService,
+        string service,
+        string environment,
         CancellationToken cancellationToken)
     {
         var result = await deploymentsService.FindDeploymentConfig(service, environment, cancellationToken);

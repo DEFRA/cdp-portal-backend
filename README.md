@@ -251,7 +251,7 @@ This will make sure that the `cdp-portal-backend` can obtain the manifest for th
 - Install [LocalStack AWS CLI](https://github.com/localstack/awscli-local)
 - Run AWS LocalStack Docker container:
 ```bash
-docker run -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:latest
+docker run --pull=always -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:latest
 ```
 
 ### Create local SQS queues

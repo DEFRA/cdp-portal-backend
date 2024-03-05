@@ -14,7 +14,8 @@ public interface IDeploymentsService
         int size = 0,
         CancellationToken cancellationToken = new());
 
-    public Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken);
+    public Task<List<Deployment>> FindWhatsRunningWhere(List<string> environments,
+        CancellationToken cancellationToken);
 
     public Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken cancellationToken);
 
@@ -29,7 +30,8 @@ public interface IDeploymentsService
     public Task Insert(Deployment deployment, CancellationToken cancellationToken);
     Task<List<Deployment>> FindDeployments(string deploymentId, CancellationToken cancellationToken);
 
-    public Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken cancellationToken);
+    public Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment,
+        CancellationToken cancellationToken);
 }
 
 public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
@@ -168,32 +170,18 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return result;
     }
 
-    public async Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken cancellationToken)
+    public async Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment,
+        CancellationToken cancellationToken)
     {
         var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.And(fb.Eq(d => d.Service, service), fb.Eq(d => d.Environment, environment));
         var sort = new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt);
 
-        return  await Collection
+        return await Collection
             .Find(d => d.Environment == environment && d.Service == service && d.Status == "REQUESTED")
             .Sort(sort)
-            .Project(d => new DeploymentSettings
-            {
-                Cpu = d.Cpu, Memory = d.Memory, InstanceCount = d.InstanceCount
-            })
+            .Project(d => new DeploymentSettings { Cpu = d.Cpu, Memory = d.Memory, InstanceCount = d.InstanceCount })
             .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async Task<List<Deployment>> FindWhatsRunningWhere(CancellationToken cancellationToken)
-    {
-        var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Match(d => d.Status == "RUNNING" && d.DesiredStatus != "STOPPED")
-            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
-            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
-            .Project(grp => grp.Root);
-
-        return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
-            .ToListAsync(cancellationToken);
     }
 
     public async Task<Deployment?> FindDeploymentByEcsSvcDeploymentId(string ecsSvcDeploymentId,
@@ -202,6 +190,32 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return await Collection
             .Find(d => d.EcsSvcDeploymentId == ecsSvcDeploymentId)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<List<Deployment>> FindWhatsRunningWhere(List<string> envs, CancellationToken
+        cancellationToken)
+    {
+        var fd = new FilterDefinitionBuilder<Deployment>();
+        var environmentsFilter = envs.Any()
+            ? fd.And(
+                fd.Eq(d => d.Status, "RUNNING"),
+                fd.Where(d => envs.Contains(d.Environment)),
+                fd.Ne(d => d.DesiredStatus, "STOPPED")
+            )
+            : fd.And(
+                fd.Eq(d => d.Status, "RUNNING"),
+                fd.Ne(d => d.DesiredStatus, "STOPPED")
+            );
+
+
+        var pipeline = new EmptyPipelineDefinition<Deployment>()
+            .Match(environmentsFilter)
+            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.DeployedAt))
+            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
+            .Project(grp => grp.Root);
+
+        return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
+            .ToListAsync(cancellationToken);
     }
 
     protected override List<CreateIndexModel<Deployment>> DefineIndexes(
