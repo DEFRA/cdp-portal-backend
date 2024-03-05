@@ -192,14 +192,14 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<List<Deployment>> FindWhatsRunningWhere(List<string> envs, CancellationToken
+    public async Task<List<Deployment>> FindWhatsRunningWhere(List<string> environments, CancellationToken
         cancellationToken)
     {
         var fd = new FilterDefinitionBuilder<Deployment>();
-        var environmentsFilter = envs.Any()
+        var environmentsFilter = environments.Any()
             ? fd.And(
                 fd.Eq(d => d.Status, "RUNNING"),
-                fd.Where(d => envs.Contains(d.Environment)),
+                fd.Where(d => environments.Contains(d.Environment)),
                 fd.Ne(d => d.DesiredStatus, "STOPPED")
             )
             : fd.And(
