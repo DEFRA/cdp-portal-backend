@@ -221,15 +221,15 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     protected override List<CreateIndexModel<Deployment>> DefineIndexes(
         IndexKeysDefinitionBuilder<Deployment> builder)
     {
-        var indexModel = new CreateIndexModel<Deployment>(builder.Combine(
+        var nameAndEnv = new CreateIndexModel<Deployment>(builder.Combine(
             builder.Ascending(d => d.Environment),
             builder.Ascending(d => d.Service)));
-        var titleModel = new CreateIndexModel<Deployment>(builder.Descending(d => d.DeployedAt));
-        var instanceCount = new CreateIndexModel<Deployment>(builder.Descending(d => d.InstanceCount),
-            new CreateIndexOptions { Sparse = true });
-        var task = new CreateIndexModel<Deployment>(
+        var deploymentTime = new CreateIndexModel<Deployment>(builder.Descending(d => d.DeployedAt));
+        var taskAndInstanceId = new CreateIndexModel<Deployment>(
             builder.Combine(builder.Ascending(d => d.TaskId), builder.Ascending(d => d.InstanceTaskId)),
             new CreateIndexOptions { Sparse = true });
-        return new List<CreateIndexModel<Deployment>> { indexModel, titleModel, instanceCount, task };
+        var ecsDeploymentId = new CreateIndexModel<Deployment>(builder.Descending(d => d.EcsSvcDeploymentId));
+        
+        return new List<CreateIndexModel<Deployment>> { nameAndEnv, deploymentTime, taskAndInstanceId, ecsDeploymentId };
     }
 }
