@@ -114,8 +114,8 @@ public static class DeploymentsEndpoint
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        List<string> envs = httpContext.Request.Query["envs"].Where(g => g != null).ToList()!;
-        var deployments = await deploymentsService.FindWhatsRunningWhere(envs, cancellationToken);
+        List<string> environments = httpContext.Request.Query["environments"].Where(g => g != null).ToList()!;
+        var deployments = await deploymentsService.FindWhatsRunningWhere(environments, cancellationToken);
         return Results.Ok(deployments);
     }
 
