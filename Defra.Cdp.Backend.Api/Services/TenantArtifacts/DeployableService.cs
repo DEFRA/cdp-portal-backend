@@ -9,8 +9,6 @@ public interface IDeployablesService
 {
     Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken);
     Task CreatePlaceholderAsync(string serviceName, string githubUrl, ArtifactRunMode runMode, CancellationToken cancellationToken);
-    Task UpdateAll(List<Repository> repositories,
-        CancellationToken cancellationToken); // TODO: remove once we migrated old deployable artifacts
     
     Task<List<string>> DeployableEnvironments(bool isAdmin);
 
@@ -88,7 +86,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
 
     public async Task<List<string>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken)
     {
-        var sort = Builders<DeployableArtifact>.Sort.Descending(d => d.SemVer); // Replace "fieldName" with the actual field name you want to sort by
+        var sort = Builders<DeployableArtifact>.Sort.Descending(d => d.SemVer);
         var res = await Collection
             .Find(d => d.Repo == repo)
             .Sort(sort)
@@ -103,42 +101,6 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             .Find(d => d.Repo == repo && d.Teams.Any(t => groups.Contains(t.TeamId)))
             .ToListAsync(cancellationToken);
         return res.Select(d => d.Tag).Where(SemVer.IsSemVer).ToList();
-    }
-
-    // TODO: remove once we migrated old deployable artifacts
-    public async Task UpdateAll(List<Repository> repositories, CancellationToken cancellationToken)
-    {
-        var allDeployables = await FindAll(cancellationToken);
-        var serviceNames = allDeployables.Select(d => d.ServiceName).Where(d => d != null);
-        var filteredRepositories = repositories.Where(r => serviceNames.Contains(r.Id));
-        var newDeployableArtifacts = allDeployables.Select(d => new DeployableArtifact
-        {
-            Id = d.Id,
-            Created = d.Created,
-            Repo = d.Repo,
-            Tag = d.Tag,
-            Sha256 = d.Sha256,
-            GithubUrl = d.GithubUrl,
-            ServiceName = d.ServiceName,
-            ScannerVersion = d.ScannerVersion,
-            Teams = filteredRepositories.FirstOrDefault(r => r.Id == d.ServiceName)?.Teams ??
-                    new List<RepositoryTeam>(),
-            Files = d.Files,
-            SemVer = d.SemVer,
-            RunMode = d.RunMode
-        });
-        var replaceOneModels =
-            newDeployableArtifacts.Select(newDeployableArtifact =>
-            {
-                var filter = Builders<DeployableArtifact>.Filter
-                    .Eq(d => d.Id, newDeployableArtifact.Id);
-                return new ReplaceOneModel<DeployableArtifact>(filter, newDeployableArtifact) { IsUpsert = true };
-            }).ToList();
-
-        if (replaceOneModels.Any())
-        {
-            await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);    
-        }
     }
 
     public async Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken)

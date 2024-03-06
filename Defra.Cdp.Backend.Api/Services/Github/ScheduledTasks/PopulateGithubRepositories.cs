@@ -36,8 +36,7 @@ public sealed class PopulateGithubRepositories : IJob
 
     private readonly string _requestString;
     private readonly UserServiceFetcher _userServiceFetcher;
-    private bool _canUpdateDeployableArtifacts = true;
-
+    
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
         IRepositoryService repositoryService,
         IDeployablesService deployablesService,
@@ -87,9 +86,9 @@ public sealed class PopulateGithubRepositories : IJob
             cancellationToken
         );
         jsonResponse.EnsureSuccessStatusCode();
-        var userServiceRecords = _userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
-        var githubToTeamIdMap = userServiceRecords.Result?.GithubToTeamIdMap ?? new Dictionary<string, string>();
-        var githubToTeamNameMap = userServiceRecords.Result?.GithubToTeamNameMap ?? new Dictionary<string, string>();
+        var userServiceRecords = await _userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var githubToTeamIdMap = userServiceRecords?.GithubToTeamIdMap ?? new Dictionary<string, string>();
+        var githubToTeamNameMap = userServiceRecords?.GithubToTeamNameMap ?? new Dictionary<string, string>();
         var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken: cancellationToken);
         if (result is null)
         {
@@ -102,12 +101,6 @@ public sealed class PopulateGithubRepositories : IJob
 
         await _repositoryService.UpsertMany(repositories, cancellationToken);
         await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
-        if (_canUpdateDeployableArtifacts)
-        {
-            await _deployablesService.UpdateAll(repositories, cancellationToken);
-            _canUpdateDeployableArtifacts = false;
-        }
-
         _logger.LogInformation("Successfully repopulated repositories and team information");
     }
 
