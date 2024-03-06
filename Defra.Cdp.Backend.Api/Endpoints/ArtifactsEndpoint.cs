@@ -96,7 +96,15 @@ public static class ArtifactsEndpoint
     private static async Task<IResult> ListImage(IDeployablesService deployablesService, string repo, string tag,
         CancellationToken cancellationToken)
     {
-        var image = await deployablesService.FindByTag(repo, tag, cancellationToken);
+        DeployableArtifact? image;
+        if (tag == "latest")
+        {
+            image = await deployablesService.FindLatest(repo, cancellationToken);
+        }
+        else
+        {
+            image = await deployablesService.FindByTag(repo, tag, cancellationToken);    
+        }
         return image == null ? Results.NotFound(new { Message = $"{repo}:{tag} was not found" }) : Results.Ok(image);
     }
 
