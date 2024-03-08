@@ -52,6 +52,12 @@ public class DeploymentV2
 
 public class DeploymentInstanceStatus
 {
-    public string Status { get; set; }
-    public DateTime Updated { get; set; }
+    public string Status { get; init; }
+    public DateTime Updated { get; init; }
+
+    public DeploymentInstanceStatus(string status, DateTime updated)
+    {
+        Status = status;
+        Updated = updated;
+    }
 }
