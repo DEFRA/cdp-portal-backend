@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Tenants;
+using Defra.Cdp.Backend.Api.Services.Deployments;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -126,7 +126,9 @@ public static class DeploymentsEndpoint
         return Results.Ok(deployments);
     }
 
-    internal static async Task<IResult> RegisterDeployment(IDeploymentsService deploymentsService,
+    internal static async Task<IResult> RegisterDeployment(
+        IDeploymentsService deploymentsService,
+        IDeploymentsServiceV2 deploymentsServiceV2,
         IValidator<RequestedDeployment> validator,
         RequestedDeployment rd,
         ILoggerFactory loggerFactory,
@@ -157,6 +159,7 @@ public static class DeploymentsEndpoint
         };
 
         await deploymentsService.Insert(deployment, cancellationToken);
+        await deploymentsServiceV2.RegisterDeployment(rd, cancellationToken);
         return Results.Ok();
     }
 

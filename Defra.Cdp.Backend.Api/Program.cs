@@ -6,10 +6,10 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Defra.Cdp.Backend.Api.Services.Tenants;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
 using FluentValidation;
@@ -122,6 +122,7 @@ builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
+builder.Services.AddSingleton<IDeploymentsServiceV2, DeploymentsServiceV2>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
@@ -134,6 +135,8 @@ builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<DeploymentEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandler>();
+builder.Services.AddSingleton<DeploymentEventHandlerV2>();
+builder.Services.AddSingleton<LambdaMessageHandlerV2>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
@@ -171,6 +174,7 @@ app.UseAuthorization();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDeploymentsEndpoint();
+app.MapDeploymentsEndpointV2();
 app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();

@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Tenants;
+using Defra.Cdp.Backend.Api.Services.Deployments;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
