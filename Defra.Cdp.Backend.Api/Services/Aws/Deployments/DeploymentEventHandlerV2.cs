@@ -109,12 +109,7 @@ public class DeploymentEventHandlerV2
             }
             
             // Update the specific instance status
-            if (!deployment.Instances.ContainsKey(instanceTaskId))
-            {
-                deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus();
-            }
-            deployment.Instances[instanceTaskId].Status = instanceStatus;
-            deployment.Instances[instanceTaskId].Updated = ecsEvent.Timestamp;  
+            deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsEvent.Timestamp);
 
             // update the overall status
             deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
