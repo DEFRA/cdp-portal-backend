@@ -3,7 +3,7 @@ using Defra.Cdp.Backend.Api.Mongo;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.Tenants;
+namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
 public interface IDeploymentsService
 {

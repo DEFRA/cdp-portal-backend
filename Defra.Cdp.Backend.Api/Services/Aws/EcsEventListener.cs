@@ -16,17 +16,25 @@ public class EcsEventListener : SqsListener
     private readonly DeploymentEventHandler _deploymentEventHandler;
     private readonly LambdaMessageHandler _lambdaMessageHandler;
     
+    private readonly DeploymentEventHandlerV2 _deploymentEventHandlerV2;
+    private readonly LambdaMessageHandlerV2 _lambdaMessageHandlerV2;
+
+
     public EcsEventListener(IAmazonSQS sqs,
         IOptions<EcsEventListenerOptions> config,
         IEcsEventsService ecsEventsService,
         DeploymentEventHandler deploymentEventHandler,
         LambdaMessageHandler lambdaMessageHandler,
+        DeploymentEventHandlerV2 deploymentEventHandlerV2,
+        LambdaMessageHandlerV2 lambdaMessageHandlerV2,
         ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl, logger)
     {
         _logger = logger;
         _ecsEventsService = ecsEventsService;
         _deploymentEventHandler = deploymentEventHandler;
         _lambdaMessageHandler = lambdaMessageHandler;
+        _deploymentEventHandlerV2 = deploymentEventHandlerV2;
+        _lambdaMessageHandlerV2 = lambdaMessageHandlerV2;
     }
     
     
@@ -47,10 +55,14 @@ public class EcsEventListener : SqsListener
         {
             case "ECS Task State Change":
                 await _deploymentEventHandler.Handle(id, ecsEvent, cancellationToken);
+                // TODO: while trialing V2 we will invoke both handlers
+                await _deploymentEventHandlerV2.Handle(id, ecsEvent, cancellationToken);
                 break;
             case "ECS Lambda Deployment Updated":
             case "ECS Lambda Deployment Created":
                 await _lambdaMessageHandler.Handle(id, ecsEvent, cancellationToken);
+                // TODO: while trialing V2 we will invoke both handlers
+                await _lambdaMessageHandlerV2.Handle(id, ecsEvent, cancellationToken);
                 break;
             default:
                 if (ecsEvent?.Detail == null)
