@@ -23,7 +23,7 @@ public class UserServiceFetcher
 
     public async Task<UserServiceRecord?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken)
     {
-        var result = await _client.GetAsync("/cdp-user-service-backend/teams", cancellationToken);
+        var result = await _client.GetAsync("/teams", cancellationToken);
         result.EnsureSuccessStatusCode();
         var response = await result.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<UserServiceRecord>(response, cancellationToken: cancellationToken);
