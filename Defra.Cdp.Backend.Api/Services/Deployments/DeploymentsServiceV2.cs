@@ -81,7 +81,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
             .Match(filter)
             .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
-            .Group(d => new { d.Environment }, grp => new { Root = grp.First() })
+            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
 
         return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
