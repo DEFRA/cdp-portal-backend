@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws.Deployments;
 
@@ -14,8 +14,8 @@ public class DeploymentStatusTests
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "pending", Updated = DateTime.Now }}
+                {"1", new ( Running, DateTime.Now) },
+                {"2", new ( Pending, DateTime.Now) }
             }
         };
         
@@ -24,12 +24,12 @@ public class DeploymentStatusTests
             InstanceCount = 1, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new () {Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromMinutes(5)) }},
-                {"2", new () {Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromMinutes(4)) }},
-                {"3", new () {Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromMinutes(3)) }},
-                {"4", new () {Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromMinutes(2)) }},
-                {"5", new () {Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromMinutes(1)) }},
-                {"6", new () {Status = "pending", Updated = DateTime.Now}}
+                {"1", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(5)) )},
+                {"2", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(4)) )},
+                {"3", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(3)) )},
+                {"4", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(2)) )},
+                {"5", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(1)) )},
+                {"6", new (Pending, DateTime.Now)}
             }
         };
 
@@ -38,17 +38,17 @@ public class DeploymentStatusTests
             InstanceCount = 4, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now }},
-                {"3", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now }},
-                {"4", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now }}
+                {"1", new ( Stopped, DateTime.Now) },
+                {"2", new ( Stopped, DateTime.Now) },
+                {"3", new ( Stopped, DateTime.Now) },
+                {"4", new ( Stopped, DateTime.Now) }
             }
         };
 
         
-        Assert.False(DeploymentStatus.IsUnstable(stable));
-        Assert.True(DeploymentStatus.IsUnstable(unstable));
-        Assert.False(DeploymentStatus.IsUnstable(stopped));
+        Assert.False(IsUnstable(stable));
+        Assert.True(IsUnstable(unstable));
+        Assert.False(IsUnstable(stopped));
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public class DeploymentStatusTests
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }}
+                {"1", new (Running, DateTime.Now )},
+                {"2", new (Running, DateTime.Now )}
             }
         };
         
@@ -69,8 +69,8 @@ public class DeploymentStatusTests
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"A", new DeploymentInstanceStatus {Status = "pending", Updated = DateTime.Now }},
-                {"B", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }}
+                {"A", new ( Pending, DateTime.Now )},
+                {"B", new ( Running, DateTime.Now )}
             }
         };
         
@@ -79,8 +79,8 @@ public class DeploymentStatusTests
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "stopping", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }}
+                {"1", new (Stopping, DateTime.Now)},
+                {"2", new (Running, DateTime.Now)}
             }
         };
         
@@ -89,15 +89,15 @@ public class DeploymentStatusTests
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now }}
+                {"1", new (Stopped, DateTime.Now)},
+                {"2", new (Stopped,DateTime.Now)}
             }
         };
         
-        Assert.Equal("running", DeploymentStatus.CalculateOverallStatus(running));
-        Assert.Equal("pending", DeploymentStatus.CalculateOverallStatus(pending));
-        Assert.Equal("stopping", DeploymentStatus.CalculateOverallStatus(stopping));
-        Assert.Equal("stopped", DeploymentStatus.CalculateOverallStatus(stopped));
+        Assert.Equal(Running, CalculateOverallStatus(running));
+        Assert.Equal(Pending, CalculateOverallStatus(pending));
+        Assert.Equal(Stopping, CalculateOverallStatus(stopping));
+        Assert.Equal(Stopped, CalculateOverallStatus(stopped));
     }
     
     [Fact]
@@ -108,9 +108,9 @@ public class DeploymentStatusTests
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromDays(2)) }},
-                {"2", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }},
-                {"3", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }}
+                {"1", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromDays(2)))},
+                {"2", new (Running, DateTime.Now)},
+                {"3", new (Running, DateTime.Now) }
             }
         };
         
@@ -119,8 +119,8 @@ public class DeploymentStatusTests
             InstanceCount = 1, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "stopping", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "pending", Updated = DateTime.Now }}
+                {"1", new (Stopping, DateTime.Now)},
+                {"2", new (Pending, DateTime.Now)}
             }
         };
         
@@ -129,18 +129,18 @@ public class DeploymentStatusTests
             InstanceCount = 1, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
-                {"1", new DeploymentInstanceStatus {Status = "stopping", Updated = DateTime.Now }},
-                {"2", new DeploymentInstanceStatus {Status = "running", Updated = DateTime.Now }}
+                {"1", new(Stopping,DateTime.Now) },
+                {"2", new(Running, DateTime.Now) }
             }
         }; 
         
         for (var i = 0; i < 1000; i++)
         {
-            crashLoop.Instances["x" + i] = new DeploymentInstanceStatus { Status = "stopped", Updated = DateTime.Now.Subtract(TimeSpan.FromMinutes(i)) };
+            crashLoop.Instances["x" + i] = new DeploymentInstanceStatus(Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(i)));
         }
         
-        Assert.Equal("running", DeploymentStatus.CalculateOverallStatus(runningWithOldFailure));
-        Assert.Equal("pending", DeploymentStatus.CalculateOverallStatus(recoveringFromCrash));
-        Assert.Equal("running", DeploymentStatus.CalculateOverallStatus(crashLoop));
+        Assert.Equal(Running, CalculateOverallStatus(runningWithOldFailure));
+        Assert.Equal(Pending, CalculateOverallStatus(recoveringFromCrash));
+        Assert.Equal(Running, CalculateOverallStatus(crashLoop));
     }
 }
