@@ -7,11 +7,9 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class DeploymentsEndpointV2
 {
-    private const string DeploymentsBaseRoute = "deploymentsV2";
-
     public static IEndpointRouteBuilder MapDeploymentsEndpointV2(this IEndpointRouteBuilder app)
     {
-        app.MapGet(DeploymentsBaseRoute,
+        app.MapGet("/v2/deployments",
             async (IDeploymentsServiceV2 deploymentsService,
                 CancellationToken cancellationToken,
                 [FromQuery(Name = "offset")] int? offset,
@@ -23,23 +21,25 @@ public static class DeploymentsEndpointV2
                 var o = offset ?? 0;
                 var p = page ?? DeploymentsServiceV2.DefaultPage;
                 var s = size ?? DeploymentsServiceV2.DefaultPageSize;
-                return await FindLatestDeployments(deploymentsService, cancellationToken, o, environment, p,
-                    s);
+                return await FindLatestDeployments(deploymentsService, environment, o, p, s, cancellationToken);
             });
 
-        app.MapGet($"{DeploymentsBaseRoute}/{{deploymentId}}", FindDeployments);
-        app.MapGet($"{DeploymentsBaseRoute}/whats-running-where", WhatsRunningWhere);
-        app.MapGet($"{DeploymentsBaseRoute}/whats-running-where/{{service}}", WhatsRunningWhereForService);
-        app.MapPost($"{DeploymentsBaseRoute}", RegisterDeployment);
-        app.MapGet("/deployment-config-V2/{service}/{environment}", DeploymentConfig);
+        app.MapGet("/v2/deployments/{{deploymentId}}", FindDeployments);
+        app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
+        app.MapGet("/v2/whats-running-where/{{service}}", WhatsRunningWhereForService);
+        app.MapPost("/v2/deployments", RegisterDeployment);
+        app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
 
         return app;
     }
 
     // GET /deployments or GET /deployments?offet=23
-    internal static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService,
-        CancellationToken cancellationToken, int offset,
-        string? environment, int page, int size)
+    internal static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService, 
+        string? environment,
+        int offset,
+        int page, 
+        int size, 
+        CancellationToken cancellationToken)
     {
         var deploymentsPage = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
         return Results.Ok(deploymentsPage);
