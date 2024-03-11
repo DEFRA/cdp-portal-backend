@@ -24,9 +24,9 @@ public static class DeploymentsEndpointV2
                 return await FindLatestDeployments(deploymentsService, environment, o, p, s, cancellationToken);
             });
 
-        app.MapGet("/v2/deployments/{{deploymentId}}", FindDeployments);
+        app.MapGet("/v2/deployments/{deploymentId}", FindDeployments);
         app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
-        app.MapGet("/v2/whats-running-where/{{service}}", WhatsRunningWhereForService);
+        app.MapGet("/v2/whats-running-where/{service}", WhatsRunningWhereForService);
         app.MapPost("/v2/deployments", RegisterDeployment);
         app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
 
