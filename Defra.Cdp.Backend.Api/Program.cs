@@ -162,8 +162,6 @@ if (builder.IsDevMode())
     app.UseSwaggerUI();
 }
 
-// Path base cdp-portal-backend
-app.UsePathBase("/cdp-portal-backend");
 app.UseRouting();
 
 // enable auth
