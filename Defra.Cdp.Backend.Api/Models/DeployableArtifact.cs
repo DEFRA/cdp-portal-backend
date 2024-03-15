@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -41,5 +40,10 @@ public sealed class DeployableArtifact
 
 public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
 
-public sealed record ServiceInfo(string ServiceName, string? GithubUrl, string ImageName,
+public sealed record ServiceInfo(
+    string ServiceName,
+    string? GithubUrl,
+    string ImageName,
     IEnumerable<RepositoryTeam> Teams);
+
+public sealed record TagInfo(string Tag, DateTime Created);
