@@ -48,6 +48,36 @@ public class DeploymentV2
             Status = req.InstanceCount > 0 ? Requested : Undeployed,
         };
     }
+
+
+    // Removes the oldest stopped instance if the total instances exceeds the limit
+    public void TrimInstance(int limit)
+    {
+        if (Instances.Count <= limit) return;
+
+        DateTime? oldestDate = null;
+        string? oldestKey = null;
+        
+        foreach (var (key, value) in Instances)
+        {
+            if (value.Status != Stopped) continue;
+            if (oldestDate == null)
+            {
+                oldestDate = value.Updated;
+                oldestKey = key;
+            }
+            else if(value.Updated < oldestDate)
+            { 
+                oldestDate = value.Updated;
+                oldestKey = key;
+            }
+        }
+
+        if (oldestKey != null)
+        {
+            Instances.Remove(oldestKey);
+        }
+    }
 }
 
 public class DeploymentInstanceStatus

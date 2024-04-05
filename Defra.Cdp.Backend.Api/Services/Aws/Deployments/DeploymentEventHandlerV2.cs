@@ -110,7 +110,10 @@ public class DeploymentEventHandlerV2
             
             // Update the specific instance status
             deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsEvent.Timestamp);
-
+            
+            // Limit the number of stopped service in the event of a crash-loop
+            deployment.TrimInstance(50);
+            
             // update the overall status
             deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
             deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
