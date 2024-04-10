@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using MongoDB.Driver;
+using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
@@ -69,12 +70,13 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     {
         var fb = new FilterDefinitionBuilder<DeploymentV2>();
 
+        var statusFilter = fb.In(d => d.Status, new[] { Running, Pending, Undeployed });
         var envFilter = fb.Empty;
         if (environments.Any())
         {
             envFilter = fb.In(d => d.Environment, environments);
         }
-        var filter = fb.And(envFilter);
+        var filter = fb.And(envFilter, statusFilter);
 
         var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
             .Match(filter)
@@ -88,7 +90,10 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<DeploymentV2>();
-        var filter = fb.Eq(d => d.Service, serviceName);
+        var filter = fb.And(
+            fb.Eq(d => d.Service, serviceName),
+            fb.In(d => d.Status, new[] { Running, Pending, Undeployed })
+        );
         var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
             .Match(filter)
             .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
