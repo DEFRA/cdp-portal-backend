@@ -34,11 +34,11 @@ public static class DeploymentsEndpointV2
     }
 
     // GET /deployments or GET /deployments?offet=23
-    internal static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService, 
+    internal static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService,
         string? environment,
         int offset,
-        int page, 
-        int size, 
+        int page,
+        int size,
         CancellationToken cancellationToken)
     {
         var deploymentsPage = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
@@ -50,7 +50,10 @@ public static class DeploymentsEndpointV2
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
-        return Results.Ok(deployment);
+
+        return deployment == null
+            ? Results.NotFound(new { Message = $"{deploymentId} was not found" })
+            : Results.Ok(deployment);
     }
 
     internal static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,
