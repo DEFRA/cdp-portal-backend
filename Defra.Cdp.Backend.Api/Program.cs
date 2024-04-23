@@ -35,6 +35,7 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Logging.ClearProviders();
 var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.With<LogLevelMapper>()
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
 
