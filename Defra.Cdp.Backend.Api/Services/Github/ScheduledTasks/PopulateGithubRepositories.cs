@@ -53,6 +53,7 @@ public sealed class PopulateGithubRepositories : IJob
         _repositoryService = repositoryService;
         _deployablesService = deployablesService;
 
+        // TODO - this work needs paging as DEFRA now have over 100 teams
         // Request based on this GraphQL query.
         // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
         // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
