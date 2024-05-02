@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
@@ -26,7 +25,7 @@ public sealed record TeamResult(
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class PopulateGithubRepositories : IJob
 {
-    private readonly HttpClient _client; 
+    private readonly HttpClient _client;
     private readonly IDeployablesService _deployablesService;
 
     private readonly string _githubApiUrl;
@@ -53,14 +52,17 @@ public sealed class PopulateGithubRepositories : IJob
         _repositoryService = repositoryService;
         _deployablesService = deployablesService;
 
+        // TODO A tactical fix has been added by adding , "orderBy: { field: NAME, direction: ASC }" to the below query this means teams from A - T will now be fetched
+        // TODO we need to implement paging on this query as we are not fetching all of the current 106 teams. The
+        // TODO problem is our teams are new teams and they are not being fetched due to the "first: 100" limit on teams
         // Request based on this GraphQL query.
         // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
-        // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
+        // 'query { organization(login: "Defra") { id teams(first: 100, orderBy: { field: NAME, direction: ASC }) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
         _requestString =
             $@"
             {{
               ""query"": 
-                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name repositoryTopics(first: 30) {{ nodes {{ topic {{ name }} }} }} description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
+                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100, orderBy: {{ field: NAME, direction: ASC }}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name repositoryTopics(first: 30) {{ nodes {{ topic {{ name }} }} }} description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
             }}";
 
         _userServiceFetcher = new UserServiceFetcher(configuration);
