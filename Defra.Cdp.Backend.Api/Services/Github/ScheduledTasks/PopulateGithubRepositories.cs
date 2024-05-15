@@ -29,12 +29,12 @@ public sealed class PopulateGithubRepositories : IJob
     private readonly HttpClient _client; 
     private readonly IDeployablesService _deployablesService;
 
+    private readonly string _githubOrgName;
     private readonly string _githubApiUrl;
     private readonly IGithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
     private readonly IRepositoryService _repositoryService;
 
-    private readonly string _requestString;
     private readonly UserServiceFetcher _userServiceFetcher;
     
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
@@ -44,7 +44,7 @@ public sealed class PopulateGithubRepositories : IJob
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
         _client = clientFactory.CreateClient(Proxy.ProxyClient);
-        var githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
+        _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
 
         _githubCredentialAndConnectionFactory = githubCredentialAndConnectionFactory;
@@ -54,15 +54,6 @@ public sealed class PopulateGithubRepositories : IJob
         _deployablesService = deployablesService;
 
         // TODO - this work needs paging as DEFRA now have over 100 teams
-        // Request based on this GraphQL query.
-        // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
-        // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
-        _requestString =
-            $@"
-            {{
-              ""query"": 
-                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name repositoryTopics(first: 30) {{ nodes {{ topic {{ name }} }} }} description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
-            }}";
 
         _userServiceFetcher = new UserServiceFetcher(configuration);
         
@@ -78,28 +69,47 @@ public sealed class PopulateGithubRepositories : IJob
         _logger.LogInformation("Repopulating Github repositories");
         var cancellationToken = context.CancellationToken;
 
-        var token = await _githubCredentialAndConnectionFactory.GetToken(cancellationToken);
-        if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
-        _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-        var jsonResponse = await _client.PostAsync(
-            _githubApiUrl,
-            new StringContent(_requestString, Encoding.UTF8, "application/json"),
-            cancellationToken
-        );
-        jsonResponse.EnsureSuccessStatusCode();
         var userServiceRecords = await _userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         var githubToTeamIdMap = userServiceRecords?.GithubToTeamIdMap ?? new Dictionary<string, string>();
         var githubToTeamNameMap = userServiceRecords?.GithubToTeamNameMap ?? new Dictionary<string, string>();
-        var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken: cancellationToken);
-        if (result is null)
+        
+        var token = await _githubCredentialAndConnectionFactory.GetToken(cancellationToken);
+        if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
+        _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+        
+        
+        List<Repository> repositories = new(); 
+        
+        // paginate
+        var hasNext = true;
+        string? nextCursor = null;
+        while (hasNext)
         {
-            var jsonString = jsonResponse.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
-            throw new ApplicationException("response must be parsed correct");
+            _logger.LogInformation("Retrieving paginated GitHub team data.");
+            var query = BuildTeamsQuery(_githubOrgName, nextCursor);
+            var jsonResponse = await _client.PostAsync(
+                _githubApiUrl,
+                new StringContent(query, Encoding.UTF8, "application/json"),
+                cancellationToken
+            );
+            jsonResponse.EnsureSuccessStatusCode();
+        
+            var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken: cancellationToken);
+            if (result is null)
+            {
+                var jsonString = jsonResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
+                throw new ApplicationException("response must be parsed correct");
+            }
+
+            var repos = QueryResultToRepositories(result, githubToTeamIdMap, githubToTeamNameMap).ToList();
+            repositories.AddRange(repos);
+            _logger.LogInformation("Added {repos} repos, total {total}", repos.Count, repositories.Count);
+            hasNext = result.data.organization.teams.pageInfo.hasNextPage;
+            nextCursor = result.data.organization.teams.pageInfo.endCursor;
+           
         }
-
-        var repositories = QueryResultToRepositories(result, githubToTeamIdMap, githubToTeamNameMap).ToList();
-
+        
         await _repositoryService.UpsertMany(repositories, cancellationToken);
         await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
         _logger.LogInformation("Successfully repopulated repositories and team information");
@@ -184,5 +194,23 @@ public sealed class PopulateGithubRepositories : IJob
                     };
                 });
         return repositories;
+    }
+
+    // Request based on this GraphQL query.
+    // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
+    // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
+    private static string BuildTeamsQuery(string githubOrgName, string? cursor)
+    {
+        var afterCursor =  "null";
+        if (cursor != null)
+        {
+            afterCursor = "\\\"" + cursor + "\\\"";
+        } 
+        
+        return $@"
+            {{
+              ""query"": 
+                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100, after: {afterCursor}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name repositoryTopics(first: 30) {{ nodes {{ topic {{ name }} }} }} description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
+            }}";
     }
 }
