@@ -12,17 +12,23 @@ public static class DeploymentsEndpointV2
         app.MapGet("/v2/deployments",
             async (IDeploymentsServiceV2 deploymentsService,
                 CancellationToken cancellationToken,
-                [FromQuery(Name = "offset")] int? offset,
                 [FromQuery(Name = "environment")] string? environment,
+                [FromQuery(Name = "service")] string? service,
+                [FromQuery(Name = "user")] string? user,
+                [FromQuery(Name = "status")] string? status,
+                [FromQuery(Name = "offset")] int? offset,
                 [FromQuery(Name = "page")] int? page,
                 [FromQuery(Name = "size")] int? size
-            ) =>
-            {
-                var o = offset ?? 0;
-                var p = page ?? DeploymentsServiceV2.DefaultPage;
-                var s = size ?? DeploymentsServiceV2.DefaultPageSize;
-                return await FindLatestDeployments(deploymentsService, environment, o, p, s, cancellationToken);
-            });
+            ) => await FindLatestDeployments(deploymentsService,
+                environment,
+                service,
+                user,
+                status,
+                offset ?? 0,
+                page ?? DeploymentsServiceV2.DefaultPage,
+                size ?? DeploymentsServiceV2.DefaultPageSize,
+                cancellationToken
+            ));
 
         app.MapGet("/v2/deployments/{deploymentId}", FindDeployments);
         app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
@@ -33,15 +39,24 @@ public static class DeploymentsEndpointV2
         return app;
     }
 
-    // GET /deployments or GET /deployments?offet=23
-    internal static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService,
+    // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&page=1&offset=0&size=50
+    private static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService,
         string? environment,
+        string? service,
+        string? user,
+        string? status,
         int offset,
         int page,
         int size,
         CancellationToken cancellationToken)
     {
-        var deploymentsPage = await deploymentsService.FindLatest(environment, offset, page, size, cancellationToken);
+        var deploymentsPage = await deploymentsService.FindLatest(environment, service, user,
+            status,
+            offset,
+            page,
+            size,
+            cancellationToken
+        );
         return Results.Ok(deploymentsPage);
     }
 

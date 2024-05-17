@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
@@ -12,8 +13,16 @@ public interface IDeploymentsServiceV2
     Task                UpdateDeployment(DeploymentV2 deployment, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
 
-    Task<Paginated<DeploymentV2>> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
-        CancellationToken ct = new());
+    Task<Paginated<DeploymentV2>> FindLatest(
+        string? environment,
+        string? service,
+        string? user,
+        string? status,
+        int offset = 0,
+        int page = 0,
+        int size = 0,
+        CancellationToken ct = new()
+    );
     Task<DeploymentV2?> FindDeployment(string deploymentId, CancellationToken ct);
 
     Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct);
@@ -104,22 +113,54 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .ToListAsync(ct);
     }
 
-    public async Task<Paginated<DeploymentV2>> FindLatest(string? environment, int offset = 0, int page = 0, int size = 0,
-        CancellationToken ct = new())
+    public async Task<Paginated<DeploymentV2>> FindLatest(string? environment, string? service, string? user,
+        string? status,
+        int offset = 0,
+        int page = 0,
+        int size = 0,
+        CancellationToken ct = new()
+    )
     {
-        var filterDefinition = string.IsNullOrWhiteSpace(environment)
-            ? FilterDefinition<DeploymentV2>.Empty
-            : new FilterDefinitionBuilder<DeploymentV2>().Where(d => d.Environment == environment);
+        var builder = Builders<DeploymentV2>.Filter;
+        var filter = builder.Empty;
+
+        if (!string.IsNullOrWhiteSpace(environment))
+        {
+            var environmentFilter = builder.Eq(d => d.Environment, environment);
+            filter &= environmentFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(service))
+        {
+            var serviceFilter = builder.Regex(d => d.Service,
+                new BsonRegularExpression(service, "i"));
+            filter &= serviceFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(user))
+        {
+            var userFilter = builder.Where(d =>
+                (d.User != null && d.User.Id == user)
+                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
+            filter &= userFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusLower = status.ToLower();
+            var statusFilter = builder.Where(d =>
+                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
+            filter &= statusFilter;
+        }
 
         var deployments = await Collection
-            .Find(filterDefinition)
+            .Find(filter)
             .Skip(offset + size * (page - DefaultPage))
             .Limit(size)
             .SortByDescending(d => d.Created)
             .ToListAsync(ct);
 
-        var totalDeployments = await Collection.CountDocumentsAsync(filterDefinition,
-            cancellationToken: ct);
+        var totalDeployments = await Collection.CountDocumentsAsync(filter, cancellationToken: ct);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
 
