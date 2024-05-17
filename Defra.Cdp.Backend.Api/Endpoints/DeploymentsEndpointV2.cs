@@ -70,7 +70,7 @@ public static class DeploymentsEndpointV2
     }
 
     // Get /deployments/{deploymentId}
-    internal static async Task<IResult> FindDeployments(IDeploymentsServiceV2 deploymentsService, string deploymentId,
+    private static async Task<IResult> FindDeployments(IDeploymentsServiceV2 deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
@@ -80,7 +80,7 @@ public static class DeploymentsEndpointV2
             : Results.Ok(deployment);
     }
 
-    internal static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,
+    private static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -89,14 +89,14 @@ public static class DeploymentsEndpointV2
         return Results.Ok(deployments);
     }
 
-    internal static async Task<IResult> WhatsRunningWhereForService(IDeploymentsServiceV2 deploymentsService,
+    private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsServiceV2 deploymentsService,
         string service, CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
         return Results.Ok(deployments);
     }
 
-    internal static async Task<IResult> RegisterDeployment(
+    private static async Task<IResult> RegisterDeployment(
         IDeploymentsServiceV2 deploymentsServiceV2,
         IValidator<RequestedDeployment> validator,
         RequestedDeployment rd,
