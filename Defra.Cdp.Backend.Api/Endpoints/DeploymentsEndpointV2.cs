@@ -31,6 +31,7 @@ public static class DeploymentsEndpointV2
             ));
 
         app.MapGet("/v2/deployments/{deploymentId}", FindDeployments);
+        app.MapGet("/v2/deployments/filters/", GetFilters);
         app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
         app.MapGet("/v2/whats-running-where/{service}", WhatsRunningWhereForService);
         app.MapPost("/v2/deployments", RegisterDeployment);
@@ -58,6 +59,14 @@ public static class DeploymentsEndpointV2
             cancellationToken
         );
         return Results.Ok(deploymentsPage);
+    }
+
+    // GET /v2/deployments/filters
+    private static async Task<IResult> GetFilters(IDeploymentsServiceV2 deploymentsService,
+        CancellationToken cancellationToken)
+    {
+        var deploymentFilters = await deploymentsService.GetFilters(cancellationToken);
+        return Results.Ok(new { Filters = deploymentFilters });
     }
 
     // Get /deployments/{deploymentId}

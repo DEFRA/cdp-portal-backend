@@ -27,6 +27,7 @@ public interface IDeploymentsServiceV2
 
     Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct);
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
+    Task<DeploymentFilters> GetFilters(CancellationToken ct);
     Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken ct);
 }
 
@@ -188,5 +189,25 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     public async Task UpdateDeployment(DeploymentV2 deployment, CancellationToken ct)
     {
         await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment, cancellationToken: ct);
+    }
+
+    public async Task<DeploymentFilters> GetFilters(CancellationToken ct = new())
+    {
+        var serviceNames = await Collection
+            .Distinct(d => d.Service, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        var statuses = await Collection
+            .Distinct(d => d.Status, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        var userFilter =
+            new FilterDefinitionBuilder<DeploymentV2>().Where(d => d.User != null && d.User.DisplayName != "n/a");
+        var users = await Collection
+            .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
+            .ToListAsync(ct);
+
+
+        return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
 }
