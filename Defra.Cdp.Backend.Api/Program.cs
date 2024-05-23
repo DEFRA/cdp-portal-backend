@@ -138,6 +138,7 @@ builder.Services.AddSingleton<DeploymentEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandler>();
 builder.Services.AddSingleton<DeploymentEventHandlerV2>();
 builder.Services.AddSingleton<LambdaMessageHandlerV2>();
+builder.Services.AddSingleton<MongoLock>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
