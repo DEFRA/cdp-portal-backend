@@ -35,7 +35,7 @@ public class DockerClient : IDockerClient
         IDockerCredentialProvider credentialProvider,
         ILogger<DockerClient> logger)
     {
-        _client = clientFactory.CreateClient(Proxy.ProxyClient);
+        _client = clientFactory.CreateClient();
         _logger = logger;
         _baseUrl = options.Value.RegistryUrl;
         _credentialProvider = credentialProvider;
