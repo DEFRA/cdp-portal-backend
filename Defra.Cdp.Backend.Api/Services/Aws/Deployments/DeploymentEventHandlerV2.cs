@@ -15,7 +15,7 @@ public class DeploymentEventHandlerV2
     private readonly IDeploymentsServiceV2 _deploymentsService;
     private readonly ITestRunService _testRunService;
     private readonly IEnvironmentLookup _environmentLookup;
-    private readonly ILogger<DeploymentEventHandler> _logger;
+    private readonly ILogger<DeploymentEventHandlerV2> _logger;
 
     public DeploymentEventHandlerV2(
         IOptions<EcsEventListenerOptions> config,
@@ -23,7 +23,7 @@ public class DeploymentEventHandlerV2
         IDeploymentsServiceV2 deploymentsService,
         IDeployablesService deployablesService,
         ITestRunService testRunService,
-        ILogger<DeploymentEventHandler> logger)
+        ILogger<DeploymentEventHandlerV2> logger)
     {
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
@@ -59,14 +59,12 @@ public class DeploymentEventHandlerV2
             return;
         }
 
-        // TODO: when we're ready to migrate to V2, move the test run handler here and uncomment
-        /*
         if (artifact.RunMode == ArtifactRunMode.Job.ToString().ToLower())
         {
             await UpdateTestSuite(ecsEvent, artifact, cancellationToken);
             return;
         }
-        */
+        
         
         _logger.LogWarning("Artifact {artifactName} was not a known runMode {runMode}", artifact.ServiceName, artifact.RunMode);
     }
@@ -128,6 +126,91 @@ public class DeploymentEventHandlerV2
         }
     }
    
+    /**
+     * Handle events related to a test suite. Unlike a service these are expected to run then exit. 
+     */
+    public async Task UpdateTestSuite(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // TODO: have an allow-list of events we can process
+            var env = _environmentLookup.FindEnv(ecsEvent.Account);
+            
+            var taskArn = ecsEvent.Detail.TaskArn;
+
+            // see if we've already linked a test run to the arn
+            var testRun = await _testRunService.FindByTaskArn(taskArn, cancellationToken);
+
+            // if its not there, find a candidate to link it to
+            if (testRun == null)
+            {
+                _logger.LogInformation("trying to link {id}", artifact.ServiceName);
+                testRun = await _testRunService.Link(
+                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsEvent.Timestamp), artifact, taskArn, cancellationToken);
+            }
+            
+            // if the linking fails, we have nothing to write the data to so bail
+            if (testRun == null)
+            {
+                _logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
+                return;
+            }
+
+            // use the container exit code to figure out if the tests passed. non-zero exit code == failure. 
+            // TODO: this might not work in every case, other options are to parse the results from s3 when job is done
+            // TODO: use sha256 instead once data is fixed
+            var container = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Name == artifact.Repo);
+            var testResults = GenerateTestSuiteStatus(container);
+            
+            var taskStatus = GenerateTestSuiteTaskStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+            
+            _logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
+                testRun.RunId, taskStatus, testResults);
+            await _testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsEvent.Timestamp, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Failed to update test suite: {ex}", ex);
+        }
+    }
+       
+    /**
+     * Interpret the status of the test suit based on the exit code of the test container
+     */
+       public static string? GenerateTestSuiteStatus(EcsContainer? container)
+       {
+           return container?.ExitCode switch
+           {
+               null => null,
+               0    => "passed",
+               _    => "failed"
+           };
+       }
+    
+       /**
+     * Interpret the overall status of the test run's ECS task 
+     */
+       public static string GenerateTestSuiteTaskStatus(string desired, string last)
+       {
+           return desired switch
+           {
+               "RUNNING" => last switch
+               {
+                   "PROVISIONING" => "starting",
+                   "PENDING"      => "starting",
+                   "STOPPED"      => "failed",
+                   _              => "in-progress"
+               },
+               "STOPPED" => last switch
+               {
+                   "DEPROVISIONING" => "finished", 
+                   "STOPPED"        => "finished",
+                   _                => "stopping"
+               },
+               _ => "unknown"
+           };
+       }
+    
     /**
      * Find the artifact belonging to an ECS event by matching the non-sidecar ECS container.
      */

@@ -29,7 +29,7 @@ public class GenerateStatusTests
 
         foreach (var testcase in data)
         {
-            Assert.Equal(DeploymentEventHandler.GenerateTestSuiteTaskStatus(testcase[0], testcase[1]), testcase[2]);
+            Assert.Equal(DeploymentEventHandlerV2.GenerateTestSuiteTaskStatus(testcase[0], testcase[1]), testcase[2]);
         }
     }
 }
