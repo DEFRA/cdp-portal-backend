@@ -7,7 +7,7 @@ public class SplitImageTests
     [Fact]
     public void TestSplitImage()
     {
-        var resp = DeploymentEventHandler.SplitImage(
+        var resp = DeploymentEventHandlerV2.SplitImage(
             "000000000.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-deployables-backend:0.1.0");
 
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
@@ -17,7 +17,7 @@ public class SplitImageTests
     [Fact]
     public void TestSplitImageLatest()
     {
-        var resp = DeploymentEventHandler.SplitImage(
+        var resp = DeploymentEventHandlerV2.SplitImage(
             "000000000.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-deployables-backend:latest");
 
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);

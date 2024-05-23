@@ -93,8 +93,6 @@ else
     builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
     logger.Information("Connecting to ECR as a docker registry");
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
-    logger.Information("Setting up Github App credential provider");
-    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 }
 
 
@@ -122,7 +120,6 @@ builder.Services.AddQuartzHostedService(options =>
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
-builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IDeploymentsServiceV2, DeploymentsServiceV2>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
@@ -134,8 +131,6 @@ builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
-builder.Services.AddSingleton<DeploymentEventHandler>();
-builder.Services.AddSingleton<LambdaMessageHandler>();
 builder.Services.AddSingleton<DeploymentEventHandlerV2>();
 builder.Services.AddSingleton<LambdaMessageHandlerV2>();
 builder.Services.AddSingleton<MongoLock>();
@@ -173,7 +168,6 @@ app.UseAuthorization();
 // Add endpoints
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
-app.MapDeploymentsEndpoint();
 app.MapDeploymentsEndpointV2();
 app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();
