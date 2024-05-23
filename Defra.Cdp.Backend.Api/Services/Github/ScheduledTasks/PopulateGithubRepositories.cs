@@ -1,8 +1,7 @@
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Utils;
 using Quartz;
 
@@ -26,11 +25,13 @@ public sealed record TeamResult(
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class PopulateGithubRepositories : IJob
 {
+    private const string LockName = "repopulateGithub";
+    
     private readonly HttpClient _client; 
-    private readonly IDeployablesService _deployablesService;
 
     private readonly string _githubOrgName;
     private readonly string _githubApiUrl;
+    private readonly MongoLock _mongoLock;
     private readonly IGithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
     private readonly ILogger<PopulateGithubRepositories> _logger;
     private readonly IRepositoryService _repositoryService;
@@ -39,7 +40,7 @@ public sealed class PopulateGithubRepositories : IJob
     
     public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
         IRepositoryService repositoryService,
-        IDeployablesService deployablesService,
+        MongoLock mongoLock,
         IHttpClientFactory clientFactory,
         IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
     {
@@ -47,16 +48,12 @@ public sealed class PopulateGithubRepositories : IJob
         _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
 
+        _mongoLock = mongoLock;
         _githubCredentialAndConnectionFactory = githubCredentialAndConnectionFactory;
 
         _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
         _repositoryService = repositoryService;
-        _deployablesService = deployablesService;
-
-        // TODO - this work needs paging as DEFRA now have over 100 teams
-
         _userServiceFetcher = new UserServiceFetcher(configuration);
-        
 
         _client.DefaultRequestHeaders.Accept.Clear();
         _client.DefaultRequestHeaders.Accept.Add(
@@ -65,6 +62,25 @@ public sealed class PopulateGithubRepositories : IJob
     }
 
     public async Task Execute(IJobExecutionContext context)
+    {
+            if (await _mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))
+            {
+                try
+                {
+                    await RepopulateGithubRepos(context);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError("RepopulateGithub scheduled job failed: {e}", e);
+                }
+                finally
+                {
+                    await _mongoLock.Unlock(LockName);
+                }
+            }
+    }
+
+    private async Task RepopulateGithubRepos(IJobExecutionContext context)
     {
         _logger.LogInformation("Repopulating Github repositories");
         var cancellationToken = context.CancellationToken;
