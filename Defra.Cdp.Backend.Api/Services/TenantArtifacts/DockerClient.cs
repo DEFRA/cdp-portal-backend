@@ -30,17 +30,16 @@ public class DockerClient : IDockerClient
     private readonly ILogger _logger;
 
     public DockerClient(
-        IHttpClientFactory clientFactory,
+        HttpClient client,
         IOptions<DockerServiceOptions> options,
         IDockerCredentialProvider credentialProvider,
         ILogger<DockerClient> logger)
     {
-        _client = clientFactory.CreateClient();
+        _client = client;
         _logger = logger;
         _baseUrl = options.Value.RegistryUrl;
         _credentialProvider = credentialProvider;
         _client.DefaultRequestHeaders.Accept.Clear();
-        
     }
 
     public async Task<ImageTagList> FindTags(string repo)
