@@ -46,11 +46,11 @@ public class DockerClientTests
 
         // A list of paths we dont want to scan (stuff in the base image basically, avoids false positives
         var pathsToIgnore = new List<Regex> { new("^/?usr/.*") };
-
+        var mockHttp = Substitute.For<HttpClient>();
         var opts = new DockerServiceOptions();
-        var client = new DockerClient(new MockClientFactory(), Options.Create(opts), new EmptyDockerCredentialProvider(),
+        var client = new DockerClient(mockHttp, Options.Create(opts), new EmptyDockerCredentialProvider(),
             NullLoggerFactory.Instance.CreateLogger<DockerClient>());
-        
+
         using (var fs = File.OpenRead("Resources/testlayer.tgz"))
         {
             var files = client.ExtractFilesFromStream(fs, "test:1.0.0", filesToExtract, pathsToIgnore);
