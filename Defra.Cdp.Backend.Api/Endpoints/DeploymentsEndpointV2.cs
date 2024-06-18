@@ -35,6 +35,7 @@ public static class DeploymentsEndpointV2
         app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
         app.MapGet("/v2/whats-running-where/{service}", WhatsRunningWhereForService);
         app.MapPost("/v2/deployments", RegisterDeployment);
+        app.MapPost("/deployments", RegisterDeployment); // fallback while we migrate self-service-ops off v1
         app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
 
         return app;
