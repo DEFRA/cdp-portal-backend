@@ -65,13 +65,18 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
 
     public async Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken)
     {
+        var builder = Builders<Repository>.Filter;
+        var filter = builder.Empty;
+        var withoutTemplatesFilter = builder.Eq(r => r.IsTemplate, false);
+        var withCdpTopicFilter = builder.Where(r => r.Topics.Contains("cdp"));
+
         var findDefinition = excludeTemplates
-            ? Builders<Repository>.Filter.Eq(r => r.IsTemplate, false)
-            : Builders<Repository>.Filter.Empty;
+            ? withoutTemplatesFilter
+            : filter;
 
         var repositories =
             await Collection
-                .Find(findDefinition)
+                .Find(findDefinition & withCdpTopicFilter)
                 .SortBy(r => r.Id)
                 .ToListAsync(cancellationToken);
         return repositories;
