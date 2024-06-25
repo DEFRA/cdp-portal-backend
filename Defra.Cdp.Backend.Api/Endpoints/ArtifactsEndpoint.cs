@@ -105,7 +105,7 @@ public static class ArtifactsEndpoint
         {
             image = await deployablesService.FindByTag(repo, tag, cancellationToken);    
         }
-        return image == null ? Results.NotFound(new { Message = $"{repo}:{tag} was not found" }) : Results.Ok(image);
+        return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
     }
 
     // GET /files/{layer}
@@ -114,7 +114,7 @@ public static class ArtifactsEndpoint
     {
         var image = await layerService.FindFileAsync(layer, path, cancellationToken);
         return image?.Content == null
-            ? Results.NotFound(new { Message = $"{layer}/{path} was not found" })
+            ? Results.NotFound(new ApiError($"{layer}/{path} was not found"))
             : Results.Ok(image.Content);
     }
 
