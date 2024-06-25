@@ -135,7 +135,7 @@ public static class RepositoriesEndpoint
     {
         var maybeRepository = await repositoryService.FindRepositoryById(id, cancellationToken);
         return maybeRepository == null
-            ? Results.NotFound(new { message = $"{id} not found" })
+            ? Results.NotFound(Results.NotFound(new ApiError($"{id} not found")))
             : Results.Ok(new SingleRepositoryResponse(maybeRepository));
     }
 
@@ -157,7 +157,7 @@ public static class RepositoriesEndpoint
     {
         var maybeRepository = await repositoryService.FindRepositoryWithTopicById(topic, id, cancellationToken);
         return maybeRepository == null
-            ? Results.NotFound(new { message = $"{id} not found" })
+            ? Results.NotFound(new ApiError($"{id} not found"))
             : Results.Ok(new SingleRepositoryResponse(maybeRepository));
     }
 
@@ -204,7 +204,7 @@ public static class RepositoriesEndpoint
     {
         var maybeTemplate = await templatesService.FindTemplateById(templateId, cancellationToken);
         return maybeTemplate == null
-            ? Results.NotFound(new { message = $"{templateId} not found" })
+            ? Results.NotFound(new ApiError($"{templateId} not found"))
             : Results.Ok(new SingleTemplateResponse(maybeTemplate!));
     }
 
