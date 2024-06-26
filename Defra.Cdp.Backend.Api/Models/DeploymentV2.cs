@@ -31,6 +31,9 @@ public class DeploymentV2
     public string Status { get; set; }
     public bool Unstable { get; set; } = false;
 
+    public string? ConfigVersion { get; init; } = default!;
+    public List<string> Secrets { get; init; } = new();
+    
     public static DeploymentV2 FromRequest(RequestedDeployment req)
     {
         return new DeploymentV2
@@ -46,6 +49,8 @@ public class DeploymentV2
             Created = DateTime.Now,
             Updated = DateTime.Now,
             Status = req.InstanceCount > 0 ? Requested : Undeployed,
+            ConfigVersion = req.ConfigVersion,
+            Secrets = req.Secrets
         };
     }
 

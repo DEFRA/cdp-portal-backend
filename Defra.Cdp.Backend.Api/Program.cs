@@ -9,6 +9,7 @@ using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
+using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
@@ -71,6 +72,7 @@ builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
 // Setup the services
 builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSection(EcsEventListenerOptions.Prefix));
 builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
+builder.Services.Configure<SecretEventListenerOptions>(builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
@@ -131,8 +133,12 @@ builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
+
 builder.Services.AddSingleton<DeploymentEventHandlerV2>();
 builder.Services.AddSingleton<LambdaMessageHandlerV2>();
+builder.Services.AddSingleton<ISecretsService, SecretsService>();
+builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
+builder.Services.AddSingleton<SecretEventListener>();
 builder.Services.AddSingleton<MongoLock>();
 
 // Validators
@@ -172,6 +178,7 @@ app.MapDeploymentsEndpointV2();
 app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();
+app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
 app.MapHealthChecks("/health");
 
@@ -188,6 +195,13 @@ logger.Information("Starting ECR listener - reading image creation events from S
 Task.Run(() =>
     ecrSqsEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
+
+var secretEventListener = app.Services.GetService<SecretEventListener>();
+logger.Information("Starting Secret Event listener - reading secret update events from SQS");
+Task.Run(() =>
+    secretEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
+
 #pragma warning restore CS4014
 
 app.Run();
