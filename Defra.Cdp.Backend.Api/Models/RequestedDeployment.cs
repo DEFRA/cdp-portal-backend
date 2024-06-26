@@ -31,4 +31,11 @@ public sealed class RequestedDeployment
 
     [property: JsonPropertyName("deploymentId")]
     public string DeploymentId { get; init; } = default!;
+    
+    [property: JsonPropertyName("configVersion")]
+    public string? ConfigVersion { get; init; } = default!;
+    
+    [property: JsonPropertyName("secrets")]
+    public List<string> Secrets { get; init; } = new();
+
 }

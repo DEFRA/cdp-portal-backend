@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.Secrets;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -77,7 +78,7 @@ public static class DeploymentsEndpointV2
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
 
         return deployment == null
-            ? Results.NotFound(new { Message = $"{deploymentId} was not found" })
+            ? Results.NotFound(new ApiError($"{deploymentId} was not found"))
             : Results.Ok(deployment);
     }
 
@@ -99,17 +100,18 @@ public static class DeploymentsEndpointV2
 
     private static async Task<IResult> RegisterDeployment(
         IDeploymentsServiceV2 deploymentsServiceV2,
+        ISecretsService secretsService,
         IValidator<RequestedDeployment> validator,
-        RequestedDeployment rd,
+        RequestedDeployment requestedDeployment,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var validatedResult = await validator.ValidateAsync(rd, cancellationToken);
+        var validatedResult = await validator.ValidateAsync(requestedDeployment, cancellationToken);
         if (!validatedResult.IsValid) return Results.ValidationProblem(validatedResult.ToDictionary());
-
+        
         var logger = loggerFactory.CreateLogger("RegisterDeployment");
-        logger.LogInformation("Registering deployment {RdDeploymentId}", rd.DeploymentId);
-        await deploymentsServiceV2.RegisterDeployment(rd, cancellationToken);
+        logger.LogInformation("Registering deployment {DeploymentId}", requestedDeployment.DeploymentId);
+        await deploymentsServiceV2.RegisterDeployment(requestedDeployment, cancellationToken);
         return Results.Ok();
     }
 
