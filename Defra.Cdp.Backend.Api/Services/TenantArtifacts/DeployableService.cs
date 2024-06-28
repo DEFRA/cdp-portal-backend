@@ -12,8 +12,6 @@ public interface IDeployablesService
     Task CreatePlaceholderAsync(string serviceName, string githubUrl, ArtifactRunMode runMode,
         CancellationToken cancellationToken);
 
-    Task<List<string>> DeployableEnvironments(bool isAdmin);
-
     Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken);
     Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken);
 
@@ -34,17 +32,9 @@ public interface IDeployablesService
 public class DeployablesService : MongoService<DeployableArtifact>, IDeployablesService
 {
     private const string CollectionName = "artifacts";
-    private readonly List<string> _adminEnvironments;
-    private readonly List<string> _allEnvironments;
-    private readonly List<string> _tenantEnvironments;
 
-    public DeployablesService(IMongoDbClientFactory connectionFactory, IConfiguration configuration,
-        ILoggerFactory loggerFactory) : base(
-        connectionFactory, CollectionName, loggerFactory)
+    public DeployablesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory)
     {
-        _adminEnvironments = configuration.GetSection("DeploymentEnvironments:Admin").Get<List<string>>()!;
-        _tenantEnvironments = configuration.GetSection("DeploymentEnvironments:Tenants").Get<List<string>>()!;
-        _allEnvironments = _adminEnvironments.Concat(_tenantEnvironments).Distinct().ToList();
     }
 
 
@@ -62,11 +52,6 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
     public async Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken)
     {
         return await Collection.Find(FilterDefinition<DeployableArtifact>.Empty).ToListAsync(cancellationToken);
-    }
-
-    public Task<List<string>> DeployableEnvironments(bool isAdmin)
-    {
-        return Task.FromResult(isAdmin ? _allEnvironments : _tenantEnvironments);
     }
 
     public async Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken)
