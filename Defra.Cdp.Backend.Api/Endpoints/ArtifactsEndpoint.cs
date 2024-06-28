@@ -9,7 +9,6 @@ public static class ArtifactsEndpoint
 {
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
-    private const string EnvironmentsBaseRoute = "environments";
     private const string FilesBaseRoute = "files";
     private const string ServicesBaseRoute = "services";
     private const string Tag = "Artifacts";
@@ -48,12 +47,6 @@ public static class ArtifactsEndpoint
 
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo)
             .WithName("GetTagsForRepo")
-            .Produces<List<string>>()
-            .WithTags(Tag);
-
-        app.MapGet(EnvironmentsBaseRoute, DeployableEnvironments)
-            .RequireAuthorization()
-            .WithName("GetEnvironments")
             .Produces<List<string>>()
             .WithTags(Tag);
 
@@ -151,19 +144,6 @@ public static class ArtifactsEndpoint
     {
         var tags = await deployablesService.FindAllTagsForRepo(repo, cancellationToken);
         return Results.Ok(tags);
-    }
-
-    // Get /environments
-    private static async Task<IResult> DeployableEnvironments(IDeployablesService deployablesService,
-        IConfiguration configuration, HttpContext httpContext,
-        ILoggerFactory loggerFactory)
-    {
-        var groups = Helpers.ExtractGroups(httpContext, loggerFactory);
-        if (groups.IsNullOrEmpty()) return Results.Forbid();
-        var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
-        var isAdmin = groups!.Contains(adminGroup);
-        _logger.LogInformation("Grabbing deployable environments for {AdminOrTenant}", isAdmin ? "admin" : "tenant");
-        return Results.Ok(await deployablesService.DeployableEnvironments(isAdmin));
     }
 
     // GET /services
