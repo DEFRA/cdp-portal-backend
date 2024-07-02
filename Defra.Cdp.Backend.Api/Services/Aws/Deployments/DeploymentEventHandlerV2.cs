@@ -91,16 +91,6 @@ public class DeploymentEventHandlerV2
                 _logger.LogWarning($"Failed to find a matching deployment for {lambdaId}, it may have been triggered by a different instance of portal", lambdaId);
                 return;
             }
-
-            // TODO: match on sha256 instead
-            var tagSuffix = artifact.Repo + ":" + artifact.Tag;
-            var shaSuffix = artifact.Repo + "@" + artifact.Sha256.ToLower();
-            
-            var container = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Image.EndsWith(tagSuffix) || c.Image.EndsWith(shaSuffix));
-            if (container == null)
-            {
-                throw new Exception( $"Failed to find the ECS container entry for {artifact.Repo}:{artifact.Tag}");
-            }
             
             var instanceStatus = DeploymentStatus.CalculateStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
             if (instanceStatus == null)
