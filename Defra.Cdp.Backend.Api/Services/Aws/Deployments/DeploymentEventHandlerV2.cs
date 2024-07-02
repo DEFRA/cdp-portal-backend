@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
@@ -90,14 +88,6 @@ public class DeploymentEventHandlerV2
             {
                 _logger.LogWarning($"Failed to find a matching deployment for {lambdaId}, it may have been triggered by a different instance of portal", lambdaId);
                 return;
-            }
-            _logger.LogInformation("Updating deployment {}", JsonSerializer.Serialize(deployment));
-
-            // TODO: match on sha256 instead
-            var container = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Image.EndsWith(artifact.Repo + ":" + artifact.Tag));
-            if (container == null)
-            {
-                throw new Exception( $"Failed to find the ECS container entry for {artifact.Repo}:{artifact.Tag}");
             }
             
             var instanceStatus = DeploymentStatus.CalculateStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
