@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
@@ -78,11 +80,9 @@ public class DeploymentEventHandlerV2
         try
         {
             var lambdaId = ecsEvent.Detail.StartedBy.Trim();
-            var env = _environmentLookup.FindEnv(ecsEvent.Account);
-            var deployedAt = ecsEvent.Timestamp;
-            var taskId = ecsEvent.Detail.TaskDefinitionArn;
             var instanceTaskId = ecsEvent.Detail.TaskArn;
-
+            _logger.LogInformation("Starting UpdateDeployment for {lambdaId}, instance {instanceId}", lambdaId, instanceTaskId);
+            
             // find the original requested deployment by the lambda id
             var deployment = await _deploymentsService.FindDeploymentByLambdaId(lambdaId, cancellationToken);
 
@@ -91,6 +91,7 @@ public class DeploymentEventHandlerV2
                 _logger.LogWarning($"Failed to find a matching deployment for {lambdaId}, it may have been triggered by a different instance of portal", lambdaId);
                 return;
             }
+            _logger.LogInformation("Updating deployment {}", JsonSerializer.Serialize(deployment));
 
             // TODO: match on sha256 instead
             var container = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Image.EndsWith(artifact.Repo + ":" + artifact.Tag));
@@ -107,18 +108,16 @@ public class DeploymentEventHandlerV2
             }
             
             // Update the specific instance status
+            _logger.LogInformation("Updated deployment: {lambdaId} instance: {instanceId} status to {status}", deployment.LambdaId, instanceTaskId, instanceStatus);
             deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsEvent.Timestamp);
+            await _deploymentsService.UpdateInstance(lambdaId, instanceTaskId, deployment.Instances[instanceTaskId], cancellationToken);
             
             // Limit the number of stopped service in the event of a crash-loop
-            deployment.TrimInstance(50);
+            // deployment.TrimInstance(50);
             
             // update the overall status
-            deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
-            deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
-            deployment.Updated = ecsEvent.Timestamp;
-
-            await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
-            _logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
+            await _deploymentsService.UpdateDeploymentStatus(deployment.LambdaId!, ecsEvent.Timestamp, cancellationToken);
+            _logger.LogInformation("Updated deployment {lambdaId} {status}", deployment.LambdaId, deployment.Status);
         }
         catch (Exception ex)
         {
