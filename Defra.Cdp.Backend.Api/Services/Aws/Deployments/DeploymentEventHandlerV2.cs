@@ -55,7 +55,7 @@ public class DeploymentEventHandlerV2
         
         if (artifact.RunMode == ArtifactRunMode.Service.ToString().ToLower())
         {
-            await UpdateDeployment(ecsEvent, artifact, cancellationToken);
+            await UpdateDeployment(ecsEvent, cancellationToken);
             return;
         }
 
@@ -73,7 +73,7 @@ public class DeploymentEventHandlerV2
     /**
      * Handle events related to a deployed microservice
      */
-    public async Task UpdateDeployment(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
+    public async Task UpdateDeployment(EcsEvent ecsEvent, CancellationToken cancellationToken)
     {
         try
         {
@@ -93,21 +93,23 @@ public class DeploymentEventHandlerV2
             var instanceStatus = DeploymentStatus.CalculateStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
             if (instanceStatus == null)
             {
-                _logger.LogWarning("Skipping unknown status for desired:{desired}, last{last}", ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+                _logger.LogWarning("Skipping unknown status for desired:{desired}, last:{last}", ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
                 return;
             }
             
             // Update the specific instance status
-            _logger.LogInformation("Updated deployment: {lambdaId} instance: {instanceId} status to {status}", deployment.LambdaId, instanceTaskId, instanceStatus);
             deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsEvent.Timestamp);
-            await _deploymentsService.UpdateInstance(lambdaId, instanceTaskId, deployment.Instances[instanceTaskId], cancellationToken);
             
             // Limit the number of stopped service in the event of a crash-loop
-            // deployment.TrimInstance(50);
+            deployment.TrimInstance(50);
             
             // update the overall status
-            await _deploymentsService.UpdateDeploymentStatus(deployment.LambdaId!, ecsEvent.Timestamp, cancellationToken);
-            _logger.LogInformation("Updated deployment {lambdaId} {status}", deployment.LambdaId, deployment.Status);
+            deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
+            deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
+            deployment.Updated = ecsEvent.Timestamp;
+
+            await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
+            _logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
         }
         catch (Exception ex)
         {
@@ -207,43 +209,77 @@ public class DeploymentEventHandlerV2
     {
         foreach (var ecsContainer in ecsEvent.Detail.Containers)
         {
-            var (repo, tag) = SplitImage(ecsContainer.Image);
-            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
+            var artifact = await FindArtifactBySha256(ecsContainer, cancellationToken) ?? await FindArtifactByTag(ecsContainer, cancellationToken);
+
+            if (artifact == null) continue;
+            if( _containersToIgnore.Contains(artifact.Repo))
             {
-                _logger.LogDebug("skipping empty {repo} {tag}", repo, tag);
+                _logger.LogDebug("skipping ignored {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag, artifact.Sha256);
                 continue;
             }
-
-            if (_containersToIgnore.Contains(repo))
-            {
-                _logger.LogDebug("skipping ignored {repo} {tag}", repo, tag);
-                continue;
-            }
-            _logger.LogDebug("looking for container {repo} {tag}", repo, tag);
-
-            
-            var artifact = tag switch
-            {
-                // We don't store the latest tag, so we just the highest semver
-                "latest" => await _deployablesService.FindLatest(repo, cancellationToken), // TODO: once we fix the image hash, search on the image hash
-                _        => await _deployablesService.FindByTag(repo, tag, cancellationToken)
-            };
-
-            if (artifact != null)
-            {
-                _logger.LogDebug("found artifact {hash} for {repo}:{tag}", artifact.Sha256, repo, tag);
-                return artifact;
-            }
+            _logger.LogDebug("found artifact {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag, artifact.Sha256);
+            return artifact;
         }
         return null;
     }
+
+    private async Task<DeployableArtifact?> FindArtifactByTag(EcsContainer ecsContainer,
+        CancellationToken cancellationToken)
+    {
+        var (repo, tag) = SplitImage(ecsContainer.Image);
+        if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(tag))
+        {
+            return null;
+        }
+                    
+        var artifact = tag switch
+        {
+            // We don't store the latest tag, so we just the highest semver
+            "latest" => await _deployablesService.FindLatest(repo, cancellationToken),
+            _        => await _deployablesService.FindByTag(repo, tag, cancellationToken)
+        };
+
+        return artifact;
+    }
     
+    private async Task<DeployableArtifact?> FindArtifactBySha256(EcsContainer ecsContainer, CancellationToken cancellationToken)
+    {
+        // Ideally use the Image Digest field
+        var digest = ecsContainer.ImageDigest;
+            
+        if (!string.IsNullOrWhiteSpace(digest))
+        {
+            return await _deployablesService.FindBySha256(digest, cancellationToken);
+        }
+
+        // Second instances for some reason don't have the image tag, but the sha, so use that
+        var (_, sha256) = SplitSha(ecsContainer.Image);
+        if (!string.IsNullOrWhiteSpace(sha256))
+        {
+            return await _deployablesService.FindBySha256(digest, cancellationToken);
+        }
+
+        return null;
+    }
+
     /**
      * Extract the name and tag from a full docker image url 
      */
     public static (string?, string?) SplitImage(string image)
     {
         var rx = new Regex("^.+\\/(.+):(.+)$");
+        var result = rx.Match(image);
+        if (result.Groups.Count == 3) return (result.Groups[1].Value, result.Groups[2].Value);
+
+        return (null, null);
+    }
+    
+    /**
+     * Extract the name and tag from a full docker image url 
+     */
+    public static (string?, string?) SplitSha(string image)
+    {
+        var rx = new Regex("^.+\\/(.+)@(.+)$");
         var result = rx.Match(image);
         if (result.Groups.Count == 3) return (result.Groups[1].Value, result.Groups[2].Value);
 

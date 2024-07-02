@@ -13,8 +13,6 @@ public interface IDeploymentsServiceV2
     Task<bool>          LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
     Task                UpdateDeployment(DeploymentV2 deployment, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
-    Task UpdateInstance(string lambdaId, string instanceId, DeploymentInstanceStatus status, CancellationToken ct);
-    Task                UpdateDeploymentStatus(string lambdaId,  DateTime updatedAt, CancellationToken ct);
   
     Task<Paginated<DeploymentV2>> FindLatest(
         string? environment,
@@ -77,34 +75,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     {
         return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
     }
-
-    public async Task UpdateInstance(string lambdaId, string instanceId, DeploymentInstanceStatus status, CancellationToken ct)
-    {
-        var filter = new FilterDefinitionBuilder<DeploymentV2>().Eq(d=>d.LambdaId, lambdaId);
-        var update = new UpdateDefinitionBuilder<DeploymentV2>().Set(d => d.Instances[instanceId], status);
-        await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
-    }
-
-    public async Task UpdateDeploymentStatus(string lambdaId,  DateTime updatedAt, CancellationToken ct)
-    {
-        var filter = new FilterDefinitionBuilder<DeploymentV2>().Eq(d=>d.LambdaId, lambdaId);
-        
-        var deployment = await Collection.Find(filter).FirstOrDefaultAsync(ct);
-        if (deployment == null)
-        {
-            return;
-        }
-        var status = CalculateOverallStatus(deployment);
-        var unstable = IsUnstable(deployment);
-       
-        var update = new UpdateDefinitionBuilder<DeploymentV2>()
-            .Set(d => d.Status, status)
-            .Set(d => d.Unstable, unstable)
-            .Set(d => d.Updated, updatedAt);
-
-        await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
-    }
-
+    
     public async Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<DeploymentV2>();
