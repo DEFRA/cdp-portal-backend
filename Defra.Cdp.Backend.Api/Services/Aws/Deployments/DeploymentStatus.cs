@@ -100,6 +100,12 @@ public class DeploymentStatus
             return Stopping;
         }
         
+        // One service has started but the other task has yet to begin
+        if (instances.GetValueOrDefault(Running,0) > 0)
+        {
+            return Pending;
+        }
+        
         // Otherwise, with nothing running, pending, or stopping the deployment must have been stopped (right?)
         return Stopped;
     }

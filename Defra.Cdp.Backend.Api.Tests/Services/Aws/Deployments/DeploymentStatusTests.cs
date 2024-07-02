@@ -143,4 +143,19 @@ public class DeploymentStatusTests
         Assert.Equal(Pending, CalculateOverallStatus(recoveringFromCrash));
         Assert.Equal(Running, CalculateOverallStatus(crashLoop));
     }
+    
+    [Fact]
+    public void TestOverallStatusWhenInstancesComeUpSlow()
+    {
+        var running = new DeploymentV2
+        {
+            InstanceCount = 2, 
+            Instances = new Dictionary<string, DeploymentInstanceStatus>
+            {
+                {"1", new (Running, DateTime.Now )}
+            }
+        };
+        
+        Assert.Equal(Pending, CalculateOverallStatus(running));
+    }
 }
