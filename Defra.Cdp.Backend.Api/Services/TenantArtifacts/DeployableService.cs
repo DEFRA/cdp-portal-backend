@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Utils;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -21,6 +22,7 @@ public interface IDeployablesService
         CancellationToken cancellationToken);
 
     Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
+    Task<DeployableArtifact?> FindBySha256(string sha256, CancellationToken cancellationToken);
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
@@ -41,6 +43,12 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
     public async Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken)
     {
         return await Collection.Find(d => d.Repo == repo && d.Tag == tag).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<DeployableArtifact?> FindBySha256(string sha256, CancellationToken cancellationToken)
+    {
+        var filter = Builders<DeployableArtifact>.Filter.Regex(d => d.Sha256, new BsonRegularExpression(sha256, "i"));
+        return await Collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken)

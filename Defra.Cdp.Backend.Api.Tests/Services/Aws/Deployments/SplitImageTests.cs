@@ -23,4 +23,15 @@ public class SplitImageTests
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
         Assert.Equal("latest", resp.Item2);
     }
+    
+    [Fact]
+    public void TestSplitSha()
+    {
+        var resp = DeploymentEventHandlerV2.SplitSha(
+            "000000000.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-deployables-backend@sha256:c0ac9c077606aec2d438fd47c5fb9b305859645cf23f24c1ab0cd4739f8cffef");
+
+        Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
+        Assert.Equal("sha256:c0ac9c077606aec2d438fd47c5fb9b305859645cf23f24c1ab0cd4739f8cffef", resp.Item2);
+    }
+
 }
