@@ -1,3 +1,4 @@
+using System.Net;
 using Serilog.Core;
 
 namespace Defra.Cdp.Backend.Api.Utils;
@@ -20,6 +21,14 @@ public static class Proxy
             {
                 logger.Information("Creating proxy http client");
                 proxy.Address = new Uri(proxyUri);
+               
+                var proxyUsername = Environment.GetEnvironmentVariable("SQUID_USERNAME");
+                var proxyPassword = Environment.GetEnvironmentVariable("SQUID_PASSWORD");
+                if (proxyUsername != null && proxyPassword != null)
+                {
+                    logger.Information("Setting proxy credentials");
+                    proxy.Credentials = new NetworkCredential(proxyUsername, proxyPassword);
+                }
             }
             else
             {
