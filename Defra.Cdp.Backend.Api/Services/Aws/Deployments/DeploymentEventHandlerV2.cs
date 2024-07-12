@@ -209,8 +209,9 @@ public class DeploymentEventHandlerV2
     {
         foreach (var ecsContainer in ecsEvent.Detail.Containers)
         {
-            var artifact = await FindArtifactBySha256(ecsContainer, cancellationToken) ?? await FindArtifactByTag(ecsContainer, cancellationToken);
-
+            var artifact = await FindArtifactBySha256(ecsContainer, cancellationToken) ??
+                           await FindArtifactByTag(ecsContainer, cancellationToken);
+      
             if (artifact == null) continue;
             if( _containersToIgnore.Contains(artifact.Repo))
             {
@@ -256,7 +257,7 @@ public class DeploymentEventHandlerV2
         var (_, sha256) = SplitSha(ecsContainer.Image);
         if (!string.IsNullOrWhiteSpace(sha256))
         {
-            return await _deployablesService.FindBySha256(digest, cancellationToken);
+            return await _deployablesService.FindBySha256(sha256, cancellationToken);
         }
 
         return null;
