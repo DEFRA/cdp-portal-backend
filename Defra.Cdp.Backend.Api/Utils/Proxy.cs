@@ -20,13 +20,13 @@ public static class Proxy
             if (proxyUri != null)
             {
                 var uri = new Uri(proxyUri);
-                logger.Information("Creating proxy http client {uri}", RedactUriCredentials(uri));
+                logger.Debug("Creating proxy http client {uri}", RedactUriCredentials(uri));
                 proxy.Address = uri;
 
                 var credentials = GetCredentialsFromUri(uri) ?? GetCredentialsFromEnv();
                 if (credentials != null)
                 {
-                    logger.Information("Setting proxy credentials");
+                    logger.Debug("Setting proxy credentials");
                     proxy.Credentials = credentials;
                 }
             }
