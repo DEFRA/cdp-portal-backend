@@ -14,21 +14,23 @@ public class EcsEventListener : SqsListener
     private readonly IEcsEventsService _ecsEventsService;
     private readonly ILogger<EcsEventListener> _logger;
     
-    private readonly DeploymentEventHandlerV2 _deploymentEventHandlerV2;
+    private readonly TaskStateChangeEventHandler _taskStateChangeEventHandler;
     private readonly LambdaMessageHandlerV2 _lambdaMessageHandlerV2;
-
+    private readonly DeploymentStateChangeEventHandler _deploymentStateChangeEventHandler;
 
     public EcsEventListener(IAmazonSQS sqs,
         IOptions<EcsEventListenerOptions> config,
         IEcsEventsService ecsEventsService,
-        DeploymentEventHandlerV2 deploymentEventHandlerV2,
+        TaskStateChangeEventHandler taskStateChangeEventHandler,
         LambdaMessageHandlerV2 lambdaMessageHandlerV2,
+        DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
         ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl, logger)
     {
         _logger = logger;
         _ecsEventsService = ecsEventsService;
-        _deploymentEventHandlerV2 = deploymentEventHandlerV2;
+        _taskStateChangeEventHandler = taskStateChangeEventHandler;
         _lambdaMessageHandlerV2 = lambdaMessageHandlerV2;
+        _deploymentStateChangeEventHandler = deploymentStateChangeEventHandler;
     }
     
     
@@ -43,22 +45,37 @@ public class EcsEventListener : SqsListener
     
     private async Task ProcessMessageAsync(string id, string messageBody, CancellationToken cancellationToken)
     {
-        var ecsEvent = JsonSerializer.Deserialize<EcsEvent>(messageBody);
+        var unknownEvent = JsonSerializer.Deserialize<UnknownEventType>(messageBody);
 
-        switch (ecsEvent?.DetailType)
+        switch (unknownEvent?.DetailType)
         {
             case "ECS Task State Change":
-                await _deploymentEventHandlerV2.Handle(id, ecsEvent, cancellationToken);
+                var ecsTaskEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(messageBody);
+                if (ecsTaskEvent == null)
+                {
+                    throw new Exception($"Unable to parse ECS Task State Change message {unknownEvent.Id}");
+                }
+                await _taskStateChangeEventHandler.Handle(id, ecsTaskEvent, cancellationToken);
                 break;
             case "ECS Lambda Deployment Updated":
             case "ECS Lambda Deployment Created":
-                await _lambdaMessageHandlerV2.Handle(id, ecsEvent, cancellationToken);
+                var ecsLambdaEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(messageBody);
+                if (ecsLambdaEvent == null)
+                {
+                    throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
+                }
+                await _lambdaMessageHandlerV2.Handle(id, ecsLambdaEvent, cancellationToken);
+                break;
+            case "ECS Deployment State Change":
+                var ecsDeploymentEvent = JsonSerializer.Deserialize<EcsDeploymentStateChange>(messageBody);
+                if (ecsDeploymentEvent == null)
+                {
+                    throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
+                }
+                await _deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
             default:
-                if (ecsEvent?.Detail == null)
-                    _logger.LogInformation("Not processing {Id}, details was null. message was {MessageBody}", id, messageBody);
-                else
-                    _logger.LogInformation("Not processing {Id}, detail type was {DetailType}", id, ecsEvent.DetailType);
+                _logger.LogInformation("Not processing {Id}, details was null. message was {MessageBody}", id, messageBody);
                 break;
         }
 

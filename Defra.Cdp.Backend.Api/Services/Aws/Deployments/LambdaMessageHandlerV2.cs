@@ -18,15 +18,15 @@ public class LambdaMessageHandlerV2
         
     // We need to link the requested deployment (before the deployment has started) to the actual deployment as
     // actioned by the lambda. 
-    public async Task Handle(string id, EcsEvent ecsEvent, CancellationToken cancellationToken)
+    public async Task Handle(string id, EcsTaskStateChangeEvent ecsTaskStateChangeEvent, CancellationToken cancellationToken)
     {
         
         _logger.LogInformation("Processing lambda deployment message {Id}", id);
         // ID from cdp-self-service-ops
-        var cdpDeploymentId = ecsEvent.CdpDeploymentId;
+        var cdpDeploymentId = ecsTaskStateChangeEvent.CdpDeploymentId;
         
         // ID of ECS deployer
-        var lambdaId = ecsEvent.Detail.EcsSvcDeploymentId ?.Trim();
+        var lambdaId = ecsTaskStateChangeEvent.Detail.EcsSvcDeploymentId ?.Trim();
 
         if (string.IsNullOrWhiteSpace(cdpDeploymentId) || string.IsNullOrWhiteSpace(lambdaId))
         {

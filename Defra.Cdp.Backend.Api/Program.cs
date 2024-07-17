@@ -134,11 +134,16 @@ builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 
-builder.Services.AddSingleton<DeploymentEventHandlerV2>();
+// Deployment Event Handlers
+builder.Services.AddSingleton<TaskStateChangeEventHandler>();
+builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandlerV2>();
+
+// Secret Event Handlers
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
 builder.Services.AddSingleton<SecretEventListener>();
+
 builder.Services.AddSingleton<MongoLock>();
 
 // Validators

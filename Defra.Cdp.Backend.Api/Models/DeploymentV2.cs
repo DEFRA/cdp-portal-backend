@@ -34,6 +34,10 @@ public class DeploymentV2
     public string? ConfigVersion { get; init; } = default!;
     public List<string> Secrets { get; init; } = new();
     
+    // From ECS Service Deployment State Change messages 
+    public string? LastDeploymentStatus { get; set; }
+    public string? LastDeploymentMessage { get; set; }
+    
     public static DeploymentV2 FromRequest(RequestedDeployment req)
     {
         return new DeploymentV2
