@@ -8,22 +8,22 @@ using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
-public class DeploymentEventHandlerV2
+public class TaskStateChangeEventHandler
 {
     private readonly List<string> _containersToIgnore;
     private readonly IDeployablesService _deployablesService;
     private readonly IDeploymentsServiceV2 _deploymentsService;
     private readonly ITestRunService _testRunService;
     private readonly IEnvironmentLookup _environmentLookup;
-    private readonly ILogger<DeploymentEventHandlerV2> _logger;
+    private readonly ILogger<TaskStateChangeEventHandler> _logger;
 
-    public DeploymentEventHandlerV2(
+    public TaskStateChangeEventHandler(
         IOptions<EcsEventListenerOptions> config,
         IEnvironmentLookup environmentLookup,
         IDeploymentsServiceV2 deploymentsService,
         IDeployablesService deployablesService,
         ITestRunService testRunService,
-        ILogger<DeploymentEventHandlerV2> logger)
+        ILogger<TaskStateChangeEventHandler> logger)
     {
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
@@ -33,35 +33,35 @@ public class DeploymentEventHandlerV2
         _containersToIgnore = config.Value.ContainerToIgnore;
     }
 
-    public async Task Handle(string id, EcsEvent ecsEvent, CancellationToken cancellationToken)
+    public async Task Handle(string id, EcsTaskStateChangeEvent ecsTaskStateChangeEvent, CancellationToken cancellationToken)
     {
-        var env = _environmentLookup.FindEnv(ecsEvent.Account);
+        var env = _environmentLookup.FindEnv(ecsTaskStateChangeEvent.Account);
         if (env == null)
         {
             _logger.LogError(
                 "Unable to convert {DeploymentId} to a deployment event, unknown environment/account: {Account} check the mappings!",
-                ecsEvent.DeploymentId, ecsEvent.Account);
+                ecsTaskStateChangeEvent.DeploymentId, ecsTaskStateChangeEvent.Account);
             return;
         }
 
-        var artifact = await FindArtifact(ecsEvent, cancellationToken);
+        var artifact = await FindArtifact(ecsTaskStateChangeEvent, cancellationToken);
 
         if (artifact == null)
         {
-            var containerList = string.Join(",", ecsEvent.Detail.Containers.Select(c => c.Image));
+            var containerList = string.Join(",", ecsTaskStateChangeEvent.Detail.Containers.Select(c => c.Image));
             _logger.LogWarning("No known artifact found for task {id}, [{containers}]", id, containerList);
             return;
         }
         
         if (artifact.RunMode == ArtifactRunMode.Service.ToString().ToLower())
         {
-            await UpdateDeployment(ecsEvent, cancellationToken);
+            await UpdateDeployment(ecsTaskStateChangeEvent, cancellationToken);
             return;
         }
 
         if (artifact.RunMode == ArtifactRunMode.Job.ToString().ToLower())
         {
-            await UpdateTestSuite(ecsEvent, artifact, cancellationToken);
+            await UpdateTestSuite(ecsTaskStateChangeEvent, artifact, cancellationToken);
             return;
         }
         
@@ -73,12 +73,12 @@ public class DeploymentEventHandlerV2
     /**
      * Handle events related to a deployed microservice
      */
-    public async Task UpdateDeployment(EcsEvent ecsEvent, CancellationToken cancellationToken)
+    public async Task UpdateDeployment(EcsTaskStateChangeEvent ecsTaskStateChangeEvent, CancellationToken cancellationToken)
     {
         try
         {
-            var lambdaId = ecsEvent.Detail.StartedBy.Trim();
-            var instanceTaskId = ecsEvent.Detail.TaskArn;
+            var lambdaId = ecsTaskStateChangeEvent.Detail.StartedBy.Trim();
+            var instanceTaskId = ecsTaskStateChangeEvent.Detail.TaskArn;
             _logger.LogInformation("Starting UpdateDeployment for {lambdaId}, instance {instanceId}", lambdaId, instanceTaskId);
             
             // find the original requested deployment by the lambda id
@@ -90,15 +90,15 @@ public class DeploymentEventHandlerV2
                 return;
             }
             
-            var instanceStatus = DeploymentStatus.CalculateStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+            var instanceStatus = DeploymentStatus.CalculateStatus(ecsTaskStateChangeEvent.Detail.DesiredStatus, ecsTaskStateChangeEvent.Detail.LastStatus);
             if (instanceStatus == null)
             {
-                _logger.LogWarning("Skipping unknown status for desired:{desired}, last:{last}", ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+                _logger.LogWarning("Skipping unknown status for desired:{desired}, last:{last}", ecsTaskStateChangeEvent.Detail.DesiredStatus, ecsTaskStateChangeEvent.Detail.LastStatus);
                 return;
             }
             
             // Update the specific instance status
-            deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsEvent.Timestamp);
+            deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsTaskStateChangeEvent.Timestamp);
             
             // Limit the number of stopped service in the event of a crash-loop
             deployment.TrimInstance(50);
@@ -106,7 +106,7 @@ public class DeploymentEventHandlerV2
             // update the overall status
             deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
             deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
-            deployment.Updated = ecsEvent.Timestamp;
+            deployment.Updated = ecsTaskStateChangeEvent.Timestamp;
 
             await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
             _logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
@@ -120,14 +120,14 @@ public class DeploymentEventHandlerV2
     /**
      * Handle events related to a test suite. Unlike a service these are expected to run then exit. 
      */
-    public async Task UpdateTestSuite(EcsEvent ecsEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
+    public async Task UpdateTestSuite(EcsTaskStateChangeEvent ecsTaskStateChangeEvent, DeployableArtifact artifact, CancellationToken cancellationToken)
     {
         try
         {
             // TODO: have an allow-list of events we can process
-            var env = _environmentLookup.FindEnv(ecsEvent.Account);
+            var env = _environmentLookup.FindEnv(ecsTaskStateChangeEvent.Account);
             
-            var taskArn = ecsEvent.Detail.TaskArn;
+            var taskArn = ecsTaskStateChangeEvent.Detail.TaskArn;
 
             // see if we've already linked a test run to the arn
             var testRun = await _testRunService.FindByTaskArn(taskArn, cancellationToken);
@@ -137,7 +137,7 @@ public class DeploymentEventHandlerV2
             {
                 _logger.LogInformation("trying to link {id}", artifact.ServiceName);
                 testRun = await _testRunService.Link(
-                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsEvent.Timestamp), artifact, taskArn, cancellationToken);
+                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp), artifact, taskArn, cancellationToken);
             }
             
             // if the linking fails, we have nothing to write the data to so bail
@@ -150,14 +150,14 @@ public class DeploymentEventHandlerV2
             // use the container exit code to figure out if the tests passed. non-zero exit code == failure. 
             // TODO: this might not work in every case, other options are to parse the results from s3 when job is done
             // TODO: use sha256 instead once data is fixed
-            var container = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Name == artifact.Repo);
+            var container = ecsTaskStateChangeEvent.Detail.Containers.FirstOrDefault(c => c.Name == artifact.Repo);
             var testResults = GenerateTestSuiteStatus(container);
             
-            var taskStatus = GenerateTestSuiteTaskStatus(ecsEvent.Detail.DesiredStatus, ecsEvent.Detail.LastStatus);
+            var taskStatus = GenerateTestSuiteTaskStatus(ecsTaskStateChangeEvent.Detail.DesiredStatus, ecsTaskStateChangeEvent.Detail.LastStatus);
             
             _logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
                 testRun.RunId, taskStatus, testResults);
-            await _testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsEvent.Timestamp, cancellationToken);
+            await _testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -205,9 +205,9 @@ public class DeploymentEventHandlerV2
     /**
      * Find the artifact belonging to an ECS event by matching the non-sidecar ECS container.
      */
-    private async Task<DeployableArtifact?> FindArtifact(EcsEvent ecsEvent, CancellationToken cancellationToken)
+    private async Task<DeployableArtifact?> FindArtifact(EcsTaskStateChangeEvent ecsTaskStateChangeEvent, CancellationToken cancellationToken)
     {
-        foreach (var ecsContainer in ecsEvent.Detail.Containers)
+        foreach (var ecsContainer in ecsTaskStateChangeEvent.Detail.Containers)
         {
             var artifact = await FindArtifactBySha256(ecsContainer, cancellationToken) ??
                            await FindArtifactByTag(ecsContainer, cancellationToken);

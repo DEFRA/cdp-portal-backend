@@ -7,7 +7,7 @@ public class SplitImageTests
     [Fact]
     public void TestSplitImage()
     {
-        var resp = DeploymentEventHandlerV2.SplitImage(
+        var resp = TaskStateChangeEventHandler.SplitImage(
             "000000000.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-deployables-backend:0.1.0");
 
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
@@ -17,7 +17,7 @@ public class SplitImageTests
     [Fact]
     public void TestSplitImageLatest()
     {
-        var resp = DeploymentEventHandlerV2.SplitImage(
+        var resp = TaskStateChangeEventHandler.SplitImage(
             "000000000.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-deployables-backend:latest");
 
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
@@ -27,7 +27,7 @@ public class SplitImageTests
     [Fact]
     public void TestSplitSha()
     {
-        var resp = DeploymentEventHandlerV2.SplitSha(
+        var resp = TaskStateChangeEventHandler.SplitSha(
             "000000000.dkr.ecr.eu-west-2.amazonaws.com/cdp-portal-deployables-backend@sha256:c0ac9c077606aec2d438fd47c5fb9b305859645cf23f24c1ab0cd4739f8cffef");
 
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
