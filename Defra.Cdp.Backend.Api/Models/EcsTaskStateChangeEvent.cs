@@ -5,12 +5,6 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-// Used to extract message type from ECS message so we can re-parse it with the correct parser.
-public sealed record UnknownEventType(
-    [property: JsonPropertyName("id")] string Id,
-    [property: JsonPropertyName("detail-type")] string DetailType
-);
-
 public sealed record EcsTaskStateChangeEvent(
     [property: JsonPropertyName("id")] string DeploymentId,
     [property: JsonPropertyName("detail-type")]

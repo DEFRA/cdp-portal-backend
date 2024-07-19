@@ -45,7 +45,7 @@ public class EcsEventListener : SqsListener
     
     private async Task ProcessMessageAsync(string id, string messageBody, CancellationToken cancellationToken)
     {
-        var unknownEvent = JsonSerializer.Deserialize<UnknownEventType>(messageBody);
+        var unknownEvent = JsonSerializer.Deserialize<EcsEventHeader>(messageBody);
 
         switch (unknownEvent?.DetailType)
         {
@@ -58,8 +58,9 @@ public class EcsEventListener : SqsListener
                 await _taskStateChangeEventHandler.Handle(id, ecsTaskEvent, cancellationToken);
                 break;
             case "ECS Lambda Deployment Updated":
-            case "ECS Lambda Deployment Created":
-                var ecsLambdaEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(messageBody);
+            case "ECS Lambda Deployment Event":
+            case "ECS Lambda Deployment Complete":
+                var ecsLambdaEvent = JsonSerializer.Deserialize<EcsDeploymentLambdaEvent>(messageBody);
                 if (ecsLambdaEvent == null)
                 {
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
@@ -67,7 +68,7 @@ public class EcsEventListener : SqsListener
                 await _lambdaMessageHandlerV2.Handle(id, ecsLambdaEvent, cancellationToken);
                 break;
             case "ECS Deployment State Change":
-                var ecsDeploymentEvent = JsonSerializer.Deserialize<EcsDeploymentStateChange>(messageBody);
+                var ecsDeploymentEvent = JsonSerializer.Deserialize<EcsDeploymentStateChangeEvent>(messageBody);
                 if (ecsDeploymentEvent == null)
                 {
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
@@ -75,7 +76,7 @@ public class EcsEventListener : SqsListener
                 await _deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
             default:
-                _logger.LogInformation("Not processing {Id}, details was null. message was {MessageBody}", id, messageBody);
+                _logger.LogInformation("Not processing {Id}, no handler for {messageType}. message was {MessageBody}", id, unknownEvent?.DetailType, messageBody);
                 break;
         }
 
