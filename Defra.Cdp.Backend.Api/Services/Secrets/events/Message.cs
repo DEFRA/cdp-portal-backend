@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Secrets.events;
 
@@ -18,13 +19,6 @@ public record MessageHeader
     [JsonPropertyName("source")] public string? Source { get; init; }
     [JsonPropertyName("action")] public string? Action { get; init; }
     [JsonPropertyName("body")] public JsonObject? Body { get; init; }
-}
-
-public record SecretKey
-{
-    [JsonPropertyName("keys")] public List<string> Keys { get; init; } = new();
-    [JsonPropertyName("lastChangedDate")] public string LastChangedDate { get; init; } = "";
-    [JsonPropertyName("createdDate")] public string CreatedDate { get; init; } = "";
 }
 
 public record BodyGetAllSecretKeys
