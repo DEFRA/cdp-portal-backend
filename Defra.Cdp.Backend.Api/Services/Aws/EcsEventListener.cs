@@ -59,7 +59,6 @@ public class EcsEventListener : SqsListener
                 break;
             case "ECS Lambda Deployment Updated":
             case "ECS Lambda Deployment Event":
-            case "ECS Lambda Deployment Complete":
                 var ecsLambdaEvent = JsonSerializer.Deserialize<EcsDeploymentLambdaEvent>(messageBody);
                 if (ecsLambdaEvent == null)
                 {
