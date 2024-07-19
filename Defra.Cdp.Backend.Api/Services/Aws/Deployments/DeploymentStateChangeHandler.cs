@@ -14,10 +14,14 @@ public class DeploymentStateChangeEventHandler
         _logger = logger;
     }
 
-    public async Task Handle(string id, EcsDeploymentStateChange ecsEvent, CancellationToken cancellationToken)
+    public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
     {
         _logger.LogInformation("{id} Handling EcsDeploymentStateChange Update {deploymentId}, {name} {reason}", id, ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason);
-        var updated = await _deploymentsService.UpdateDeploymentStatus(ecsEvent.Detail.DeploymentId, ecsEvent.Detail, cancellationToken);
-        _logger.LogInformation("{id} EcsDeploymentStateChange Update {deploymentId}, {result}",  id, ecsEvent.Detail.DeploymentId, updated ? "completed" : "failed");
+        var updated = await _deploymentsService.UpdateDeploymentStatus(ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason, cancellationToken);
+        if (!updated)
+        {
+            _logger.LogWarning("{id} Failed to record EcsDeploymentStateChange {deploymentId}",  id, ecsEvent.Detail.DeploymentId);    
+        }
+        
     }
 }

@@ -1,10 +1,8 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
-using DeploymentStatus = Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
@@ -14,7 +12,7 @@ public interface IDeploymentsServiceV2
     Task<bool>          LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
     Task                UpdateDeployment(DeploymentV2 deployment, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
-    Task<bool>          UpdateDeploymentStatus(string lambdaId, EcsDeploymentStateChangeDetail details, CancellationToken ct);
+    Task<bool>          UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
     
     Task<Paginated<DeploymentV2>> FindLatest(
         string? environment,
@@ -78,12 +76,12 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<bool> UpdateDeploymentStatus(string lambdaId,  EcsDeploymentStateChangeDetail details, CancellationToken ct)
+    public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
     {
         var update = new UpdateDefinitionBuilder<DeploymentV2>()
-            .Set(d => d.LastDeploymentMessage, details.Reason)
-            .Set(d => d.LastDeploymentStatus, details.EventName);
-
+            .Set(d => d.LastDeploymentStatus, eventName)
+            .Set(d => d.LastDeploymentMessage, reason);
+            
         var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
     }
