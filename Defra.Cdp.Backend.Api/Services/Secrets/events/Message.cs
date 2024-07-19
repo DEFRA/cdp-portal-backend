@@ -20,9 +20,16 @@ public record MessageHeader
     [JsonPropertyName("body")] public JsonObject? Body { get; init; }
 }
 
+public record SecretKey
+{
+    [JsonPropertyName("keys")] public List<string> Keys { get; init; } = new();
+    [JsonPropertyName("lastChangedDate")] public string LastChangedDate { get; init; } = "";
+    [JsonPropertyName("createdDate")] public string CreatedDate { get; init; } = "";
+}
+
 public record BodyGetAllSecretKeys
 {
-    [JsonPropertyName("keys")] public Dictionary<string, List<string>> Keys { get; init; } = new();
+    [JsonPropertyName("secretKeys")] public Dictionary<string, SecretKey> SecretKeys { get; init; } = new();
     [JsonPropertyName("exception")] public string Exception { get; init; } = "";
     [JsonPropertyName("environment")] public string Environment { get; init; } = "";
 }

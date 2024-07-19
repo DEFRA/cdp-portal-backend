@@ -43,7 +43,7 @@ public class SecretEventHandler : ISecretEventHandler
      * secret values set along with a list of the key/environment variable the secret is bound to,
      * but NOT the actual secret itself.
      */
-    public async Task HandleGetAllSecrets(MessageHeader header, CancellationToken cancellationToken)
+    private async Task HandleGetAllSecrets(MessageHeader header, CancellationToken cancellationToken)
     {
         var body = header.Body?.Deserialize<BodyGetAllSecretKeys>();
         if (body == null)
@@ -60,13 +60,17 @@ public class SecretEventHandler : ISecretEventHandler
         
         _logger.LogInformation("Updating secrets in {Environment}", body.Environment);
         var secrets = new List<TenantSecrets>();
-        
-        foreach (var kv in body.Keys)
+
+        foreach (var (key, value) in body.SecretKeys)
         {
-            var service = kv.Key.Replace("cdp/services/", "");
+            var service = key.Replace("cdp/services/", "");
             secrets.Add(new TenantSecrets
             {
-                Service = service, Environment = body.Environment, Secrets = kv.Value
+                Service = service,
+                Environment = body.Environment,
+                Secrets = value.Keys,
+                LastChangedDate = value.LastChangedDate,
+                CreatedDate = value.CreatedDate
             });
         }
         

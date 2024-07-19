@@ -20,4 +20,10 @@ public class TenantSecrets
     
     [property: JsonPropertyName("secrets")]
     public List<string> Secrets { get; init; } = new();
+
+    [property: JsonPropertyName("lastChangedDate")]
+    public string LastChangedDate { get; init; } = default!;
+
+    [property: JsonPropertyName("createdDate")]
+    public string CreatedDate { get; init; } = default!;
 }
