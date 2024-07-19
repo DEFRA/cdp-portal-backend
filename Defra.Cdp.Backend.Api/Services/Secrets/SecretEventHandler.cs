@@ -68,7 +68,7 @@ public class SecretEventHandler : ISecretEventHandler
             {
                 Service = service,
                 Environment = body.Environment,
-                Secrets = value.Keys,
+                Keys = value.Keys,
                 LastChangedDate = value.LastChangedDate,
                 CreatedDate = value.CreatedDate
             });

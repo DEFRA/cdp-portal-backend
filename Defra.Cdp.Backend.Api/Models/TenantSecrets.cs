@@ -17,9 +17,8 @@ public class TenantSecrets
     
     [property: JsonPropertyName("environment")]
     public string Environment { get; init; } = default!;
-    
-    [property: JsonPropertyName("secrets")]
-    public List<string> Secrets { get; init; } = new();
+
+    [property: JsonPropertyName("keys")] public List<string> Keys { get; init; } = new();
 
     [property: JsonPropertyName("lastChangedDate")]
     public string LastChangedDate { get; init; } = default!;
