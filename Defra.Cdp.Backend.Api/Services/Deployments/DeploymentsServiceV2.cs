@@ -8,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
 public interface IDeploymentsServiceV2
 {
-    Task                RegisterDeployment(RequestedDeployment req, CancellationToken ct);
+    Task                RegisterDeployment(DeploymentV2 req, CancellationToken ct);
     Task<bool>          LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
     Task                UpdateDeployment(DeploymentV2 deployment, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
@@ -56,9 +56,9 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return new List<CreateIndexModel<DeploymentV2>> { created, updated, lambdaId, cdpDeploymentId, envServiceVersion };
     }
 
-    public async Task RegisterDeployment(RequestedDeployment req, CancellationToken ct)
+    public async Task RegisterDeployment(DeploymentV2 deployment, CancellationToken ct)
     {
-        await Collection.InsertOneAsync(DeploymentV2.FromRequest(req), null, ct);
+        await Collection.InsertOneAsync(deployment, null, ct);
     }
 
     public async Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct)
