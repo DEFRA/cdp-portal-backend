@@ -112,7 +112,17 @@ public static class DeploymentsEndpointV2
         
         var logger = loggerFactory.CreateLogger("RegisterDeployment");
         logger.LogInformation("Registering deployment {DeploymentId}", requestedDeployment.DeploymentId);
-        await deploymentsServiceV2.RegisterDeployment(requestedDeployment, cancellationToken);
+
+        var deployment = DeploymentV2.FromRequest(requestedDeployment);
+        
+        // Record what secrets the service has
+        var secrets = await secretsService.FindSecrets(deployment.Environment, deployment.Service, cancellationToken);
+        if (secrets != null)
+        {
+            deployment.Secrets = secrets.AsDeploymentSecrets();
+        }
+        
+        await deploymentsServiceV2.RegisterDeployment(deployment, cancellationToken);
         return Results.Ok();
     }
 

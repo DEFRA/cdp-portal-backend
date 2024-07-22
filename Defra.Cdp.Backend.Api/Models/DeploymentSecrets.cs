@@ -2,7 +2,10 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public record SecretKey
+/**
+ * A cut down version of TenantSecrets
+ */
+public record DeploymentSecrets
 {
     [JsonPropertyName("keys")] public List<string> Keys { get; init; } = new();
     [JsonPropertyName("lastChangedDate")] public string LastChangedDate { get; init; } = "";

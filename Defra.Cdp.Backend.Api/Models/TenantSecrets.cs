@@ -25,4 +25,9 @@ public class TenantSecrets
 
     [property: JsonPropertyName("createdDate")]
     public string CreatedDate { get; init; } = default!;
+
+    public DeploymentSecrets AsDeploymentSecrets()
+    {
+        return new DeploymentSecrets { Keys = Keys, CreatedDate = CreatedDate, LastChangedDate = LastChangedDate };
+    }
 }

@@ -32,7 +32,7 @@ public class DeploymentV2
     public bool Unstable { get; set; } = false;
 
     public string? ConfigVersion { get; init; } = default!;
-    public SecretKey Secrets { get; init; } = new();
+    public DeploymentSecrets Secrets { get; set; } = new();
     
     // From ECS Service Deployment State Change messages 
     public string? LastDeploymentStatus { get; set; }
@@ -53,8 +53,7 @@ public class DeploymentV2
             Created = DateTime.Now,
             Updated = DateTime.Now,
             Status = req.InstanceCount > 0 ? Requested : Undeployed,
-            ConfigVersion = req.ConfigVersion,
-            Secrets = req.Secrets
+            ConfigVersion = req.ConfigVersion
         };
     }
 
