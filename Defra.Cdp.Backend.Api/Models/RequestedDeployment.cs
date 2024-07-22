@@ -36,6 +36,6 @@ public sealed class RequestedDeployment
     public string? ConfigVersion { get; init; } = default!;
     
     [property: JsonPropertyName("secrets")]
-    public List<string> Secrets { get; init; } = new();
+    public SecretKey Secrets { get; init; } = new();
 
 }

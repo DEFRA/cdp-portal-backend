@@ -31,7 +31,8 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
 
     public async Task<TenantSecrets?> FindSecrets(string environment, string service, CancellationToken cancellationToken)
     {
-        return await Collection.Find(t => t.Service == service && t.Environment == environment).FirstOrDefaultAsync(cancellationToken);
+        return await Collection.Find(t => t.Service == service && t.Environment == environment)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task UpdateSecrets(TenantSecrets secret, CancellationToken cancellationToken)

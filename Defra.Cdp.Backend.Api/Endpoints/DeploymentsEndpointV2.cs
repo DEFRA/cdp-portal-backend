@@ -77,9 +77,10 @@ public static class DeploymentsEndpointV2
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
 
-        return deployment == null
-            ? Results.NotFound(new ApiError($"{deploymentId} was not found"))
-            : Results.Ok(deployment);
+        if (deployment == null) return Results.NotFound(new ApiError($"{deploymentId} was not found"));
+
+        deployment.Secrets.Keys.Sort();
+        return Results.Ok(deployment);
     }
 
     private static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,

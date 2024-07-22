@@ -16,6 +16,9 @@ public static class TenantSecretsEndpoint
         string service, CancellationToken cancellationToken)
     {
         var secrets = await secretsService.FindSecrets(environment, service, cancellationToken);
-        return secrets == null ? Results.NotFound(new ApiError("secrets not found")) : Results.Ok(secrets);
+        if (secrets == null) return Results.NotFound(new ApiError("secrets not found"));
+
+        secrets.Keys.Sort();
+        return Results.Ok(secrets);
     }
 }

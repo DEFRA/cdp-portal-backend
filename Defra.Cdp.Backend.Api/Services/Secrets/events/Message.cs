@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Secrets.events;
 
@@ -22,7 +23,7 @@ public record MessageHeader
 
 public record BodyGetAllSecretKeys
 {
-    [JsonPropertyName("keys")] public Dictionary<string, List<string>> Keys { get; init; } = new();
+    [JsonPropertyName("secretKeys")] public Dictionary<string, SecretKey> SecretKeys { get; init; } = new();
     [JsonPropertyName("exception")] public string Exception { get; init; } = "";
     [JsonPropertyName("environment")] public string Environment { get; init; } = "";
 }
