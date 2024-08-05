@@ -27,6 +27,14 @@ public record BodyGetAllSecretKeys
     [JsonPropertyName("environment")] public string Environment { get; init; } = "";
 }
 
+public record BodyAddSecret
+{
+    [JsonPropertyName("secret")] public string SecretName { get; init; } = "";
+    [JsonPropertyName("secret_key")] public string SecretKey { get; init; } = "";
+    [JsonPropertyName("exception")] public string Exception { get; init; } = "";
+    [JsonPropertyName("environment")] public string Environment { get; init; } = "";
+}
+
 public record SecretKeysFromLambda
 {
     [JsonPropertyName("keys")] public List<string> Keys { get; init; } = new();
