@@ -144,6 +144,9 @@ builder.Services.AddSingleton<ISecretsService, SecretsService>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
 builder.Services.AddSingleton<SecretEventListener>();
 
+// Pending Secrets
+builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
+
 builder.Services.AddSingleton<MongoLock>();
 
 // Validators
