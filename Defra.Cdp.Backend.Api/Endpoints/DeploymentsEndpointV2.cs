@@ -119,7 +119,7 @@ public static class DeploymentsEndpointV2
         var secrets = await secretsService.FindSecrets(deployment.Environment, deployment.Service, cancellationToken);
         if (secrets != null)
         {
-            deployment.Secrets = secrets.AsDeploymentSecrets();
+            deployment.Secrets = secrets.AsTenantSecretKeys();
         }
         
         await deploymentsServiceV2.RegisterDeployment(deployment, cancellationToken);

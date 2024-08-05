@@ -32,7 +32,7 @@ public class DeploymentV2
     public bool Unstable { get; set; } = false;
 
     public string? ConfigVersion { get; init; } = default!;
-    public DeploymentSecrets Secrets { get; set; } = new();
+    public TenantSecretKeys Secrets { get; set; } = new();
     
     // From ECS Service Deployment State Change messages 
     public string? LastDeploymentStatus { get; set; }
