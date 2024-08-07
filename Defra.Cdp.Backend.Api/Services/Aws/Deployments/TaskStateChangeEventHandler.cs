@@ -98,6 +98,7 @@ public class TaskStateChangeEventHandler
             }
             
             // Update the specific instance status
+            _logger.LogInformation("Updating instance status for cdpID: {cdpId}, lambdaId: {lambdaId} instance {instanceId}, {msgId}", deployment.CdpDeploymentId, lambdaId, instanceTaskId, ecsTaskStateChangeEvent.DeploymentId);
             deployment.Instances[instanceTaskId] = new DeploymentInstanceStatus(instanceStatus, ecsTaskStateChangeEvent.Timestamp);
             
             // Limit the number of stopped service in the event of a crash-loop
