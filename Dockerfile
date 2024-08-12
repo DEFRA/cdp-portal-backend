@@ -8,6 +8,7 @@ EXPOSE 443
 # Add curl to template.
 # CDP PLATFORM HEALTHCHECK REQUIREMENT
 RUN apt update && \
+    apt upgrade -y && \
     apt install curl -y
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0-bullseye-slim AS build
