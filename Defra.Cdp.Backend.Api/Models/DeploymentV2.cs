@@ -28,7 +28,7 @@ public class DeploymentV2
     public DateTime Updated { get; set; }
 
     public Dictionary<string, DeploymentInstanceStatus> Instances { get; set; } = new();
-    public string Status { get; set; }
+    public string Status { get; set; } = "";
     public bool Unstable { get; set; } = false;
 
     public string? ConfigVersion { get; init; } = default!;

@@ -11,24 +11,27 @@ public static class Proxy
     {
         services.AddHttpClient(ProxyClient).ConfigurePrimaryHttpMessageHandler(() =>
         {
-            // Note: HTTPS proxy isn't support in dotnet until dotnet 8
-            var proxyUri = Environment.GetEnvironmentVariable("CDP_HTTP_PROXY");
+            var proxyUri = Environment.GetEnvironmentVariable("CDP_HTTPS_PROXY");
             var proxy = new WebProxy
             {
                 BypassProxyOnLocal = true
             };
             if (proxyUri != null)
             {
-                var uri = new Uri(proxyUri);
-                logger.Debug("Creating proxy http client {uri}", RedactUriCredentials(uri));
-                proxy.Address = uri;
+                logger.Debug("Creating proxy http client");
+                var uri = new UriBuilder(proxyUri);
 
-                var credentials = GetCredentialsFromUri(uri) ?? GetCredentialsFromEnv();
+                var credentials = GetCredentialsFromUri(uri);
                 if (credentials != null)
                 {
                     logger.Debug("Setting proxy credentials");
-                    proxy.Credentials = credentials;
+                    proxy.Credentials = credentials;    
                 }
+
+                // Remove credentials from URI to so they don't get logged.
+                uri.UserName = "";
+                uri.Password = "";
+                proxy.Address = uri.Uri;
             }
             else
             {
@@ -38,31 +41,11 @@ public static class Proxy
         });
     }
     
-    public static NetworkCredential? GetCredentialsFromUri(Uri uri)
+    public static NetworkCredential? GetCredentialsFromUri(UriBuilder uri)
     {
-        var split = uri.UserInfo.Split(':');
-        return split.Length == 2 ? new NetworkCredential(split[0], split[1]) : null;
-    }
-    
-    private static NetworkCredential? GetCredentialsFromEnv()
-    {
-        var proxyUsername = Environment.GetEnvironmentVariable("SQUID_USERNAME");
-        var proxyPassword = Environment.GetEnvironmentVariable("SQUID_PASSWORD");
-        if (proxyUsername != null && proxyPassword != null)
-        {
-            return new NetworkCredential(proxyUsername, proxyPassword);
-        }
-
-        return null;
-    }
-    
-    public static string RedactUriCredentials(Uri uri)
-    {
-        var uriBuilder = new UriBuilder(uri);
-        if (!string.IsNullOrEmpty(uriBuilder.Password))
-        {
-            uriBuilder.Password = "*****";
-        }
-        return uriBuilder.Uri.ToString();
+        var username = uri.UserName;
+        var password = uri.Password;
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password)) return null;
+        return new NetworkCredential(username, password);
     }
 }

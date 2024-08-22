@@ -78,7 +78,7 @@ public class DockerClientTests
 
 
     [Fact]
-    public async void ScanImageShouldSaveAnArtifact()
+    public async Task ScanImageShouldSaveAnArtifact()
     {
         // mock manifest
         var cfg = new Blob("", 0, "digest-cfg");

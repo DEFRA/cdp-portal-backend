@@ -37,7 +37,7 @@ public record BodyAddSecret
 
 public record SecretKeysFromLambda
 {
-    [JsonPropertyName("keys")] public List<string> Keys { get; init; } = new();
+    [JsonPropertyName("keys")] public List<string> Keys { get; init; } = [];
     [JsonPropertyName("lastChangedDate")] public string LastChangedDate { get; init; } = "";
     [JsonPropertyName("createdDate")] public string CreatedDate { get; init; } = "";
 }

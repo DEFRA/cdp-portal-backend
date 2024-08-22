@@ -79,7 +79,7 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
                 return new ReplaceOneModel<TenantSecrets>(filter, secret) { IsUpsert = true };
             }).ToList();
 
-        if (updateSecretModels.Any())
+        if (updateSecretModels.Count != 0)
         {
             await Collection.BulkWriteAsync(updateSecretModels, new BulkWriteOptions(), cancellationToken);
         }

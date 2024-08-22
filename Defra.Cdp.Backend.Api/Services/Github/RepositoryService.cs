@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
@@ -48,7 +47,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
                 return new ReplaceOneModel<Repository>(filter, repository) { IsUpsert = true };
             }).ToList();
 
-        if (replaceOneModels.Any())
+        if (replaceOneModels.Count != 0)
             // BulkWrite fails if its called with a zero length array
             await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
     }
@@ -102,7 +101,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
     public async Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken)
     {
         var excludingIdsList = knownReposIds.ToList();
-        if (excludingIdsList.IsNullOrEmpty()) throw new ArgumentException("excluded repositories cannot be empty");
+        if (excludingIdsList.Count == 0) throw new ArgumentException("excluded repositories cannot be empty");
         await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id), cancellationToken);
     }
 

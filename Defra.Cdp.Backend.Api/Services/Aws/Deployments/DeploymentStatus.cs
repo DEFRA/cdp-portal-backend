@@ -45,8 +45,8 @@ public class DeploymentStatus
         // No extra instances means its fine
         if (d.Instances.Count <= d.InstanceCount) return false;
 
-        int alive = 0;
-        int dead = 0;
+        var alive = 0;
+        var dead = 0;
 
         var recently = DateTime.Now.Subtract(TimeSpan.FromMinutes(s_UnstableWindowMins));
         

@@ -1,6 +1,4 @@
-using Amazon.Runtime;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.AspNetCore.Mvc;
@@ -23,17 +21,13 @@ public static class TestSuiteEndpoint
     static async Task<IResult> FindTestRun( [FromServices] ITestRunService testRunService, string runId, CancellationToken cancellationToken)
     {
         var result = await testRunService.FindTestRun(runId, cancellationToken);
-        if (result == null)
-        {
-            return Results.NotFound();
-        }
-        return Results.Ok(result);
+        return result == null ? Results.NotFound() : Results.Ok(result);
     }
 
     static async Task<IResult> FindTestRunsForSuite( [FromServices] ITestRunService testRunService, string name,
         CancellationToken cancellationToken)
     {
-        var result = await testRunService.FindTestRunsForTestSuite(name, cancellationToken, 100);
+        var result = await testRunService.FindTestRunsForTestSuite(name, 100, cancellationToken);
         return Results.Ok(result);
     }
 

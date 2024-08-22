@@ -134,9 +134,11 @@ public class SecretEventHandler : ISecretEventHandler
             var header = JsonSerializer.Deserialize<MessageHeader>(body);
             return header?.Source != "cdp-secret-manager-lambda" ? null : header;
         }
+#pragma warning disable CS0168 // Variable is declared but never used
         catch(Exception e)
         {
             return null;
         }
+#pragma warning restore CS0168 // Variable is declared but never used
     }
 }

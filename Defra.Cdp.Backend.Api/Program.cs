@@ -20,7 +20,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Quartz;
 using Serilog;
-using Serilog.Extensions.Logging;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -105,7 +104,7 @@ builder.Services.AddQuartz(q =>
     var jobKey = new JobKey("FetchGithubRepositories");
     q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(jobKey));
 
-    int interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
+    var interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
     logger.Information("Fetching github repositories and teams every {interval} seconds", interval);
     q.AddTrigger(opts => opts
         .ForJob(jobKey)
@@ -154,7 +153,6 @@ builder.Services.AddSingleton<MongoLock>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddEndpointsApiExplorer();
-if (builder.IsDevMode()) builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
@@ -163,16 +161,6 @@ builder.Services.AddAuthorization();
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
-// Create swagger doc from internal endpoints then add the swagger ui endpoint
-// Under `Endpoints` directory, the `.Produces`, `.WithName` and `.WithTags`
-// extension methods on the `IEndpointRouteBuilder` used as hints to build the swagger UI 
-// Todo: opt-in only
-if (builder.IsDevMode())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseRouting();
 
 // enable auth
@@ -180,8 +168,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Add endpoints
-app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
-    .CreateLogger(typeof(ArtifactsEndpoint)));
+app.MapDeployablesEndpoint();
 app.MapDeploymentsEndpointV2();
 app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();

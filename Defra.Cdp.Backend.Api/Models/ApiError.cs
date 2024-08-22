@@ -2,13 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public class ApiError
+public class ApiError(string message)
 {
     [property: JsonPropertyName("message")]
-    public string Message { get; init; }
-
-    public ApiError(string message)
-    {
-        Message = message;
-    }
+    public string Message { get; init; } = message;
 }

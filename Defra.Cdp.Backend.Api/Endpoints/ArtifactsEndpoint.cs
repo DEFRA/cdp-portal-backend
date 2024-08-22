@@ -1,70 +1,26 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class ArtifactsEndpoint
 {
-    private const string ArtifactsBaseRoute = "artifacts";
-    private const string DeployablesBaseRoute = "deployables";
-    private const string FilesBaseRoute = "files";
-    private const string ServicesBaseRoute = "services";
-    private const string Tag = "Artifacts";
-    private static ILogger _logger = default!;
-
-    public static IEndpointRouteBuilder MapDeployablesEndpoint(this IEndpointRouteBuilder app, ILogger logger)
+    public static IEndpointRouteBuilder MapDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
-        _logger = logger;
+        app.MapGet("artifacts", ListRepos);
+        app.MapGet("artifacts/{repo}", ListImagesForRepo);
+        app.MapGet("artifacts/{repo}/{tag}", ListImage);
 
-        app.MapGet(ArtifactsBaseRoute, ListRepos)
-            .WithName("GetAllImages")
-            .Produces<List<DeployableArtifact>>()
-            .WithTags(Tag);
+        app.MapGet("files/{layer}", GetFileContent);
+        
+        app.MapGet("deployables", ListDeployables);
+        app.MapGet("deployables/{repo}", ListAvailableTagsForRepo);
 
-        app.MapGet($"{ArtifactsBaseRoute}/{{repo}}", ListImagesForRepo)
-            .WithName("GetImagesForRepo")
-            .Produces<List<DeployableArtifact>>()
-            .WithTags(Tag);
+        app.MapGet("services", ListAllServices);
+        app.MapGet("services/{service}", ListService);
 
-        app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage)
-            .WithName("GetImagesForRepoAndTag")
-            .Produces<List<DeployableArtifact>>()
-            .Produces(StatusCodes.Status404NotFound)
-            .WithTags(Tag);
-
-        app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent)
-            .WithName("GetFileContent")
-            .Produces<LayerFile>()
-            .Produces(StatusCodes.Status404NotFound)
-            .WithTags(Tag);
-
-        app.MapGet(DeployablesBaseRoute, ListDeployables)
-            .WithName("GetDeployables")
-            .Produces<List<string>>()
-            .WithTags(Tag);
-
-        app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo)
-            .WithName("GetTagsForRepo")
-            .Produces<List<string>>()
-            .WithTags(Tag);
-
-        app.MapGet(ServicesBaseRoute, ListAllServices)
-            .WithName("GetServices")
-            .Produces<List<ServiceInfo>>()
-            .WithTags(Tag);
-
-        app.MapGet($"{ServicesBaseRoute}/{{service}}", ListService)
-            .WithName("GetService")
-            .Produces<ServiceInfo>()
-            .Produces(StatusCodes.Status404NotFound)
-            .WithTags(Tag);
-
-        app.MapPost($"{ArtifactsBaseRoute}/placeholder", CreatePlaceholder)
-            .WithName("CreatePlaceholder")
-            .Produces(StatusCodes.Status200OK)
-            .WithTags(Tag);
+        app.MapPost("artifacts/placeholder", CreatePlaceholder);
 
         return app;
     }
@@ -129,7 +85,7 @@ public static class ArtifactsEndpoint
             return Results.BadRequest("Invalid type parameter, requires either: [service, job]");
         }
 
-        var repoNames = groups!.Contains(adminGroup)
+        var repoNames = groups.Contains(adminGroup)
             ? await deployablesService.FindAllRepoNames(artifactRunMode, cancellationToken)
             : await deployablesService.FindAllRepoNames(artifactRunMode, groups, cancellationToken);
         return Results.Ok(repoNames);

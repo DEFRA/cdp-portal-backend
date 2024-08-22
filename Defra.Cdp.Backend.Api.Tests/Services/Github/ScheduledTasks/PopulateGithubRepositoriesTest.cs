@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Github.ScheduledTasks;
 
 public class PopulateGithubRepositoriesTest
 {
-    private Repository QueryToRepository(RepositoryResult repoResult, IEnumerable<RepositoryTeam> teams)
+    private static Repository QueryToRepository(RepositoryResult repoResult, IEnumerable<RepositoryTeam> teams)
     {
         return new Repository
         {

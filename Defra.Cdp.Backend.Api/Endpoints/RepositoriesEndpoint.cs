@@ -6,126 +6,72 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class RepositoriesEndpoint
 {
-    private const string RepositoriesBaseRoute = "repositories";
-    private const string RepositoriesTag = "Repositories";
-    private const string GithubRepositoriesBaseRoute = "github-repo";
-
-    private const string TemplatesBaseRoute = "templates";
-    private const string TemplatesTag = "Templates";
-
     public static IEndpointRouteBuilder MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet(RepositoriesBaseRoute,
-                async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team,
-                        [FromQuery(Name = "excludeTemplates")] bool? excludeTemplates,
-                        CancellationToken cancellationToken) =>
-                    await GetAllRepositories(repositoryService, team, excludeTemplates, cancellationToken))
-            .WithName("GetAllRepositories")
-            .Produces<MultipleRepositoriesResponse>()
-            .WithTags(RepositoriesTag);
-
+        app.MapGet("repositories",
+            async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team,
+                    [FromQuery(Name = "excludeTemplates")] bool? excludeTemplates,
+                    CancellationToken cancellationToken) =>
+                await GetAllRepositories(repositoryService, team, excludeTemplates, cancellationToken));
+        
         // Service repositories
-        app.MapGet($"{RepositoriesBaseRoute}/services",
+        app.MapGet("repositories/services",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
                     await GetRepositoriesByTopic(repositoryService, CdpTopic.Service,
-                        cancellationToken))
-            .WithName("GetAllRepositoriesWithServiceTopic")
-            .Produces<MultipleRepositoriesResponse>()
-            .WithTags(RepositoriesTag);
+                        cancellationToken));
 
         // Service repository
-        app.MapGet($"{RepositoriesBaseRoute}/services/{{id}}",
+        app.MapGet("repositories/services/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Service, cancellationToken))
-            .WithName("GetServiceRepositoryById")
-            .Produces<SingleRepositoryResponse>()
-            .WithTags(RepositoriesTag);
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Service, cancellationToken));
 
         // Test repositories
-        app.MapGet($"{RepositoriesBaseRoute}/tests",
+        app.MapGet("repositories/tests",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Test, cancellationToken))
-            .WithName("GetAllRepositoriesWithTestTopic")
-            .Produces<MultipleRepositoriesResponse>()
-            .WithTags(RepositoriesTag);
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Test, cancellationToken));
 
         // Test repository
-        app.MapGet($"{RepositoriesBaseRoute}/tests/{{id}}",
+        app.MapGet("repositories/tests/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Test, cancellationToken))
-            .WithName("GetTestRepositoryById")
-            .Produces<SingleRepositoryResponse>()
-            .WithTags(RepositoriesTag);
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Test, cancellationToken));
 
         // Template repositories
-        app.MapGet($"{RepositoriesBaseRoute}/templates",
+        app.MapGet("repositories/templates",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Template, cancellationToken))
-            .WithName("GetAllRepositoriesWithTemplateTopic")
-            .Produces<MultipleRepositoriesResponse>()
-            .WithTags(RepositoriesTag);
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Template, cancellationToken));
 
         // Template repository
-        app.MapGet($"{RepositoriesBaseRoute}/templates/{{id}}",
+        app.MapGet("repositories/templates/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Template, cancellationToken))
-            .WithName("GetTemplateRepositoryById")
-            .Produces<SingleRepositoryResponse>()
-            .WithTags(RepositoriesTag);
+                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Template, cancellationToken));
 
         // Library repositories
-        app.MapGet($"{RepositoriesBaseRoute}/libraries",
+        app.MapGet("repositories/libraries",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Library, cancellationToken))
-            .WithName("GetAllRepositoriesWithLibraryTopic")
-            .Produces<MultipleRepositoriesResponse>()
-            .WithTags(RepositoriesTag);
+                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Library, cancellationToken));
 
         // Library repository
-        app.MapGet($"{RepositoriesBaseRoute}/libraries/{{id}}",
-                async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Library, cancellationToken))
-            .WithName("GetLibraryRepositoryById")
-            .Produces<SingleRepositoryResponse>()
-            .WithTags(RepositoriesTag);
+        app.MapGet("repositories/libraries/{id}",
+            async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
+                await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Library, cancellationToken));
 
         // Get a Teams repositories
-        app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories)
-            .WithName("GetTeamRepositories")
-            .Produces<AllTeamRepositoriesResponse>()
-            .WithTags(RepositoriesTag);
+        app.MapGet("repositories/all/{teamId}", GetTeamRepositories);
 
-        app.MapGet($"{RepositoriesBaseRoute}/{{id}}", GetRepositoryById)
-            .WithName("GetRepositoryById")
-            .Produces<SingleRepositoryResponse>()
-            .Produces(StatusCodes.Status404NotFound)
-            .WithTags(RepositoriesTag);
+        app.MapGet("repositories/{id}", GetRepositoryById);
 
         // ALL THE THINGS
-        app.MapGet($"{GithubRepositoriesBaseRoute}/{{team}}", GetAllReposTemplatesLibraries)
-            .WithName("GetRepositoryTemplatesLibrariesByTeam")
-            .Produces<AllRepoTemplatesLibrariesResponse>()
-            .WithTags(RepositoriesTag);
+        app.MapGet("github-repo/{team}", GetAllReposTemplatesLibraries);
 
         // return as templates in the body
-        app.MapGet(TemplatesBaseRoute,
+        app.MapGet("templates",
                 async (ITemplatesService templatesService, [FromQuery(Name = "team")] string? team,
                         CancellationToken cancellationToken) =>
-                    await GetAllTemplates(templatesService, team, cancellationToken))
-            .WithName("GetAllTemplates")
-            .Produces<MultipleTemplatesResponse>()
-            .WithTags(TemplatesTag);
+                    await GetAllTemplates(templatesService, team, cancellationToken));
 
-        app.MapGet($"{TemplatesBaseRoute}/{{templateId}}", GetTemplateById)
-            .WithName("GetTemplateById")
-            .Produces<SingleTemplateResponse>()
-            .Produces(StatusCodes.Status404NotFound) // should be 501 but we don't want to break frontend
-            .WithName(TemplatesTag);
+        app.MapGet("templates/{templateId}", GetTemplateById);
 
-        app.MapGet("service-types", GetAllServicetypes)
-            .WithName("GetAllServicetypes")
-            .Produces<ServiceTypesResult>()
-            .WithTags(TemplatesTag);
+        app.MapGet("service-types", GetAllServicetypes);
 
         return app;
     }

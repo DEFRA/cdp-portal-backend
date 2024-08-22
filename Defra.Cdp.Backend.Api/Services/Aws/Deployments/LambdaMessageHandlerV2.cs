@@ -55,7 +55,7 @@ public class LambdaMessageHandlerV2
             await _deploymentsServiceV2.UpdateDeploymentStatus(lambdaId, eventName, reason, cancellationToken);
         }
 
-        _logger.LogInformation($"Successfully linked requested deployed {cdpDeploymentId} to {lambdaId}");
+        _logger.LogInformation("Successfully linked requested deployed {cdpDeploymentId} to {lambdaId}", cdpDeploymentId, lambdaId);
     }
 
 }

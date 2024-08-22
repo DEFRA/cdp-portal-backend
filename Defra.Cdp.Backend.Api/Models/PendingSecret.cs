@@ -19,10 +19,10 @@ public class PendingSecrets
     public string Service { get; init; } = default!;
 
     [property: JsonPropertyName("pending")]
-    public List<PendingSecret> Pending { get; init; } = new();
+    public List<PendingSecret> Pending { get; init; } = [];
 
     [property: JsonPropertyName("exceptionMessage")]
-    public List<string> ExceptionMessages { get; init; } = new();
+    public List<string> ExceptionMessages { get; init; } = [];
 
     [BsonElement("createdAt")]
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]

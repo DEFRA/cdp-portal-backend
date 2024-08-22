@@ -7,7 +7,7 @@ namespace Defra.Cdp.Backend.Api.Services.TestSuites;
 public interface ITestRunService
 {
     public Task<TestRun?> FindTestRun(string runId, CancellationToken cancellationToken);
-    public Task<List<TestRun>> FindTestRunsForTestSuite(string suite, CancellationToken cancellationToken, int limit);
+    public Task<List<TestRun>> FindTestRunsForTestSuite(string suite, int limit,  CancellationToken cancellationToken);
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken cancellationToken);
     public Task CreateTestRun(TestRun testRun, CancellationToken cancellationToken);
     public Task<TestRun?> Link(TestRunMatchIds ids,  DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken);
@@ -36,7 +36,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         return await Collection.Find(t => t.RunId == runId).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<List<TestRun>> FindTestRunsForTestSuite(string suite, CancellationToken cancellationToken, int limit)
+    public async Task<List<TestRun>> FindTestRunsForTestSuite(string suite,  int limit, CancellationToken cancellationToken)
     {
         return await Collection.Find(t => t.TestSuite == suite).SortByDescending(t=>t.Created).Limit(limit).ToListAsync(cancellationToken);
     }

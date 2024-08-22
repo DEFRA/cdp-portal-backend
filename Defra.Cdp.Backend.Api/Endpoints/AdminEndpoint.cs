@@ -1,4 +1,3 @@
-using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
@@ -6,21 +5,10 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class AdminEndpoint
 {
-    private const string AdminBaseRoute = "admin";
-    private const string AdminTag = "Admin";
-
     public static IEndpointRouteBuilder MapAdminEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost($"{AdminBaseRoute}/backfill", Backfill)
-            .WithName("PostAdminBackfill")
-            .Produces<IEnumerable<DeployableArtifact>>() //Todo change 
-            .WithTags(AdminTag);
-
-        app.MapPost($"{AdminBaseRoute}/scan", RescanImageRequest)
-            .WithName("PostRescanImage")
-            .Produces<DeployableArtifact>()
-            .Produces(StatusCodes.Status400BadRequest)
-            .WithTags(AdminTag);
+        app.MapPost("admin/backfill", Backfill);
+        app.MapPost("admin/scan", RescanImageRequest);
 
         return app;
     }
@@ -39,9 +27,12 @@ public static class AdminEndpoint
     }
 
     // POST /admin/scan?repo={repo}&tag={tag}
-    private static async Task<IResult> RescanImageRequest(IArtifactScanner scanner, ILoggerFactory loggerFactory,
-        CancellationToken cancellationToken,
-        string repo, string tag)
+    private static async Task<IResult> RescanImageRequest(
+        IArtifactScanner scanner, 
+        ILoggerFactory loggerFactory,
+        string repo, 
+        string tag, 
+        CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoint");
         logger.LogInformation("Rescanning {repo} {tag}", repo, tag);

@@ -24,13 +24,12 @@ public class MongoDbClientFactory : IMongoDbClientFactory
         _client = new MongoClient(settings);
         var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
         // convention must be registered before initialising collection
-        ConventionRegistry.Register("CamelCase", camelCaseConvention, type => true);
+        ConventionRegistry.Register("CamelCase", camelCaseConvention, _ => true);
         return _client;
     }
 
     public IMongoCollection<T> GetCollection<T>(string collection)
     {
-        var client = CreateClient();
         return _mongoDatabase.GetCollection<T>(collection);
     }
 }

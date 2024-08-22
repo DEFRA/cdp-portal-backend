@@ -48,13 +48,7 @@ public class ArtifactScanner : IArtifactScanner
 
     // TOOD: refine the list of files we're interested in keeping.
     // I think the path may be important so we dont capture node modules etc
-    private readonly List<Regex> _filesToExtract = new()
-    {
-        // TODO: Uncomment this once we're ready to do something with this data!
-        //new Regex(".+/.+\\.deps\\.json$"),
-        //new Regex("home/node.*/package-lock\\.json$"),
-        //new Regex(".*/pom\\.xml$")
-    };
+    private readonly List<Regex> _filesToExtract = [];
 
     private readonly ILayerService _layerService;
 
@@ -87,7 +81,7 @@ public class ArtifactScanner : IArtifactScanner
         _logger.LogInformation("Downloading manifest for {Repo}:{Tag}...", repo, tag);
 
         // Extract the labels.
-        var image = await _dockerClient.LoadManifestImage(repo, manifest.config);
+        var image = await _dockerClient.LoadManifestImage(repo, manifest.config!);
         var labels = new Dictionary<string, string>();
         if (image != null) labels = image.config.Labels;
         
@@ -118,7 +112,7 @@ public class ArtifactScanner : IArtifactScanner
             Enum.TryParse(sRunMode, true, out runMode);
         }
         
-        long semver = 0;
+        long semver;
 
         try
         {

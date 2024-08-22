@@ -1,5 +1,3 @@
-using Microsoft.IdentityModel.Tokens;
-
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public class Helpers
@@ -16,7 +14,7 @@ public class Helpers
         }
 
         var groups = httpContext.User.Claims.Where(c => c.Type == "groups").Select(c => c.Value).ToList();
-        if (groups.IsNullOrEmpty()) _logger.LogError("User is not part of a valid group");
+        if (groups.Count == 0) _logger.LogError("User is not part of a valid group");
         return groups;
     }
 }

@@ -30,7 +30,7 @@ public sealed class DeployableArtifact
 
     // TODO: replace this with references to the layers, maybe something like: {filename: layer}?  
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public List<DeployableArtifactFile> Files { get; init; } = new();
+    public List<DeployableArtifactFile> Files { get; init; } = [];
 
     public long? SemVer { get; init; }
 

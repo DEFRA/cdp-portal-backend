@@ -35,6 +35,6 @@ public class EcsEventsService : MongoService<EcsEventCopy>, IEcsEventsService
     protected override List<CreateIndexModel<EcsEventCopy>> DefineIndexes(
         IndexKeysDefinitionBuilder<EcsEventCopy> builder)
     {
-        return new List<CreateIndexModel<EcsEventCopy>>();
+        return [];
     }
 }

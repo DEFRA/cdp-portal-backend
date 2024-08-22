@@ -10,7 +10,7 @@ public class SecretEventHandlerTest
 {
 
     [Fact]
-    public async void WillProcessGetAllSecretsPayload()
+    public async Task WillProcessGetAllSecretsPayload()
     {
         var service =  Substitute.For<ISecretsService>();
         var pendingSecretsService =  Substitute.For<IPendingSecretsService>();
@@ -32,8 +32,7 @@ public class SecretEventHandlerTest
     [Fact]
     public void TryParseMessageHeaderWithValidPayload()
     {
-        var body =
-            @"{""source"": ""cdp-secret-manager-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"", ""body"": {}}";
+       const string body = """{"source": "cdp-secret-manager-lambda", "statusCode": 200, "action": "get_all_secret_keys", "body": {}}""";
        var res = SecretEventHandler.TryParseMessageHeader(body);
        Assert.NotNull(res);
     }
@@ -41,12 +40,11 @@ public class SecretEventHandlerTest
     [Fact]
     public void TryParseMessageHeaderInvalid()
     {
-        var otherLambda =
-            @"{""source"": ""cdp-some-other-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"", ""body"": {}}";
+        const string otherLambda = """{"source": "cdp-some-other-lambda", "statusCode": 200, "action": "get_all_secret_keys", "body": {}}""";
         var res = SecretEventHandler.TryParseMessageHeader(otherLambda);
         Assert.Null(res);
         
-        var otherMessage = "{\"foo\": \"bar\"}";
+        const string otherMessage = "{\"foo\": \"bar\"}";
         res = SecretEventHandler.TryParseMessageHeader(otherMessage);
         Assert.Null(res);
 
@@ -58,8 +56,7 @@ public class SecretEventHandlerTest
     [Fact]
     public void CanExtractBody()
     {
-        var body =
-            @"{""source"": ""cdp-secret-manager-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"",
+        const string body = @"{""source"": ""cdp-secret-manager-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"",
                 ""body"":
                    {
                        ""get_all_secret_keys"": true,

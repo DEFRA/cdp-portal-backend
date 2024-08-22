@@ -4,23 +4,12 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class LibrariesEndpoint
 {
-    private const string LibrariesBaseRoute = "libraries";
-    private const string LibrariesTag = "Libraries";
-
     public static IEndpointRouteBuilder MapLibrariesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet(LibrariesBaseRoute,
-                async ([FromQuery(Name = "team")] string? team) => { return await GetAllLibraries(team); })
-            .WithName("GetAllLibraries")
-            .Produces<LibrariesResult>()
-            .Produces(StatusCodes.Status404NotFound) // should be 501 but we don't want to break frontend
-            .WithTags(LibrariesTag);
+        app.MapGet("libraries",
+                async ([FromQuery(Name = "team")] string? team) => { return await GetAllLibraries(team); });
 
-        app.MapGet($"{LibrariesBaseRoute}/{{serviceId}}", GetLibrariesByServiceId)
-            .WithName("GetLibrariesByServiceId")
-            .Produces<LibrariesResult>()
-            .Produces(StatusCodes.Status404NotFound) // should be 501 but we don't want to break frontend
-            .WithName(LibrariesTag);
+        app.MapGet("libraries/{serviceId}", GetLibrariesByServiceId);
 
         return app;
     }

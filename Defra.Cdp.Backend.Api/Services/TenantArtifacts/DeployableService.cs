@@ -70,7 +70,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
     public async Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, CancellationToken cancellationToken)
     {
         return await Collection
-            .Distinct(d => d.Repo, d => d.RunMode == runMode.ToString().ToLower())
+            .Distinct(d => d.Repo, d => d.RunMode == runMode.ToString().ToLower(), cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
     }
 
@@ -78,8 +78,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         CancellationToken cancellationToken)
     {
         return await Collection
-            .Distinct(d => d.Repo,
-                d => d.RunMode == runMode.ToString().ToLower() && d.Teams.Any(t => groups.Contains(t.TeamId)))
+            .Distinct(d => d.Repo, d => d.RunMode == runMode.ToString().ToLower() && d.Teams.Any(t => groups.Contains(t.TeamId)), cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
     }
 
@@ -131,7 +130,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
 
         var result = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
                          .ToListAsync(cancellationToken) ??
-                     new List<ServiceInfo>();
+                     [];
 
         return result;
     }
@@ -142,7 +141,7 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
         var artifact = new DeployableArtifact
         {
             Created = DateTime.UtcNow,
-            Files = new List<DeployableArtifactFile>(),
+            Files = [],
             GithubUrl = githubUrl,
             Id = null,
             Repo = serviceName,

@@ -94,7 +94,7 @@ public sealed class PopulateGithubRepositories : IJob
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
         
         
-        List<Repository> repositories = new(); 
+        List<Repository> repositories = []; 
         
         // paginate
         var hasNext = true;
@@ -192,7 +192,7 @@ public sealed class PopulateGithubRepositories : IJob
                 .DistinctBy(r => r.name)
                 .Select(r =>
                 {
-                    var primaryLanguage = r.primaryLanguage?.name ?? "none";
+                    var primaryLanguage = r.primaryLanguage.name ?? "none";
                     return new Repository
                     {
                         Id = r.name,

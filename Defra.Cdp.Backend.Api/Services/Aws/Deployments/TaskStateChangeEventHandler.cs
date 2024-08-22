@@ -86,7 +86,7 @@ public class TaskStateChangeEventHandler
 
             if (deployment == null)
             {
-                _logger.LogWarning($"Failed to find a matching deployment for {lambdaId}, it may have been triggered by a different instance of portal", lambdaId);
+                _logger.LogWarning("Failed to find a matching deployment for {lambdaId}, it may have been triggered by a different instance of portal", lambdaId);
                 return;
             }
             

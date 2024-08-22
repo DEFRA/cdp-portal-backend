@@ -56,8 +56,7 @@ public abstract class SqsListener : ISqsListener, IDisposable
                     }
                     catch (Exception exception)
                     {
-                        Logger.LogError(message.Body);
-                        Logger.LogError(exception.Message);
+                        Logger.LogError("{}: {}", exception.Message, message.Body);
                         // TODO: support Dead Letter Queue 
                     }
 
@@ -72,7 +71,7 @@ public abstract class SqsListener : ISqsListener, IDisposable
             }
             catch (Exception exception)
             {
-                Logger.LogError(exception.Message);
+                Logger.LogError("{}", exception.Message);
                 await Task.Delay(1000 * Math.Min(60, falloff), cancellationToken);
                 falloff++;
                 // TODO: decide how to handle failures here. what kind of failures are they? AWS connection stuff?

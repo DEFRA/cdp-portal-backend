@@ -2,16 +2,10 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Mongo;
 
-public class Lock
+public class Lock(string id, DateTime expiresAt)
 {
-    public string Id { get; set; }
-    public DateTime ExpiresAt { get; set; }
-
-    public Lock(string id, DateTime expiresAt )
-    {
-        Id = id;
-        ExpiresAt = expiresAt;
-    }
+    public string Id { get; set; } = id;
+    public DateTime ExpiresAt { get; set; } = expiresAt;
 }
 
 public class MongoLock : MongoService<Lock>
@@ -24,7 +18,7 @@ public class MongoLock : MongoService<Lock>
         // This lets us have a TTL per lock rather than a fixed on at a collection level.
         var expiresAfter = new CreateIndexOptions { ExpireAfter = TimeSpan.FromSeconds(0) };
         var ttlIndex = new CreateIndexModel<Lock>(builder.Ascending(l => l.ExpiresAt), expiresAfter);
-        return new List<CreateIndexModel<Lock>>() { ttlIndex };
+        return [ttlIndex];
     }
 
     public MongoLock(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, "locks", loggerFactory)
@@ -40,9 +34,10 @@ public class MongoLock : MongoService<Lock>
             _logger.LogInformation("Claimed lock {lockId}", lockId);
             return true;
         }
-        catch(Exception _)
+        catch(Exception e)
         {
             _logger.LogWarning("Failed to lock {lockId}", lockId);
+            _logger.LogDebug("Lock exception {exception}", e.Message);
             return false;
         } 
     }

@@ -1,12 +1,10 @@
 using System.IO.Compression;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Options;
 using SharpCompress.Readers.Tar;
 

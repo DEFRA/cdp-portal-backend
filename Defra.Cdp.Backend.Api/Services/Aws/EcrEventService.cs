@@ -28,9 +28,6 @@ public class EcrEventsService : MongoService<EcrEventCopy>, IEcrEventsService
     protected override List<CreateIndexModel<EcrEventCopy>> DefineIndexes(
         IndexKeysDefinitionBuilder<EcrEventCopy> builder)
     {
-        var createdAtIndex = new CreateIndexModel<EcrEventCopy>(builder.Descending(r => r.CreatedAt),
-            new CreateIndexOptions { Sparse = true });
-        var bodyIndex = new CreateIndexModel<EcrEventCopy>(builder.Text(r => r.Body));
-        return new List<CreateIndexModel<EcrEventCopy>>();
+        return [];
     }
 }

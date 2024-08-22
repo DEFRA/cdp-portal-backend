@@ -18,17 +18,16 @@ public abstract class MongoService<T>
 
     protected abstract List<CreateIndexModel<T>> DefineIndexes(IndexKeysDefinitionBuilder<T> builder);
 
-    private IEnumerable<string?> EnsureIndexes()
+    private void EnsureIndexes()
     {
         var builder = Builders<T>.IndexKeys;
         var indexes = DefineIndexes(builder);
-        if (indexes.Count == 0) return Enumerable.Empty<string?>();
+        if (indexes.Count == 0) return;
 
         Logger.LogInformation(
             "Ensuring index is created if it does not exist for collection {CollectionNamespaceCollectionName} in DB {DatabaseDatabaseNamespace}",
             Collection.CollectionNamespace.CollectionName,
             Collection.Database.DatabaseNamespace);
-        var result = Collection.Indexes.CreateMany(indexes);
-        return result;
+        Collection.Indexes.CreateMany(indexes);
     }
 }

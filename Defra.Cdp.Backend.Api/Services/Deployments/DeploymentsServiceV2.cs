@@ -34,9 +34,9 @@ public interface IDeploymentsServiceV2
 
 public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServiceV2
 {
-    public static readonly int DefaultPageSize = 50;
-    public static readonly int DefaultPage = 1;
-    
+    public const int DefaultPageSize = 50;
+    public const int DefaultPage = 1;
+
     public DeploymentsServiceV2(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
     {
     }
