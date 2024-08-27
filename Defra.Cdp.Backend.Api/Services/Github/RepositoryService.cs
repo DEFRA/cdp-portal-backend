@@ -102,7 +102,7 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
     public async Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken)
     {
         var excludingIdsList = knownReposIds.ToList();
-        if (excludingIdsList.IsNullOrEmpty()) throw new ArgumentException("excluded repositories cannot be empty");
+        if (excludingIdsList.Count == 0) throw new ArgumentException("excluded repositories cannot be empty");
         await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id), cancellationToken);
     }
 

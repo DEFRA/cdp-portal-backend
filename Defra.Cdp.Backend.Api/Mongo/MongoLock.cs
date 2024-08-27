@@ -40,9 +40,10 @@ public class MongoLock : MongoService<Lock>
             _logger.LogInformation("Claimed lock {lockId}", lockId);
             return true;
         }
-        catch(Exception _)
+        catch(Exception e)
         {
             _logger.LogWarning("Failed to lock {lockId}", lockId);
+            _logger.LogTrace("Failed to lock {e}", e.Message);
             return false;
         } 
     }
