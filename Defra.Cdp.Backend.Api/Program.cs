@@ -154,7 +154,6 @@ builder.Services.AddSingleton<MongoLock>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddEndpointsApiExplorer();
-if (builder.IsDevMode()) builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
@@ -162,16 +161,6 @@ builder.Services.AddAuthorization();
 
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
-
-// Create swagger doc from internal endpoints then add the swagger ui endpoint
-// Under `Endpoints` directory, the `.Produces`, `.WithName` and `.WithTags`
-// extension methods on the `IEndpointRouteBuilder` used as hints to build the swagger UI 
-// Todo: opt-in only
-if (builder.IsDevMode())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseRouting();
 

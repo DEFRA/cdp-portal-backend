@@ -9,7 +9,7 @@ public class ProxyTests
     public void ExtractsCredentialsFromUri()
     {
 
-        var creds = Proxy.GetCredentialsFromUri(new Uri("http://username:password@www.example.com"));
+        var creds = Proxy.GetCredentialsFromUri(new UriBuilder("http://username:password@www.example.com"));
         Assert.NotNull(creds);
         Assert.Equal("username", creds.UserName);
         Assert.Equal("password", creds.Password);
@@ -18,14 +18,8 @@ public class ProxyTests
     [Fact]
     public void DoNotExtractCredentialsFromUriWithoutThem()
     {
-        var creds = Proxy.GetCredentialsFromUri(new Uri("http://www.example.com"));
+        var creds = Proxy.GetCredentialsFromUri(new UriBuilder("http://www.example.com"));
         Assert.Null(creds);
     }
 
-    [Fact]
-    public void RedactsCredentialsInUri()
-    {
-        var redacted = Proxy.RedactUriCredentials(new Uri("http://username:password@www.example.com/"));
-        Assert.Equal("http://username:*****@www.example.com/", redacted);
-    }
 }

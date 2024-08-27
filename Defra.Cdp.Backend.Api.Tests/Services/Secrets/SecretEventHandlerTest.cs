@@ -10,7 +10,7 @@ public class SecretEventHandlerTest
 {
 
     [Fact]
-    public async void WillProcessGetAllSecretsPayload()
+    public async Task WillProcessGetAllSecretsPayload()
     {
         var service =  Substitute.For<ISecretsService>();
         var pendingSecretsService =  Substitute.For<IPendingSecretsService>();

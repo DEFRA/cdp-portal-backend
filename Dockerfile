@@ -1,9 +1,7 @@
 ﻿#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
 
 # Add curl to template.
 # CDP PLATFORM HEALTHCHECK REQUIREMENT
@@ -11,7 +9,7 @@ RUN apt update && \
     apt upgrade -y && \
     apt install curl -y
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0-bullseye-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY . .
@@ -23,7 +21,7 @@ RUN dotnet publish "Defra.Cdp.Backend.Api.csproj" -c Release -o /app/publish /p:
 # unit test and code coverage
 # use the label to identity this layer later
 LABEL test=true
-#RUN dotnet test -c Release --collect:"XPlat Code Coverage" --results-directory /app/testresults "../Defra.Cdp.Backend.Api.UnitTests/Defra.Cdp.Backend.Api.UnitTests.csproj"
+RUN dotnet test
 
 ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 
