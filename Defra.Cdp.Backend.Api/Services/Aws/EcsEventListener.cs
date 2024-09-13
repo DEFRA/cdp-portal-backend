@@ -58,6 +58,7 @@ public class EcsEventListener : SqsListener
                 await _taskStateChangeEventHandler.Handle(id, ecsTaskEvent, cancellationToken);
                 break;
             case "ECS Lambda Deployment Updated":
+            case "ECS Lambda Deployment Created":
             case "ECS Lambda Deployment Event":
                 var ecsLambdaEvent = JsonSerializer.Deserialize<EcsDeploymentLambdaEvent>(messageBody);
                 if (ecsLambdaEvent == null)
