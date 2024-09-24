@@ -56,7 +56,48 @@ public class DeploymentV2
             ConfigVersion = req.ConfigVersion
         };
     }
+    
+    public static DeploymentV2? FromLambdaMessage(EcsDeploymentLambdaEvent e)
+    {
+        
+        var req = e.Request;
+        if (req == null)
+        {
+            return null;
+        }
+        
+        var commitSha = req.EnvFiles.Select( env => ExtractCommitSha(env.Value)).Where(sha => sha != null).FirstOrDefault("");
+        
+        return new DeploymentV2
+        {
+            CdpDeploymentId = e.CdpDeploymentId!,
+            Environment = req.Environment,
+            Service = req.ContainerImage,
+            Version = req.ContainerVersion,
+            User = new UserDetails()
+            {
+                DisplayName = req.DeployedBy.display_name,
+                Id = req.DeployedBy.user_id
+            },
+            Cpu = req.TaskCpu.ToString(),
+            Memory = req.TaskMemory.ToString(),
+            InstanceCount = req.DesiredCount,
+            Created = DateTime.Now,
+            Updated = DateTime.Now,
+            Status = req.DesiredCount > 0 ? Requested : Undeployed,
+            ConfigVersion = commitSha,
+            LambdaId = e.Detail.EcsDeploymentId
+        };
+    }
 
+    public static string? ExtractCommitSha(string input)
+    {
+        var parts = input.Split("/");
+        if (parts.Length > 1 && parts[1].Length == 40) { 
+            return parts[1];
+        }
+        return null;
+    }
 
     // Removes the oldest stopped instance if the total instances exceeds the limit
     public void TrimInstance(int limit)

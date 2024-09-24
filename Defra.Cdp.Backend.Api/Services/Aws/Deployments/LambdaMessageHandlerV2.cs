@@ -25,7 +25,7 @@ public class LambdaMessageHandlerV2
         var cdpDeploymentId = ecsDeploymentLambdaEvent.CdpDeploymentId;
         
         // ID of ECS deployer
-        var lambdaId = ecsDeploymentLambdaEvent.Detail.EcsDeploymentId ?.Trim();
+        var lambdaId = ecsDeploymentLambdaEvent.Detail.EcsDeploymentId?.Trim();
 
         if (string.IsNullOrWhiteSpace(cdpDeploymentId) || string.IsNullOrWhiteSpace(lambdaId))
         {
@@ -40,10 +40,22 @@ public class LambdaMessageHandlerV2
             var linked = await _deploymentsServiceV2.LinkDeployment(cdpDeploymentId, lambdaId, cancellationToken);
             if (!linked)
             {
-                _logger.LogWarning(
-                    "Failed to link cdp ${cdpDeploymentId} to ecs ${lambdaId}. If the deployment was triggered in a different environment this is to be expected.",
-                    cdpDeploymentId, lambdaId);
-                return;
+                // If linking fails it's likely the deployment came from a different instance of portal
+                // Use the original request, if present to generate the missing deployment record.
+                var deployment = DeploymentV2.FromLambdaMessage(ecsDeploymentLambdaEvent);
+                if (deployment != null)
+                {
+                    // cdp & ecs id's are already present so no need to re-link
+                    _logger.LogInformation("Creating deployment record for {cdpDeploymentId} linked to {lamdaId}. This deployment was not found in the database, it likely originated from a different portal.", cdpDeploymentId, lambdaId);
+                    await _deploymentsServiceV2.RegisterDeployment(deployment, cancellationToken);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Failed to link cdp ${cdpDeploymentId} to ecs ${lambdaId}. If the deployment was triggered in a different environment this is to be expected.",
+                        cdpDeploymentId, lambdaId);
+                    return;
+                }
             }
         }
         
@@ -55,7 +67,7 @@ public class LambdaMessageHandlerV2
             await _deploymentsServiceV2.UpdateDeploymentStatus(lambdaId, eventName, reason, cancellationToken);
         }
 
-        _logger.LogInformation($"Successfully linked requested deployed {cdpDeploymentId} to {lambdaId}");
+        _logger.LogInformation("Successfully linked requested deployed {cdpDeploymentId} to {lambdaId}", cdpDeploymentId, lambdaId);
     }
 
 }
