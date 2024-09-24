@@ -12,8 +12,8 @@ public sealed record EcsDeploymentLambdaEvent(
     EcsDeploymentLambdaDetail Detail,
     [property: JsonPropertyName("cdp_deployment_id")]
     string? CdpDeploymentId,
-    [property: JsonPropertyName("deployed_by")]
-    string? DeployedBy
+    [property: JsonPropertyName("cdp_request")]
+    EcsDeploymentLambdaRequest? Request
 );
 
 public sealed record EcsDeploymentLambdaDetail(
@@ -25,4 +25,40 @@ public sealed record EcsDeploymentLambdaDetail(
     string? EcsDeploymentId,
     [property: JsonPropertyName("reason")]
     string? Reason
+);
+
+public sealed record EcsConfigFile(
+    [property: JsonPropertyName("value")]
+    string Value, 
+    [property: JsonPropertyName("type")]
+    string Type
+    );
+
+public sealed record EcsDeployedBy(
+    string deployment_id,
+    string user_id,
+    string display_name
+    );
+
+public sealed record EcsDeploymentLambdaRequest(
+    [property: JsonPropertyName("container_image")]
+    string ContainerImage,
+    [property: JsonPropertyName("container_version")]
+    string ContainerVersion,
+    [property: JsonPropertyName("desired_count")]
+    int DesiredCount,
+    [property: JsonPropertyName("env_files")]
+    List<EcsConfigFile> EnvFiles,
+    [property: JsonPropertyName("task_cpu")]
+    int TaskCpu,
+    [property: JsonPropertyName("task_memory")]
+    int TaskMemory,
+    [property: JsonPropertyName("environment")]
+    string Environment,
+    [property: JsonPropertyName("zone")]
+    string Zone,
+    [property: JsonPropertyName("deployed_by")]
+    EcsDeployedBy DeployedBy,
+    [property: JsonPropertyName("service_code")]
+    string ServiceCode
 );
