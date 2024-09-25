@@ -28,9 +28,7 @@ public class LambdaHandlerTests
                 TaskCpu: 1024,
                 TaskMemory: 2048,
                 Environment: "infra-dev",
-                Zone: "protected",
-                DeployedBy: new EcsDeployedBy("12345678", "0", "test user"),
-                ServiceCode: "CDP"
+                DeployedBy: new EcsDeployedBy("0", "test user")
             )
         );
    
@@ -68,9 +66,7 @@ public class LambdaHandlerTests
                 TaskCpu: 1024,
                 TaskMemory: 2048,
                 Environment: "infra-dev",
-                Zone: "protected",
-                DeployedBy: new EcsDeployedBy("12345678", "0", "test user"),
-                ServiceCode: "CDP"
+                DeployedBy: new EcsDeployedBy("0", "test user")
             )
         );
    
@@ -110,9 +106,7 @@ public class LambdaHandlerTests
                 TaskCpu: 1024,
                 TaskMemory: 2048,
                 Environment: "infra-dev",
-                Zone: "protected",
-                DeployedBy: new EcsDeployedBy("12345678", "0", "test user"),
-                ServiceCode: "CDP"
+                DeployedBy: new EcsDeployedBy("0", "test user")
             )
         );
    

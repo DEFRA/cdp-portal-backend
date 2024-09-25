@@ -16,7 +16,7 @@ public class TemplatesLookupTest
             { "TemplateMappings:cdp-dotnet-backend-template", "DotNet Backend" }
         };
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(myConfiguration)
+            .AddInMemoryCollection(myConfiguration!)
             .Build();
 
         var templatesLookup = new TemplatesFromConfig(configuration);

@@ -35,7 +35,6 @@ public sealed record EcsConfigFile(
     );
 
 public sealed record EcsDeployedBy(
-    string deployment_id,
     string user_id,
     string display_name
     );
@@ -55,10 +54,6 @@ public sealed record EcsDeploymentLambdaRequest(
     int TaskMemory,
     [property: JsonPropertyName("environment")]
     string Environment,
-    [property: JsonPropertyName("zone")]
-    string Zone,
     [property: JsonPropertyName("deployed_by")]
-    EcsDeployedBy DeployedBy,
-    [property: JsonPropertyName("service_code")]
-    string ServiceCode
+    EcsDeployedBy DeployedBy
 );

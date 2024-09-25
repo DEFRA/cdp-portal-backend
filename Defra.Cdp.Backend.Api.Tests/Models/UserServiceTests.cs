@@ -15,7 +15,7 @@ public class UserServiceTests
             "",
             "",
             "1234",
-            new()
+            []
         );
         
         var teamA2 = new UserServiceTeams(
@@ -25,10 +25,10 @@ public class UserServiceTests
             "",
             "",
             "9999",
-            new()
+            []
         );
         
-        var user = new UserServiceRecord("", new List<UserServiceTeams>() {teamA1, teamA2});
+        var user = new UserServiceRecord("", [teamA1, teamA2]);
         Assert.NotNull(user);
 
     }
