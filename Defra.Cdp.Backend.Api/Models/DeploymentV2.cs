@@ -59,9 +59,8 @@ public class DeploymentV2
     
     public static DeploymentV2? FromLambdaMessage(EcsDeploymentLambdaEvent e)
     {
-        
         var req = e.Request;
-        if (req == null)
+        if (req == null || e.CdpDeploymentId == null)
         {
             return null;
         }
@@ -70,7 +69,7 @@ public class DeploymentV2
         
         return new DeploymentV2
         {
-            CdpDeploymentId = e.CdpDeploymentId!,
+            CdpDeploymentId = e.CdpDeploymentId,
             Environment = req.Environment,
             Service = req.ContainerImage,
             Version = req.ContainerVersion,
