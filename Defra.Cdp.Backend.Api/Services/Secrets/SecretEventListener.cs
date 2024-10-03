@@ -11,40 +11,33 @@ namespace Defra.Cdp.Backend.Api.Services.Secrets;
  * Messages are sent cross-account to the portal and contain information about secret
  * creation/deletion/changes.
  */
-public class SecretEventListener : SqsListener
+public class SecretEventListener(
+    IAmazonSQS sqs,
+    IOptions<SecretEventListenerOptions> config,
+    ISecretEventHandler secretEventHandler,
+    ILogger<SecretEventListener> logger)
+    : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
-    private readonly ILogger<SecretEventListener> _logger;
-    private readonly ISecretEventHandler _secretEventHandler;
-    
-    public SecretEventListener(IAmazonSQS sqs, 
-        IOptions<SecretEventListenerOptions> config,
-        ISecretEventHandler secretEventHandler,
-        ILogger<SecretEventListener> logger) : base(sqs, config.Value.QueueUrl, logger)
+    protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        _secretEventHandler = secretEventHandler;
-        _logger = logger;
-    }
-
-    public override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Received message from {queue}: {MessageId}", QueueUrl, message.MessageId);
+        logger.LogInformation("Received message from {queue}: {MessageId}", QueueUrl, message.MessageId);
 
         try
         {
             var secret = SecretEventHandler.TryParseMessageHeader(message.Body);
             if (secret != null)
             {
-                await _secretEventHandler.Handle(secret, cancellationToken);
+                await secretEventHandler.Handle(secret, cancellationToken);
             }
             else
             {
-                _logger.LogInformation("Message from {queue}: {MessageId} was not readable", QueueUrl,
+                logger.LogInformation("Message from {queue}: {MessageId} was not readable", QueueUrl,
                     message.MessageId);
             }
         }
         catch (Exception e)
         {
-            _logger.LogError("Failed to handle message: {id}, {err}", message.MessageId, e);
+            logger.LogError("Failed to handle message: {id}, {err}", message.MessageId, e);
         }
     }
 }

@@ -9,44 +9,43 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
-public class EcsEventListener : SqsListener
+public class EcsEventListener(
+    IAmazonSQS sqs,
+    IOptions<EcsEventListenerOptions> config,
+    IEcsEventsService ecsEventsService,
+    TaskStateChangeEventHandler taskStateChangeEventHandler,
+    LambdaMessageHandlerV2 lambdaMessageHandlerV2,
+    DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
+    ILogger<EcsEventListener> logger)
+    : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
-    private readonly IEcsEventsService _ecsEventsService;
-    private readonly ILogger<EcsEventListener> _logger;
-    
-    private readonly TaskStateChangeEventHandler _taskStateChangeEventHandler;
-    private readonly LambdaMessageHandlerV2 _lambdaMessageHandlerV2;
-    private readonly DeploymentStateChangeEventHandler _deploymentStateChangeEventHandler;
-
-    public EcsEventListener(IAmazonSQS sqs,
-        IOptions<EcsEventListenerOptions> config,
-        IEcsEventsService ecsEventsService,
-        TaskStateChangeEventHandler taskStateChangeEventHandler,
-        LambdaMessageHandlerV2 lambdaMessageHandlerV2,
-        DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
-        ILogger<EcsEventListener> logger) : base(sqs, config.Value.QueueUrl, logger)
+    private static DateTime GetTimeStamp(Message message, ILogger<EcsEventListener> logger)
     {
-        _logger = logger;
-        _ecsEventsService = ecsEventsService;
-        _taskStateChangeEventHandler = taskStateChangeEventHandler;
-        _lambdaMessageHandlerV2 = lambdaMessageHandlerV2;
-        _deploymentStateChangeEventHandler = deploymentStateChangeEventHandler;
+        if (message.Attributes.TryGetValue("SentTimestamp", out var sentTimestamp))
+        {
+            var milliseconds = Convert.ToDouble(sentTimestamp);
+            return DateTime.UnixEpoch.AddMilliseconds(milliseconds);
+        }
+        
+        logger.LogError("'Timestamp' attribute missing: {MessageMessageId}", message.MessageId);
+        return DateTime.Now;
     }
     
     
-    public override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
+    protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Receive: {MessageMessageId}", message.MessageId);
-    
+        logger.LogDebug("Receive: {MessageMessageId}", message.MessageId);
+        
         // keep a backup copy of the event (currently for debug/testing/replaying)
-        await _ecsEventsService.SaveMessage(message.MessageId, message.Body, cancellationToken);
+        var timestamp = GetTimeStamp(message, logger);
+        await ecsEventsService.SaveMessage(message.MessageId, message.Body, timestamp, cancellationToken);
         await ProcessMessageAsync(message.MessageId, message.Body, cancellationToken);
     }
     
     private async Task ProcessMessageAsync(string id, string messageBody, CancellationToken cancellationToken)
     {
         var unknownEvent = JsonSerializer.Deserialize<EcsEventHeader>(messageBody);
-
+        
         switch (unknownEvent?.DetailType)
         {
             case "ECS Task State Change":
@@ -55,7 +54,8 @@ public class EcsEventListener : SqsListener
                 {
                     throw new Exception($"Unable to parse ECS Task State Change message {unknownEvent.Id}");
                 }
-                await _taskStateChangeEventHandler.Handle(id, ecsTaskEvent, cancellationToken);
+                
+                await taskStateChangeEventHandler.Handle(id, ecsTaskEvent, cancellationToken);
                 break;
             case "ECS Lambda Deployment Updated":
             case "ECS Lambda Deployment Event":
@@ -64,7 +64,8 @@ public class EcsEventListener : SqsListener
                 {
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
                 }
-                await _lambdaMessageHandlerV2.Handle(id, ecsLambdaEvent, cancellationToken);
+                
+                await lambdaMessageHandlerV2.Handle(id, ecsLambdaEvent, cancellationToken);
                 break;
             case "ECS Deployment State Change":
                 var ecsDeploymentEvent = JsonSerializer.Deserialize<EcsDeploymentStateChangeEvent>(messageBody);
@@ -72,31 +73,32 @@ public class EcsEventListener : SqsListener
                 {
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
                 }
-                await _deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
+                
+                await deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
             default:
-                _logger.LogInformation("Not processing {Id}, no handler for {messageType}. message was {MessageBody}", id, unknownEvent?.DetailType, messageBody);
+                logger.LogInformation("Not processing {Id}, no handler for {messageType}. message was {MessageBody}",
+                    id, unknownEvent?.DetailType, messageBody);
                 break;
         }
-
     }
-
+    
     public async Task BackFill(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting back-fill");
-        var cursor = await _ecsEventsService.FindAll(cancellationToken);
+        logger.LogInformation("Starting back-fill");
+        var cursor = await ecsEventsService.FindAll(cancellationToken);
         await cursor.ForEachAsync(async m =>
         {
-            _logger.LogInformation("Back-filling {MessageId}", m.MessageId);
+            logger.LogInformation("Back-filling {MessageId}", m.MessageId);
             try
             {
                 await ProcessMessageAsync(m.MessageId, m.Body, cancellationToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Back-fill for message {MessageId} failed", m.MessageId);
+                logger.LogError(ex, "Back-fill for message {MessageId} failed", m.MessageId);
             }
         }, cancellationToken);
-        _logger.LogInformation("Finished back-fill");
+        logger.LogInformation("Finished back-fill");
     }
 }
