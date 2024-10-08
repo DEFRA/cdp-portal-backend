@@ -79,15 +79,27 @@ public class TaskStateChangeEventHandler
         {
             var lambdaId = ecsTaskStateChangeEvent.Detail.StartedBy.Trim();
             var instanceTaskId = ecsTaskStateChangeEvent.Detail.TaskArn;
-            _logger.LogInformation("Starting UpdateDeployment for {lambdaId}, instance {instanceId}", lambdaId, instanceTaskId);
+            _logger.LogInformation("Starting UpdateDeployment for {LambdaId}, instance {InstanceId}", lambdaId, instanceTaskId);
             
             // find the original requested deployment by the lambda id
             var deployment = await _deploymentsService.FindDeploymentByLambdaId(lambdaId, cancellationToken);
 
             if (deployment == null)
             {
-                _logger.LogWarning($"Failed to find a matching deployment for {lambdaId}, it may have been triggered by a different instance of portal", lambdaId);
-                return;
+                // Fallback to matching on the most recent for that container/version
+                var taskDefArn = ecsTaskStateChangeEvent.Detail.TaskDefinitionArn;
+                deployment = await _deploymentsService.FindDeploymentByTaskArn(taskDefArn, cancellationToken);    
+                
+                if (deployment == null)
+                {
+                    _logger.LogWarning(
+                        "Failed to find a matching deployment for ecs deployment id {LambdaId} or {TaskDefArn}, it may have been triggered by a different instance of portal",
+                        lambdaId,
+                        taskDefArn);
+                    return;
+                }
+                
+                _logger.LogWarning("Falling back to matching on Task-Definition Arn {CdpId} -> {TaskDefArn}", deployment.CdpDeploymentId, taskDefArn);
             }
             
             var instanceStatus = DeploymentStatus.CalculateStatus(ecsTaskStateChangeEvent.Detail.DesiredStatus, ecsTaskStateChangeEvent.Detail.LastStatus);
@@ -109,12 +121,14 @@ public class TaskStateChangeEventHandler
             deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
             deployment.Updated = ecsTaskStateChangeEvent.Timestamp;
 
+            deployment.TaskDefinitionArn = ecsTaskStateChangeEvent.Detail.TaskArn;
+            
             await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
             _logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to update deployment: {ex}", ex);
+            _logger.LogError("Failed to update deployment: {Message}", ex.Message);
         }
     }
    

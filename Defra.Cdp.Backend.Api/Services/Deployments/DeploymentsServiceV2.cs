@@ -8,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
 public interface IDeploymentsServiceV2
 {
-    Task                RegisterDeployment(DeploymentV2 req, CancellationToken ct);
+    Task                RegisterDeployment(DeploymentV2 deployment, CancellationToken ct);
     Task<bool>          LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
     Task                UpdateDeployment(DeploymentV2 deployment, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
@@ -25,7 +25,7 @@ public interface IDeploymentsServiceV2
         CancellationToken ct = new()
     );
     Task<DeploymentV2?> FindDeployment(string deploymentId, CancellationToken ct);
-
+    Task<DeploymentV2?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
     Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct);
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetFilters(CancellationToken ct);
@@ -84,6 +84,14 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             
         var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
+    }
+
+    public Task<DeploymentV2?>  FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
+    {
+        var fb = new FilterDefinitionBuilder<DeploymentV2>();
+        var filter = fb.Eq(d => d.TaskDefinitionArn, taskArn);
+        var latestFirst = new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Created);
+        return Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
     }
 
     public async Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct)
@@ -201,7 +209,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment, cancellationToken: ct);
     }
 
-    public async Task<DeploymentFilters> GetFilters(CancellationToken ct = new())
+    public async Task<DeploymentFilters> GetFilters(CancellationToken ct)
     {
         var serviceNames = await Collection
             .Distinct(d => d.Service, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
