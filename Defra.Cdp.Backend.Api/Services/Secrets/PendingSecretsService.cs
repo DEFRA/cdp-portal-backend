@@ -70,7 +70,8 @@ public class PendingSecretsService : MongoService<PendingSecrets>, IPendingSecre
                     SecretKey = registerPendingSecret.SecretKey, Action = registerPendingSecret.Action
                 });
 
-        await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
+        await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);  
+        _logger.LogInformation("Registering pending secret {SecretKey} for {Service} in {Environment}", registerPendingSecret.SecretKey, registerPendingSecret.Service, registerPendingSecret.Environment);
     }
 
     public async Task<PendingSecret?> ExtractPendingSecret(string environment, string service, string secretKey,
@@ -131,7 +132,7 @@ public class PendingSecretsService : MongoService<PendingSecrets>, IPendingSecre
         }
         else
         {
-            _logger.LogInformation("Add Exception: Secret {SecretKey} not found in pending secrets", secretKey);
+         _logger.LogInformation("Add Exception: Secret {SecretKey} not found in pending secrets for service {Service} in env {Environment}", secretKey, service, environment);
         }
     }
 

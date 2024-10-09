@@ -123,7 +123,7 @@ public class SecretEventHandler : ISecretEventHandler
         }
         else
         {
-            _logger.LogInformation("Add Secret: Secret {SecretKey} not found in pending secrets", body.SecretKey);
+         _logger.LogInformation("Add Secret: Secret {SecretKey} not found in pending secrets for {Service} in {Environment}", body.SecretKey, service, body.Environment);
         }
     }
     
