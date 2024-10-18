@@ -46,7 +46,7 @@ public static class TenantSecretsEndpoint
         [FromServices] ISecretsService secretsService, string service, CancellationToken cancellationToken)
     {
         var allSecrets = await secretsService.FindAllSecrets(service, cancellationToken);
-        return !allSecrets.Any() ? Results.Ok(new Dictionary<string, TenantSecretKeys>()) : Results.Ok(allSecrets);
+        return Results.Ok(allSecrets);
     }
 
     private static async Task<IResult> RegisterPendingSecret(
