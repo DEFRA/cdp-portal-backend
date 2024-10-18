@@ -20,7 +20,7 @@ public static class TenantSecretsEndpoint
         string environment, string service, CancellationToken cancellationToken)
     {
         var secrets = await secretsService.FindSecrets(environment, service, cancellationToken);
-        if (secrets == null) return Results.NotFound(new ApiError("No secrets found"));
+        if (secrets == null) return Results.Ok(new TenantSecretsResponse(service,environment));
 
         var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
         var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? new List<string>();
@@ -46,7 +46,7 @@ public static class TenantSecretsEndpoint
         [FromServices] ISecretsService secretsService, string service, CancellationToken cancellationToken)
     {
         var allSecrets = await secretsService.FindAllSecrets(service, cancellationToken);
-        return !allSecrets.Any() ?  Results.NotFound(new ApiError("No secrets found")) : Results.Ok(allSecrets);
+        return !allSecrets.Any() ? Results.Ok(new Dictionary<string, TenantSecretKeys>()) : Results.Ok(allSecrets);
     }
 
     private static async Task<IResult> RegisterPendingSecret(
@@ -63,11 +63,16 @@ public static class TenantSecretsEndpoint
         string Service,
         string Environment,
         List<string> Keys,
-        string LastChangedDate,
-        string CreatedDate,
+        string? LastChangedDate,
+        string? CreatedDate,
         List<string>? Pending,
         string? ExceptionMessage)
     {
+         public TenantSecretsResponse(string service, string environment) : 
+            this("success", service, environment, [], null, null, [], null)
+         {
+         }
+
         public TenantSecretsResponse(
             string service, string environment, List<string> keys, string lastChangedDate, string createdDate,
             List<string>? pending, string? exceptionMessage) : this(
