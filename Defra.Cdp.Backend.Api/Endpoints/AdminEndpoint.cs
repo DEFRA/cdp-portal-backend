@@ -9,20 +9,10 @@ public static class AdminEndpoint
     private const string AdminBaseRoute = "admin";
     private const string AdminTag = "Admin";
 
-    public static IEndpointRouteBuilder MapAdminEndpoint(this IEndpointRouteBuilder app)
+    public static void MapAdminEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost($"{AdminBaseRoute}/backfill", Backfill)
-            .WithName("PostAdminBackfill")
-            .Produces<IEnumerable<DeployableArtifact>>() //Todo change 
-            .WithTags(AdminTag);
-
-        app.MapPost($"{AdminBaseRoute}/scan", RescanImageRequest)
-            .WithName("PostRescanImage")
-            .Produces<DeployableArtifact>()
-            .Produces(StatusCodes.Status400BadRequest)
-            .WithTags(AdminTag);
-
-        return app;
+        app.MapPost($"{AdminBaseRoute}/backfill", Backfill);
+        app.MapPost($"{AdminBaseRoute}/scan", RescanImageRequest);
     }
 
     // POST /admin/backfill

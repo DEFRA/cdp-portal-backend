@@ -6,12 +6,11 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class TenantSecretsEndpoint
 {
-    public static IEndpointRouteBuilder MapTenantSecretsEndpoint(this IEndpointRouteBuilder app)
+    public static void MapTenantSecretsEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("secrets/{environment}/{service}", FindTenantSecrets);
         app.MapGet("secrets/{service}", FindAllTenantSecrets);
         app.MapPost("secrets/register/pending", RegisterPendingSecret);
-        return app;
     }
 
     private static async Task<IResult> FindTenantSecrets(
