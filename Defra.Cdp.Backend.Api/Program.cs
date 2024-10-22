@@ -172,7 +172,6 @@ app.UseAuthorization();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDeploymentsEndpointV2();
-app.MapLibrariesEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
