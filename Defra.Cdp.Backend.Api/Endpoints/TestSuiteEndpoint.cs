@@ -16,6 +16,7 @@ public static class TestSuiteEndpoint
         app.MapGet("test-run", FindTestRunsForSuite); // filter by test e.g. /test-run?name=foo-tests 
         app.MapPost("test-run", CreateTestRun);
         app.MapGet("test-suite", FindAllTestSuites);
+        app.MapGet("test-suite/test-run", FindAllTestSuitesWithLatestTestRun);
         app.MapGet("test-suite/{name}", FindTestSuites);
         return app;
     }
@@ -55,4 +56,23 @@ public static class TestSuiteEndpoint
         var testSuite = await deployablesService.FindServices(name, cancellationToken);
         return testSuite == null ? Results.NotFound() : Results.Ok(testSuite);
     }
+
+   static async Task<IResult> FindAllTestSuitesWithLatestTestRun(IDeployablesService deployablesService,
+    [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
+   {
+      var testSuites = await deployablesService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
+      var testSuiteWithLatestJobResponses = await Task.WhenAll(testSuites.Select(async testSuite =>
+      {
+         var latestTestRun = await testRunService.FindLatestTestRunForTestSuite(testSuite.ServiceName, cancellationToken);
+         return new TestSuiteWithLatestJobResponse(testSuite, latestTestRun);
+      }));
+      return Results.Ok(testSuiteWithLatestJobResponses);
+   }
+
+   private sealed record TestSuiteWithLatestJobResponse(
+    ServiceInfo testSuite,
+    TestRun? LatestTestRun
+    )
+   {
+   }
 }
