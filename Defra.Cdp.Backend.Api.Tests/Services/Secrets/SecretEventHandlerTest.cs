@@ -58,7 +58,7 @@ public class SecretEventHandlerTest
     [Fact]
     public void CanExtractBody()
     {
-        var body =
+        var message =
             @"{""source"": ""cdp-secret-manager-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"",
                 ""body"":
                    {
@@ -84,10 +84,10 @@ public class SecretEventHandlerTest
                         }
                     }
             }";
-        var res = SecretEventHandler.TryParseMessageHeader(body);
-        Assert.NotNull(res);
+        var messageHeader = SecretEventHandler.TryParseMessageHeader(message);
+        Assert.NotNull(messageHeader);
 
-        var parsedBody = res.Body.Deserialize<BodyGetAllSecretKeys>();
+        var parsedBody = messageHeader.Body.Deserialize<BodyGetAllSecretKeys>();
         Assert.Equal("dev", parsedBody?.Environment);
         Assert.Equal("", parsedBody?.Exception);
         Assert.Equal(3, parsedBody?.SecretKeys.Count);

@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Actions;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
@@ -73,6 +74,7 @@ builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
 builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSection(EcsEventListenerOptions.Prefix));
 builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
 builder.Services.Configure<SecretEventListenerOptions>(builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
+builder.Services.Configure<ActionEventListenerOptions>(builder.Configuration.GetSection(ActionEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
@@ -133,6 +135,7 @@ builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
+builder.Services.AddSingleton<IAppConfigEventService, AppConfigEventService>();
 
 // Deployment Event Handlers
 builder.Services.AddSingleton<TaskStateChangeEventHandler>();
@@ -143,6 +146,10 @@ builder.Services.AddSingleton<LambdaMessageHandlerV2>();
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
 builder.Services.AddSingleton<SecretEventListener>();
+
+// Action Event Handlers
+builder.Services.AddSingleton<IActionEventHandler, ActionEventHandler>();
+builder.Services.AddSingleton<ActionEventListener>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
@@ -196,6 +203,12 @@ var secretEventListener = app.Services.GetService<SecretEventListener>();
 logger.Information("Starting Secret Event listener - reading secret update events from SQS");
 Task.Run(() =>
     secretEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
+
+var actionEventListener = app.Services.GetService<ActionEventListener>();
+logger.Information("Starting Action Event listener - reading action events from SQS");
+Task.Run(() =>
+    actionEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 #pragma warning restore CS4014
