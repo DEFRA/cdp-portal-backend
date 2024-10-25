@@ -13,21 +13,12 @@ public interface ISecretEventHandler
  * Handles specific payloads sent by the secret manager lambda.
  * All messages have the same outer body detailing the source & action.
  */
-public class SecretEventHandler : ISecretEventHandler
+public class SecretEventHandler(
+    ISecretsService secretsService,
+    IPendingSecretsService pendingSecretsService,
+    ILogger<SecretEventHandler> logger)
+    : ISecretEventHandler
 {
-    
-    private readonly ISecretsService _secretsService;
-    private readonly IPendingSecretsService _pendingSecretsService;
-    private readonly ILogger<SecretEventHandler> _logger;
-
-    public SecretEventHandler(ISecretsService secretsService, IPendingSecretsService pendingSecretsService,
-        ILogger<SecretEventHandler> logger)
-    {
-        _logger = logger;
-        _secretsService = secretsService;
-        _pendingSecretsService = pendingSecretsService;
-    }
-
     public async Task Handle(MessageHeader header, CancellationToken cancellationToken)
     {
         switch (header.Action)
@@ -39,7 +30,7 @@ public class SecretEventHandler : ISecretEventHandler
                 await HandleAddSecret(header, cancellationToken);
                 break;
             default:
-                _logger.LogDebug("Ignoring action: {Action} not handled", header.Action);
+                logger.LogDebug("Ignoring action: {Action} not handled", header.Action);
                 return;
         }
     }
@@ -54,18 +45,18 @@ public class SecretEventHandler : ISecretEventHandler
         var body = header.Body?.Deserialize<BodyGetAllSecretKeys>();
         if (body == null)
         {
-            _logger.LogInformation("Failed to parse body of 'get_all_secret_keys' message");   
+            logger.LogInformation("Failed to parse body of 'get_all_secret_keys' message");   
             return;
         }
 
         if (body.Exception != "")
         {
-            _logger.LogError("get_all_secret_keys message contained exception {}", body.Exception);
+            logger.LogError("get_all_secret_keys message contained exception {}", body.Exception);
             return;
         }
 
-        _logger.LogInformation("Get All Secrets: Processing {Action}", header.Action);
-        _logger.LogInformation("Get All Secrets: Updating secrets in {Environment}", body.Environment);
+        logger.LogInformation("Get All Secrets: Processing {Action}", header.Action);
+        logger.LogInformation("Get All Secrets: Updating secrets in {Environment}", body.Environment);
         var secrets = new List<TenantSecrets>();
 
         foreach (var (key, value) in body.SecretKeys)
@@ -81,8 +72,8 @@ public class SecretEventHandler : ISecretEventHandler
             });
         }
 
-        await _secretsService.UpdateSecrets(secrets, cancellationToken);
-        _logger.LogInformation("Get All Secrets: Updated secrets for {Environment}", body.Environment);
+        await secretsService.UpdateSecrets(secrets, cancellationToken);
+        logger.LogInformation("Get All Secrets: Updated secrets for {Environment}", body.Environment);
     }
 
     /**
@@ -94,36 +85,36 @@ public class SecretEventHandler : ISecretEventHandler
         var body = header.Body?.Deserialize<BodyAddSecret>();
         if (body == null)
         {
-            _logger.LogInformation("Add Secret: Failed to parse body of 'add_secret' message");
+            logger.LogInformation("Add Secret: Failed to parse body of 'add_secret' message");
             return;
         }
 
-        _logger.LogInformation("Add Secret: Processing {Action}", header.Action);
+        logger.LogInformation("Add Secret: Processing {Action}", header.Action);
         var service = body.SecretName.Replace("cdp/services/", "");
 
         if (body.Exception != "")
         {
-            await _pendingSecretsService.AddException(
+            await pendingSecretsService.AddException(
                 body.Environment, service, body.SecretKey, "add_secret", body.Exception, cancellationToken);
-            _logger.LogError("Add Secret: add_secret message contained exception {Exception}", body.Exception);
+            logger.LogError("Add Secret: add_secret message contained exception {Exception}", body.Exception);
             return;
         }
 
-        var pendingSecret = await _pendingSecretsService.ExtractPendingSecret(body.Environment, service,
+        var pendingSecret = await pendingSecretsService.ExtractPendingSecret(body.Environment, service,
             body.SecretKey, "add_secret", cancellationToken);
 
         if (pendingSecret != null)
         {
-            await _secretsService.AddSecretKey(body.Environment, service,
+            await secretsService.AddSecretKey(body.Environment, service,
                 pendingSecret.SecretKey, cancellationToken);
 
-            _logger.LogInformation("Add Secret: Added pending secret {SecretKey} in {Environment} to {Service}",
+            logger.LogInformation("Add Secret: Added pending secret {SecretKey} in {Environment} to {Service}",
                 pendingSecret
                     .SecretKey, body.Environment, service);
         }
         else
         {
-         _logger.LogInformation("Add Secret: Secret {SecretKey} not found in pending secrets for {Service} in {Environment}", body.SecretKey, service, body.Environment);
+         logger.LogInformation("Add Secret: Secret {SecretKey} not found in pending secrets for {Service} in {Environment}", body.SecretKey, service, body.Environment);
         }
     }
     
