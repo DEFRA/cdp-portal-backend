@@ -34,7 +34,7 @@ public static class TestSuiteEndpoint
     static async Task<IResult> FindTestRunsForSuite( [FromServices] ITestRunService testRunService, string name,
         CancellationToken cancellationToken)
     {
-        var result = await testRunService.FindTestRunsForTestSuite(name, cancellationToken, 100);
+        var result = await testRunService.FindTestRunsForTestSuite(name, 100, cancellationToken);
         return Results.Ok(result);
     }
 
@@ -61,11 +61,13 @@ public static class TestSuiteEndpoint
     [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
    {
       var testSuites = await deployablesService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
-      var testSuiteWithLatestJobResponses = await Task.WhenAll(testSuites.Select(async testSuite =>
+      var latestTestRuns = await testRunService.FindLatestTestRuns(cancellationToken);
+      var testSuiteWithLatestJobResponses = testSuites.Select(ts =>
       {
-         var latestTestRun = await testRunService.FindLatestTestRunForTestSuite(testSuite.ServiceName, cancellationToken);
-         return new TestSuiteWithLatestJobResponse(testSuite, latestTestRun);
-      }));
+          var run = latestTestRuns.GetValueOrDefault(ts.ServiceName);
+          return new TestSuiteWithLatestJobResponse(ts, run);
+      });
+      
       return Results.Ok(testSuiteWithLatestJobResponses);
    }
 

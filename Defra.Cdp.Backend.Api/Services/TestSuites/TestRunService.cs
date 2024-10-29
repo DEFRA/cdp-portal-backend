@@ -7,8 +7,8 @@ namespace Defra.Cdp.Backend.Api.Services.TestSuites;
 public interface ITestRunService
 {
     public Task<TestRun?> FindTestRun(string runId, CancellationToken cancellationToken);
-    public Task<List<TestRun>> FindTestRunsForTestSuite(string suite, CancellationToken cancellationToken, int limit);
-    public Task<TestRun?> FindLatestTestRunForTestSuite(string suite, CancellationToken cancellationToken);
+    public Task<List<TestRun>> FindTestRunsForTestSuite(string suite, int limit, CancellationToken cancellationToken);
+    public Task<Dictionary<string, TestRun>> FindLatestTestRuns(CancellationToken cancellationToken);
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken cancellationToken);
     public Task CreateTestRun(TestRun testRun, CancellationToken cancellationToken);
     public Task<TestRun?> Link(TestRunMatchIds ids,  DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken);
@@ -29,7 +29,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         var suiteIndex = new CreateIndexModel<TestRun>(builder.Ascending(t => t.TestSuite));
         var arnIndex = new CreateIndexModel<TestRun>(builder.Ascending(t => t.TaskArn));
 
-        return new List<CreateIndexModel<TestRun>> { runIdIndex, suiteIndex, arnIndex };
+        return [runIdIndex, suiteIndex, arnIndex];
     }
 
     public async Task<TestRun?> FindTestRun(string runId, CancellationToken cancellationToken)
@@ -37,15 +37,20 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         return await Collection.Find(t => t.RunId == runId).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<List<TestRun>> FindTestRunsForTestSuite(string suite, CancellationToken cancellationToken, int limit)
+    public async Task<List<TestRun>> FindTestRunsForTestSuite(string suite, int limit, CancellationToken cancellationToken)
     {
         return await Collection.Find(t => t.TestSuite == suite).SortByDescending(t=>t.Created).Limit(limit).ToListAsync(cancellationToken);
     }
 
-
-   public async Task<TestRun?> FindLatestTestRunForTestSuite(string suite, CancellationToken cancellationToken)
+   public async Task<Dictionary<string, TestRun>> FindLatestTestRuns(CancellationToken cancellationToken)
    {
-      return await Collection.Find(t => t.TestSuite == suite).SortByDescending(t => t.Created).FirstOrDefaultAsync(cancellationToken);
+           var pipeline = new EmptyPipelineDefinition<TestRun>()
+               .Sort(new SortDefinitionBuilder<TestRun>().Descending(d => d.Created))
+               .Group(t => t.TestSuite, grp => new { Root = grp.First() })
+               .Project(grp => grp.Root);
+
+           var runs = await Collection.AggregateAsync(pipeline, cancellationToken: cancellationToken);
+           return runs.ToEnumerable(cancellationToken).ToDictionary(d => d.TestSuite, d => d);
    }
 
     public async Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken cancellationToken)
