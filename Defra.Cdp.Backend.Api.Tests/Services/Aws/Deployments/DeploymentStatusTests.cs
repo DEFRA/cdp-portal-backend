@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
+using Org.BouncyCastle.Tls;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws.Deployments;
@@ -16,7 +17,8 @@ public class DeploymentStatusTests
             {
                 {"1", new ( Running, DateTime.Now) },
                 {"2", new ( Pending, DateTime.Now) }
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
         var unstable = new DeploymentV2
@@ -30,7 +32,8 @@ public class DeploymentStatusTests
                 {"4", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(2)) )},
                 {"5", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(1)) )},
                 {"6", new (Pending, DateTime.Now)}
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
 
         var stopped = new DeploymentV2
@@ -42,7 +45,8 @@ public class DeploymentStatusTests
                 {"2", new ( Stopped, DateTime.Now) },
                 {"3", new ( Stopped, DateTime.Now) },
                 {"4", new ( Stopped, DateTime.Now) }
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
 
         
@@ -54,7 +58,7 @@ public class DeploymentStatusTests
     [Fact]
     public void TestOverallStatus()
     {
-        var running = new DeploymentV2
+        var runningWithoutDeploymentComplete = new DeploymentV2
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -64,6 +68,17 @@ public class DeploymentStatusTests
             }
         };
         
+        var runningWithDeploymentComplete = new DeploymentV2
+        {
+            InstanceCount = 2, 
+            Instances = new Dictionary<string, DeploymentInstanceStatus>
+            {
+                {"1", new (Running, DateTime.Now )},
+                {"2", new (Running, DateTime.Now )}
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
+        };
+        
         var pending = new DeploymentV2
         {
             InstanceCount = 2, 
@@ -71,7 +86,8 @@ public class DeploymentStatusTests
             {
                 {"A", new ( Pending, DateTime.Now )},
                 {"B", new ( Running, DateTime.Now )}
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
         var stopping = new DeploymentV2
@@ -81,7 +97,8 @@ public class DeploymentStatusTests
             {
                 {"1", new (Stopping, DateTime.Now)},
                 {"2", new (Running, DateTime.Now)}
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
         var stopped = new DeploymentV2
@@ -91,13 +108,27 @@ public class DeploymentStatusTests
             {
                 {"1", new (Stopped, DateTime.Now)},
                 {"2", new (Stopped,DateTime.Now)}
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
         
-        Assert.Equal(Running, CalculateOverallStatus(running));
+        var failed = new DeploymentV2
+        {
+            InstanceCount = 2, 
+            Instances = new Dictionary<string, DeploymentInstanceStatus>
+            {
+                {"1", new (Stopped, DateTime.Now)},
+                {"2", new (Stopped,DateTime.Now)}
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_FAILED
+        };
+        
+        Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentComplete));
+        Assert.Equal(Running, CalculateOverallStatus(runningWithDeploymentComplete));
         Assert.Equal(Pending, CalculateOverallStatus(pending));
         Assert.Equal(Stopping, CalculateOverallStatus(stopping));
         Assert.Equal(Stopped, CalculateOverallStatus(stopped));
+        Assert.Equal(Failed, CalculateOverallStatus(failed));
     }
     
     [Fact]
@@ -111,7 +142,8 @@ public class DeploymentStatusTests
                 {"1", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromDays(2)))},
                 {"2", new (Running, DateTime.Now)},
                 {"3", new (Running, DateTime.Now) }
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
         
         var recoveringFromCrash = new DeploymentV2
@@ -121,7 +153,8 @@ public class DeploymentStatusTests
             {
                 {"1", new (Stopping, DateTime.Now)},
                 {"2", new (Pending, DateTime.Now)}
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
         var crashLoop = new DeploymentV2
@@ -131,7 +164,8 @@ public class DeploymentStatusTests
             {
                 {"1", new(Stopping,DateTime.Now) },
                 {"2", new(Running, DateTime.Now) }
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         }; 
         
         for (var i = 0; i < 1000; i++)
@@ -141,7 +175,7 @@ public class DeploymentStatusTests
         
         Assert.Equal(Running, CalculateOverallStatus(runningWithOldFailure));
         Assert.Equal(Pending, CalculateOverallStatus(recoveringFromCrash));
-        Assert.Equal(Running, CalculateOverallStatus(crashLoop));
+        Assert.Equal(Pending, CalculateOverallStatus(crashLoop));
     }
     
     [Fact]
@@ -153,7 +187,8 @@ public class DeploymentStatusTests
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Running, DateTime.Now )}
-            }
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
         Assert.Equal(Pending, CalculateOverallStatus(running));

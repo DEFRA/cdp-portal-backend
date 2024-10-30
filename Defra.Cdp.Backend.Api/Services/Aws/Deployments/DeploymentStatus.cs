@@ -9,7 +9,12 @@ public class DeploymentStatus
     public const string Running     = "running";
     public const string Stopped     = "stopped";
     public const string Stopping    = "stopping";
+    public const string Failed      = "failed";
     public const string Undeployed  = "undeployed";
+
+    public const string SERVICE_DEPLOYMENT_COMPLETED = "SERVICE_DEPLOYMENT_COMPLETED";
+    public const string SERVICE_DEPLOYMENT_FAILED = "SERVICE_DEPLOYMENT_FAILED";
+    public const string SERVICE_DEPLOYMENT_IN_PROGRESS = "SERVICE_DEPLOYMENT_IN_PROGRESS";
     
     // How many extra stopped deployments in how many minutes should be considered as a crash-loop
     private static readonly double s_UnstableWindowMins = 6;
@@ -85,7 +90,7 @@ public class DeploymentStatus
         // If we have all the running instances we desire
         if (instances.GetValueOrDefault(Running,0) >= d.InstanceCount)
         {
-            return Running;
+            return d.LastDeploymentStatus == SERVICE_DEPLOYMENT_COMPLETED ? Running : Pending;
         }
         
         // If we have anything pending, it means we're not done yet...
@@ -104,6 +109,11 @@ public class DeploymentStatus
         if (instances.GetValueOrDefault(Running,0) > 0)
         {
             return Pending;
+        }
+
+        if (d.LastDeploymentStatus == SERVICE_DEPLOYMENT_FAILED)
+        {
+            return Failed;
         }
         
         // Otherwise, with nothing running, pending, or stopping the deployment must have been stopped (right?)
