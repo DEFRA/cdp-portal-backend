@@ -87,7 +87,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         if (deployment != null)
         {
             deployment.LastDeploymentStatus = eventName;
-            update.Set(d => d.Status, CalculateOverallStatus(deployment));
+            update = update.Set(d => d.Status, CalculateOverallStatus(deployment));
         }
             
         var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
