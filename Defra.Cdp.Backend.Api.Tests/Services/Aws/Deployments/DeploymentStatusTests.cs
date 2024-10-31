@@ -65,6 +65,17 @@ public class DeploymentStatusTests
             {
                 {"1", new (Running, DateTime.Now )},
                 {"2", new (Running, DateTime.Now )}
+            },
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
+        };
+        
+        var runningWithoutDeploymentStatus = new DeploymentV2
+        {
+            InstanceCount = 2, 
+            Instances = new Dictionary<string, DeploymentInstanceStatus>
+            {
+                {"1", new (Running, DateTime.Now )},
+                {"2", new (Running, DateTime.Now )}
             }
         };
         
@@ -124,6 +135,7 @@ public class DeploymentStatusTests
         };
         
         Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentComplete));
+        Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentStatus));
         Assert.Equal(Running, CalculateOverallStatus(runningWithDeploymentComplete));
         Assert.Equal(Pending, CalculateOverallStatus(pending));
         Assert.Equal(Stopping, CalculateOverallStatus(stopping));

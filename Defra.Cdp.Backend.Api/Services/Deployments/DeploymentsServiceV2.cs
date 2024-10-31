@@ -78,7 +78,10 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
     public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
     {
+        var deployment = await FindDeploymentByLambdaId(lambdaId, ct);
+
         var update = new UpdateDefinitionBuilder<DeploymentV2>()
+            .Set(d => d.Status, CalculateOverallStatus(deployment!))
             .Set(d => d.LastDeploymentStatus, eventName)
             .Set(d => d.LastDeploymentMessage, reason);
             
