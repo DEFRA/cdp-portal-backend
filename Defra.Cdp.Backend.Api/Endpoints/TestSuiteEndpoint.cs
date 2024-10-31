@@ -1,6 +1,4 @@
-using Amazon.Runtime;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +14,6 @@ public static class TestSuiteEndpoint
         app.MapGet("test-run", FindTestRunsForSuite); // filter by test e.g. /test-run?name=foo-tests 
         app.MapPost("test-run", CreateTestRun);
         app.MapGet("test-suite", FindAllTestSuites);
-        app.MapGet("test-suite/test-run", FindAllTestSuitesWithLatestTestRun);
         app.MapGet("test-suite/{name}", FindTestSuites);
         return app;
     }
@@ -44,20 +41,13 @@ public static class TestSuiteEndpoint
         return Results.Created($"test-run/{testRun.RunId}", null);
     }
     
-    static async Task<IResult> FindAllTestSuites(IDeployablesService deployablesService,
-        CancellationToken cancellationToken)
-    {
-        var testSuites = await deployablesService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
-        return Results.Ok(testSuites);
-    }
-    
     static async Task<IResult> FindTestSuites(string name, IDeployablesService deployablesService, CancellationToken cancellationToken)
     {
         var testSuite = await deployablesService.FindServices(name, cancellationToken);
         return testSuite == null ? Results.NotFound() : Results.Ok(testSuite);
     }
 
-   static async Task<IResult> FindAllTestSuitesWithLatestTestRun(IDeployablesService deployablesService,
+    private static async Task<IResult> FindAllTestSuites(IDeployablesService deployablesService,
     [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
    {
       var testSuites = await deployablesService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
