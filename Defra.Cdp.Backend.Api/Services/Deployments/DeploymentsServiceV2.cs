@@ -81,9 +81,14 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         var deployment = await FindDeploymentByLambdaId(lambdaId, ct);
 
         var update = new UpdateDefinitionBuilder<DeploymentV2>()
-            .Set(d => d.Status, CalculateOverallStatus(deployment!))
             .Set(d => d.LastDeploymentStatus, eventName)
             .Set(d => d.LastDeploymentMessage, reason);
+        
+        if (deployment != null)
+        {
+            deployment.LastDeploymentStatus = eventName;
+            update.Set(d => d.Status, CalculateOverallStatus(deployment));
+        }
             
         var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
