@@ -1,16 +1,27 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.TestSuites;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
 public class DeploymentStateChangeEventHandler
 {
     private readonly IDeploymentsServiceV2 _deploymentsService;
+    private readonly ITestRunService _testRunService;
+    private readonly IDeploymentTriggerService _deploymentTriggerService;
     private readonly ILogger<DeploymentStateChangeEventHandler> _logger;
 
-    public DeploymentStateChangeEventHandler(IDeploymentsServiceV2 deploymentsService, ILogger<DeploymentStateChangeEventHandler> logger)
+    public DeploymentStateChangeEventHandler(
+      IDeploymentsServiceV2 deploymentsService, 
+      ITestRunService testRunService,
+      IDeploymentTriggerService deploymentTriggerService, 
+      ILogger<DeploymentStateChangeEventHandler> logger
+   )
     {
         _deploymentsService = deploymentsService;
+      _testRunService = testRunService;
+      _deploymentTriggerService = deploymentTriggerService;
         _logger = logger;
     }
 
@@ -22,6 +33,30 @@ public class DeploymentStateChangeEventHandler
         {
             _logger.LogWarning("{id} Failed to record EcsDeploymentStateChange {deploymentId}",  id, ecsEvent.Detail.DeploymentId);    
         }
-        
+      else
+      {
+         var deployment = await _deploymentsService.FindDeployment(ecsEvent.Detail.DeploymentId, cancellationToken);
+         if (deployment == null)
+         {
+            _logger.LogWarning("{id} Deployment {deploymentId} not found", id, ecsEvent.Detail.DeploymentId);
+         }
+         else if (deployment.Status != DeploymentStatus.Running)
+         {
+            _logger.LogWarning("{id} Deployment {deploymentId} not running", id, ecsEvent.Detail.DeploymentId);
+         }
+         else 
+         {
+            var deploymentTriggers = await _deploymentTriggerService.FindDeploymentTriggers(deployment.Service, cancellationToken);
+
+            foreach (var trigger in deploymentTriggers)
+            {
+               _logger.LogInformation("{id} Triggering test run for {deploymentId} {testSuite}", id, ecsEvent.Detail.DeploymentId, trigger.TestSuite);
+               var testRun = TestRun.FromDeployment(deployment, trigger.TestSuite);
+               await _testRunService.CreateTestRun(testRun, cancellationToken);
+               deployment.DeploymentTestRuns.Add(testRun);
+               await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
+            }
+         }
+      }
     }
 }
