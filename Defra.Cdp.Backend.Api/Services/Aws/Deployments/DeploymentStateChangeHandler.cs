@@ -46,7 +46,7 @@ public class DeploymentStateChangeEventHandler
          }
          else 
          {
-            var deploymentTriggers = await _deploymentTriggerService.FindDeploymentTriggers(deployment.Service, cancellationToken);
+            var deploymentTriggers = await _deploymentTriggerService.FindTriggersForDeployment(deployment, cancellationToken);
 
             foreach (var trigger in deploymentTriggers)
             {

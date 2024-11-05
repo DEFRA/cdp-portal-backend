@@ -6,10 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 
 public interface IDeploymentTriggerService
 {
-   public Task<List<DeploymentTrigger>> FindDeploymentTriggers(string repository, CancellationToken cancellationToken);
-
-   public Task<DeploymentTrigger?> FindDeploymentTrigger(string repository, string testSuite, CancellationToken cancellationToken);
-
+   public Task<List<DeploymentTrigger>> FindTriggersForDeployment(DeploymentV2 deployment, CancellationToken cancellationToken);
 }
 
 public class DeploymentTriggerService : MongoService<DeploymentTrigger>, IDeploymentTriggerService
@@ -29,15 +26,10 @@ public class DeploymentTriggerService : MongoService<DeploymentTrigger>, IDeploy
       return [repositoryIndex, testSuiteIndex];
    }
 
-   public async Task<List<DeploymentTrigger>> FindDeploymentTriggers(string repository, CancellationToken cancellationToken)
+   public async Task<List<DeploymentTrigger>> FindTriggersForDeployment(DeploymentV2 deployment, CancellationToken cancellationToken)
    {
-      return await Collection.Find(t => t.Repository == repository).ToListAsync(cancellationToken);
-   }
-
-   public async Task<DeploymentTrigger?> FindDeploymentTrigger(string repository, string testSuite, CancellationToken cancellationToken)
-   {
-      return await Collection.Find(t => t.Repository == repository && t.TestSuite == testSuite)
-         .FirstOrDefaultAsync(cancellationToken);
+      return await Collection.Find(t => t.Repository == deployment.Service && t.Environments.Contains(deployment.Environment))
+         .ToListAsync(cancellationToken);
    }
 
 }
