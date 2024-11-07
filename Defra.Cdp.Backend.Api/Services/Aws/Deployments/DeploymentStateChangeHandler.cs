@@ -35,7 +35,7 @@ public class DeploymentStateChangeEventHandler
         }
       else
       {
-         var deployment = await _deploymentsService.FindDeployment(ecsEvent.Detail.DeploymentId, cancellationToken);
+         var deployment = await _deploymentsService.FindDeploymentByLambdaId(ecsEvent.Detail.DeploymentId, cancellationToken);
          if (deployment == null)
          {
             _logger.LogWarning("{id} Deployment {deploymentId} not found", id, ecsEvent.Detail.DeploymentId);
