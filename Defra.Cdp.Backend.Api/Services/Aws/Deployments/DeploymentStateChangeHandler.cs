@@ -10,10 +10,12 @@ public class DeploymentStateChangeEventHandler
     private readonly IDeploymentsServiceV2 _deploymentsService;
     private readonly ITestRunService _testRunService;
     private readonly IDeploymentTriggerService _deploymentTriggerService;
-    private readonly ILogger<DeploymentStateChangeEventHandler> _logger;
+   private readonly SelfServiceOpsFetcher _selfServiceOpsFetcher;
+   private readonly ILogger<DeploymentStateChangeEventHandler> _logger;
 
     public DeploymentStateChangeEventHandler(
-      IDeploymentsServiceV2 deploymentsService, 
+      IConfiguration configuration,
+      IDeploymentsServiceV2 deploymentsService,
       ITestRunService testRunService,
       IDeploymentTriggerService deploymentTriggerService, 
       ILogger<DeploymentStateChangeEventHandler> logger
@@ -23,7 +25,8 @@ public class DeploymentStateChangeEventHandler
       _testRunService = testRunService;
       _deploymentTriggerService = deploymentTriggerService;
         _logger = logger;
-    }
+      _selfServiceOpsFetcher = new SelfServiceOpsFetcher(configuration);
+   }
 
     public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
     {
@@ -55,6 +58,12 @@ public class DeploymentStateChangeEventHandler
                await _testRunService.CreateTestRun(testRun, cancellationToken);
                deployment.DeploymentTestRuns.Add(testRun);
                await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
+               /**
+                * This is the point where we call self-service-ops to trigger the test run
+                * We need to add a new endpoint to the self-service-ops service to handle this
+                * Or we send a message to a queue that self-service-ops listens to
+                */
+               await _selfServiceOpsFetcher.deployTestSuite(deployment.Service, deployment.Environment, cancellationToken);
             }
          }
       }
