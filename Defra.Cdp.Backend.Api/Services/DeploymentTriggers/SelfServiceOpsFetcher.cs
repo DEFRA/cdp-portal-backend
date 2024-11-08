@@ -23,12 +23,13 @@ public class SelfServiceOpsFetcher
           "cdp-portal-backend");
    }
 
-   public async Task<HttpStatusCode> triggerTestSuite(string ImageName, string Environment, CancellationToken cancellationToken)
+   public async Task<HttpStatusCode> triggerTestSuite(string ImageName, string Environment, UserDetails? User, CancellationToken cancellationToken)
    {
       var body = new
       {
          imageName = ImageName,
-         environment = Environment
+         environment = Environment,
+         user = User
       };
       var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
       var result = await _client.PostAsync("/trigger-test-suite", payload, cancellationToken);

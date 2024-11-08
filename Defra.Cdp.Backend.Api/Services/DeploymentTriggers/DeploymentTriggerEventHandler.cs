@@ -48,7 +48,7 @@ public class DeploymentTriggerEventHandler
          {
             _logger.LogInformation("{id} Triggering test run for {deploymentId} {testSuite}", id, ecsEvent.Detail.DeploymentId, trigger.TestSuite);
 
-            await _selfServiceOpsFetcher.triggerTestSuite(trigger.TestSuite, deployment.Environment, cancellationToken);
+            await _selfServiceOpsFetcher.triggerTestSuite(trigger.TestSuite, deployment.Environment, deployment.User, cancellationToken);
 
          }
       }
