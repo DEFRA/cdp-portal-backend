@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
@@ -47,7 +48,7 @@ public class DeploymentTriggerEventHandler
          {
             _logger.LogInformation("{id} Triggering test run for {deploymentId} {testSuite}", id, ecsEvent.Detail.DeploymentId, trigger.TestSuite);
 
-            await _selfServiceOpsFetcher.triggerTestSuite(deployment.Service, deployment.Environment, cancellationToken);
+            await _selfServiceOpsFetcher.triggerTestSuite(trigger.TestSuite, deployment.Environment, cancellationToken);
 
          }
       }
