@@ -143,6 +143,9 @@ builder.Services.AddSingleton<TaskStateChangeEventHandler>();
 builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandlerV2>();
 
+// Deployment Trigger Event Handlers
+builder.Services.AddSingleton<DeploymentTriggerEventHandler>();
+
 // Secret Event Handlers
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
