@@ -4,6 +4,7 @@ using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
@@ -16,6 +17,7 @@ public class EcsEventListener(
     TaskStateChangeEventHandler taskStateChangeEventHandler,
     LambdaMessageHandlerV2 lambdaMessageHandlerV2,
     DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
+    DeploymentTriggerEventHandler deploymentTriggerEventHandler,
     ILogger<EcsEventListener> logger)
     : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
@@ -76,6 +78,7 @@ public class EcsEventListener(
                 }
                 
                 await deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
+                await deploymentTriggerEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
             default:
                 logger.LogInformation("Not processing {Id}, no handler for {messageType}. message was {MessageBody}",

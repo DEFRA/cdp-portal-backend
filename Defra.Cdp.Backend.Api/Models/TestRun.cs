@@ -40,4 +40,17 @@ public sealed class TestRun
     
     [property: JsonPropertyName("tag")]
     public string? Tag { get; set; }
+
+   public static TestRun FromDeployment(DeploymentV2 deployment, string testSuite)
+   {
+      return new TestRun
+      {
+         RunId = Guid.NewGuid().ToString(),
+         TestSuite = testSuite,
+         Environment = deployment.Environment,
+         User = deployment.User ?? null,
+         Created = DateTime.Now
+      };
+   }
+
 }

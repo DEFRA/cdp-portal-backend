@@ -8,6 +8,7 @@ using Defra.Cdp.Backend.Api.Services.Actions;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
@@ -142,6 +143,9 @@ builder.Services.AddSingleton<TaskStateChangeEventHandler>();
 builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandlerV2>();
 
+// Deployment Trigger Event Handlers
+builder.Services.AddSingleton<DeploymentTriggerEventHandler>();
+
 // Secret Event Handlers
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
@@ -153,6 +157,8 @@ builder.Services.AddSingleton<ActionEventListener>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
+
+builder.Services.AddSingleton<IDeploymentTriggerService, DeploymentTriggerService>();
 
 builder.Services.AddSingleton<MongoLock>();
 

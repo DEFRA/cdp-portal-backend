@@ -38,6 +38,8 @@ public class DeploymentV2
     public string? LastDeploymentStatus { get; set; }
     public string? LastDeploymentMessage { get; set; }
     
+    public List<TestRun> DeploymentTestRuns { get; set; } = new();
+
     public string? TaskDefinitionArn { get; set; }
     
     public static DeploymentV2 FromRequest(RequestedDeployment req)
