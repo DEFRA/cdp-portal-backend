@@ -8,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class DeploymentsEndpointV2
 {
-    public static IEndpointRouteBuilder MapDeploymentsEndpointV2(this IEndpointRouteBuilder app)
+    public static void MapDeploymentsEndpointV2(this IEndpointRouteBuilder app)
     {
         app.MapGet("/v2/deployments",
             async (IDeploymentsServiceV2 deploymentsService,
@@ -38,8 +38,6 @@ public static class DeploymentsEndpointV2
         app.MapPost("/v2/deployments", RegisterDeployment);
         app.MapPost("/deployments", RegisterDeployment); // fallback while we migrate self-service-ops off v1
         app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
-
-        return app;
     }
 
     // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&page=1&offset=0&size=50
