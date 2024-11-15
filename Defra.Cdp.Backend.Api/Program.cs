@@ -23,6 +23,7 @@ using Microsoft.Identity.Web;
 using Quartz;
 using Serilog;
 using Serilog.Extensions.Logging;
+using Environment = System.Environment;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -39,6 +40,7 @@ builder.Logging.ClearProviders();
 var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.With<LogLevelMapper>()
+    .Enrich.WithProperty("service.version", Environment.GetEnvironmentVariable("SERVICE_VERSION"))
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
 
