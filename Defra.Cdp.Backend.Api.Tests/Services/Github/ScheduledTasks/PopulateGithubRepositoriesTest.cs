@@ -160,4 +160,34 @@ public class PopulateGithubRepositoriesTest
 
         actual.Should().BeEquivalentTo(expected);
     }
+    
+    
+    [Fact]
+    public void FiltersOutTeamsNotLinkedToCDPTeams()
+    {
+        var mockTopics = Topics.CreateMockTopics();
+
+        var createdAt = DateTimeOffset.Now;
+        var repoResult1 =
+            new RepositoryResult("repo1", mockTopics, "desc1", "Javascript", "https://url1", false, false,
+                true, createdAt);
+        var fakeQueryResult =
+            new List<TeamResult>
+            {
+                new("cdp-platform", [repoResult1]),
+                new("non-cdp-team", [repoResult1])
+            };
+        var githubTeamToTeamIdMap =
+            new Dictionary<string, string> { { "cdp-platform", "1111" } };
+        var githubTeamToTeamNameMap =
+            new Dictionary<string, string> { { "cdp-platform", "CDP Team" } };
+        var actual =
+            PopulateGithubRepositories.QueryResultToRepositories(fakeQueryResult, githubTeamToTeamIdMap,
+                githubTeamToTeamNameMap).ToList();
+
+       Assert.Single(actual);
+       Assert.Single(actual[0].Teams);
+       Assert.Equal("1111", actual[0].Teams.First().TeamId);
+    }
+
 }
