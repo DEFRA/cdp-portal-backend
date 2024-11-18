@@ -162,7 +162,9 @@ public sealed class PopulateGithubRepositories : IJob
                     PrimaryLanguage = r.PrimaryLanguage,
                     Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList()
                         .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
-                            githubToTeamNameMap.GetValueOrDefault(t))),
+                            githubToTeamNameMap.GetValueOrDefault(t)))
+                        .Where(t => !string.IsNullOrEmpty(t.TeamId))
+                    ,
                     Topics = r.Topics.nodes.Select(t => t.topic.name)
                 });
         return repositories;
