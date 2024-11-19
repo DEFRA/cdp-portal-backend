@@ -131,45 +131,6 @@ public sealed class PopulateGithubRepositories : IJob
         _logger.LogInformation("Successfully repopulated repositories and team information");
     }
 
-    public static IEnumerable<Repository> QueryResultToRepositories(List<TeamResult> result,
-        Dictionary<string, string> githubToTeamIdMap, Dictionary<string, string> githubToTeamNameMap)
-    {
-        var teamsAndReposPair =
-            result
-                .SelectMany(t =>
-                    t.Repositories
-                        .ToList()
-                        .Select(r => new { Team = t.Slug, Repo = r.Name })).Distinct();
-        var repoOwnerPair = teamsAndReposPair.GroupBy(
-                pair => pair.Repo,
-                pair => pair.Team,
-                (repo, teams) => new { repo, teams })
-            .ToDictionary(pair => pair.repo, pair => pair.teams);
-
-        var repositories =
-            result
-                .SelectMany(t => t.Repositories.ToList())
-                .DistinctBy(r => r.Name)
-                .Select(r => new Repository
-                {
-                    Id = r.Name,
-                    CreatedAt = r.CreatedAt,
-                    Description = r.Description,
-                    IsArchived = r.IsArchived,
-                    IsPrivate = r.IsPrivate,
-                    IsTemplate = r.IsTemplate,
-                    Url = r.Url,
-                    PrimaryLanguage = r.PrimaryLanguage,
-                    Teams = (repoOwnerPair.GetValueOrDefault(r.Name) ?? Array.Empty<string>()).ToList()
-                        .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
-                            githubToTeamNameMap.GetValueOrDefault(t)))
-                        .Where(t => !string.IsNullOrEmpty(t.TeamId))
-                    ,
-                    Topics = r.Topics.nodes.Select(t => t.topic.name)
-                });
-        return repositories;
-    }
-
     public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result,
         Dictionary<string, string> githubToTeamIdMap, Dictionary<string, string> githubToTeamNameMap)
     {
@@ -205,9 +166,10 @@ public sealed class PopulateGithubRepositories : IJob
                         IsTemplate = r.isTemplate,
                         Url = r.url,
                         PrimaryLanguage = primaryLanguage,
-                        Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).ToList()
+                        Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).AsEnumerable()
                             .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
-                                githubToTeamNameMap.GetValueOrDefault(t))),
+                                githubToTeamNameMap.GetValueOrDefault(t)))
+                            .Where(t => !string.IsNullOrEmpty(t.TeamId)),
                         Topics = r.repositoryTopics.nodes.Select(t => t.topic.name)
                     };
                 });
