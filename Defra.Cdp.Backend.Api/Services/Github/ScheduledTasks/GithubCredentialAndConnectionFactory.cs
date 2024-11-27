@@ -1,8 +1,6 @@
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Utils;
 using GitHubJwt;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -26,7 +24,7 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
 
     public GithubCredentialAndConnectionFactory(IHttpClientFactory clientFactory, IConfiguration configuration)
     {
-        _client = clientFactory.CreateClient(Proxy.ProxyClient);
+        _client = clientFactory.CreateClient("GitHubClient");
         var encodedPem = configuration.GetValue<string>("Github:AppKey")!;
         var keySource = new Base64StringPrivateKeySource(encodedPem);
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
@@ -40,12 +38,6 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
                 ExpirationSeconds = 600 // 10 minutes is the maximum time allowed
             }
         );
-        _client.DefaultRequestHeaders.Accept.Clear();
-        _client.DefaultRequestHeaders.Add(
-            "Accept", "application/vnd.github+json");
-        _client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-        _client.DefaultRequestHeaders.Add("User-Agent",
-            "cdp-portal-backend"); // required by Github API or else you get 403
     }
 
 

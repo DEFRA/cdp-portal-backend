@@ -36,10 +36,13 @@ builder.Configuration.AddEnvironmentVariables("CDP");
 builder.Configuration.AddEnvironmentVariables();
 
 // Serilog
+builder.Services.AddHttpContextAccessor();
 builder.Logging.ClearProviders();
+var tracingHeader = builder.Configuration.GetValue<string>("Tracing:Header");
 var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.With<LogLevelMapper>()
+    .Enrich.WithRequestHeader(tracingHeader, tracingHeader)
     .Enrich.WithProperty("service.version", Environment.GetEnvironmentVariable("SERVICE_VERSION"))
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
@@ -53,8 +56,24 @@ TrustStore.SetupTrustStore(logger);
 
 // Add health checks and http client
 builder.Services.AddHealthChecks();
-builder.Services.AddHttpClient();
-builder.Services.AddHttpProxyClient(logger);
+
+builder.Services.AddHttpClient("DefaultClient", HttpClientConfiguration.Default)
+    .AddHeaderPropagation();
+
+builder.Services.AddHttpClient("GitHubClient", HttpClientConfiguration.GitHub)
+    .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
+
+builder.Services.AddHttpClient("proxy", HttpClientConfiguration.Proxy)
+    .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
+
+builder.Services.AddHeaderPropagation(options =>
+{
+    var tracingEnabled = builder.Configuration.GetValue<bool>("Tracing:Enabled");
+    if (tracingEnabled && string.IsNullOrEmpty(tracingHeader) == false)
+    {
+        options.Headers.Add(tracingHeader);    
+    }
+});
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -86,7 +105,7 @@ builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentV
 logger.Information("Attempting to add SQS, ECR and Docker Client");
 builder.Services.AddSqsClient(builder.Configuration, builder.IsDevMode());
 
-// Github credential factory for the cron job
+// GitHub credential factory for the cron job
 builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 
 if (builder.IsDevMode())
@@ -101,7 +120,6 @@ else
     logger.Information("Connecting to ECR as a docker registry");
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
-
 
 // Quartz setup for Github scheduler
 builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Github:Scheduler"));
@@ -140,6 +158,9 @@ builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
 
+// Proxy
+builder.Services.AddSingleton<ProxyHttpMessageHandler>();
+
 // Deployment Event Handlers
 builder.Services.AddSingleton<TaskStateChangeEventHandler>();
 builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
@@ -152,6 +173,10 @@ builder.Services.AddSingleton<DeploymentTriggerEventHandler>();
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
 builder.Services.AddSingleton<SecretEventListener>();
+
+// fetchers
+builder.Services.AddSingleton<SelfServiceOpsFetcher>();
+builder.Services.AddSingleton<UserServiceFetcher>();
 
 // Action Event Handlers
 builder.Services.AddSingleton<IActionEventHandler, ActionEventHandler>();
@@ -178,6 +203,7 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseRouting();
+app.UseHeaderPropagation();
 
 // enable auth
 app.UseAuthentication();

@@ -1,8 +1,8 @@
-using System.Net.Http.Headers;
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Utils;
+using Microsoft.AspNetCore.HeaderPropagation;
+using Microsoft.Extensions.Primitives;
 using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -18,55 +18,37 @@ public sealed record RepositoryResult(
     bool IsPrivate,
     DateTimeOffset CreatedAt);
 
-public sealed record TeamResult(
-    string Slug,
-    IEnumerable<RepositoryResult> Repositories);
-
 // ReSharper disable once ClassNeverInstantiated.Global
-public sealed class PopulateGithubRepositories : IJob
+public sealed class PopulateGithubRepositories(
+    IConfiguration configuration,
+    ILoggerFactory loggerFactory,
+    IRepositoryService repositoryService,
+    MongoLock mongoLock,
+    IHttpClientFactory clientFactory,
+    UserServiceFetcher userServiceFetcher,
+    IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
+    HeaderPropagationValues headerPropagationValues)
+    : IJob
 {
     private const string LockName = "repopulateGithub";
     
-    private readonly HttpClient _client; 
-
-    private readonly string _githubOrgName;
-    private readonly string _githubApiUrl;
-    private readonly MongoLock _mongoLock;
-    private readonly IGithubCredentialAndConnectionFactory _githubCredentialAndConnectionFactory;
-    private readonly ILogger<PopulateGithubRepositories> _logger;
-    private readonly IRepositoryService _repositoryService;
-
-    private readonly UserServiceFetcher _userServiceFetcher;
+    private readonly HttpClient _client = clientFactory.CreateClient("GitHubClient");
     
-    public PopulateGithubRepositories(IConfiguration configuration, ILoggerFactory loggerFactory,
-        IRepositoryService repositoryService,
-        MongoLock mongoLock,
-        IHttpClientFactory clientFactory,
-        IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory)
-    {
-        _client = clientFactory.CreateClient(Proxy.ProxyClient);
-        _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
-        _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
+    
 
-        _mongoLock = mongoLock;
-        _githubCredentialAndConnectionFactory = githubCredentialAndConnectionFactory;
-
-        _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
-        _repositoryService = repositoryService;
-        _userServiceFetcher = new UserServiceFetcher(configuration);
-
-        _client.DefaultRequestHeaders.Accept.Clear();
-        _client.DefaultRequestHeaders.Accept.Add(
-            new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-        _client.DefaultRequestHeaders.Add("User-Agent", "cdp-portal-backend");
-    }
+    private readonly string _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
+    private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
+    private readonly ILogger<PopulateGithubRepositories> _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
+    
 
     public async Task Execute(IJobExecutionContext context)
     {
-            if (await _mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))
+            if (await mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))
             {
                 try
                 {
+                    // Workaround mentioned in https://github.com/alefranz/HeaderPropagation/issues/5
+                    headerPropagationValues.Headers ??= new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
                     await RepopulateGithubRepos(context);
                 }
                 catch (Exception e)
@@ -75,7 +57,7 @@ public sealed class PopulateGithubRepositories : IJob
                 }
                 finally
                 {
-                    await _mongoLock.Unlock(LockName);
+                    await mongoLock.Unlock(LockName);
                 }
             }
     }
@@ -85,11 +67,11 @@ public sealed class PopulateGithubRepositories : IJob
         _logger.LogInformation("Repopulating Github repositories");
         var cancellationToken = context.CancellationToken;
 
-        var userServiceRecords = await _userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var userServiceRecords = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         var githubToTeamIdMap = userServiceRecords?.GithubToTeamIdMap ?? new Dictionary<string, string>();
         var githubToTeamNameMap = userServiceRecords?.GithubToTeamNameMap ?? new Dictionary<string, string>();
         
-        var token = await _githubCredentialAndConnectionFactory.GetToken(cancellationToken);
+        var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
         
@@ -126,8 +108,8 @@ public sealed class PopulateGithubRepositories : IJob
            
         }
         
-        await _repositoryService.UpsertMany(repositories, cancellationToken);
-        await _repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
+        await repositoryService.UpsertMany(repositories, cancellationToken);
+        await repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
         _logger.LogInformation("Successfully repopulated repositories and team information");
     }
 
