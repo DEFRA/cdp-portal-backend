@@ -1,4 +1,3 @@
-using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
@@ -7,7 +6,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class AdminEndpoint
 {
     private const string AdminBaseRoute = "admin";
-    private const string AdminTag = "Admin";
 
     public static void MapAdminEndpoint(this IEndpointRouteBuilder app)
     {

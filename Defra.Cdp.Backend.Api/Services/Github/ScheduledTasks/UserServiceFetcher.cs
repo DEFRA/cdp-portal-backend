@@ -6,24 +6,19 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 public class UserServiceFetcher
 {
     private readonly HttpClient _client;
+    private readonly string _baseUrl;
 
-    public UserServiceFetcher(IConfiguration configuration)
+    public UserServiceFetcher(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
-        var userServiceBackendUrl = configuration.GetValue<string>("UserServiceBackendUrl")!;
-        if (string.IsNullOrWhiteSpace(userServiceBackendUrl))
+        _baseUrl = configuration.GetValue<string>("UserServiceBackendUrl")!;
+        if (string.IsNullOrWhiteSpace(_baseUrl))
             throw new ArgumentNullException("userServiceBackendUrl", "User service backend url cannot be null");
-        _client = new HttpClient();
-        _client.BaseAddress = new Uri(userServiceBackendUrl);
-        _client.DefaultRequestHeaders.Accept.Clear();
-        _client.DefaultRequestHeaders.Add(
-            "Accept", "application/json");
-        _client.DefaultRequestHeaders.Add("User-Agent",
-            "cdp-portal-backend");
+        _client = httpClientFactory.CreateClient("DefaultClient");
     }
 
     public async Task<UserServiceRecord?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken)
     {
-        var result = await _client.GetAsync("/teams", cancellationToken);
+        var result = await _client.GetAsync(_baseUrl + "/teams", cancellationToken);
         result.EnsureSuccessStatusCode();
         var response = await result.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<UserServiceRecord>(response, cancellationToken: cancellationToken);
