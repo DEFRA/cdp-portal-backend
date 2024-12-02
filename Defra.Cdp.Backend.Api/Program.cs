@@ -159,7 +159,7 @@ builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
 
 // Proxy
-builder.Services.AddSingleton<ProxyHttpMessageHandler>();
+builder.Services.AddTransient<ProxyHttpMessageHandler>();
 
 // Deployment Event Handlers
 builder.Services.AddSingleton<TaskStateChangeEventHandler>();
