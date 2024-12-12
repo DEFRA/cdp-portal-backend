@@ -21,7 +21,7 @@ class MockClientFactory : IHttpClientFactory
 public class DockerClientTests
 {
     private readonly ArtifactScanner _artifactScanner;
-    private readonly IDeployablesService _deployableServiceMock = Substitute.For<IDeployablesService>();
+    private readonly IDeployableArtifactsService _deployableServiceMock = Substitute.For<IDeployableArtifactsService>();
     private readonly IDockerClient _dockerClientMock = Substitute.For<IDockerClient>();
 
     private readonly HttpClient _httpMock = Substitute.For<HttpClient>();

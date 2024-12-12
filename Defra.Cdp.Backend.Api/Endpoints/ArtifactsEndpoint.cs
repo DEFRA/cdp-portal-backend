@@ -29,33 +29,33 @@ public static class ArtifactsEndpoint
     }
 
     // GET /artifacts
-    private static async Task<IResult> ListRepos(IDeployablesService deployablesService,
+    private static async Task<IResult> ListRepos(IDeployableArtifactsService deployableArtifactsService,
         CancellationToken cancellationToken)
     {
-        var allRepos = await deployablesService.FindAll(cancellationToken);
+        var allRepos = await deployableArtifactsService.FindAll(cancellationToken);
         return Results.Ok(allRepos);
     }
 
     // GET /artifacts/{repo}
-    private static async Task<IResult> ListImagesForRepo(IDeployablesService deployablesService, string repo,
+    private static async Task<IResult> ListImagesForRepo(IDeployableArtifactsService deployableArtifactsService, string repo,
         CancellationToken cancellationToken)
     {
-        var allRepos = await deployablesService.FindAll(repo, cancellationToken);
+        var allRepos = await deployableArtifactsService.FindAll(repo, cancellationToken);
         return Results.Ok(allRepos);
     }
 
     // GET /artifacts/{repo}/{tag}
-    private static async Task<IResult> ListImage(IDeployablesService deployablesService, string repo, string tag,
+    private static async Task<IResult> ListImage(IDeployableArtifactsService deployableArtifactsService, string repo, string tag,
         CancellationToken cancellationToken)
     {
         DeployableArtifact? image;
         if (tag == "latest")
         {
-            image = await deployablesService.FindLatest(repo, cancellationToken);
+            image = await deployableArtifactsService.FindLatest(repo, cancellationToken);
         }
         else
         {
-            image = await deployablesService.FindByTag(repo, tag, cancellationToken);    
+            image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);    
         }
         return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
     }
@@ -73,7 +73,7 @@ public static class ArtifactsEndpoint
     
     // GET /deployables
     private static async Task<IResult> ListDeployables(
-        IDeployablesService deployablesService,
+        IDeployableArtifactsService deployableArtifactsService,
         IConfiguration configuration, 
         HttpContext httpContext,
         ILoggerFactory loggerFactory, 
@@ -89,46 +89,46 @@ public static class ArtifactsEndpoint
         }
 
         var repoNames = groups.Contains(adminGroup)
-            ? await deployablesService.FindAllRepoNames(artifactRunMode, cancellationToken)
-            : await deployablesService.FindAllRepoNames(artifactRunMode, groups, cancellationToken);
+            ? await deployableArtifactsService.FindAllRepoNames(artifactRunMode, cancellationToken)
+            : await deployableArtifactsService.FindAllRepoNames(artifactRunMode, groups, cancellationToken);
         return Results.Ok(repoNames);
     }
 
     // GET deployables/{repo}
-    private static async Task<IResult> ListAvailableTagsForRepo(IDeployablesService deployablesService,
+    private static async Task<IResult> ListAvailableTagsForRepo(IDeployableArtifactsService deployableArtifactsService,
         IConfiguration configuration, HttpContext httpContext,
         ILoggerFactory loggerFactory,
         string repo,
         CancellationToken cancellationToken)
     {
-        var tags = await deployablesService.FindAllTagsForRepo(repo, cancellationToken);
+        var tags = await deployableArtifactsService.FindAllTagsForRepo(repo, cancellationToken);
         return Results.Ok(tags);
     }
 
     // GET /services
-    private static async Task<IResult> ListAllServices(IDeployablesService deployablesService,
+    private static async Task<IResult> ListAllServices(IDeployableArtifactsService deployableArtifactsService,
         CancellationToken cancellationToken)
     {
-        var services = await deployablesService.FindAllServices(ArtifactRunMode.Service, cancellationToken);
+        var services = await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, cancellationToken);
         return Results.Ok(services);
     }
 
     // GET /services/{service}
-    private static async Task<ServiceInfo?> ListService(IDeployablesService deployablesService, string service,
+    private static async Task<ServiceInfo?> ListService(IDeployableArtifactsService deployableArtifactsService, string service,
         CancellationToken cancellationToken)
     {
-        return await deployablesService.FindServices(service, cancellationToken);
+        return await deployableArtifactsService.FindServices(service, cancellationToken);
     }
 
     // POST /artifacts/placeholder
-    private static async Task<IResult> CreatePlaceholder(IDeployablesService deployablesService, string service,
+    private static async Task<IResult> CreatePlaceholder(IDeployableArtifactsService deployableArtifactsService, string service,
         string githubUrl, string? runMode, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse(runMode, true, out ArtifactRunMode mode))
         {
             mode = ArtifactRunMode.Service;
         }
-        await deployablesService.CreatePlaceholderAsync(service, githubUrl, mode, cancellationToken);
+        await deployableArtifactsService.CreatePlaceholderAsync(service, githubUrl, mode, cancellationToken);
         return Results.Ok();
     }
 }

@@ -52,7 +52,7 @@ public class TaskStateChangeEventHandlerTests
 
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
         
-        var deployablesService = Substitute.For<IDeployablesService>();
+        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
         var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
         var testRunService = Substitute.For<ITestRunService>();
 
@@ -62,7 +62,7 @@ public class TaskStateChangeEventHandlerTests
         var handler = new TaskStateChangeEventHandler(config, 
             new MockEnvironmentLookup(),
             deploymentsService, 
-            deployablesService, 
+            deployableArtifactsService, 
             testRunService,
             ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
         
@@ -79,7 +79,7 @@ public class TaskStateChangeEventHandlerTests
 
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
         
-        var deployablesService = Substitute.For<IDeployablesService>();
+        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
         var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
         var testRunService = Substitute.For<ITestRunService>();
 
@@ -90,7 +90,7 @@ public class TaskStateChangeEventHandlerTests
         var handler = new TaskStateChangeEventHandler(config, 
             new MockEnvironmentLookup(),
             deploymentsService, 
-            deployablesService, 
+            deployableArtifactsService, 
             testRunService,
             ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
         
@@ -107,7 +107,7 @@ public class TaskStateChangeEventHandlerTests
 
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
         
-        var deployablesService = Substitute.For<IDeployablesService>();
+        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
         var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
         var testRunService = Substitute.For<ITestRunService>();
 
@@ -120,7 +120,7 @@ public class TaskStateChangeEventHandlerTests
         var handler = new TaskStateChangeEventHandler(config, 
             new MockEnvironmentLookup(),
             deploymentsService, 
-            deployablesService, 
+            deployableArtifactsService, 
             testRunService,
             ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
 

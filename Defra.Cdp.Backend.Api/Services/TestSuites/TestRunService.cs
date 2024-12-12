@@ -13,6 +13,7 @@ public interface ITestRunService
     public Task CreateTestRun(TestRun testRun, CancellationToken cancellationToken);
     public Task<TestRun?> Link(TestRunMatchIds ids,  DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken);
     public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp , CancellationToken cancellationToken);
+    Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
 
 public class TestRunService : MongoService<TestRun>, ITestRunService
@@ -95,5 +96,10 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         }
         
         await Collection.UpdateOneAsync(t => t.TaskArn == taskArn, update, cancellationToken: cancellationToken);
+    }
+
+    public async Task Decommission(string serviceName, CancellationToken cancellationToken)
+    {
+        await Collection.DeleteManyAsync(t => t.TestSuite == serviceName, cancellationToken: cancellationToken);
     }
 }

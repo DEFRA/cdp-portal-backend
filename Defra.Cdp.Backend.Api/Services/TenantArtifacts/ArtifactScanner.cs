@@ -42,7 +42,7 @@ public class ArtifactScanner : IArtifactScanner
     // Used to determine what would have been extracted. we might want to use this for rescans etc.
     private const int DockerScannerVersion = 1;
 
-    private readonly IDeployablesService _deployablesService;
+    private readonly IDeployableArtifactsService _deployableArtifactsService;
     private readonly IDockerClient _dockerClient;
 
 
@@ -66,13 +66,13 @@ public class ArtifactScanner : IArtifactScanner
     private readonly IRepositoryService _repositoryService;
 
     public ArtifactScanner(
-        IDeployablesService deployablesService,
+        IDeployableArtifactsService deployableArtifactsService,
         ILayerService layerService,
         IDockerClient dockerClient,
         IRepositoryService repositoryService,
         ILogger<ArtifactScanner> logger)
     {
-        _deployablesService = deployablesService;
+        _deployableArtifactsService = deployableArtifactsService;
         _layerService = layerService;
         _dockerClient = dockerClient;
         _repositoryService = repositoryService;
@@ -146,7 +146,7 @@ public class ArtifactScanner : IArtifactScanner
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);
-        await _deployablesService.CreateAsync(artifact, cancellationToken);
+        await _deployableArtifactsService.CreateAsync(artifact, cancellationToken);
 
         _logger.LogInformation("Artifact {Repo}:{Tag} completed", repo, tag);
         return new ArtifactScannerResult(artifact);

@@ -144,7 +144,7 @@ builder.Services.AddQuartzHostedService(options =>
 // Setting up our services
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
-builder.Services.AddSingleton<IDeployablesService, DeployablesService>();
+builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsServiceV2, DeploymentsServiceV2>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
@@ -213,6 +213,7 @@ app.UseAuthorization();
 app.MapConfigEndpoint();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
+app.MapDecommissionEndpoint();
 app.MapDeploymentsEndpointV2();
 app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();

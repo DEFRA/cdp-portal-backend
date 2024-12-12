@@ -11,7 +11,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 public class TaskStateChangeEventHandler
 {
     private readonly List<string> _containersToIgnore;
-    private readonly IDeployablesService _deployablesService;
+    private readonly IDeployableArtifactsService _deployableArtifactsService;
     private readonly IDeploymentsServiceV2 _deploymentsService;
     private readonly ITestRunService _testRunService;
     private readonly IEnvironmentLookup _environmentLookup;
@@ -21,14 +21,14 @@ public class TaskStateChangeEventHandler
         IOptions<EcsEventListenerOptions> config,
         IEnvironmentLookup environmentLookup,
         IDeploymentsServiceV2 deploymentsService,
-        IDeployablesService deployablesService,
+        IDeployableArtifactsService deployableArtifactsService,
         ITestRunService testRunService,
         ILogger<TaskStateChangeEventHandler> logger)
     {
         _deploymentsService = deploymentsService;
         _environmentLookup = environmentLookup;
         _logger = logger;
-        _deployablesService = deployablesService;
+        _deployableArtifactsService = deployableArtifactsService;
         _testRunService = testRunService;
         _containersToIgnore = config.Value.ContainerToIgnore;
     }
@@ -251,8 +251,8 @@ public class TaskStateChangeEventHandler
         var artifact = tag switch
         {
             // We don't store the latest tag, so we just the highest semver
-            "latest" => await _deployablesService.FindLatest(repo, cancellationToken),
-            _        => await _deployablesService.FindByTag(repo, tag, cancellationToken)
+            "latest" => await _deployableArtifactsService.FindLatest(repo, cancellationToken),
+            _        => await _deployableArtifactsService.FindByTag(repo, tag, cancellationToken)
         };
 
         return artifact;
@@ -265,14 +265,14 @@ public class TaskStateChangeEventHandler
             
         if (!string.IsNullOrWhiteSpace(digest))
         {
-            return await _deployablesService.FindBySha256(digest, cancellationToken);
+            return await _deployableArtifactsService.FindBySha256(digest, cancellationToken);
         }
 
         // Second instances for some reason don't have the image tag, but the sha, so use that
         var (_, sha256) = SplitSha(ecsContainer.Image);
         if (!string.IsNullOrWhiteSpace(sha256))
         {
-            return await _deployablesService.FindBySha256(sha256, cancellationToken);
+            return await _deployableArtifactsService.FindBySha256(sha256, cancellationToken);
         }
 
         return null;
