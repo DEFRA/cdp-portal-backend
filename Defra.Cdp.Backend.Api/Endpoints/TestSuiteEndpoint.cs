@@ -41,16 +41,16 @@ public static class TestSuiteEndpoint
         return Results.Created($"test-run/{testRun.RunId}", null);
     }
     
-    static async Task<IResult> FindTestSuites(string name, IDeployablesService deployablesService, CancellationToken cancellationToken)
+    static async Task<IResult> FindTestSuites(string name, IDeployableArtifactsService deployableArtifactsService, CancellationToken cancellationToken)
     {
-        var testSuite = await deployablesService.FindServices(name, cancellationToken);
+        var testSuite = await deployableArtifactsService.FindServices(name, cancellationToken);
         return testSuite == null ? Results.NotFound() : Results.Ok(testSuite);
     }
 
-    private static async Task<IResult> FindAllTestSuites(IDeployablesService deployablesService,
+    private static async Task<IResult> FindAllTestSuites(IDeployableArtifactsService deployableArtifactsService,
     [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
    {
-      var testSuites = await deployablesService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
+      var testSuites = await deployableArtifactsService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
       var latestTestRuns = await testRunService.FindLatestTestRuns(cancellationToken);
       var testSuiteWithLatestJobResponses = testSuites.Select(ts =>
       {

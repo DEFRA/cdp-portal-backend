@@ -6,7 +6,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
-public interface IDeployablesService
+public interface IDeployableArtifactsService
 {
     Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken);
 
@@ -29,16 +29,13 @@ public interface IDeployablesService
 
     Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken);
     Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
+    Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
 
-public class DeployablesService : MongoService<DeployableArtifact>, IDeployablesService
+public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<DeployableArtifact>(connectionFactory, CollectionName, loggerFactory), IDeployableArtifactsService
 {
     private const string CollectionName = "artifacts";
-
-    public DeployablesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory)
-    {
-    }
-
 
     public async Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken)
     {
@@ -115,6 +112,11 @@ public class DeployablesService : MongoService<DeployableArtifact>, IDeployables
             .Limit(1);
         return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task Decommission(string serviceName, CancellationToken cancellationToken)
+    {
+        await Collection.DeleteManyAsync(da => da.ServiceName == serviceName, cancellationToken: cancellationToken);
     }
 
     public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken)

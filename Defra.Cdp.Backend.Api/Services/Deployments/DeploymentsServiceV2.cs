@@ -30,6 +30,7 @@ public interface IDeploymentsServiceV2
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetFilters(CancellationToken ct);
     Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken ct);
+    Task Decommission(string serviceName, CancellationToken ct);
 }
 
 public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServiceV2
@@ -106,7 +107,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     {
         var fb = new FilterDefinitionBuilder<DeploymentV2>();
 
-        var statusFilter = fb.In(d => d.Status, new[] { Running, Pending, Undeployed });
+        var statusFilter = fb.In(d => d.Status, [Running, Pending, Undeployed]);
         var envFilter = fb.Empty;
         if (environments.Any())
         {
@@ -210,6 +211,11 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .Sort(sort)
             .Project(d => new DeploymentSettings { Cpu = d.Cpu, Memory = d.Memory, InstanceCount = d.InstanceCount })
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task Decommission(string serviceName, CancellationToken ct)
+    {
+        await Collection.DeleteManyAsync(d => d.Service == serviceName, ct);
     }
 
     public async Task UpdateDeployment(DeploymentV2 deployment, CancellationToken ct)
