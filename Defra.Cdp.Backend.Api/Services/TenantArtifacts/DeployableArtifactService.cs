@@ -27,7 +27,8 @@ public interface IDeployableArtifactsService
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
 
-    Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken);
+    Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId,
+        CancellationToken cancellationToken);
     Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
     Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
@@ -119,17 +120,23 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         await Collection.DeleteManyAsync(da => da.ServiceName == serviceName, cancellationToken: cancellationToken);
     }
 
-    public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, CancellationToken cancellationToken)
+    public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId,
+        CancellationToken cancellationToken)
     {
         var fd = new FilterDefinitionBuilder<DeployableArtifact>();
         var filter = fd.Empty;
         if (runMode != null) filter = fd.Eq(d => d.RunMode, runMode.ToString()?.ToLower());
+        var teamFilter = fd.Empty;
+        if (teamId != null)
+            teamFilter = Builders<DeployableArtifact>.Filter.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
 
+        var sort = Builders<ServiceInfo>.Sort.Ascending(d => d.ServiceName);
         var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(filter)
+            .Match(filter & teamFilter)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams));
+            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
+            .Sort(sort);
 
         var result = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
                          .ToListAsync(cancellationToken) ??

@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -107,9 +106,12 @@ public static class ArtifactsEndpoint
 
     // GET /services
     private static async Task<IResult> ListAllServices(IDeployableArtifactsService deployableArtifactsService,
+        [FromQuery(Name = "teamId")] string? teamId,
         CancellationToken cancellationToken)
     {
-        var services = await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, cancellationToken);
+        var services =
+            await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, teamId, cancellationToken);
+        
         return Results.Ok(services);
     }
 
