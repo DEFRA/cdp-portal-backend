@@ -48,9 +48,11 @@ public static class TestSuiteEndpoint
     }
 
     private static async Task<IResult> FindAllTestSuites(IDeployableArtifactsService deployableArtifactsService,
-    [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
+        HttpContext httpContext, [FromQuery(Name = "teamId")] string? teamId,
+        [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
    {
-      var testSuites = await deployableArtifactsService.FindAllServices(ArtifactRunMode.Job, cancellationToken);
+       var testSuites =
+           await deployableArtifactsService.FindAllServices(ArtifactRunMode.Job, teamId, cancellationToken);
       var latestTestRuns = await testRunService.FindLatestTestRuns(cancellationToken);
       var testSuiteWithLatestJobResponses = testSuites.Select(ts =>
       {
