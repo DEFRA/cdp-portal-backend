@@ -4,13 +4,14 @@ using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Actions;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
@@ -69,10 +70,7 @@ builder.Services.AddHttpClient("proxy", HttpClientConfiguration.Proxy)
 builder.Services.AddHeaderPropagation(options =>
 {
     var tracingEnabled = builder.Configuration.GetValue<bool>("Tracing:Enabled");
-    if (tracingEnabled && string.IsNullOrEmpty(tracingHeader) == false)
-    {
-        options.Headers.Add(tracingHeader);    
-    }
+    if (tracingEnabled && string.IsNullOrEmpty(tracingHeader) == false) options.Headers.Add(tracingHeader);
 });
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -95,8 +93,10 @@ builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
 // Setup the services
 builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSection(EcsEventListenerOptions.Prefix));
 builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
-builder.Services.Configure<SecretEventListenerOptions>(builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
-builder.Services.Configure<ActionEventListenerOptions>(builder.Configuration.GetSection(ActionEventListenerOptions.Prefix));
+builder.Services.Configure<SecretEventListenerOptions>(
+    builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
+builder.Services.Configure<GitHubWorkflowEventListenerOptions>(
+    builder.Configuration.GetSection(GitHubWorkflowEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
@@ -128,7 +128,7 @@ builder.Services.AddQuartz(q =>
     var jobKey = new JobKey("FetchGithubRepositories");
     q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(jobKey));
 
-    int interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
+    var interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
     logger.Information("Fetching github repositories and teams every {interval} seconds", interval);
     q.AddTrigger(opts => opts
         .ForJob(jobKey)
@@ -157,6 +157,7 @@ builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
+builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -178,9 +179,9 @@ builder.Services.AddSingleton<SecretEventListener>();
 builder.Services.AddSingleton<SelfServiceOpsFetcher>();
 builder.Services.AddSingleton<UserServiceFetcher>();
 
-// Action Event Handlers
-builder.Services.AddSingleton<IActionEventHandler, ActionEventHandler>();
-builder.Services.AddSingleton<ActionEventListener>();
+// GitHub Workflow Event Handlers
+builder.Services.AddSingleton<IGitHubEventHandler, GitHubWorkflowEventHandler>();
+builder.Services.AddSingleton<GitHubWorkflowEventListener>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
@@ -211,6 +212,7 @@ app.UseAuthorization();
 
 // Add endpoints
 app.MapConfigEndpoint();
+app.MapVanityUrlsEndpoint();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDecommissionEndpoint();
@@ -241,10 +243,10 @@ Task.Run(() =>
     secretEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
-var actionEventListener = app.Services.GetService<ActionEventListener>();
-logger.Information("Starting Action Event listener - reading action events from SQS");
+var gitHubWorkflowEventListener = app.Services.GetService<GitHubWorkflowEventListener>();
+logger.Information("Starting GitHub Workflow Event listener - reading workflow events from SQS");
 Task.Run(() =>
-    actionEventListener?.ReadAsync(app.Lifetime
+    gitHubWorkflowEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 #pragma warning restore CS4014

@@ -1,17 +1,15 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.Actions;
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface IAppConfigVersionService
+public interface IAppConfigVersionService : IEventsPersistenceService<AppConfigVersionPayload>
 {
-    Task SaveMessage(string commitSha, DateTime commitTimestamp, string environment,
-        CancellationToken cancellationToken);
-
     Task<AppConfigVersion?> FindLatestAppConfigVersion(string environment, CancellationToken ct);
 }
 
@@ -20,24 +18,32 @@ public class AppConfigVersionService(IMongoDbClientFactory connectionFactory, IL
         CollectionName, loggerFactory), IAppConfigVersionService
 {
     private const string CollectionName = "appconfigversions";
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
 
-    public async Task SaveMessage(string commitSha, DateTime commitTimestamp, string environment,
-        CancellationToken cancellationToken)
+    public async Task PersistEvent(Event<AppConfigVersionPayload> workflowEvent, CancellationToken cancellationToken)
     {
+        var logger = _loggerFactory.CreateLogger("AppConfigVersionService");
+        var payload = workflowEvent.Payload;
+        var commitSha = payload.CommitSha;
+        var commitTimestamp = payload.CommitTimestamp;
+        var environment = payload.Environment;
+
+        logger.LogInformation("HandleAppConfigVersion: Persisting message {CommitSha} {CommitTimestamp} {Environment}",
+            commitSha, commitTimestamp, environment);
         await Collection.InsertOneAsync(new AppConfigVersion(commitSha, commitTimestamp, environment),
             cancellationToken: cancellationToken);
-    }
-
-    protected override List<CreateIndexModel<AppConfigVersion>> DefineIndexes(
-        IndexKeysDefinitionBuilder<AppConfigVersion> builder)
-    {
-        return new List<CreateIndexModel<AppConfigVersion>>();
     }
 
     public async Task<AppConfigVersion?> FindLatestAppConfigVersion(string environment, CancellationToken ct)
     {
         return await Collection.Find(acv => acv.Environment == environment).SortByDescending(acv => acv.CommitTimestamp)
             .FirstOrDefaultAsync(ct);
+    }
+
+    protected override List<CreateIndexModel<AppConfigVersion>> DefineIndexes(
+        IndexKeysDefinitionBuilder<AppConfigVersion> builder)
+    {
+        return new List<CreateIndexModel<AppConfigVersion>>();
     }
 }
 

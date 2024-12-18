@@ -18,23 +18,13 @@ public interface ISecretsService
 
 public class SecretsService : MongoService<TenantSecrets>, ISecretsService
 {
-    
-    public SecretsService(IMongoDbClientFactory connectionFactory,ILoggerFactory loggerFactory) : base(connectionFactory, "tenantsecrets", loggerFactory)
+    public SecretsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
+        connectionFactory, "tenantsecrets", loggerFactory)
     {
-
     }
 
-    protected override List<CreateIndexModel<TenantSecrets>> DefineIndexes(IndexKeysDefinitionBuilder<TenantSecrets> builder)
-    {
-        var serviceAndEnv = new CreateIndexModel<TenantSecrets>(builder.Combine(
-            builder.Ascending(s => s.Service),
-            builder.Ascending(s => s.Environment)
-        ));
-
-        return new List<CreateIndexModel<TenantSecrets>> { serviceAndEnv};
-    }
-
-    public async Task<TenantSecrets?> FindSecrets(string environment, string service, CancellationToken cancellationToken)
+    public async Task<TenantSecrets?> FindSecrets(string environment, string service,
+        CancellationToken cancellationToken)
     {
         return await Collection.Find(t => t.Service == service && t.Environment == environment)
             .FirstOrDefaultAsync(cancellationToken);
@@ -61,10 +51,10 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
     {
         await Collection.ReplaceOneAsync(
             s => s.Service == secret.Service && s.Environment == secret.Environment, secret,
-            new ReplaceOptions { IsUpsert = true }, 
+            new ReplaceOptions { IsUpsert = true },
             cancellationToken);
     }
-    
+
     public async Task UpdateSecrets(List<TenantSecrets> secrets, CancellationToken cancellationToken)
     {
         var updateSecretModels =
@@ -80,9 +70,7 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
             }).ToList();
 
         if (updateSecretModels.Any())
-        {
             await Collection.BulkWriteAsync(updateSecretModels, new BulkWriteOptions(), cancellationToken);
-        }
     }
 
     public async Task AddSecretKey(string environment, string service, string secretKey,
@@ -104,4 +92,14 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
         await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
     }
 
+    protected override List<CreateIndexModel<TenantSecrets>> DefineIndexes(
+        IndexKeysDefinitionBuilder<TenantSecrets> builder)
+    {
+        var serviceAndEnv = new CreateIndexModel<TenantSecrets>(builder.Combine(
+            builder.Ascending(s => s.Service),
+            builder.Ascending(s => s.Environment)
+        ));
+
+        return new List<CreateIndexModel<TenantSecrets>> { serviceAndEnv };
+    }
 }

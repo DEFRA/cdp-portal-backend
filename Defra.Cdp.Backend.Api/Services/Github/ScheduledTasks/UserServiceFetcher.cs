@@ -5,8 +5,8 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 public class UserServiceFetcher
 {
-    private readonly HttpClient _client;
     private readonly string _baseUrl;
+    private readonly HttpClient _client;
 
     public UserServiceFetcher(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
