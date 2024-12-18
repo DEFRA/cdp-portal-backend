@@ -12,10 +12,14 @@ public class GitHubWorkflowEventHandlerTest
     {
         var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
         var vanityUrlsService = Substitute.For<IVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(appConfigVersionService, vanityUrlsService,
+        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
+        var eventHandler = new GitHubWorkflowEventHandler(
+            appConfigVersionService, 
+            vanityUrlsService,
+            squidProxyConfigService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
-        var eventType = new GitHubWorkflowEventType { EventType = "app-config-version" };
+        var eventType = new GitHubWorkflowEventWrapper { EventType = "app-config-version" };
         var messageBody =
             """
             {
@@ -37,7 +41,10 @@ public class GitHubWorkflowEventHandlerTest
                 e.EventType == "app-config-version" && e.Payload.CommitSha == "abc123" &&
                 e.Payload.Environment == "infra-dev"),
             Arg.Any<CancellationToken>());
-        await vanityUrlsService.Received(0).PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+        await vanityUrlsService.Received(0)
+            .PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+        await squidProxyConfigService.Received(0)
+            .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -45,10 +52,12 @@ public class GitHubWorkflowEventHandlerTest
     {
         var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
         var vanityUrlsService = Substitute.For<IVanityUrlsService>();
+        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
         var eventHandler = new GitHubWorkflowEventHandler(appConfigVersionService, vanityUrlsService,
+            squidProxyConfigService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
-        var eventType = new GitHubWorkflowEventType { EventType = "nginx-vanity-urls" };
+        var eventType = new GitHubWorkflowEventWrapper { EventType = "nginx-vanity-urls" };
         var messageBody =
             """
             { "eventType": "nginx-vanity-urls",
@@ -71,8 +80,49 @@ public class GitHubWorkflowEventHandlerTest
             Arg.Any<CancellationToken>());
         await appConfigVersionService.Received(0)
             .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
+        await squidProxyConfigService.Received(0)
+            .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
     }
 
+
+    [Fact]
+    public async Task WillProcessSquidProxyConfigEvent()
+    {
+        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
+        var vanityUrlsService = Substitute.For<IVanityUrlsService>();
+        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
+        var eventHandler = new GitHubWorkflowEventHandler(appConfigVersionService, vanityUrlsService,
+            squidProxyConfigService,
+            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+
+        var eventType = new GitHubWorkflowEventWrapper { EventType = "squid-proxy-config" };
+        var messageBody =
+            """
+            { "eventType": "squid-proxy-config",
+              "timestamp": "2024-10-23T15:10:10.123",
+              "payload": {
+                "environment": "test",
+                "default_domains": [".cdp-int.defra.cloud", ".amazonaws.com", "login.microsoftonline.com", "www.gov.uk"],
+                "services": [
+                    {"name": "cdp-dotnet-tracing", "allowed_domains": []},
+                    {"name": "find-ffa-data-ingester", "allowed_domains": ["fcpaipocuksss.search.windows.net", "fcpaipocuksoai.openai.azure.com", "www.gov.uk"]},
+                    {"name": "phi-frontend", "allowed_domains": ["gd.eppo.int"]}
+                ]
+              }
+            }
+            """;
+
+        await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
+
+        await squidProxyConfigService.PersistEvent(
+            Arg.Is<Event<SquidProxyConfigPayload>>(e =>
+                e.EventType == "squid-proxy-config" && e.Payload.Environment == "test" && e.Payload.Services.Count == 3),
+            Arg.Any<CancellationToken>());
+        await appConfigVersionService.Received(0)
+            .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
+        await vanityUrlsService.Received(0)
+            .PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task UnrecognizedGitHubWorkflowEvent()
@@ -80,10 +130,12 @@ public class GitHubWorkflowEventHandlerTest
         {
             var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
             var vanityUrlsService = Substitute.For<IVanityUrlsService>();
+            var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
             var eventHandler = new GitHubWorkflowEventHandler(appConfigVersionService, vanityUrlsService,
+                squidProxyConfigService,
                 ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
-            var eventType = new GitHubWorkflowEventType { EventType = "unrecognized-github-workflow-event" };
+            var eventType = new GitHubWorkflowEventWrapper { EventType = "unrecognized-github-workflow-event" };
             var messageBody =
                 """
                 { "eventType": "unrecognized-github-workflow-event",
@@ -94,11 +146,14 @@ public class GitHubWorkflowEventHandlerTest
                 }
                 """;
 
-            await eventHandler.Handle(eventType, messageBody, new CancellationToken());
+            await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
             await appConfigVersionService.Received(0)
                 .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-            await vanityUrlsService.Received(0).PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+            await vanityUrlsService.Received(0)
+                .PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+            await squidProxyConfigService.Received(0)
+                .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         }
     }
 }

@@ -29,8 +29,8 @@ public class GitHubWorkflowEventListener(
             if (eventType != null)
                 await eventHandler.Handle(eventType, message.Body, cancellationToken);
             else
-                logger.LogInformation("Message from {queue}: {MessageId} was not readable", QueueUrl,
-                    message.MessageId);
+                logger.LogInformation("Message from {queue}: {MessageId} was not readable\n {body}" , QueueUrl,
+                    message.MessageId, message.Body);
         }
         catch (Exception e)
         {
@@ -38,11 +38,11 @@ public class GitHubWorkflowEventListener(
         }
     }
 
-    private static GitHubWorkflowEventType? TryParseMessageBody(string body)
+    private static GitHubWorkflowEventWrapper? TryParseMessageBody(string body)
     {
         try
         {
-            return JsonSerializer.Deserialize<GitHubWorkflowEventType>(body);
+            return JsonSerializer.Deserialize<GitHubWorkflowEventWrapper>(body);
         }
         catch (Exception)
         {
