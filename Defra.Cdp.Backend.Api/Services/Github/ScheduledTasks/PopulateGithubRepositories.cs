@@ -31,34 +31,34 @@ public sealed class PopulateGithubRepositories(
     : IJob
 {
     private const string LockName = "repopulateGithub";
-    
+
     private readonly HttpClient _client = clientFactory.CreateClient("GitHubClient");
-    
-    
+    private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
+
 
     private readonly string _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
-    private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
-    private readonly ILogger<PopulateGithubRepositories> _logger = loggerFactory.CreateLogger<PopulateGithubRepositories>();
-    
+
+    private readonly ILogger<PopulateGithubRepositories> _logger =
+        loggerFactory.CreateLogger<PopulateGithubRepositories>();
+
 
     public async Task Execute(IJobExecutionContext context)
     {
-            if (await mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))
+        if (await mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))
+            try
             {
-                try
-                {
-                    // Workaround mentioned in https://github.com/alefranz/HeaderPropagation/issues/5
-                    headerPropagationValues.Headers ??= new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-                    await RepopulateGithubRepos(context);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError("RepopulateGithub scheduled job failed: {e}", e);
-                }
-                finally
-                {
-                    await mongoLock.Unlock(LockName);
-                }
+                // Workaround mentioned in https://github.com/alefranz/HeaderPropagation/issues/5
+                headerPropagationValues.Headers ??=
+                    new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+                await RepopulateGithubRepos(context);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("RepopulateGithub scheduled job failed: {e}", e);
+            }
+            finally
+            {
+                await mongoLock.Unlock(LockName);
             }
     }
 
@@ -70,14 +70,14 @@ public sealed class PopulateGithubRepositories(
         var userServiceRecords = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         var githubToTeamIdMap = userServiceRecords?.GithubToTeamIdMap ?? new Dictionary<string, string>();
         var githubToTeamNameMap = userServiceRecords?.GithubToTeamNameMap ?? new Dictionary<string, string>();
-        
+
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-        
-        
-        List<Repository> repositories = new(); 
-        
+
+
+        List<Repository> repositories = new();
+
         // paginate
         var hasNext = true;
         string? nextCursor = null;
@@ -91,8 +91,8 @@ public sealed class PopulateGithubRepositories(
                 cancellationToken
             );
             jsonResponse.EnsureSuccessStatusCode();
-        
-            var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken: cancellationToken);
+
+            var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken);
             if (result is null)
             {
                 var jsonString = jsonResponse.Content.ReadAsStringAsync(cancellationToken);
@@ -105,9 +105,8 @@ public sealed class PopulateGithubRepositories(
             _logger.LogInformation("Added {repos} repos, total {total}", repos.Count, repositories.Count);
             hasNext = result.data.organization.teams.pageInfo.hasNextPage;
             nextCursor = result.data.organization.teams.pageInfo.endCursor;
-           
         }
-        
+
         await repositoryService.UpsertMany(repositories, cancellationToken);
         await repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
         _logger.LogInformation("Successfully repopulated repositories and team information");
@@ -163,12 +162,9 @@ public sealed class PopulateGithubRepositories(
     // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
     private static string BuildTeamsQuery(string githubOrgName, string? cursor)
     {
-        var afterCursor =  "null";
-        if (cursor != null)
-        {
-            afterCursor = "\\\"" + cursor + "\\\"";
-        } 
-        
+        var afterCursor = "null";
+        if (cursor != null) afterCursor = "\\\"" + cursor + "\\\"";
+
         return $@"
             {{
               ""query"": 

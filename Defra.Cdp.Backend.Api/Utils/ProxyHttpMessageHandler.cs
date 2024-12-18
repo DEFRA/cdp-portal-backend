@@ -4,14 +4,10 @@ namespace Defra.Cdp.Backend.Api.Utils;
 
 public class ProxyHttpMessageHandler : HttpClientHandler
 {
-    
-    public ProxyHttpMessageHandler (ILogger<ProxyHttpMessageHandler> logger)
+    public ProxyHttpMessageHandler(ILogger<ProxyHttpMessageHandler> logger)
     {
         var proxyUri = Environment.GetEnvironmentVariable("CDP_HTTPS_PROXY");
-        var proxy = new WebProxy
-        {
-            BypassProxyOnLocal = true
-        };
+        var proxy = new WebProxy { BypassProxyOnLocal = true };
         if (proxyUri != null)
         {
             logger.LogDebug("Creating proxy http client");
@@ -21,7 +17,7 @@ public class ProxyHttpMessageHandler : HttpClientHandler
             if (credentials != null)
             {
                 logger.LogDebug("Setting proxy credentials");
-                proxy.Credentials = credentials;    
+                proxy.Credentials = credentials;
             }
 
             // Remove credentials from URI to so they don't get logged.
@@ -36,7 +32,6 @@ public class ProxyHttpMessageHandler : HttpClientHandler
 
         Proxy = proxy;
         UseProxy = proxyUri != null;
-
     }
 
     public static NetworkCredential? GetCredentialsFromUri(UriBuilder uri)

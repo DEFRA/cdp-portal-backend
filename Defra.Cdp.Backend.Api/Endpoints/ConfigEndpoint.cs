@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Actions;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -9,6 +9,7 @@ public static class ConfigEndpoint
     {
         app.MapGet("/config/latest/{environment}", LatestAppConfig);
     }
+
     private static async Task<IResult> LatestAppConfig(
         IAppConfigVersionService appConfigVersionService,
         string environment,
