@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 
 public interface IGitHubEventHandler
 {
-    Task Handle(GitHubWorkflowEventType eventType, string messageBody, CancellationToken cancellationToken);
+    Task Handle(GitHubWorkflowEventWrapper eventWrapper, string messageBody, CancellationToken cancellationToken);
 }
 
 /**
@@ -16,29 +16,33 @@ public interface IGitHubEventHandler
 public class GitHubWorkflowEventHandler(
     IAppConfigVersionService appConfigVersionService,
     IVanityUrlsService vanityUrlsService,
+    ISquidProxyConfigService squidProxyConfigService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
-    public async Task Handle(GitHubWorkflowEventType eventType, string messageBody, CancellationToken cancellationToken)
+    public async Task Handle(GitHubWorkflowEventWrapper eventWrapper, string messageBody, CancellationToken cancellationToken)
     {
-        switch (eventType.EventType)
+        switch (eventWrapper.EventType)
         {
             case "app-config-version":
-                await HandleEvent(eventType, messageBody, appConfigVersionService, cancellationToken);
+                await HandleEvent(eventWrapper, messageBody, appConfigVersionService, cancellationToken);
                 break;
             case "nginx-vanity-urls":
-                await HandleEvent(eventType, messageBody, vanityUrlsService, cancellationToken);
+                await HandleEvent(eventWrapper, messageBody, vanityUrlsService, cancellationToken);
+                break;
+            case "squid-proxy-config":
+                await HandleEvent(eventWrapper, messageBody, squidProxyConfigService, cancellationToken);
                 break;
             default:
-                logger.LogInformation("Ignoring event: {Event} not handled", eventType.EventType);
+                logger.LogInformation("Ignoring event: {Event} not handled", eventWrapper.EventType);
                 return;
         }
     }
 
-    private async Task HandleEvent<T>(GitHubWorkflowEventType eventType, string messageBody, IEventsPersistenceService<T> service,
+    private async Task HandleEvent<T>(GitHubWorkflowEventWrapper eventWrapper, string messageBody, IEventsPersistenceService<T> service,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Handling event: {Event}", eventType.EventType);
+        logger.LogInformation("Handling event: {Event}", eventWrapper.EventType);
         var workflowEvent = JsonSerializer.Deserialize<Event<T>>(messageBody);
         if (workflowEvent == null)
         {

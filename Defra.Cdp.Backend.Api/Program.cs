@@ -158,6 +158,7 @@ builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
 builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
+builder.Services.AddSingleton<ISquidProxyConfigService, SquidProxyConfigService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -212,6 +213,7 @@ app.UseAuthorization();
 
 // Add endpoints
 app.MapConfigEndpoint();
+app.MapSquidProxyConfigEndpoint();
 app.MapVanityUrlsEndpoint();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));

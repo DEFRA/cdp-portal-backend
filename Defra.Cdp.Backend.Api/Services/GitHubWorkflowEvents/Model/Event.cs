@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
-public record GitHubWorkflowEventType
+public record GitHubWorkflowEventWrapper
 {
     private readonly string? _eventType;
 
@@ -16,7 +16,7 @@ public record GitHubWorkflowEventType
     [JsonPropertyName("action")] public string? Action { get; init; }
 }
 
-public record Event<T> : GitHubWorkflowEventType
+public record Event<T> : GitHubWorkflowEventWrapper
 {
     private readonly T? _payload;
     [JsonPropertyName("timestamp")] public DateTime? Timestamp { get; init; }
