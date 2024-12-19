@@ -111,15 +111,18 @@ public class DeploymentStatus
             return Pending;
         }
 
-        return d.LastDeploymentStatus switch
+        if (d.LastDeploymentStatus == SERVICE_DEPLOYMENT_FAILED)
         {
-            SERVICE_DEPLOYMENT_FAILED => Failed,
-            // To prevent `Stopped` being set straight after Requesting a deployment, but before we get instance information
-            SERVICE_DEPLOYMENT_IN_PROGRESS => Requested,
-            // Otherwise, with nothing running, pending, or stopping the deployment must have been stopped (right?)
-            _ => Stopped
-        };
+            return Failed;
+        }
 
-        
+        // To prevent `Stopped` being set straight after Requesting a deployment, but before we get instance information
+        if (d.Status == Requested)
+        {
+            return Requested;
+        }
+
+        // Otherwise, with nothing running, pending, or stopping the deployment must have been stopped (right?)
+        return Stopped;
     }
 }
