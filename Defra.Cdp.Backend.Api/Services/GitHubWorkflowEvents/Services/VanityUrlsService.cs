@@ -10,7 +10,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IVanityUrlsService : IEventsPersistenceService<VanityUrlsPayload>
 {
-    public Task<VanityUrlsRecord> FindVanityUrls(string service, string environment,
+    public Task<VanityUrlsRecord?> FindVanityUrls(string service, string environment,
         CancellationToken cancellationToken);
     
     public Task<List<VanityUrlsRecord>> FindAllVanityUrls(string service, CancellationToken cancellationToken);
@@ -24,7 +24,7 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerF
     private const string CollectionName = "vanityurls";
     private readonly ILogger<VanityUrlsService> _logger = loggerFactory.CreateLogger<VanityUrlsService>();
 
-    public async Task<VanityUrlsRecord> FindVanityUrls(string service, string environment,
+    public async Task<VanityUrlsRecord?> FindVanityUrls(string service, string environment,
         CancellationToken cancellationToken)
     {
         return await Collection.Find(v => v.ServiceName == service && v.Environment == environment)
