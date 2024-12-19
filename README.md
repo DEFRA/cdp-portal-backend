@@ -4,8 +4,7 @@ A service for tracking deployments (what's deployed and where) across environmen
 discovering, persisting and providing access to all deployable artifacts on the platform (docker and ECR images).
 
 [![Publish](https://github.com/DEFRA/cdp-portal-backend/actions/workflows/publish.yml/badge.svg)](https://github.com/DEFRA/cdp-portal-backend/actions/workflows/publish.yml)
-
-[![Integration Tests](https://github.com/DEFRA/cdp-portal-backend/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/DEFRA/cdp-portal-backend/actions/workflows/integration-tests.yml)
+[![Journey Tests](https://github.com/DEFRA/cdp-portal-backend/actions/workflows/journey-tests.yml/badge.svg)](https://github.com/DEFRA/cdp-portal-backend/actions/workflows/journey-tests.yml)
 
 - [How does it work?](#how-does-it-work)
 - [APIs](#apis)
