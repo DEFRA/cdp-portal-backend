@@ -122,6 +122,16 @@ public class DeploymentStatus
             return Pending;
         }
 
+        if (d.Status == Requested)
+        {
+            return Requested;
+        }
+
+        if (d.LastDeploymentStatus == SERVICE_DEPLOYMENT_IN_PROGRESS)
+        {
+            return Requested;
+        }
+
         // Otherwise, with nothing running, pending, or stopping the deployment must have been stopped (right?)
         return Stopped;
     }
