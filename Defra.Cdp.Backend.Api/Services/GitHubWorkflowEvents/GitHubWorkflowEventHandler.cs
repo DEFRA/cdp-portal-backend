@@ -34,7 +34,7 @@ public class GitHubWorkflowEventHandler(
                 await HandleEvent(eventWrapper, messageBody, squidProxyConfigService, cancellationToken);
                 break;
             default:
-                logger.LogInformation("Ignoring event: {Event} not handled", eventWrapper.EventType);
+                logger.LogInformation($"Ignoring event: {eventWrapper.EventType} not handled {messageBody}");
                 return;
         }
     }
@@ -42,11 +42,11 @@ public class GitHubWorkflowEventHandler(
     private async Task HandleEvent<T>(GitHubWorkflowEventWrapper eventWrapper, string messageBody, IEventsPersistenceService<T> service,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Handling event: {Event}", eventWrapper.EventType);
+        logger.LogInformation($"Handling event: {eventWrapper.EventType}");
         var workflowEvent = JsonSerializer.Deserialize<Event<T>>(messageBody);
         if (workflowEvent == null)
         {
-            logger.LogInformation("Failed to parse GitHub workflow event - message: {}", messageBody);
+            logger.LogInformation($"Failed to parse GitHub workflow event - message: {messageBody}");
             return;
         }
 

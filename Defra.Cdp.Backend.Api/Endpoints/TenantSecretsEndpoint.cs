@@ -8,6 +8,7 @@ public static class TenantSecretsEndpoint
 {
     public static void MapTenantSecretsEndpoint(this IEndpointRouteBuilder app)
     {
+        // TODO service and environment should be the other way around
         app.MapGet("secrets/{environment}/{service}", FindTenantSecrets);
         app.MapGet("secrets/{service}", FindAllTenantSecrets);
         app.MapPost("secrets/register/pending", RegisterPendingSecret);

@@ -12,6 +12,9 @@ public interface IVanityUrlsService : IEventsPersistenceService<VanityUrlsPayloa
 {
     public Task<VanityUrlsRecord> FindVanityUrls(string service, string environment,
         CancellationToken cancellationToken);
+    
+    public Task<List<VanityUrlsRecord>> FindAllVanityUrls(string service, CancellationToken cancellationToken);
+
 }
 
 public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -27,17 +30,23 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerF
         return await Collection.Find(v => v.ServiceName == service && v.Environment == environment)
             .SingleOrDefaultAsync(cancellationToken);
     }
+    
+    public async Task<List<VanityUrlsRecord>> FindAllVanityUrls(string service, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(v => v.ServiceName == service)
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task PersistEvent(Event<VanityUrlsPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;
-        _logger.LogInformation("Persisting vanity urls for environment: {Environment}", payload.Environment);
+        _logger.LogInformation($"Persisting vanity urls for environment: {payload.Environment}");
 
         var vanityUrls = payload.Services.Select(v => new VanityUrlsRecord(payload.Environment, v.Name,
                 v.Urls.Select(url => new VanityUrl(url.Host, url.Domain)).Distinct().ToList()))
             .ToList();
 
-        var vanityUrlsInDb = await FindAllVanityUrls(payload.Environment, cancellationToken);
+        var vanityUrlsInDb = await FindAllEnvironmentVanityUrls(payload.Environment, cancellationToken);
 
 
         var vanityUrlsToDelete = vanityUrlsInDb.ExceptBy(vanityUrls.Select(v => v.ServiceName),
@@ -70,10 +79,17 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerF
             builder.Descending(v => v.ServiceName)
         ));
 
-        return [envServiceName];
+        var env = new CreateIndexModel<VanityUrlsRecord>(
+            builder.Descending(v => v.Environment)
+        );
+        
+        var service = new CreateIndexModel<VanityUrlsRecord>(
+            builder.Descending(v => v.ServiceName)
+        );
+        return [env, service, envServiceName];
     }
 
-    private async Task<List<VanityUrlsRecord>> FindAllVanityUrls(string environment,
+    private async Task<List<VanityUrlsRecord>> FindAllEnvironmentVanityUrls(string environment,
         CancellationToken cancellationToken)
     {
         return await Collection.Find(v => v.Environment == environment)
@@ -97,7 +113,6 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerF
                     v.ServiceName == vanityUrl.ServiceName && v.Environment == vanityUrl.Environment);
                 return new ReplaceOneModel<VanityUrlsRecord>(filter, vanityUrl) { IsUpsert = true };
             }).ToList();
-
 
         await Collection.BulkWriteAsync(updateVanityUrlsModels, new BulkWriteOptions(), cancellationToken);
     }

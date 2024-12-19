@@ -21,20 +21,22 @@ public class GitHubWorkflowEventListener(
 {
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Received message from {queue}: {MessageId}", QueueUrl, message.MessageId);
+        logger.LogInformation($"Received message from {QueueUrl}: {message.MessageId}");
 
         try
         {
+            logger.LogInformation(message.Body);
             var eventType = TryParseMessageBody(message.Body);
             if (eventType != null)
+
                 await eventHandler.Handle(eventType, message.Body, cancellationToken);
             else
-                logger.LogInformation("Message from {queue}: {MessageId} was not readable\n {body}" , QueueUrl,
-                    message.MessageId, message.Body);
+                logger.LogInformation(
+                    $"Message from {QueueUrl}: {message.MessageId} was not readable\n {message.Body}");
         }
         catch (Exception e)
         {
-            logger.LogError("Failed to handle message: {id}, {err}", message.MessageId, e);
+            logger.LogError($"Failed to handle message: {message.MessageId}, {e}");
         }
     }
 
