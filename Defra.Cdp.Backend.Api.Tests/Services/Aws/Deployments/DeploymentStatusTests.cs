@@ -58,6 +58,13 @@ public class DeploymentStatusTests
     [Fact]
     public void TestOverallStatus()
     {
+        var deploymentRequestedWithoutAnyInstances = new DeploymentV2
+        {
+            InstanceCount = 2, 
+            Instances = new Dictionary<string, DeploymentInstanceStatus>(),
+            LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS,
+            Status = Requested
+        };
         var runningWithoutDeploymentComplete = new DeploymentV2
         {
             InstanceCount = 2, 
@@ -134,6 +141,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_FAILED
         };
         
+        Assert.Equal(Requested, CalculateOverallStatus(deploymentRequestedWithoutAnyInstances));
         Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentComplete));
         Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentStatus));
         Assert.Equal(Running, CalculateOverallStatus(runningWithDeploymentComplete));
