@@ -4,31 +4,13 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
 public record GitHubWorkflowEventWrapper
 {
-    private readonly string? _eventType;
-
-    [JsonPropertyName("eventType")]
-    public string? EventType
-    {
-        get => _eventType ?? Action;
-        init => _eventType = value;
-    }
-
-    [JsonPropertyName("action")] public string? Action { get; init; }
+    [JsonPropertyName("eventType")] public required string EventType { get; init; }
 }
 
 public record Event<T> : GitHubWorkflowEventWrapper
 {
-    private readonly T? _payload;
-    [JsonPropertyName("timestamp")] public DateTime? Timestamp { get; init; }
-
-    [JsonPropertyName("payload")]
-    public T? Payload
-    {
-        get => _payload ?? Content;
-        init => _payload = value;
-    }
-
-    [JsonPropertyName("content")] public T? Content { get; init; }
+    [JsonPropertyName("timestamp")] public required DateTime Timestamp { get; init; }
+    [JsonPropertyName("payload")] public required T Payload { get; init; }
 }
 
 public record AppConfigVersionEvent : Event<AppConfigVersionPayload>;
