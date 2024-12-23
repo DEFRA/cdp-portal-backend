@@ -100,6 +100,7 @@ builder.Services.Configure<GitHubWorkflowEventListenerOptions>(
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
+builder.Services.AddScoped<IValidator<RequestedUndeployment>, RequestedUndeploymentValidator>();
 
 // SQS provider
 logger.Information("Attempting to add SQS, ECR and Docker Client");
