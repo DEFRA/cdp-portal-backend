@@ -52,7 +52,7 @@ Console.WriteLine("Logger created.");
 
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 
-// Load certificates into Trust Store - Note must happen before Mongo and Http client connections 
+// Load certificates into Trust Store - Note must happen before Mongo and Http client connections
 TrustStore.SetupTrustStore(logger);
 
 // Add health checks and http client
@@ -100,6 +100,7 @@ builder.Services.Configure<GitHubWorkflowEventListenerOptions>(
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
+builder.Services.AddScoped<IValidator<RequestedUndeployment>, RequestedUndeploymentValidator>();
 
 // SQS provider
 logger.Information("Attempting to add SQS, ECR and Docker Client");
@@ -146,6 +147,7 @@ builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsServiceV2, DeploymentsServiceV2>();
+builder.Services.AddSingleton<IUndeploymentsService, UndeploymentsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
@@ -219,6 +221,7 @@ app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDecommissionEndpoint();
 app.MapDeploymentsEndpointV2();
+app.MapUndeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
