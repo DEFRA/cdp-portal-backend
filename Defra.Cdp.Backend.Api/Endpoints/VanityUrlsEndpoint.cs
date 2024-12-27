@@ -8,46 +8,42 @@ public static class VanityUrlsEndpoint
 {
     public static void MapVanityUrlsEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/vanity-urls/{service}/{environment}", ServiceVanityUrls);
-        app.MapGet("/vanity-urls/{service}", AllServiceVanityUrls);
+        app.MapGet("/vanity-urls/{service}/{environment}", ServiceVanityUrlsForEnv);
+        app.MapGet("/vanity-urls/{service}", ServiceVanityUrls);
     }
 
-    private static async Task<IResult> ServiceVanityUrls(
-        IVanityUrlsService vanityUrlsService,
+    private static async Task<IResult> ServiceVanityUrlsForEnv(
+        ITenantUrlService vanityUrlsService,
         string service,
         string environment,
         CancellationToken cancellationToken)
     {
-        var result = await vanityUrlsService.FindVanityUrls(service, environment, cancellationToken);
-        return result == null
+        var results = await vanityUrlsService.FindServiceByEnv(service, environment, cancellationToken);
+        return results.Count == 0
             ? Results.NotFound(new ApiError("Not found"))
-            : Results.Ok(new VanityUrlsResponse(result));
+            : Results.Ok(new VanityUrlsResponse(results));
     }
 
-    private static async Task<IResult> AllServiceVanityUrls(
-        IVanityUrlsService vanityUrlsService,
+    private static async Task<IResult> ServiceVanityUrls(
+        ITenantUrlService vanityUrlsService,
         string service,
         CancellationToken cancellationToken)
     {
-        var result = await vanityUrlsService.FindAllVanityUrls(service, cancellationToken);
-
+        var result = await vanityUrlsService.FindService(service, cancellationToken);
         if (result.Count == 0)
         {
             return Results.NotFound(new ApiError("Not found"));
         }
 
-        var response = result.ToDictionary(vanityUrl => vanityUrl.Environment,
-            vanityUrl => new VanityUrlsResponse(vanityUrl));
+        var response = result
+            .GroupBy(g => g.Environment)
+            .ToDictionary(k => k.Key, v => new VanityUrlsResponse(v.ToList()));
+        
         return Results.Ok(response);
     }
 
-    private class VanityUrlsResponse
+    public class VanityUrlsResponse(List<VanityUrlRecord> vanityUrlsRecord)
     {
-        public VanityUrlsResponse(VanityUrlsRecord vanityUrlsRecord)
-        {
-            VanityUrls = vanityUrlsRecord.VanityUrls.Select(v => "https://" + v.Host + "." + v.Domain).ToList();
-        }
-
-        [JsonPropertyName("vanityUrls")] public List<string> VanityUrls { get; }
+        [JsonPropertyName("vanityUrls")] public List<VanityUrlRecord> VanityUrls { get; } = vanityUrlsRecord;
     }
 }

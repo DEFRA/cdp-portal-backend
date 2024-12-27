@@ -159,10 +159,13 @@ builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
-builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
+builder.Services.AddSingleton<INginxVanityUrlsService, NginxVanityUrlsService>();
 builder.Services.AddSingleton<ISquidProxyConfigService, SquidProxyConfigService>();
 builder.Services.AddSingleton<ITenantBucketsService, TenantBucketsService>();
 builder.Services.AddSingleton<ITenantServicesService, TenantServicesService>();
+builder.Services.AddSingleton<IShutteredUrlsService, ShutteredUrlsService>();
+builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsService>();
+builder.Services.AddSingleton<ITenantUrlService, VanityUrlService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
