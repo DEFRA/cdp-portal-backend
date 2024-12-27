@@ -45,7 +45,7 @@ public class EventTest
                                    }
                                    """;
 
-        var workflowEvent = JsonSerializer.Deserialize<Event<VanityUrlsPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<Event<NginxVanityUrlsPayload>>(messageBody);
 
         Assert.Equal("nginx-vanity-urls", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);

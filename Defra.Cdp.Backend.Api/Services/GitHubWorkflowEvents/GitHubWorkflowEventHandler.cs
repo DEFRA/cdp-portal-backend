@@ -15,10 +15,12 @@ public interface IGitHubEventHandler
  */
 public class GitHubWorkflowEventHandler(
     IAppConfigVersionService appConfigVersionService,
-    IVanityUrlsService vanityUrlsService,
+    INginxVanityUrlsService nginxVanityUrlsService,
     ISquidProxyConfigService squidProxyConfigService,
     ITenantBucketsService tenantBucketsService,
     ITenantServicesService tenantServicesService,
+    IShutteredUrlsService shutteredUrlsService,
+    IEnabledVanityUrlsService enabledVanityUrlsService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
@@ -30,7 +32,7 @@ public class GitHubWorkflowEventHandler(
                 await HandleEvent(eventWrapper, messageBody, appConfigVersionService, cancellationToken);
                 break;
             case "nginx-vanity-urls":
-                await HandleEvent(eventWrapper, messageBody, vanityUrlsService, cancellationToken);
+                await HandleEvent(eventWrapper, messageBody, nginxVanityUrlsService, cancellationToken);
                 break;
             case "squid-proxy-config":
                 await HandleEvent(eventWrapper, messageBody, squidProxyConfigService, cancellationToken);
@@ -41,7 +43,12 @@ public class GitHubWorkflowEventHandler(
             case "tenant-services":
                 await HandleEvent(eventWrapper, messageBody, tenantServicesService, cancellationToken);
                 break;
-
+            case "shuttered-urls":
+                await HandleEvent(eventWrapper, messageBody, shutteredUrlsService, cancellationToken);
+                break;
+            case "enabled-urls":
+                await HandleEvent(eventWrapper, messageBody, enabledVanityUrlsService, cancellationToken);
+                break;
             default:
                 logger.LogInformation($"Ignoring event: {eventWrapper.EventType} not handled {messageBody}");
                 return;

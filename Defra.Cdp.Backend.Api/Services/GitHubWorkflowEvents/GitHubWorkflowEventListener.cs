@@ -21,7 +21,7 @@ public class GitHubWorkflowEventListener(
 {
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        logger.LogInformation($"Received message from {QueueUrl}: {message.MessageId}");
+        logger.LogInformation("Received message from {QueueUrl}: {Id}", QueueUrl, message.MessageId);
 
         try
         {
@@ -31,23 +31,24 @@ public class GitHubWorkflowEventListener(
 
                 await eventHandler.Handle(eventType, message.Body, cancellationToken);
             else
-                logger.LogInformation(
-                    $"Message from {QueueUrl}: {message.MessageId} was not readable\n {message.Body}");
+                logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl, message.MessageId, message.Body);
         }
         catch (Exception e)
         {
-            logger.LogError($"Failed to handle message: {message.MessageId}, {e}");
+            logger.LogError("Failed to process message {Id} {Exception}", message.MessageId, e.Message);
         }
     }
 
     private static GitHubWorkflowEventWrapper? TryParseMessageBody(string body)
     {
+        Console.WriteLine(body);
         try
         {
             return JsonSerializer.Deserialize<GitHubWorkflowEventWrapper>(body);
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Console.WriteLine(e);
             return null;
         }
     }
