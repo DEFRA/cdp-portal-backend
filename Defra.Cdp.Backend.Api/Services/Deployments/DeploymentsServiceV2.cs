@@ -26,9 +26,11 @@ public interface IDeploymentsServiceV2
     );
     Task<DeploymentV2?> FindDeployment(string deploymentId, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
-    Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct);
+
+    Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? status,
+        CancellationToken ct);
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
-    Task<DeploymentFilters> GetFilters(CancellationToken ct);
+    Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
     Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken ct);
     Task Decommission(string serviceName, CancellationToken ct);
 }
@@ -103,17 +105,35 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<DeploymentV2>> FindWhatsRunningWhere(List<string> environments, CancellationToken ct)
-    {
-        var fb = new FilterDefinitionBuilder<DeploymentV2>();
+    public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? status,
+        CancellationToken ct)
 
-        var statusFilter = fb.In(d => d.Status, [Running, Pending, Undeployed]);
-        var envFilter = fb.Empty;
-        if (environments.Any())
+    {
+        var builder = Builders<DeploymentV2>.Filter;
+        var filter = builder.Empty;
+
+        filter &= builder.In(d => d.Status, [Running, Pending, Undeployed]);
+
+        if (!string.IsNullOrWhiteSpace(service))
         {
-            envFilter = fb.In(d => d.Environment, environments);
+            var serviceFilter = builder.Regex(d => d.Service,
+                new BsonRegularExpression(service, "i"));
+            filter &= serviceFilter;
         }
-        var filter = fb.And(envFilter, statusFilter);
+
+        if (environments != null)
+        {
+            var envFilter = builder.In(d => d.Environment, environments);
+            filter &= envFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusLower = status.ToLower();
+            var statusFilter = builder.Where(d =>
+                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
+            filter &= statusFilter;
+        }
 
         var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
             .Match(filter)
@@ -223,7 +243,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment, cancellationToken: ct);
     }
 
-    public async Task<DeploymentFilters> GetFilters(CancellationToken ct)
+    public async Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct)
     {
         var serviceNames = await Collection
             .Distinct(d => d.Service, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)

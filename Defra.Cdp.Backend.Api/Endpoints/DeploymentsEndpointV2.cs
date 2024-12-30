@@ -10,29 +10,9 @@ public static class DeploymentsEndpointV2
 {
     public static void MapDeploymentsEndpointV2(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/v2/deployments",
-            async (IDeploymentsServiceV2 deploymentsService,
-                CancellationToken cancellationToken,
-                [FromQuery(Name = "environment")] string? environment,
-                [FromQuery(Name = "service")] string? service,
-                [FromQuery(Name = "user")] string? user,
-                [FromQuery(Name = "status")] string? status,
-                [FromQuery(Name = "offset")] int? offset,
-                [FromQuery(Name = "page")] int? page,
-                [FromQuery(Name = "size")] int? size
-            ) => await FindLatestDeployments(deploymentsService,
-                environment,
-                service,
-                user,
-                status,
-                offset ?? 0,
-                page ?? DeploymentsServiceV2.DefaultPage,
-                size ?? DeploymentsServiceV2.DefaultPageSize,
-                cancellationToken
-            ));
-
+        app.MapGet("/v2/deployments", FindLatestDeployments);
         app.MapGet("/v2/deployments/{deploymentId}", FindDeployments);
-        app.MapGet("/v2/deployments/filters/", GetFilters);
+        app.MapGet("/v2/deployments/filters/", GetDeploymentsFilters);
         app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
         app.MapGet("/v2/whats-running-where/{service}", WhatsRunningWhereForService);
         app.MapPost("/v2/deployments", RegisterDeployment);
@@ -40,32 +20,35 @@ public static class DeploymentsEndpointV2
         app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
     }
 
-    // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&page=1&offset=0&size=50
+    // GET /v2/deployments or with query params GET /v2/deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
     private static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService,
-        string? environment,
-        string? service,
-        string? user,
-        string? status,
-        int offset,
-        int page,
-        int size,
+        [FromQuery(Name = "environment")] string? environment,
+        [FromQuery(Name = "service")] string? service,
+        [FromQuery(Name = "user")] string? user,
+        [FromQuery(Name = "status")] string? status,
+        [FromQuery(Name = "offset")] int? offset,
+        [FromQuery(Name = "page")] int? page,
+        [FromQuery(Name = "size")] int? size,
         CancellationToken cancellationToken)
     {
-        var deploymentsPage = await deploymentsService.FindLatest(environment, service, user,
+        var deploymentsPage = await deploymentsService.FindLatest(
+            environment,
+            service,
+            user,
             status,
-            offset,
-            page,
-            size,
+            offset ?? 0,
+            page ?? DeploymentsServiceV2.DefaultPage,
+            size ?? DeploymentsServiceV2.DefaultPageSize,
             cancellationToken
         );
         return Results.Ok(deploymentsPage);
     }
 
     // GET /v2/deployments/filters
-    private static async Task<IResult> GetFilters(IDeploymentsServiceV2 deploymentsService,
+    private static async Task<IResult> GetDeploymentsFilters(IDeploymentsServiceV2 deploymentsService,
         CancellationToken cancellationToken)
     {
-        var deploymentFilters = await deploymentsService.GetFilters(cancellationToken);
+        var deploymentFilters = await deploymentsService.GetDeploymentsFilters(cancellationToken);
         return Results.Ok(new { Filters = deploymentFilters });
     }
 
@@ -81,15 +64,19 @@ public static class DeploymentsEndpointV2
         return Results.Ok(deployment);
     }
 
+    // GET /v2/whats-running-where or with query params GET /v2/whats-running-where?environments=dev&service=forms-runner&status=running
     private static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,
-        HttpContext httpContext,
+        [FromQuery(Name = "environments")] string[]? environments,
+        [FromQuery(Name = "service")] string? service,
+        [FromQuery(Name = "status")] string? status,
         CancellationToken cancellationToken)
     {
-        List<string> environments = httpContext.Request.Query["environments"].Where(g => g != null).ToList()!;
-        var deployments = await deploymentsService.FindWhatsRunningWhere(environments, cancellationToken);
+        var deployments = await deploymentsService.FindWhatsRunningWhere(environments, service,
+            status, cancellationToken);
         return Results.Ok(deployments);
     }
 
+    // GET /v2/whats-running-where/{service}
     private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsServiceV2 deploymentsService,
         string service, CancellationToken cancellationToken)
     {
