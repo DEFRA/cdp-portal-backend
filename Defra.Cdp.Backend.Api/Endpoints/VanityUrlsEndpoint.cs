@@ -13,7 +13,7 @@ public static class VanityUrlsEndpoint
     }
 
     private static async Task<IResult> ServiceVanityUrlsForEnv(
-        ITenantUrlService vanityUrlsService,
+        IVanityUrlService vanityUrlsService,
         string service,
         string environment,
         CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public static class VanityUrlsEndpoint
     }
 
     private static async Task<IResult> ServiceVanityUrls(
-        ITenantUrlService vanityUrlsService,
+        IVanityUrlService vanityUrlsService,
         string service,
         CancellationToken cancellationToken)
     {

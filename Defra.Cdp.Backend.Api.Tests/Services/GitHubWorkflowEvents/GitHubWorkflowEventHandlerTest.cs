@@ -18,7 +18,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -74,7 +74,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -129,7 +129,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -158,7 +158,8 @@ public class GitHubWorkflowEventHandlerTest
 
         await squidProxyConfigService.PersistEvent(
             Arg.Is<Event<SquidProxyConfigPayload>>(e =>
-                e.EventType == "squid-proxy-config" && e.Payload.Environment == "test" && e.Payload.Services.Count == 3),
+                e.EventType == "squid-proxy-config" && e.Payload.Environment == "test" &&
+                e.Payload.Services.Count == 3),
             Arg.Any<CancellationToken>());
         await appConfigVersionService.Received(0)
             .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
@@ -182,7 +183,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -209,7 +210,8 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact] public async Task WillProcessEnabledUrlEvents()
+    [Fact]
+    public async Task WillProcessEnabledUrlEvents()
     {
         var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
         var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
@@ -219,7 +221,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -261,7 +263,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -308,15 +310,15 @@ public class GitHubWorkflowEventHandlerTest
         await appConfigVersionService.Received(0)
             .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.Received(0)
-            .PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+            .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.Received(0)
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.Received(0)
             .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
 
     }
-    
-            [Fact]
+
+    [Fact]
     public async Task WillProcessTenantServicesEvent()
     {
         var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
@@ -327,7 +329,7 @@ public class GitHubWorkflowEventHandlerTest
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService, 
+            appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -368,7 +370,8 @@ public class GitHubWorkflowEventHandlerTest
                                        ]
                                      }
                                    }
-                                   """;;
+                                   """;
+        ;
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
@@ -379,45 +382,45 @@ public class GitHubWorkflowEventHandlerTest
         await appConfigVersionService.Received(0)
             .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.Received(0)
-            .PersistEvent(Arg.Any<Event<VanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+            .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.Received(0)
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantBucketsService.Received(0)
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
 
     }
-   
+
     [Fact]
     public async Task UnrecognizedGitHubWorkflowEvent()
     {
-        {
-            var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-            var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-            var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-            var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-            var tenantServicesService = Substitute.For<ITenantServicesService>();
-            var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-            var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-            var eventHandler = new GitHubWorkflowEventHandler(
-                appConfigVersionService, 
-                vanityUrlsService,
-                squidProxyConfigService,
-                tenantBucketsService,
-                tenantServicesService,
-                shutteredUrlsService,
-                enabledUrlsService,
-                ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
-            var eventType = new GitHubWorkflowEventWrapper { EventType = "unrecognized-github-workflow-event" };
-            var messageBody =
-                """
-                { "eventType": "unrecognized-github-workflow-event",
-                  "timestamp": "2024-10-23T15:10:10.123",
-                  "payload": {
-                    "environment": "test"
-                  }
-                }
-                """;
+        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
+        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
+        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
+        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
+        var tenantServicesService = Substitute.For<ITenantServicesService>();
+        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
+        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
+        var eventHandler = new GitHubWorkflowEventHandler(
+            appConfigVersionService,
+            vanityUrlsService,
+            squidProxyConfigService,
+            tenantBucketsService,
+            tenantServicesService,
+            shutteredUrlsService,
+            enabledUrlsService,
+            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+
+        var eventType = new GitHubWorkflowEventWrapper { EventType = "unrecognized-github-workflow-event" };
+        var messageBody =
+            """
+            { "eventType": "unrecognized-github-workflow-event",
+              "timestamp": "2024-10-23T15:10:10.123",
+              "payload": {
+                "environment": "test"
+              }
+            }
+            """;
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
@@ -426,14 +429,15 @@ public class GitHubWorkflowEventHandlerTest
         await vanityUrlsService.Received(0)
             .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.Received(0)
-                .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
+            .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantBucketsService.Received(0)
-                .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
+            .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.Received(0)
-                .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+            .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
         await shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
         await enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-    
+
+    }
 }

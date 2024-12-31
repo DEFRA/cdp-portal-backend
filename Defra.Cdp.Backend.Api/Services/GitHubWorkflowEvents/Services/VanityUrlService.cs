@@ -7,7 +7,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface ITenantUrlService
+public interface IVanityUrlService
 {
     Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken);
@@ -18,7 +18,7 @@ public interface ITenantUrlService
 /**
  * Combines data from NginxVanityUrls, EnabledVanityUrls and Shuttering
  */
-public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : ITenantUrlService
+public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : IVanityUrlService
 {
     
     public async Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken)
