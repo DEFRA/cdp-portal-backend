@@ -161,6 +161,8 @@ builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
 builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
 builder.Services.AddSingleton<ISquidProxyConfigService, SquidProxyConfigService>();
+builder.Services.AddSingleton<ITenantBucketsService, TenantBucketsService>();
+builder.Services.AddSingleton<ITenantServicesService, TenantServicesService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -214,6 +216,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Add endpoints
+app.MapTenantServicesEndpoint();
+app.MapTenantBucketsEndpoint();
 app.MapConfigEndpoint();
 app.MapSquidProxyConfigEndpoint();
 app.MapVanityUrlsEndpoint();

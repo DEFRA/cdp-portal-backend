@@ -46,7 +46,7 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerF
                 v.Urls.Select(url => new VanityUrl(url.Host, url.Domain)).Distinct().ToList()))
             .ToList();
 
-        var vanityUrlsInDb = await FindAllEnvironmentVanityUrls(payload.Environment, cancellationToken);
+        var vanityUrlsInDb = await FindAllVanityUrlsInEnvironment(payload.Environment, cancellationToken);
 
 
         var vanityUrlsToDelete = vanityUrlsInDb.ExceptBy(vanityUrls.Select(v => v.ServiceName),
@@ -89,7 +89,7 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerF
         return [env, service, envServiceName];
     }
 
-    private async Task<List<VanityUrlsRecord>> FindAllEnvironmentVanityUrls(string environment,
+    private async Task<List<VanityUrlsRecord>> FindAllVanityUrlsInEnvironment(string environment,
         CancellationToken cancellationToken)
     {
         return await Collection.Find(v => v.Environment == environment)
