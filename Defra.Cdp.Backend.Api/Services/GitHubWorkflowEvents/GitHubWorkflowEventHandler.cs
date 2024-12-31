@@ -17,6 +17,8 @@ public class GitHubWorkflowEventHandler(
     IAppConfigVersionService appConfigVersionService,
     IVanityUrlsService vanityUrlsService,
     ISquidProxyConfigService squidProxyConfigService,
+    ITenantBucketsService tenantBucketsService,
+    ITenantServicesService tenantServicesService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
@@ -33,6 +35,13 @@ public class GitHubWorkflowEventHandler(
             case "squid-proxy-config":
                 await HandleEvent(eventWrapper, messageBody, squidProxyConfigService, cancellationToken);
                 break;
+            case "tenant-buckets":
+                await HandleEvent(eventWrapper, messageBody, tenantBucketsService, cancellationToken);
+                break;
+            case "tenant-services":
+                await HandleEvent(eventWrapper, messageBody, tenantServicesService, cancellationToken);
+                break;
+
             default:
                 logger.LogInformation($"Ignoring event: {eventWrapper.EventType} not handled {messageBody}");
                 return;
