@@ -109,56 +109,44 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         CancellationToken ct)
 
     {
-        var builder = Builders<DeploymentV2>.Filter;
-        var filter = builder.Empty;
 
-        filter &= builder.In(d => d.Status, [Running, Pending, Undeployed]);
+        var match = new BsonDocument();
 
-        if (!string.IsNullOrWhiteSpace(service))
+        if (service != null)
         {
-            var serviceFilter = builder.Regex(d => d.Service,
-                new BsonRegularExpression(service, "i"));
-            filter &= serviceFilter;
+            match.AddRange(new BsonDocument("service", service));
         }
 
-        if (environments != null)
+        if (status != null)
         {
-            var envFilter = builder.In(d => d.Environment, environments);
-            filter &= envFilter;
+            match.AddRange(new BsonDocument("status", status.ToLower()));
+        }
+        
+        if (environments?.Length > 0)
+        {
+            match.AddRange(
+                new BsonDocument { { "environment", new BsonDocument("$in", new BsonArray(environments)) } });
+        }
+        
+        var pipeline = whatsRunningWherePipeline;
+
+        if (match.Any())
+        {
+            pipeline = whatsRunningWherePipeline.Prepend(new BsonDocument("$match", match)).ToList();
         }
 
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var statusLower = status.ToLower();
-            var statusFilter = builder.Where(d =>
-                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-            filter &= statusFilter;
-        }
-
-        var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
-            .Match(filter)
-            .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
-            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
-            .Project(grp => grp.Root);
-
-        return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
+        return await Collection.Aggregate<DeploymentV2>(pipeline, cancellationToken: ct).ToListAsync(ct);
     }
 
     public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct)
     {
-        var fb = new FilterDefinitionBuilder<DeploymentV2>();
-        var filter = fb.And(
-            fb.Eq(d => d.Service, serviceName),
-            fb.In(d => d.Status, new[] { Running, Pending, Undeployed })
-        );
-        var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
-            .Match(filter)
-            .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
-            .Group(d => new { d.Environment }, grp => new { Root = grp.First() })
-            .Project(grp => grp.Root);
-
-        return await Collection.Aggregate(pipeline, cancellationToken: ct)
-            .ToListAsync(ct);
+        var matchService = new BsonDocument("$match",
+            new BsonDocument
+            {
+                { "service", serviceName } 
+            });
+        var pipeline = whatsRunningWherePipeline.Prepend(matchService);
+        return await Collection.Aggregate<DeploymentV2>(pipeline.ToArray(), cancellationToken: ct).ToListAsync(ct);
     }
 
     public async Task<Paginated<DeploymentV2>> FindLatest(string? environment, string? service, string? user,
@@ -262,4 +250,43 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
+    
+    readonly List<BsonDocument> whatsRunningWherePipeline =
+    [
+        // Filter out just statuses we're interested in tracking
+        new BsonDocument("$match", new BsonDocument { {"status", new BsonDocument("$in", new BsonArray(new List<string> { Running, Pending, Undeployed }))} }),
+            
+        // Order them by most recent first
+        new BsonDocument("$sort", new BsonDocument { { "updated", -1 } }),
+
+        // Group by service & environment
+        new BsonDocument("$group", new BsonDocument
+        {
+            { "_id", new BsonDocument
+                {
+                    { "service", "$service" },
+                    { "environment", "$environment" }
+                }
+            },
+            { "grp", new BsonDocument("$first", "$$ROOT") }
+        }),
+
+        // Discard grouping id
+        new BsonDocument("$replaceRoot", new BsonDocument { { "newRoot", "$grp" } }),
+
+        // Lookup team ownership of service
+        new BsonDocument("$lookup", new BsonDocument
+        {
+            { "from", "repositories" },
+            { "localField", "service" },
+            { "foreignField", "_id" },
+            { "as", "teams" },
+            { "pipeline", new BsonArray
+                {
+                    new BsonDocument("$unwind", "$teams"),
+                    new BsonDocument("$replaceRoot", new BsonDocument { { "newRoot", "$teams" } })
+                }
+            }
+        })
+    ];
 }
