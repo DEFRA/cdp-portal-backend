@@ -41,6 +41,7 @@ public class DeploymentV2
     public List<TestRun> DeploymentTestRuns { get; set; } = new();
 
     public string? TaskDefinitionArn { get; set; }
+    public List<RepositoryTeam> Teams { get; set; } = new(); 
     
     public static DeploymentV2 FromRequest(RequestedDeployment req)
     {
