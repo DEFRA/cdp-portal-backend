@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
@@ -16,7 +15,10 @@ public interface IRepositoryService
 
     Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken);
 
-    Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates,
+    Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
+        CancellationToken cancellationToken);
+    
+    Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken);
 
     Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
@@ -82,10 +84,26 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         return repositories;
     }
 
-    public async Task<List<Repository>> FindRepositoriesByTeam(string team, bool excludeTemplates,
+    public async Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken)
     {
         var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.Github == team);
+
+        var findDefinition = excludeTemplates
+            ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))
+            : baseFilter;
+
+        var repositories =
+            await Collection
+                .Find(findDefinition)
+                .SortBy(r => r.Id)
+                .ToListAsync(cancellationToken);
+        return repositories;
+    }
+
+    public async Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates, CancellationToken cancellationToken)
+    {
+        var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.TeamId == id);
 
         var findDefinition = excludeTemplates
             ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))

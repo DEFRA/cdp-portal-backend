@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Github;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
@@ -27,7 +28,7 @@ public interface IDeploymentsServiceV2
     Task<DeploymentV2?> FindDeployment(string deploymentId, CancellationToken ct);
     Task<DeploymentV2?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
-    Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? status,
+    Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
         CancellationToken ct);
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
@@ -39,9 +40,11 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 {
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
+    private readonly IRepositoryService _repositoryService;
     
-    public DeploymentsServiceV2(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
+    public DeploymentsServiceV2(IMongoDbClientFactory connectionFactory, IRepositoryService repositoryService, ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
     {
+        _repositoryService = repositoryService;
     }
 
     protected override List<CreateIndexModel<DeploymentV2>> DefineIndexes(IndexKeysDefinitionBuilder<DeploymentV2> builder)
@@ -56,7 +59,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             builder.Descending(d => d.Version)
         ));
         
-        return new List<CreateIndexModel<DeploymentV2>> { created, updated, lambdaId, cdpDeploymentId, envServiceVersion };
+        return [created, updated, lambdaId, cdpDeploymentId, envServiceVersion];
     }
 
     public async Task RegisterDeployment(DeploymentV2 deployment, CancellationToken ct)
@@ -97,50 +100,48 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return result.ModifiedCount == 1;
     }
 
-    public Task<DeploymentV2?>  FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
+    public async Task<DeploymentV2?>  FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<DeploymentV2>();
         var filter = fb.Eq(d => d.TaskDefinitionArn, taskArn);
         var latestFirst = new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Created);
-        return Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
+        return await Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? status,
+    public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
         CancellationToken ct)
 
     {
         var builder = Builders<DeploymentV2>.Filter;
-        var filter = builder.Empty;
+        var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);;
 
-        filter &= builder.In(d => d.Status, [Running, Pending, Undeployed]);
-
-        if (!string.IsNullOrWhiteSpace(service))
-        {
-            var serviceFilter = builder.Regex(d => d.Service,
-                new BsonRegularExpression(service, "i"));
-            filter &= serviceFilter;
-        }
-
-        if (environments != null)
+        if (environments?.Length > 0)
         {
             var envFilter = builder.In(d => d.Environment, environments);
             filter &= envFilter;
         }
 
-        if (!string.IsNullOrWhiteSpace(status))
+        if (!string.IsNullOrWhiteSpace(team))
         {
-            var statusLower = status.ToLower();
-            var statusFilter = builder.Where(d =>
-                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-            filter &= statusFilter;
+            var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
+            var servicesOwnedByTeam = repos.Select(r => r.Id);
+            var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
+            filter &= teamFilter;
         }
 
+        if (!string.IsNullOrWhiteSpace(service))
+        {
+            var partialServiceFilter = Builders<DeploymentV2>.Filter.Regex(d => d.Service,  new BsonRegularExpression($"^{service}", "i"));
+            filter &= partialServiceFilter;
+        }
+        
         var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
             .Match(filter)
             .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
-
+            
+        
         return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
     }
 
@@ -181,7 +182,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         if (!string.IsNullOrWhiteSpace(service))
         {
             var serviceFilter = builder.Regex(d => d.Service,
-                new BsonRegularExpression(service, "i"));
+                new BsonRegularExpression($"^{service}", "i"));
             filter &= serviceFilter;
         }
 
@@ -192,7 +193,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
                 || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
             filter &= userFilter;
         }
-
+        
         if (!string.IsNullOrWhiteSpace(status))
         {
             var statusLower = status.ToLower();
@@ -258,7 +259,6 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         var users = await Collection
             .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
             .ToListAsync(ct);
-
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
