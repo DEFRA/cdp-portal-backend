@@ -83,7 +83,7 @@ public static class RepositoriesEndpoint
     {
         var repositories = string.IsNullOrWhiteSpace(team)
             ? await repositoryService.AllRepositories(excludeTemplates.GetValueOrDefault(), cancellationToken)
-            : await repositoryService.FindRepositoriesByTeam(team, excludeTemplates.GetValueOrDefault(),
+            : await repositoryService.FindRepositoriesByGitHubTeam(team, excludeTemplates.GetValueOrDefault(),
                 cancellationToken);
 
         if (excludeTemplates.GetValueOrDefault()) repositories = repositories.Where(r => !r.IsTemplate).ToList();
@@ -131,7 +131,7 @@ public static class RepositoriesEndpoint
     {
         if (string.IsNullOrWhiteSpace(team)) return Results.BadRequest(new { message = "The team must be specified" });
 
-        var repositories = await repositoryService.FindRepositoriesByTeam(team, true, cancellationToken);
+        var repositories = await repositoryService.FindRepositoriesByGitHubTeam(team, true, cancellationToken);
 
         var templates = await templatesService.FindTemplatesByTeam(team, cancellationToken);
 

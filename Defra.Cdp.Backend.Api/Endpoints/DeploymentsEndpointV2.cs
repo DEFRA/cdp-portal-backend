@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -45,10 +46,17 @@ public static class DeploymentsEndpointV2
     }
 
     // GET /v2/deployments/filters
-    private static async Task<IResult> GetDeploymentsFilters(IDeploymentsServiceV2 deploymentsService,
+    private static async Task<IResult> GetDeploymentsFilters(
+        IDeploymentsServiceV2 deploymentsService,
+        UserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)
     {
         var deploymentFilters = await deploymentsService.GetDeploymentsFilters(cancellationToken);
+        var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        if (teamRecord != null)
+        {
+            deploymentFilters.Teams = teamRecord.teams.Select(t => new RepositoryTeam(t.github,  t.teamId, t.name)).ToList();
+        }
         return Results.Ok(new { Filters = deploymentFilters });
     }
 
@@ -68,11 +76,11 @@ public static class DeploymentsEndpointV2
     private static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,
         [FromQuery(Name = "environments")] string[]? environments,
         [FromQuery(Name = "service")] string? service,
-        [FromQuery(Name = "status")] string? status,
+        [FromQuery(Name = "team")] string? team,
         CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(environments, service,
-            status, cancellationToken);
+            team, cancellationToken);
         return Results.Ok(deployments);
     }
 
