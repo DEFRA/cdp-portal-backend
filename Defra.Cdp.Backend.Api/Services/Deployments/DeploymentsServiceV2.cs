@@ -20,6 +20,7 @@ public interface IDeploymentsServiceV2
         string? service,
         string? user,
         string? status,
+        string? team,
         int offset = 0,
         int page = 0,
         int size = 0,
@@ -164,6 +165,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
     public async Task<Paginated<DeploymentV2>> FindLatest(string? environment, string? service, string? user,
         string? status,
+        string? team,
         int offset = 0,
         int page = 0,
         int size = 0,
@@ -177,6 +179,14 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         {
             var environmentFilter = builder.Eq(d => d.Environment, environment);
             filter &= environmentFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(team))
+        {
+            var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
+            var servicesOwnedByTeam = repos.Select(r => r.Id);
+            var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
+            filter &= teamFilter;
         }
 
         if (!string.IsNullOrWhiteSpace(service))
