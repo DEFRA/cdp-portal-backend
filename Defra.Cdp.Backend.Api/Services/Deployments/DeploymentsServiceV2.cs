@@ -30,8 +30,9 @@ public interface IDeploymentsServiceV2
     Task<DeploymentV2?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
-        CancellationToken ct);
+        string? user, string? status, CancellationToken ct);
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
+    Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct);
     Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
     Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken ct);
     Task Decommission(string serviceName, CancellationToken ct);
@@ -110,11 +111,11 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     }
 
     public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
-        CancellationToken ct)
+        string? user, string? status, CancellationToken ct)
 
     {
         var builder = Builders<DeploymentV2>.Filter;
-        var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);;
+        var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);
 
         if (environments?.Length > 0)
         {
@@ -128,6 +129,22 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             var servicesOwnedByTeam = repos.Select(r => r.Id);
             var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
             filter &= teamFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(user))
+        {
+            var userFilter = builder.Where(d =>
+                (d.User != null && d.User.Id == user)
+                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
+            filter &= userFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusLower = status.ToLower();
+            var statusFilter = builder.Where(d =>
+                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
+            filter &= statusFilter;
         }
 
         if (!string.IsNullOrWhiteSpace(service))
@@ -262,6 +279,28 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
         var statuses = await Collection
             .Distinct(d => d.Status, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        var userFilter =
+            new FilterDefinitionBuilder<DeploymentV2>().Where(d => d.User != null && d.User.DisplayName != "n/a");
+        var users = await Collection
+            .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
+    }
+
+    public async Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct)
+    {
+        var builder = Builders<DeploymentV2>.Filter;
+        var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);
+
+        var serviceNames = await Collection
+            .Distinct(d => d.Service, filter, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        var statuses = await Collection
+            .Distinct(d => d.Status, filter, cancellationToken: ct)
             .ToListAsync(ct);
 
         var userFilter =
