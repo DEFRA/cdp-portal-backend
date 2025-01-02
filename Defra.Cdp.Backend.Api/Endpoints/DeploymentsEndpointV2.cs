@@ -16,6 +16,7 @@ public static class DeploymentsEndpointV2
         app.MapGet("/v2/deployments/filters/", GetDeploymentsFilters);
         app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
         app.MapGet("/v2/whats-running-where/{service}", WhatsRunningWhereForService);
+        app.MapGet("/v2/whats-running-where/filters", GetWhatsRunningWhereFilters);
         app.MapPost("/v2/deployments", RegisterDeployment);
         app.MapPost("/deployments", RegisterDeployment); // fallback while we migrate self-service-ops off v1
         app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
@@ -79,10 +80,12 @@ public static class DeploymentsEndpointV2
         [FromQuery(Name = "environments")] string[]? environments,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "user")] string? user,
+        [FromQuery(Name = "status")] string? status,
         CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(environments, service,
-            team, cancellationToken);
+            team, user, status, cancellationToken);
         return Results.Ok(deployments);
     }
 
@@ -92,6 +95,20 @@ public static class DeploymentsEndpointV2
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
         return Results.Ok(deployments);
+    }
+
+    // GET /v2/whats-running-where/filters
+    private static async Task<IResult> GetWhatsRunningWhereFilters(
+        IDeploymentsServiceV2 deploymentsService,
+        UserServiceFetcher userServiceFetcher,
+        CancellationToken cancellationToken)
+    {
+        var whatsRunningWhereFilters = await deploymentsService.GetWhatsRunningWhereFilters(cancellationToken);
+        var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        if (teamRecord != null)
+            whatsRunningWhereFilters.Teams =
+                teamRecord.teams.Select(t => new RepositoryTeam(t.github,  t.teamId, t.name)).ToList();
+        return Results.Ok(new { Filters = whatsRunningWhereFilters });
     }
 
     private static async Task<IResult> RegisterDeployment(
