@@ -155,6 +155,7 @@ builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
 builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
+builder.Services.AddSingleton<EcrMessageHandler>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();

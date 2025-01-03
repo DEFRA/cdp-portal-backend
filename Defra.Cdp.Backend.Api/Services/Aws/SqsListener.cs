@@ -49,7 +49,6 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
                     {
                         logger.LogError(message.Body);
                         logger.LogError(exception.Message);
-                        // TODO: support Dead Letter Queue 
                     }
 
                     var deleteRequest = new DeleteMessageRequest

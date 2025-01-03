@@ -13,6 +13,8 @@ public interface IDeployableArtifactsService
     Task CreatePlaceholderAsync(string serviceName, string githubUrl, ArtifactRunMode runMode,
         CancellationToken cancellationToken);
 
+    Task<bool> RemoveAsync(string service, string tag, CancellationToken cancellationToken);
+
     Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken);
     Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken);
 
@@ -53,6 +55,12 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     {
         return await Collection.Find(d => d.Repo == repo).SortByDescending(d => d.SemVer)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> RemoveAsync(string service, string tag, CancellationToken cancellationToken)
+    {
+        var result = await Collection.DeleteOneAsync(d => d.Repo == service && d.Tag == tag, cancellationToken);
+        return result.DeletedCount == 1;
     }
 
     public async Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken)
