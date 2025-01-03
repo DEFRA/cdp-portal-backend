@@ -17,7 +17,7 @@ public class ArtifactScannerResult
     public readonly string Error;
     public readonly bool Success;
 
-    public ArtifactScannerResult(DeployableArtifact artifact)
+    public ArtifactScannerResult(DeployableArtifact? artifact)
     {
         Artifact = artifact;
         Success = true;

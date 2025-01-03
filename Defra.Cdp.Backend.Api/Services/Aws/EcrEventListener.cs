@@ -10,15 +10,12 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public class EcrEventListener(
     IAmazonSQS sqs,
-    IArtifactScanner docker,
+    EcrMessageHandler handler,
     IOptions<EcrEventListenerOptions> config,
     IEcrEventsService ecrEventService,
     ILogger<EcrEventListener> logger)
     : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
-    private readonly EcrEventListenerOptions _options = config.Value;
-    private readonly IAmazonSQS _sqs = sqs;
-    
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received message: {MessageId}", message.MessageId);
@@ -34,25 +31,21 @@ public class EcrEventListener(
 
         try
         {
-            var result = await HandleEcrMessage(message.MessageId, message.Body, cancellationToken);
-            if (result is { Success: true, Artifact: not null })
-                logger.LogInformation(
-                    "Processed {MsgMessageId}, image ${ResultSha256} ({ResultRepo}:{ResultTag}) scanned ok",
-                    message.MessageId, result.Artifact.Sha256, result.Artifact.Repo, result.Artifact.Tag);
-            else
-                logger.LogInformation("Skipping processing of {MessageId}, {Error}", message.MessageId, result.Error);
+            await handler.Handle(message.MessageId, message.Body, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to scan image for event {MessageId}", message.MessageId);
+            logger.LogError(ex, "Failed to process ECR message for event {MessageId}, {Error}", message.MessageId, ex.Message);
         }
-
-        // TODO: better error detection to decide if we delete, dead letter or retry...
-        await _sqs.DeleteMessageAsync(_options.QueueUrl, message.ReceiptHandle, cancellationToken);
     }
-    
-    
-    private async Task<ArtifactScannerResult> HandleEcrMessage(string id, string body, CancellationToken cancellationToken)
+}
+
+public class EcrMessageHandler(
+        IArtifactScanner docker,
+        IDeployableArtifactsService artifactsService,
+        ILogger<EcrEventListener> logger)
+{
+    public async Task Handle(string id, string body, CancellationToken cancellationToken)
     {
         logger.LogInformation("Starting processing ECR Event {Id}", id);
         // AWS JSON messages are sent in with their " escaped (\"), in order to parse, they must be unescaped
@@ -62,23 +55,31 @@ public class EcrEventListener(
         if (ecrEvent?.Detail == null)
         {
             logger.LogInformation("Not processing {Id}, failed to process json", id);
-            return ArtifactScannerResult.Failure($"Not processing {id}, failed to process json");
+            return;
         }
 
         if (ecrEvent.Detail.Result != "SUCCESS")
-            return ArtifactScannerResult.Failure($"Not processing {id}, result is not a SUCCESS");
-
-        if (ecrEvent.Detail.ActionType != "PUSH")
-            return ArtifactScannerResult.Failure($"Not processing {id}, message is not a PUSH event");
-
-        if (!SemVer.IsSemVer(ecrEvent.Detail.ImageTag))
         {
-            logger.LogInformation("Not processing {Id}, tag [{ImageTag}] is not semver", id, ecrEvent.Detail.ImageTag);
-            // TODO: have a better return type that can indicate why it wasn't scanned.
-            return ArtifactScannerResult.Failure(
-                $"Not processing {id}, tag [{ecrEvent.Detail.ImageTag}] is not semver");
+            logger.LogInformation("Processing ECR Event {Id}, failed to process json", id);
+            return;
         }
 
-        return await docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
+        switch (ecrEvent.Detail.ActionType)
+        {
+            case "PUSH" when !SemVer.IsSemVer(ecrEvent.Detail.ImageTag):
+                logger.LogInformation("Not processing {Id}, tag [{ImageTag}] is not semver", id, ecrEvent.Detail.ImageTag);
+                break;
+            case "PUSH":
+                var result = await docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
+                logger.LogInformation("Scanned {Sha256} ({Repo}:{Tag}) {Result}", result.Artifact?.Sha256, result.Artifact?.Repo, result.Artifact?.Tag, result.Success ? "OK" : "FAILED");
+                break;
+            case "DELETE":
+                var deleted = await artifactsService.RemoveAsync(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
+                logger.LogInformation("Deleted {Sha256} ({Repo}:{Tag}) {Result}", ecrEvent.Detail.ImageDigest, ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, deleted ? "OK" : "FAILED");
+                break;
+            default:
+                logger.LogInformation("Not processing {id}, message is not a PUSH or DELETE event", id);
+                break;
+        }
     }
 }

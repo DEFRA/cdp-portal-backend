@@ -9,15 +9,10 @@ public interface IEcrEventsService
     Task SaveMessage(string id, string body, CancellationToken cancellationToken);
 }
 
-public class EcrEventsService : MongoService<EcrEventCopy>, IEcrEventsService
+public class EcrEventsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<EcrEventCopy>(connectionFactory, CollectionName, loggerFactory), IEcrEventsService
 {
     private const string CollectionName = "ecrevents";
-
-    public EcrEventsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
-        connectionFactory,
-        CollectionName, loggerFactory)
-    {
-    }
 
     public async Task SaveMessage(string id, string body, CancellationToken cancellationToken)
     {
