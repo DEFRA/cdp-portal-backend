@@ -8,11 +8,11 @@ public static class TenantServicesEndpoint
 {
     public static void MapTenantServicesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/tenant-services/{service}/{environment}", TenantService);
-        app.MapGet("/tenant-services/{service}", AllTenantServices);
+        app.MapGet("/tenant-services/{service}/{environment}", TenantServiceForEnv);
+        app.MapGet("/tenant-services/{service}", TenantService);
     }
 
-    private static async Task<IResult> TenantService(
+    private static async Task<IResult> TenantServiceForEnv(
         ITenantServicesService tenantServicesService,
         string service,
         string environment,
@@ -24,7 +24,7 @@ public static class TenantServicesEndpoint
             : Results.Ok(new TenantServicesResponse(result));
     }
 
-    private static async Task<IResult> AllTenantServices(
+    private static async Task<IResult> TenantService(
         ITenantServicesService tenantServicesService,
         string service,
         CancellationToken cancellationToken)

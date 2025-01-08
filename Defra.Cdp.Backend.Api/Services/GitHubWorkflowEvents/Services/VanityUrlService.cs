@@ -30,13 +30,13 @@ public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFa
     public async Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken)
     {
         var matchStage = new BsonDocument("$match", new BsonDocument("serviceName", service));
-        return await find(matchStage, cancellationToken);
+        return await Find(matchStage, cancellationToken);
     }
 
     public async Task<List<VanityUrlRecord>> FindEnv(string environment, CancellationToken cancellationToken)
     {
         var matchStage = new BsonDocument("$match", new BsonDocument("environment", environment));
-        return await find(matchStage, cancellationToken);
+        return await Find(matchStage, cancellationToken);
     }
 
     public async Task<List<VanityUrlRecord>> FindServiceByEnv(string service, string environment,
@@ -44,10 +44,10 @@ public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFa
     {
         var matchStage = new BsonDocument("$match",
             new BsonDocument { { "serviceName", service }, { "environment", environment } });
-        return await find(matchStage, cancellationToken);
+        return await Find(matchStage, cancellationToken);
     }
 
-    async Task<List<VanityUrlRecord>> find(BsonDocument matchStage, CancellationToken cancellationToken)
+    private async Task<List<VanityUrlRecord>> Find(BsonDocument matchStage, CancellationToken cancellationToken)
     {
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
         return await collection.Aggregate<VanityUrlRecord>(pipeline.Prepend(matchStage).ToArray()).ToListAsync(cancellationToken);

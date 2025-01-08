@@ -10,8 +10,10 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface ISquidProxyConfigService : IEventsPersistenceService<SquidProxyConfigPayload>
 {
-    public Task<SquidProxyConfigRecord> FindSquidProxyConfig(string service, string environment,
+    public Task<SquidProxyConfigRecord?> FindSquidProxyConfig(string service, string environment,
         CancellationToken cancellationToken);
+    
+    public Task<List<SquidProxyConfigRecord>> FindSquidProxyConfig(string service, CancellationToken cancellationToken);
 }
 
 public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -21,11 +23,16 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
     private const string CollectionName = "squidproxyconfig";
     private readonly ILogger<SquidProxyConfigService> _logger = loggerFactory.CreateLogger<SquidProxyConfigService>();
 
-    public async Task<SquidProxyConfigRecord> FindSquidProxyConfig(string service, string environment,
+    public async Task<SquidProxyConfigRecord?> FindSquidProxyConfig(string service, string environment,
         CancellationToken cancellationToken)
     {
         return await Collection.Find(s => s.ServiceName == service && s.Environment == environment)
             .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<List<SquidProxyConfigRecord>> FindSquidProxyConfig(string service, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(s => s.ServiceName == service).ToListAsync(cancellationToken);
     }
 
     public async Task PersistEvent(Event<SquidProxyConfigPayload> workflowEvent, CancellationToken cancellationToken)

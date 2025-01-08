@@ -50,19 +50,19 @@ public class GitHubWorkflowEventHandler(
                 await HandleEvent(eventWrapper, messageBody, enabledVanityUrlsService, cancellationToken);
                 break;
             default:
-                logger.LogInformation($"Ignoring event: {eventWrapper.EventType} not handled {messageBody}");
-                return;
+                logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
+                break;
         }
     }
 
     private async Task HandleEvent<T>(GitHubWorkflowEventWrapper eventWrapper, string messageBody, IEventsPersistenceService<T> service,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation($"Handling event: {eventWrapper.EventType}");
+        logger.LogInformation("Handling event: {EventType}", eventWrapper.EventType);
         var workflowEvent = JsonSerializer.Deserialize<Event<T>>(messageBody);
         if (workflowEvent == null)
         {
-            logger.LogInformation($"Failed to parse GitHub workflow event - message: {messageBody}");
+            logger.LogInformation("Failed to parse GitHub workflow event - message: {MessageBody}", messageBody);
             return;
         }
 
