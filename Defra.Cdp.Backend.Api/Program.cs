@@ -13,6 +13,7 @@ using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
+using Defra.Cdp.Backend.Api.Services.Status;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
@@ -167,7 +168,7 @@ builder.Services.AddSingleton<ITenantServicesService, TenantServicesService>();
 builder.Services.AddSingleton<IShutteredUrlsService, ShutteredUrlsService>();
 builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsService>();
 builder.Services.AddSingleton<IVanityUrlService, VanityUrlService>();
-
+builder.Services.AddSingleton<IStatusService, StatusService>();
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
 
@@ -234,6 +235,7 @@ app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
+app.MapServiceStatusEndpoint();
 app.MapHealthChecks("/health");
 
 // Start the ecs and ecr services
