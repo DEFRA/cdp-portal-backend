@@ -13,10 +13,12 @@ using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
+using Defra.Cdp.Backend.Api.Services.Service;
 using Defra.Cdp.Backend.Api.Services.Status;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
+using Defra.Cdp.Backend.Api.Utils.Fetchers;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -169,6 +171,8 @@ builder.Services.AddSingleton<IShutteredUrlsService, ShutteredUrlsService>();
 builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsService>();
 builder.Services.AddSingleton<IVanityUrlService, VanityUrlService>();
 builder.Services.AddSingleton<IStatusService, StatusService>();
+builder.Services.AddSingleton<IServiceOverviewService, ServiceOverviewService>();
+
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
 
@@ -236,6 +240,7 @@ app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
 app.MapServiceStatusEndpoint();
+app.MapServiceEndpoint();
 app.MapHealthChecks("/health");
 
 // Start the ecs and ecr services
