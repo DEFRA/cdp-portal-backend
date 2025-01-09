@@ -29,9 +29,11 @@ public interface IDeployableArtifactsService
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
 
-    Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId,
+    Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId, string? service,
         CancellationToken cancellationToken);
     Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
+
+    Task<ServiceFilters> GetAllServicesFilters(CancellationToken ct);
     Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
 
@@ -128,19 +130,30 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         await Collection.DeleteManyAsync(da => da.ServiceName == serviceName, cancellationToken: cancellationToken);
     }
 
-    public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId,
+    public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId, string? service,
         CancellationToken cancellationToken)
     {
-        var fd = new FilterDefinitionBuilder<DeployableArtifact>();
-        var filter = fd.Empty;
-        if (runMode != null) filter = fd.Eq(d => d.RunMode, runMode.ToString()?.ToLower());
-        var teamFilter = fd.Empty;
+        var builder = Builders<DeployableArtifact>.Filter;
+        var filter = builder.Empty;
+
+        if (runMode != null) filter = builder.Eq(d => d.RunMode, runMode.ToString()?.ToLower());
+
         if (teamId != null)
-            teamFilter = Builders<DeployableArtifact>.Filter.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
+        {
+            var teamFilter = builder.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
+            filter &= teamFilter;
+        }
+
+        if (!string.IsNullOrWhiteSpace(service))
+        {
+            var partialServiceFilter =
+                builder.Regex(d => d.ServiceName,  new BsonRegularExpression($"^{service}", "i"));
+            filter &= partialServiceFilter;
+        }
 
         var sort = Builders<ServiceInfo>.Sort.Ascending(d => d.ServiceName);
         var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(filter & teamFilter)
+            .Match(filter)
             .Group(d => d.ServiceName,
                 grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
             .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
@@ -203,5 +216,14 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         {
             githubUrlIndex, repoAndTagIndex, hashIndex, teamIdIndex
         };
+    }
+
+    public async Task<ServiceFilters> GetAllServicesFilters(CancellationToken ct)
+    {
+        var serviceNames = await Collection
+            .Distinct(d => d.ServiceName, FilterDefinition<DeployableArtifact>.Empty, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        return new ServiceFilters { Services = serviceNames };
     }
 }
