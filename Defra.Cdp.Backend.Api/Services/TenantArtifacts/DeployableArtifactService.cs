@@ -28,6 +28,7 @@ public interface IDeployableArtifactsService
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
+    Task<List<TagInfo>> FindLatestTagsForRepo(string repo, int limit, CancellationToken cancellationToken);
 
     Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId, string? service,
         CancellationToken cancellationToken);
@@ -101,6 +102,17 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
             .ToListAsync(cancellationToken);
 
         return res.Where(t => SemVer.IsSemVer(t.Tag)).ToList();
+    }
+
+    public async Task<List<TagInfo>> FindLatestTagsForRepo(string repo, int limit, CancellationToken cancellationToken)
+    {
+        var sort = Builders<DeployableArtifact>.Sort.Descending(d => d.Created);
+        return await Collection
+            .Find(d => d.Repo == repo)
+            .Project(d => new TagInfo(d.Tag, d.Created))
+            .Sort(sort)
+            .Limit(limit)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken)
