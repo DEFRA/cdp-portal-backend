@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,6 +24,7 @@ public static class ArtifactsEndpoint
         app.MapGet(DeployablesBaseRoute, ListDeployables);
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
         app.MapGet(ServicesBaseRoute, ListAllServices);
+        app.MapGet($"{ServicesBaseRoute}/filters", GetAllServicesFilters);
         app.MapGet($"{ServicesBaseRoute}/{{service}}", ListService);
         app.MapPost($"{ArtifactsBaseRoute}/placeholder", CreatePlaceholder);
     }
@@ -107,10 +109,12 @@ public static class ArtifactsEndpoint
     // GET /services
     private static async Task<IResult> ListAllServices(IDeployableArtifactsService deployableArtifactsService,
         [FromQuery(Name = "teamId")] string? teamId,
+        [FromQuery(Name = "service")] string? service,
         CancellationToken cancellationToken)
     {
         var services =
-            await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, teamId, cancellationToken);
+            await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, teamId, service,
+                cancellationToken);
         
         return Results.Ok(services);
     }
@@ -120,6 +124,21 @@ public static class ArtifactsEndpoint
         CancellationToken cancellationToken)
     {
         return await deployableArtifactsService.FindServices(service, cancellationToken);
+    }
+
+    // GET /services/filters
+    private static async Task<IResult> GetAllServicesFilters(
+        IDeployableArtifactsService deployableArtifactsService,
+        UserServiceFetcher userServiceFetcher,
+        CancellationToken cancellationToken)
+    {
+        var allServicesFilters = await deployableArtifactsService.GetAllServicesFilters(cancellationToken);
+
+        var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        if (teamRecord != null)
+            allServicesFilters.Teams =
+                teamRecord.teams.Select(t => new RepositoryTeam(t.github,  t.teamId, t.name)).ToList();
+        return Results.Ok(new { Filters = allServicesFilters });
     }
 
     // POST /artifacts/placeholder

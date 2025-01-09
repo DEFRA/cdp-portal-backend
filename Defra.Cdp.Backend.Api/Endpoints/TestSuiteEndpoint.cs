@@ -52,7 +52,7 @@ public static class TestSuiteEndpoint
         [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
    {
        var testSuites =
-           await deployableArtifactsService.FindAllServices(ArtifactRunMode.Job, teamId, cancellationToken);
+           await deployableArtifactsService.FindAllServices(ArtifactRunMode.Job, teamId, null, cancellationToken);
       var latestTestRuns = await testRunService.FindLatestTestRuns(cancellationToken);
       var testSuiteWithLatestJobResponses = testSuites.Select(ts =>
       {
