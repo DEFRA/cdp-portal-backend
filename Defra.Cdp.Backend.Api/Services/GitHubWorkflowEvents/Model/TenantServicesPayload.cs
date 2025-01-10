@@ -18,4 +18,6 @@ public record Service
     [JsonPropertyName("test_suite")] public string? TestSuite { get; init; }
     [JsonPropertyName("buckets")] public List<string>? Buckets { get; init; }
     [JsonPropertyName("queues")] public List<string>? Queues { get; init; }
+    [JsonPropertyName("api_enabled")] public bool? ApiEnabled { get; init; }
+    [JsonPropertyName("api_type")] public string? ApiType { get; init; }
 }
