@@ -149,7 +149,8 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
         if (!string.IsNullOrWhiteSpace(service))
         {
-            var partialServiceFilter = Builders<DeploymentV2>.Filter.Regex(d => d.Service,  new BsonRegularExpression($"^{service}", "i"));
+            var partialServiceFilter =
+                Builders<DeploymentV2>.Filter.Regex(d => d.Service,  new BsonRegularExpression(service, "i"));
             filter &= partialServiceFilter;
         }
         
