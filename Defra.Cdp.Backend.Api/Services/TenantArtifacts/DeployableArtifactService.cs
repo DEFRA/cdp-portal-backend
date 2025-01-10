@@ -147,7 +147,7 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         if (!string.IsNullOrWhiteSpace(service))
         {
             var partialServiceFilter =
-                builder.Regex(d => d.ServiceName,  new BsonRegularExpression($"^{service}", "i"));
+                builder.Regex(d => d.ServiceName,  new BsonRegularExpression(service, "i"));
             filter &= partialServiceFilter;
         }
 
