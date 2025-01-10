@@ -44,10 +44,10 @@ public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILog
     public async Task PersistEvent(Event<TenantServicesPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;
-        _logger.LogInformation($"Persisting tenant services for environment: {payload.Environment}");
+        _logger.LogInformation("Persisting tenant services for environment: {Environment}", payload.Environment);
 
         var tenantServices = payload.Services.Select(s => new TenantServiceRecord(payload.Environment, s.Name, s.Zone,
-            s.Mongo, s.Redis, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues)).ToList();
+            s.Mongo, s.Redis, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues, s.ApiEnabled, s.ApiType)).ToList();
 
         var servicesInDb = await FindAllServicesInEnvironment(payload.Environment, cancellationToken);
 
@@ -125,7 +125,9 @@ public record TenantServiceRecord(
     string ServiceCode,
     string? TestSuite,
     List<string>? Buckets,
-    List<string>? Queues)
+    List<string>? Queues,
+    bool? ApiEnabled,
+    string? ApiType)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]
@@ -142,6 +144,25 @@ public record TenantServiceRecord(
                ServiceCode == other.ServiceCode &&
                TestSuite == other.TestSuite &&
                Buckets == other.Buckets &&
-               Queues == (other.Queues);
+               Queues == (other.Queues) &&
+               ApiEnabled == other.ApiEnabled &&
+               ApiType == other.ApiType;
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(Environment);
+        hashCode.Add(ServiceName);
+        hashCode.Add(Zone);
+        hashCode.Add(Mongo);
+        hashCode.Add(Redis);
+        hashCode.Add(ServiceCode);
+        hashCode.Add(TestSuite);
+        hashCode.Add(Buckets);
+        hashCode.Add(Queues);
+        hashCode.Add(ApiEnabled);
+        hashCode.Add(ApiType);
+        return hashCode.ToHashCode();
     }
 }
