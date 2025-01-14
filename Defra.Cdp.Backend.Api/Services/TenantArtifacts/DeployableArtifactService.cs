@@ -221,7 +221,8 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     public async Task<ServiceFilters> GetAllServicesFilters(CancellationToken ct)
     {
         var serviceNames = await Collection
-            .Distinct(d => d.ServiceName, FilterDefinition<DeployableArtifact>.Empty, cancellationToken: ct)
+            .Distinct(d => d.ServiceName, d => d.RunMode == ArtifactRunMode.Service.ToString().ToLower(),
+                cancellationToken: ct)
             .ToListAsync(ct);
 
         return new ServiceFilters { Services = serviceNames };
