@@ -114,6 +114,7 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
     }
 }
 
+[BsonIgnoreExtraElements]
 public record SquidProxyConfigRecord(string Environment, string ServiceName, List<string> DefaultDomains, List<string> AllowedDomains)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

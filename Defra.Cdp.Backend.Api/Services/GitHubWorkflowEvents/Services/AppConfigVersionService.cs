@@ -47,6 +47,7 @@ public class AppConfigVersionService(IMongoDbClientFactory connectionFactory, IL
     }
 }
 
+[BsonIgnoreExtraElements]
 public record AppConfigVersion(string CommitSha, DateTime CommitTimestamp, string Environment)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

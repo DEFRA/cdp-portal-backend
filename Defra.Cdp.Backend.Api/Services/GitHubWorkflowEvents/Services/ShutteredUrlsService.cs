@@ -71,6 +71,7 @@ public class ShutteredUrlsService(IMongoDbClientFactory connectionFactory, ILogg
     }
 }
 
+[BsonIgnoreExtraElements]
 public record ShutteredUrlRecord(string Environment, string Url)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

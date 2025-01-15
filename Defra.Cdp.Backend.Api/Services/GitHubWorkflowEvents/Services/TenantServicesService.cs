@@ -116,6 +116,7 @@ public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILog
     }
 }
 
+[BsonIgnoreExtraElements]
 public record TenantServiceRecord(
     string Environment,
     string ServiceName,

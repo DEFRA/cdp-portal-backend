@@ -123,6 +123,7 @@ public class TenantBucketsService(IMongoDbClientFactory connectionFactory, ILogg
     }
 }
 
+[BsonIgnoreExtraElements]
 public record TenantBucketRecord(
     string Environment,
     string ServiceName,
@@ -135,7 +136,7 @@ public record TenantBucketRecord(
 
     public virtual bool Equals(TenantBucketRecord? other)
     {
-        return Environment == other.Environment && ServiceName == other.ServiceName && Bucket == other.Bucket;
+        return Environment == other?.Environment && ServiceName == other.ServiceName && Bucket == other.Bucket;
     }
     
     public override int GetHashCode() => HashCode.Combine(Environment, ServiceName, Bucket);

@@ -106,6 +106,7 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
     }
 }
 
+[BsonIgnoreExtraElements]
 public record NginxVanityUrlsRecord(string Environment, string ServiceName, string Url)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

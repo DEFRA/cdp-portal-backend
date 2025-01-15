@@ -22,7 +22,7 @@ public class ServiceOverviewService(
     IVanityUrlService vanityUrlService,
     IDeploymentsServiceV2 deploymentsService,
     SelfServiceOpsFetcher selfServiceOpsFetcher
-    ) : IServiceOverviewService
+) : IServiceOverviewService
 {
     public async Task<ServiceV2?> GetService(string name, CancellationToken cancellationToken = default)
     {
