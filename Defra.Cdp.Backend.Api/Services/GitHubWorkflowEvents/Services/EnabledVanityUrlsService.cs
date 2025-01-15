@@ -56,6 +56,7 @@ public class EnabledVanityUrlsService (IMongoDbClientFactory connectionFactory, 
     }
 }
 
+[BsonIgnoreExtraElements]
 public record EnabledVanityUrlRecord(string Url, string Environment, string Service)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

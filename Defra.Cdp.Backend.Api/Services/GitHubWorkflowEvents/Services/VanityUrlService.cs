@@ -110,6 +110,7 @@ public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFa
     ];
 }
 
+[BsonIgnoreExtraElements]
 public record VanityUrlRecord(string Url, string Environment, string ServiceName, bool Enabled, bool Shuttered)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

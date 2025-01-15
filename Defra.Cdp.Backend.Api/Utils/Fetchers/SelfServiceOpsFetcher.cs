@@ -52,12 +52,11 @@ public class SelfServiceOpsFetcher
     }
 }
 
-
 public class CreationStatus
 {
-    public string Status { get; init; }
-    public string Kind { get; init; }
-    public DateTime Started { get; init; }
+    public required string Status { get; init; }
+    public string? Kind { get; init; }
+    public DateTime? Started { get; init; }
     public User? Creator { get; init; }
     public JsonObject? Content { get; set; }
 }
@@ -70,13 +69,13 @@ public class SelfServiceOpsStatus
     public class RepoStatus
     {
         [property: JsonPropertyName("status")]
-        public string Status { get; init; }
+        public required string Status { get; init; }
         
         [property: JsonPropertyName("kind")]
-        public string Kind { get; init; }
+        public required string Kind { get; init; }
         
         [property: JsonPropertyName("started")]
-        public DateTime Started { get; init; }
+        public DateTime? Started { get; init; }
         
         [property: JsonPropertyName("creator")]
         public User? Creator { get; init; }
@@ -86,7 +85,7 @@ public class SelfServiceOpsStatus
 public class User
 {
     [property: JsonPropertyName("id")]
-    string Id { get; init; }
+    string? Id { get; init; }
     [property: JsonPropertyName("displayName")]
-    string DisplayName { get; init; }
+    string? DisplayName { get; init; }
 }
