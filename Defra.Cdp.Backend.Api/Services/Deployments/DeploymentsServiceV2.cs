@@ -16,6 +16,7 @@ public interface IDeploymentsServiceV2
     Task<bool>          UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
     
     Task<Paginated<DeploymentV2>> FindLatest(
+        string[]? favouriteTeamIds,
         string? environment,
         string? service,
         string? user,
@@ -181,7 +182,8 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .ToListAsync(ct);
     }
 
-    public async Task<Paginated<DeploymentV2>> FindLatest(string? environment, string? service, string? user,
+    public async Task<Paginated<DeploymentV2>> FindLatest(string[]? favouriteTeamIds, string? environment,
+        string? service, string? user,
         string? status,
         string? team,
         int offset = 0,
@@ -237,6 +239,18 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .SortByDescending(d => d.Created)
             .ToListAsync(ct);
 
+        if (favouriteTeamIds?.Length > 0)
+        {
+            var repos = (await Task.WhenAll(favouriteTeamIds.Select(teamId =>
+                    _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
+                .SelectMany(r => r)
+                .ToList();
+
+            var servicesOwnedByTeam = repos.Select(r => r.Id);
+
+            deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.Service)).ToList();
+        }
+        
         var totalDeployments = await Collection.CountDocumentsAsync(filter, cancellationToken: ct);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
