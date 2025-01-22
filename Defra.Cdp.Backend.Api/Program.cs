@@ -167,8 +167,6 @@ builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<EcrEventHandler>();
-builder.Services.AddSingleton<TemplatesFromConfig>();
-builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<INginxVanityUrlsService, NginxVanityUrlsService>();
