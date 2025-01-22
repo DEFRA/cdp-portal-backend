@@ -62,11 +62,6 @@ public static class RepositoriesEndpoint
         app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories);
 
         app.MapGet($"{RepositoriesBaseRoute}/{{id}}", GetRepositoryById);
-
-        // ALL THE THINGS
-        app.MapGet($"{GithubRepositoriesBaseRoute}/{{team}}", GetAllReposTemplatesLibraries);
-
-        app.MapGet("service-types", GetAllServicetypes);
     }
 
     private static async Task<IResult> GetRepositoryById(IRepositoryService repositoryService, string id,
@@ -124,23 +119,6 @@ public static class RepositoriesEndpoint
             cancellationToken);
 
         return Results.Ok(new AllTeamRepositoriesResponse(libraries, services, templates, tests));
-    }
-
-    private static async Task<IResult> GetAllReposTemplatesLibraries(IRepositoryService repositoryService,
-        ITemplatesService templatesService, string? team, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(team)) return Results.BadRequest(new { message = "The team must be specified" });
-
-        var repositories = await repositoryService.FindRepositoriesByGitHubTeam(team, true, cancellationToken);
-
-        var templates = await templatesService.FindTemplatesByTeam(team, cancellationToken);
-
-        return Results.Ok(new AllRepoTemplatesLibrariesResponse(repositories, templates));
-    }
-
-    private static Task<IResult> GetAllServicetypes(ITemplatesService templatesService)
-    {
-        return Task.FromResult(Results.Ok(templatesService.AllServiceTypes()));
     }
 
     public sealed record MultipleRepositoriesResponse(string Message, IEnumerable<Repository> Repositories)
