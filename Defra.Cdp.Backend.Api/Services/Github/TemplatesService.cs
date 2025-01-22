@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Defra.Cdp.Backend.Api.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
@@ -10,7 +11,7 @@ public interface ITemplatesService
 
     Task<Repository?> FindTemplateById(string id, CancellationToken cancellationToken);
 
-    ServiceTypesResult AllServiceTypes();
+    ServiceTypesResult AllServiceTemplates();
 }
 
 public class TemplatesService : ITemplatesService
@@ -30,7 +31,7 @@ public class TemplatesService : ITemplatesService
     public async Task<IEnumerable<Repository>> AllTemplates(CancellationToken cancellationToken)
     {
         var availableTemplates =
-            _templatesFromConfig.Templates.Select(t => _repositoryService.FindRepositoryById(t.Key, cancellationToken));
+            _templatesFromConfig._templates.Select(t => _repositoryService.FindRepositoryById(t.Repository, cancellationToken));
         var repos = await Task.WhenAll(availableTemplates);
         return repos.Where(r => r != null).Select(r => r!);
     }
@@ -46,10 +47,11 @@ public class TemplatesService : ITemplatesService
         return await _repositoryService.FindRepositoryById(id, cancellationToken);
     }
 
-    public ServiceTypesResult AllServiceTypes()
+    public ServiceTypesResult AllServiceTemplates()
     {
-        return new ServiceTypesResult("success", _templatesFromConfig.Templates.Select(t =>
-            new ServiceType(t.Key, t.Value)
-        ));
+        var keyValuePairs = _templatesFromConfig._templates.Select(template =>
+            new KeyValuePair<string, ServiceType>(template.Repository, new ServiceType(template))
+        );
+        return new ServiceTypesResult("success", keyValuePairs.ToImmutableDictionary());
     }
 }

@@ -66,7 +66,7 @@ public static class RepositoriesEndpoint
         // ALL THE THINGS
         app.MapGet($"{GithubRepositoriesBaseRoute}/{{team}}", GetAllReposTemplatesLibraries);
 
-        app.MapGet("service-types", GetAllServicetypes);
+        app.MapGet("service-templates", GetAllServiceTemplates);
     }
 
     private static async Task<IResult> GetRepositoryById(IRepositoryService repositoryService, string id,
@@ -138,9 +138,9 @@ public static class RepositoriesEndpoint
         return Results.Ok(new AllRepoTemplatesLibrariesResponse(repositories, templates));
     }
 
-    private static Task<IResult> GetAllServicetypes(ITemplatesService templatesService)
+    private static Task<IResult> GetAllServiceTemplates(ITemplatesService templatesService)
     {
-        return Task.FromResult(Results.Ok(templatesService.AllServiceTypes()));
+        return Task.FromResult(Results.Ok(templatesService.AllServiceTemplates()));
     }
 
     public sealed record MultipleRepositoriesResponse(string Message, IEnumerable<Repository> Repositories)
