@@ -14,6 +14,8 @@ public interface ITenantServicesService : IEventsPersistenceService<TenantServic
         CancellationToken cancellationToken);
 
     public Task<List<TenantServiceRecord>> FindAllServices(string service, CancellationToken cancellationToken);
+
+   public Task Decommission(string serviceName, CancellationToken ct);
 }
 
 public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -114,6 +116,11 @@ public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILog
         return await Collection.Find(s => s.ServiceName == service)
             .ToListAsync(cancellationToken);
     }
+
+   public async Task Decommission(string serviceName, CancellationToken ct)
+   {
+      await Collection.DeleteManyAsync(d => d.ServiceName == serviceName, ct);
+   }
 }
 
 [BsonIgnoreExtraElements]
@@ -134,8 +141,8 @@ public record TenantServiceRecord(
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
-    
-    public virtual bool Equals(TenantServiceRecord? other)
+
+   public virtual bool Equals(TenantServiceRecord? other)
     {
         return Environment == other?.Environment &&
                ServiceName == other.ServiceName &&
