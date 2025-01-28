@@ -1,0 +1,19 @@
+using System.Text.Json.Serialization;
+
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+
+
+public record TfVanityUrlsPayload
+{
+    [JsonPropertyName("environment")] public required string Environment { get; init; }
+    [JsonPropertyName("vanity_urls")] public required List<TfVanityUrl> VanityUrls { get; init; }
+}
+
+public record TfVanityUrl
+{
+    [JsonPropertyName("service_name")] public required string ServiceName { get; init; }
+    [JsonPropertyName("public_url")] public required string PublicUrl { get; init; }
+    [JsonPropertyName("enable_alb")] public required bool EnableAlb { get; init; }
+    [JsonPropertyName("enable_acm")] public required bool EnableAcm { get; init; }
+    [JsonPropertyName("is_api")] public required bool IsApi { get; init; }
+}
