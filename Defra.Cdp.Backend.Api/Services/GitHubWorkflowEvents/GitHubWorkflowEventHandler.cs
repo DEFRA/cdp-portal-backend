@@ -21,6 +21,7 @@ public class GitHubWorkflowEventHandler(
     ITenantServicesService tenantServicesService,
     IShutteredUrlsService shutteredUrlsService,
     IEnabledVanityUrlsService enabledVanityUrlsService,
+    ITfVanityUrlsService tfVanityUrlsService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
@@ -48,6 +49,9 @@ public class GitHubWorkflowEventHandler(
                 break;
             case "enabled-urls":
                 await HandleEvent(eventWrapper, messageBody, enabledVanityUrlsService, cancellationToken);
+                break;
+            case "tf-vanity-urls":
+                await HandleEvent(eventWrapper, messageBody, tfVanityUrlsService, cancellationToken);
                 break;
             default:
                 logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);

@@ -169,6 +169,7 @@ builder.Services.AddSingleton<ITenantBucketsService, TenantBucketsService>();
 builder.Services.AddSingleton<ITenantServicesService, TenantServicesService>();
 builder.Services.AddSingleton<IShutteredUrlsService, ShutteredUrlsService>();
 builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsService>();
+builder.Services.AddSingleton<ITfVanityUrlsService, TfVanityUrlsService>();
 builder.Services.AddSingleton<IVanityUrlService, VanityUrlService>();
 builder.Services.AddSingleton<IStatusService, StatusService>();
 builder.Services.AddSingleton<IServiceOverviewService, ServiceOverviewService>();
