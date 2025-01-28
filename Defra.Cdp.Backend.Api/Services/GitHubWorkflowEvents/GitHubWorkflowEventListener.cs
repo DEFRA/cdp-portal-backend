@@ -12,7 +12,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
  * Listens for events sent by GitHub Workflows
  * Messages are sent by the workflows and contain event specific payloads
  */
-public class GitHubWorkflowEventListener(
+public class CustomEventListener(
     IAmazonSQS sqs,
     IOptions<GitHubWorkflowEventListenerOptions> config,
     IGitHubEventHandler eventHandler,
