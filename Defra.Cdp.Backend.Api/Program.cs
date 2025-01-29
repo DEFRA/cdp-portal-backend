@@ -230,7 +230,6 @@ app.UseAuthorization();
 app.MapTenantServicesEndpoint();
 app.MapTenantBucketsEndpoint();
 app.MapConfigEndpoint();
-app.MapCostsEndpoint();
 app.MapSquidProxyConfigEndpoint();
 app.MapVanityUrlsEndpoint();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
