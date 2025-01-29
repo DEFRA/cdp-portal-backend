@@ -22,7 +22,7 @@ public class GitHubWorkflowEventHandler(
     IShutteredUrlsService shutteredUrlsService,
     IEnabledVanityUrlsService enabledVanityUrlsService,
     IServiceCodeCostsService serviceCodeCostsService,
-    IEnvironmentCostsService environmentCostsService,
+    ITotalCostsService totalCostsService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
@@ -59,7 +59,7 @@ public class GitHubWorkflowEventHandler(
          case "last-calendar-day-total-cost":
          case "last-calendar-month-total-cost":
          case "last-30-days-total-cost":
-            await HandleEvent(eventWrapper, messageBody, environmentCostsService, cancellationToken);
+            await HandleEvent(eventWrapper, messageBody, totalCostsService, cancellationToken);
             break;
          default:
             logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
