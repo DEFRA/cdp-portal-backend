@@ -7,30 +7,40 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.GitHubWorkflowEvents;
 
 public class GitHubWorkflowEventHandlerTest
 {
-    [Fact]
-    public async Task WillProcessAppConfigVersionEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
+   private readonly IAppConfigVersionService appConfigVersionService = Substitute.For<IAppConfigVersionService>();
+   private readonly INginxVanityUrlsService vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
+   private readonly ISquidProxyConfigService squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
+   private readonly ITenantBucketsService tenantBucketsService = Substitute.For<ITenantBucketsService>();
+   private readonly ITenantServicesService tenantServicesService = Substitute.For<ITenantServicesService>();
+   private readonly IShutteredUrlsService shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
+   private readonly IEnabledVanityUrlsService enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
+   private readonly IServiceCodeCostsService serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+   private readonly ITotalCostsService totalCostsService = Substitute.For<ITotalCostsService>();
+   private readonly ITfVanityUrlsService tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+
+   private GitHubWorkflowEventHandler createHandler()
+   {
+      return new GitHubWorkflowEventHandler(
+          appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   }
 
-        var eventType = new GitHubWorkflowEventWrapper { EventType = "app-config-version" };
-        var messageBody =
+   [Fact]
+   public async Task WillProcessAppConfigVersionEvent()
+   {
+      var eventHandler = createHandler();
+
+      var eventType = new GitHubWorkflowEventWrapper { EventType = "app-config-version" };
+      var messageBody =
             """
             {
               "eventType": "app-config-version",
@@ -68,24 +78,8 @@ public class GitHubWorkflowEventHandlerTest
     [Fact]
     public async Task WillProcessVanityUrlsEvent()
     {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "nginx-vanity-urls" };
         var messageBody =
@@ -124,25 +118,9 @@ public class GitHubWorkflowEventHandlerTest
 
     [Fact]
     public async Task WillProcessSquidProxyConfigEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "squid-proxy-config" };
         const string messageBody = """
@@ -179,25 +157,9 @@ public class GitHubWorkflowEventHandlerTest
 
     [Fact]
     public async Task WillProcessShutteredUrlEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "shuttered-urls" };
         var messageBody =
@@ -219,25 +181,9 @@ public class GitHubWorkflowEventHandlerTest
 
     [Fact]
     public async Task WillProcessEnabledUrlEvents()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "enabled-urls" };
         var messageBody =
@@ -263,25 +209,9 @@ public class GitHubWorkflowEventHandlerTest
 
     [Fact]
     public async Task WillProcessTenantBucketsEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "tenant-buckets" };
         const string messageBody = """
@@ -330,25 +260,9 @@ public class GitHubWorkflowEventHandlerTest
 
     [Fact]
     public async Task WillProcessTenantServicesEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "tenant-services" };
         const string messageBody = """
@@ -401,48 +315,137 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task WillProcessTfVanityUrlsEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+
+   [Fact]
+   public async Task WillProcessServiceCodeCostsServicesEvent()
+   {
+      var eventHandler = createHandler();
+
+      var eventType = new GitHubWorkflowEventWrapper { EventType = "last-calendar-day-costs-by-service-code" };
+      const string messageBody = """
+         {
+            "eventType": "last-calendar-day-costs-by-service-code",
+            "timestamp": "2024-10-23T15:10:10.123",
+            "payload": {
+               "environment": "prod",
+               "cost_reports": [
+                  {
+                  "serviceCode": "CDP",
+                  "serviceName": "SQS",
+                  "cost": 123.45,
+                  "unit": "usd",
+                  "date_from": "2025-01-09",
+                  "date_to": "2025-01-10"
+                  },
+                  {
+                  "serviceCode": "ABC",
+                  "serviceName": "SQS",
+                  "cost": 45.45,
+                  "unit": "usd",
+                  "date_from": "2025-01-09",
+                  "date_to": "2025-01-10"
+                  }
+               ]
+            }
+         }
+      """;
+
+      await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
+
+      await serviceCodeCostsService.Received(1).PersistEvent(
+          Arg.Is<Event<ServiceCodeCostsPayload>>(e =>
+              e.EventType == "last-calendar-day-costs-by-service-code" && e.Payload.Environment == "prod" && e.Payload.CostReports.Count == 2),
+          Arg.Any<CancellationToken>());
+      await appConfigVersionService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
+      await tenantServicesService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+      await vanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+      await squidProxyConfigService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
+      await tenantBucketsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
+      await totalCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TotalCostsPayload>>(), Arg.Any<CancellationToken>());
+      await tfVanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
+   }
+
+   [Fact]
+   public async Task WillProcessTotalCostsServicesEvent()
+   {
+      var eventHandler = createHandler();
+
+      var eventType = new GitHubWorkflowEventWrapper { EventType = "last-calendar-month-total-cost" };
+      const string messageBody = """
+         {
+            "eventType": "last-calendar-month-total-cost",
+            "timestamp": "2024-10-23T15:10:10.123",
+            "payload": {
+               "environment": "prod",
+               "cost_reports":
+                  {
+                  "cost": 123.45,
+                  "unit": "usd",
+                  "date_from": "2025-01-09",
+                  "date_to": "2025-01-10"
+                  }
+            }
+         }
+      """;
+
+      await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
+
+      await totalCostsService.Received(1).PersistEvent(
+          Arg.Is<Event<TotalCostsPayload>>(e =>
+              e.EventType == "last-calendar-month-total-cost" && e.Payload.Environment == "prod" && e.Payload.CostReports.Unit == "usd"),
+          Arg.Any<CancellationToken>());
+      await appConfigVersionService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
+      await tenantServicesService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+      await vanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+      await squidProxyConfigService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
+      await tenantBucketsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
+      await serviceCodeCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<ServiceCodeCostsPayload>>(), Arg.Any<CancellationToken>());
+      await tfVanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
+   }
+
+
+   [Fact]
+   public async Task WillProcessTfVanityUrlsEvent()
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "tf-vanity-urls" };
         const string messageBody = """
                                     {
-                                        "eventType": "tf-vanity-urls", 
+                                        "eventType": "tf-vanity-urls",
                                         "timestamp": "2025-01-28T10:59:02.445635+00:00",
                                         "payload": {
-                                            "environment": "ext-test", 
+                                            "environment": "ext-test",
                                             "vanity_urls":
                                                 [
                                                     {
-                                                        "public_url": "pha-import-notifications.integration.api.defra.gov.uk", 
+                                                        "public_url": "pha-import-notifications.integration.api.defra.gov.uk",
                                                         "service_name": "pha-import-notifications",
-                                                        "enable_alb": false, 
-                                                        "enable_acm": true, 
+                                                        "enable_alb": false,
+                                                        "enable_acm": true,
                                                         "is_api": false
                                                     }, {
                                                         "public_url": "pha-import-notifications-2.integration.api.defra.gov.uk",
                                                         "service_name": "pha-import-notifications",
-                                                        "enable_alb": false, 
-                                                        "enable_acm": false, 
+                                                        "enable_alb": false,
+                                                        "enable_acm": false,
                                                         "is_api": false
                                                     }
                                                 ]
@@ -467,29 +470,18 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantBucketsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
-    }
+      await serviceCodeCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<ServiceCodeCostsPayload>>(), Arg.Any<CancellationToken>());
+      await totalCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TotalCostsPayload>>(), Arg.Any<CancellationToken>());
+
+   }
 
     [Fact]
     public async Task UnrecognizedGitHubWorkflowEvent()
-    {
-        var appConfigVersionService = Substitute.For<IAppConfigVersionService>();
-        var vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-        var squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-        var tenantBucketsService = Substitute.For<ITenantBucketsService>();
-        var tenantServicesService = Substitute.For<ITenantServicesService>();
-        var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-        var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
-            appConfigVersionService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantBucketsService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+   {
+
+      var eventHandler = createHandler();
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "unrecognized-github-workflow-event" };
         var messageBody =

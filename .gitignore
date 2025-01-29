@@ -268,3 +268,5 @@ library.db
 # AWS logs
 */aws-logger*.txt
 .envrc
+
+.vscode/
