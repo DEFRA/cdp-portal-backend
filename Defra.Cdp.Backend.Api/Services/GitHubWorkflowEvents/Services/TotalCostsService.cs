@@ -32,16 +32,14 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
 
       var logger = loggerFactory.CreateLogger("ServiceCodeCostsService");
       var eventType = workflowEvent.EventType;
-      var reportTimestamp = workflowEvent.Timestamp;
+      var eventTimestamp = workflowEvent.Timestamp;
       var payload = workflowEvent.Payload;
       var environment = payload.Environment;
       var costReport = payload.CostReports;
 
-      logger.LogInformation("Cost reports for environment {environment} received", environment);
+      logger.LogInformation("Total cost reports for eventType {eventType} received", eventType);
 
-      var record = TotalCostsRecord.FromPayloads(eventType, reportTimestamp, environment, costReport);
-
-      logger.LogInformation("Cost reports {record} payload", record);
+      var record = TotalCostsRecord.FromPayloads(eventType, eventTimestamp, environment, costReport);
 
       await Collection.InsertOneAsync(record, null, cancellationToken);
 

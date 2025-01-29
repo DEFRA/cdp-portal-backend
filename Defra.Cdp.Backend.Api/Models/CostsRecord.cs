@@ -9,10 +9,10 @@ using MongoDB.Driver.Core.WireProtocol.Messages;
 namespace Defra.Cdp.Backend.Api.Models;
 
 [BsonIgnoreExtraElements]
-public record ServiceCodeCostsRecord(string EventType, DateTime ReportTimestamp, string Environment, string ServiceCode, string AwsService, CostReport CostReport)
+public record ServiceCodeCostsRecord(string EventType, DateTime EventTimestamp, string Environment, string ServiceCode, string AwsService, CostReport CostReport)
 {
 
-   public static ServiceCodeCostsRecord FromPayloads(string eventType, DateTime reportTimestamp, string environment, ServiceCodeCostReportPayload costReportPayload)
+   public static ServiceCodeCostsRecord FromPayloads(string eventType, DateTime eventTimestamp, string environment, ServiceCodeCostReportPayload costReportPayload)
    {
       if (costReportPayload == null) throw new ArgumentNullException(nameof(costReportPayload));
       if (string.IsNullOrEmpty(costReportPayload.ServiceCode))
@@ -21,7 +21,7 @@ public record ServiceCodeCostsRecord(string EventType, DateTime ReportTimestamp,
          throw new ArgumentException("AwsService cannot be null or empty", nameof(costReportPayload.AwsService));
       return new ServiceCodeCostsRecord(
          eventType,
-         reportTimestamp,
+         eventTimestamp,
          environment,
          costReportPayload.ServiceCode,
          costReportPayload.AwsService,
@@ -33,18 +33,21 @@ public record ServiceCodeCostsRecord(string EventType, DateTime ReportTimestamp,
    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
    public ObjectId? Id { get; init; } = default!;
 
+   [BsonElement("createdAt")]
+   [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+   public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
 
 [BsonIgnoreExtraElements]
-public record TotalCostsRecord(string EventType, DateTime ReportTimestamp, string Environment, CostReport CostReport)
+public record TotalCostsRecord(string EventType, DateTime EventTimestamp, string Environment, CostReport CostReport)
 {
 
-   public static TotalCostsRecord FromPayloads(string eventType, DateTime reportTimestamp, string environment, TotalCostReportPayload costReportPayload)
+   public static TotalCostsRecord FromPayloads(string eventType, DateTime eventTimestamp, string environment, TotalCostReportPayload costReportPayload)
    {
       if (costReportPayload == null) throw new ArgumentNullException(nameof(costReportPayload));
       return new TotalCostsRecord(
          eventType,
-         reportTimestamp,
+         eventTimestamp,
          environment,
          CostReport.FromTotalCostReportPayload(costReportPayload));
    }
@@ -54,6 +57,9 @@ public record TotalCostsRecord(string EventType, DateTime ReportTimestamp, strin
    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
    public ObjectId? Id { get; init; } = default!;
 
+   [BsonElement("createdAt")]
+   [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+   public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
 
 public record CostReport(decimal Cost, string Currency, DateOnly DateFrom, DateOnly DateTo)

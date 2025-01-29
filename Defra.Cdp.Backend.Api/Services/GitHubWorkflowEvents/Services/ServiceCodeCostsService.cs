@@ -30,16 +30,14 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
    {
       var logger = loggerFactory.CreateLogger("ServiceCodeCostsService");
       var payload = workflowEvent.Payload;
-      var environment = payload.Environment;
       var eventType = workflowEvent.EventType;
-      var reportTimestamp = workflowEvent.Timestamp;
+      var eventTimestamp = workflowEvent.Timestamp;
+      var environment = payload.Environment;
 
-      logger.LogInformation("Cost reports for environment {environment} received", environment);
+      logger.LogInformation("Service code cost reports for eventType {eventType} received", eventType);
 
       var records = payload.CostReports.Select(rep =>
-        ServiceCodeCostsRecord.FromPayloads(eventType, reportTimestamp, environment, rep)).ToList();
-
-      logger.LogInformation("Cost reports {records} payload", records);
+        ServiceCodeCostsRecord.FromPayloads(eventType, eventTimestamp, environment, rep)).ToList();
 
       var bulkOps = records.Select(record => new InsertOneModel<ServiceCodeCostsRecord>(record)).ToList();
 

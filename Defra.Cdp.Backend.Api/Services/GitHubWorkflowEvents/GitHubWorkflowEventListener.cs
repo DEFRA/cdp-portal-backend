@@ -25,7 +25,7 @@ public class GitHubWorkflowEventListener(
 
         try
         {
-            logger.LogInformation(message.Body);
+         logger.LogDebug(message.Body);
             var eventType = TryParseMessageBody(message.Body);
             if (eventType != null)
 
