@@ -23,6 +23,7 @@ public class GitHubWorkflowEventHandler(
     IEnabledVanityUrlsService enabledVanityUrlsService,
     IServiceCodeCostsService serviceCodeCostsService,
     ITotalCostsService totalCostsService,
+    ITfVanityUrlsService tfVanityUrlsService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
@@ -51,21 +52,24 @@ public class GitHubWorkflowEventHandler(
             case "enabled-urls":
                 await HandleEvent(eventWrapper, messageBody, enabledVanityUrlsService, cancellationToken);
                 break;
-         case "last-calendar-day-costs-by-service-code":
-         case "last-calendar-month-costs-by-service-code":
-         case "last-30-days-costs-by-service-code":
-            await HandleEvent(eventWrapper, messageBody, serviceCodeCostsService, cancellationToken);
-            break;
-         case "last-calendar-day-total-cost":
-         case "last-calendar-month-total-cost":
-         case "last-30-days-total-cost":
-            await HandleEvent(eventWrapper, messageBody, totalCostsService, cancellationToken);
-            break;
-         default:
-            logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
-            break;
-      }
-   }
+            case "last-calendar-day-costs-by-service-code":
+            case "last-calendar-month-costs-by-service-code":
+            case "last-30-days-costs-by-service-code":
+                await HandleEvent(eventWrapper, messageBody, serviceCodeCostsService, cancellationToken);
+                break;
+            case "last-calendar-day-total-cost":
+            case "last-calendar-month-total-cost":
+            case "last-30-days-total-cost":
+                await HandleEvent(eventWrapper, messageBody, totalCostsService, cancellationToken);
+                break;
+            case "tf-vanity-urls":
+                 await HandleEvent(eventWrapper, messageBody, tfVanityUrlsService, cancellationToken);
+                 break;
+            default:
+                 logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
+                 break;
+        }
+    }
 
     private async Task HandleEvent<T>(GitHubWorkflowEventWrapper eventWrapper, string messageBody, IEventsPersistenceService<T> service,
         CancellationToken cancellationToken)
