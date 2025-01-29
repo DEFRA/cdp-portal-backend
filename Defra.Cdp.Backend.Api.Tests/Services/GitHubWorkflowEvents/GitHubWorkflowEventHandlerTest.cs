@@ -17,8 +17,10 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-        var eventHandler = new GitHubWorkflowEventHandler(
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
             squidProxyConfigService,
@@ -26,6 +28,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -75,7 +79,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -84,6 +90,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -132,7 +140,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -141,6 +151,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -187,7 +199,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -196,6 +210,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -227,7 +243,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -236,6 +254,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -271,7 +291,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -280,6 +302,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -338,7 +362,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -347,6 +373,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
@@ -411,7 +439,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -420,29 +450,31 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
         var eventType = new GitHubWorkflowEventWrapper { EventType = "tf-vanity-urls" };
         const string messageBody = """
                                     {
-                                        "eventType": "tf-vanity-urls", 
+                                        "eventType": "tf-vanity-urls",
                                         "timestamp": "2025-01-28T10:59:02.445635+00:00",
                                         "payload": {
-                                            "environment": "ext-test", 
+                                            "environment": "ext-test",
                                             "vanity_urls":
                                                 [
                                                     {
-                                                        "public_url": "pha-import-notifications.integration.api.defra.gov.uk", 
+                                                        "public_url": "pha-import-notifications.integration.api.defra.gov.uk",
                                                         "service_name": "pha-import-notifications",
-                                                        "enable_alb": false, 
-                                                        "enable_acm": true, 
+                                                        "enable_alb": false,
+                                                        "enable_acm": true,
                                                         "is_api": false
                                                     }, {
                                                         "public_url": "pha-import-notifications-2.integration.api.defra.gov.uk",
                                                         "service_name": "pha-import-notifications",
-                                                        "enable_alb": false, 
-                                                        "enable_acm": false, 
+                                                        "enable_alb": false,
+                                                        "enable_acm": false,
                                                         "is_api": false
                                                     }
                                                 ]
@@ -479,7 +511,9 @@ public class GitHubWorkflowEventHandlerTest
         var tenantServicesService = Substitute.For<ITenantServicesService>();
         var shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
         var enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-        var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+      var serviceCodeCostsService = Substitute.For<IServiceCodeCostsService>();
+      var totalCostsService = Substitute.For<ITotalCostsService>();
+      var tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
         var eventHandler = new GitHubWorkflowEventHandler(
             appConfigVersionService,
             vanityUrlsService,
@@ -488,6 +522,8 @@ public class GitHubWorkflowEventHandlerTest
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
+            serviceCodeCostsService,
+            totalCostsService,
             tfVanityUrlsService,
             ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
 
