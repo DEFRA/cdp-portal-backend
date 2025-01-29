@@ -315,8 +315,113 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task WillProcessTfVanityUrlsEvent()
+
+   [Fact]
+   public async Task WillProcessServiceCodeCostsServicesEvent()
+   {
+      var eventHandler = createHandler();
+
+      var eventType = new GitHubWorkflowEventWrapper { EventType = "last-calendar-day-costs-by-service-code" };
+      const string messageBody = """
+         {
+            "eventType": "last-calendar-day-costs-by-service-code",
+            "timestamp": "2024-10-23T15:10:10.123",
+            "payload": {
+               "environment": "prod",
+               "cost_reports": [
+                  {
+                  "serviceCode": "CDP",
+                  "serviceName": "SQS",
+                  "cost": 123.45,
+                  "unit": "usd",
+                  "date_from": "2025-01-09",
+                  "date_to": "2025-01-10"
+                  },
+                  {
+                  "serviceCode": "ABC",
+                  "serviceName": "SQS",
+                  "cost": 45.45,
+                  "unit": "usd",
+                  "date_from": "2025-01-09",
+                  "date_to": "2025-01-10"
+                  }
+               ]
+            }
+         }
+      """;
+
+      await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
+
+      await serviceCodeCostsService.Received(1).PersistEvent(
+          Arg.Is<Event<ServiceCodeCostsPayload>>(e =>
+              e.EventType == "last-calendar-day-costs-by-service-code" && e.Payload.Environment == "prod" && e.Payload.CostReports.Count == 2),
+          Arg.Any<CancellationToken>());
+      await appConfigVersionService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
+      await tenantServicesService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+      await vanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+      await squidProxyConfigService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
+      await tenantBucketsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
+      await totalCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TotalCostsPayload>>(), Arg.Any<CancellationToken>());
+      await tfVanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
+   }
+
+   [Fact]
+   public async Task WillProcessTotalCostsServicesEvent()
+   {
+      var eventHandler = createHandler();
+
+      var eventType = new GitHubWorkflowEventWrapper { EventType = "last-calendar-month-total-cost" };
+      const string messageBody = """
+         {
+            "eventType": "last-calendar-month-total-cost",
+            "timestamp": "2024-10-23T15:10:10.123",
+            "payload": {
+               "environment": "prod",
+               "cost_reports":
+                  {
+                  "cost": 123.45,
+                  "unit": "usd",
+                  "date_from": "2025-01-09",
+                  "date_to": "2025-01-10"
+                  }
+            }
+         }
+      """;
+
+      await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
+
+      await totalCostsService.Received(1).PersistEvent(
+          Arg.Is<Event<TotalCostsPayload>>(e =>
+              e.EventType == "last-calendar-month-total-cost" && e.Payload.Environment == "prod" && e.Payload.CostReports.Unit == "usd"),
+          Arg.Any<CancellationToken>());
+      await appConfigVersionService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
+      await tenantServicesService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+      await vanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+      await squidProxyConfigService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
+      await tenantBucketsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
+      await serviceCodeCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<ServiceCodeCostsPayload>>(), Arg.Any<CancellationToken>());
+      await tfVanityUrlsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
+   }
+
+
+   [Fact]
+   public async Task WillProcessTfVanityUrlsEvent()
    {
 
       var eventHandler = createHandler();
@@ -365,7 +470,12 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantBucketsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
-    }
+      await serviceCodeCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<ServiceCodeCostsPayload>>(), Arg.Any<CancellationToken>());
+      await totalCostsService.DidNotReceive()
+          .PersistEvent(Arg.Any<Event<TotalCostsPayload>>(), Arg.Any<CancellationToken>());
+
+   }
 
     [Fact]
     public async Task UnrecognizedGitHubWorkflowEvent()
