@@ -21,9 +21,10 @@ public class GitHubWorkflowEventHandler(
     ITenantServicesService tenantServicesService,
     IShutteredUrlsService shutteredUrlsService,
     IEnabledVanityUrlsService enabledVanityUrlsService,
+    IEnabledApisService enabledApisService,
+    ITfVanityUrlsService tfVanityUrlsService,
     IServiceCodeCostsService serviceCodeCostsService,
     ITotalCostsService totalCostsService,
-    ITfVanityUrlsService tfVanityUrlsService,
     ILogger<GitHubWorkflowEventHandler> logger)
     : IGitHubEventHandler
 {
@@ -52,6 +53,12 @@ public class GitHubWorkflowEventHandler(
             case "enabled-urls":
                 await HandleEvent(eventWrapper, messageBody, enabledVanityUrlsService, cancellationToken);
                 break;
+            case "enabled-apis":
+                await HandleEvent(eventWrapper, messageBody, enabledApisService, cancellationToken);
+                break;
+            case "tf-vanity-urls":
+                await HandleEvent(eventWrapper, messageBody, tfVanityUrlsService, cancellationToken);
+                break;
             case "last-calendar-day-costs-by-service-code":
             case "last-calendar-month-costs-by-service-code":
             case "last-30-days-costs-by-service-code":
@@ -62,9 +69,6 @@ public class GitHubWorkflowEventHandler(
             case "last-30-days-total-cost":
                 await HandleEvent(eventWrapper, messageBody, totalCostsService, cancellationToken);
                 break;
-            case "tf-vanity-urls":
-                 await HandleEvent(eventWrapper, messageBody, tfVanityUrlsService, cancellationToken);
-                 break;
             default:
                  logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
                  break;
