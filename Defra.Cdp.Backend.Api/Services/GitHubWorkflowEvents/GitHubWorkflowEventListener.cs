@@ -25,13 +25,14 @@ public class GitHubWorkflowEventListener(
 
         try
         {
-         logger.LogDebug(message.Body);
+            logger.LogDebug(message.Body);
             var eventType = TryParseMessageBody(message.Body);
             if (eventType != null)
 
                 await eventHandler.Handle(eventType, message.Body, cancellationToken);
             else
-                logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl, message.MessageId, message.Body);
+                logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl,
+                    message.MessageId, message.Body);
         }
         catch (Exception e)
         {
