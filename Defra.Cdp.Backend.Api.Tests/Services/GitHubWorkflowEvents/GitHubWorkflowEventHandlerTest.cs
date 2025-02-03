@@ -73,6 +73,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
         await enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
     [Fact]
@@ -114,6 +117,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
         await enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
     [Fact]
@@ -153,6 +159,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
         await enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
     [Fact]
@@ -177,6 +186,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
     [Fact]
@@ -205,6 +217,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
     [Fact]
@@ -256,6 +271,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
     [Fact]
@@ -313,6 +331,9 @@ public class GitHubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<Event<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await tenantBucketsService.DidNotReceive()
             .PersistEvent(Arg.Any<Event<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
+        await tfVanityUrlsService.DidNotReceive()
+            .PersistEvent(Arg.Any<Event<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
+
     }
 
 
@@ -443,10 +464,8 @@ public class GitHubWorkflowEventHandlerTest
                                                         "is_api": false
                                                     }, {
                                                         "public_url": "pha-import-notifications-2.integration.api.defra.gov.uk",
-                                                        "service_name": "pha-import-notifications",
                                                         "enable_alb": false,
-                                                        "enable_acm": false,
-                                                        "is_api": false
+                                                        "enable_acm": false
                                                     }
                                                 ]
                                         }
@@ -474,10 +493,9 @@ public class GitHubWorkflowEventHandlerTest
           .PersistEvent(Arg.Any<Event<ServiceCodeCostsPayload>>(), Arg.Any<CancellationToken>());
       await totalCostsService.DidNotReceive()
           .PersistEvent(Arg.Any<Event<TotalCostsPayload>>(), Arg.Any<CancellationToken>());
-
    }
 
-    [Fact]
+   [Fact]
     public async Task UnrecognizedGitHubWorkflowEvent()
    {
 
