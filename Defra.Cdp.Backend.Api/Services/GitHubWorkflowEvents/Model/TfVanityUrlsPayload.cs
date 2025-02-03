@@ -11,9 +11,9 @@ public record TfVanityUrlsPayload
 
 public record TfVanityUrl
 {
-    [JsonPropertyName("service_name")] public required string ServiceName { get; init; }
+    [JsonPropertyName("service_name")] public string ServiceName { get; init; }
     [JsonPropertyName("public_url")] public required string PublicUrl { get; init; }
     [JsonPropertyName("enable_alb")] public required bool EnableAlb { get; init; }
     [JsonPropertyName("enable_acm")] public required bool EnableAcm { get; init; }
-    [JsonPropertyName("is_api")] public required bool IsApi { get; init; }
+    [JsonPropertyName("is_api")] public bool IsApi { get; init; }
 }
