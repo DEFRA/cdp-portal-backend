@@ -19,6 +19,7 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
     CollectionName,
     loggerFactory), ITotalCostsService
 {
+   private ILogger _logger = loggerFactory.CreateLogger("TotalCostsService");
    public const string CollectionName = "totalcosts";
 
    protected override List<CreateIndexModel<TotalCostsRecord>> DefineIndexes(IndexKeysDefinitionBuilder<TotalCostsRecord> builder)
@@ -58,9 +59,30 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
                    Builders<TotalCostsRecord>.Filter.Lte(r => r.CostReport.DateTo, dateTo) &
                    Builders<TotalCostsRecord>.Filter.Eq(r => r.EventType, eventType);
       var sorting = Builders<TotalCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.Environment);
+      var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
+      var trimmedCosts = await onlyLatestReports(costs, cancellationToken);
+      return new TotalCosts(timeUnit, dateFrom, dateTo, trimmedCosts);
+   }
 
-      var costs = await Collection.Find(filter).Sort(sorting).Limit(2).ToListAsync(cancellationToken);
-      return new TotalCosts(timeUnit, dateFrom, dateTo, costs);
+   private async Task<List<TotalCostsRecord>> onlyLatestReports(List<TotalCostsRecord> costsRecords, CancellationToken cancellationToken)
+   {
+      var environments = costsRecords.GroupBy(r => r.Environment).ToDictionary(g => g.Key, g => g.ToList());
+      var latestRecords = new List<TotalCostsRecord>();
+      foreach (var environment in environments.Keys)
+      {
+         var dateFroms = environments[environment].GroupBy(r => r.CostReport.DateFrom).ToDictionary(g => g.Key, g => g.ToList());
+         foreach (var dateFrom in dateFroms.Keys)
+         {
+            _logger.LogInformation("Finding latest record for environment {environment} and dateFrom {dateFrom}", environment, dateFrom);
+            foreach (var record in dateFroms[dateFrom])
+            {
+               _logger.LogInformation("Record: {record}", record);
+            }
+            var latestRecord = dateFroms[dateFrom].OrderByDescending(r => r.EventTimestamp).OrderByDescending(r => r.CreatedAt).First();
+            latestRecords.Add(latestRecord);
+         }
+      }
+      return latestRecords;
    }
 
 }
