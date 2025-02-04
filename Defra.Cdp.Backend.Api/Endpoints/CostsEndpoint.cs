@@ -17,22 +17,13 @@ public static class CostsEndpoint
    }
 
    static async Task<IResult> FindServiceCodeCosts(
-       //  string serviceCode,
        [FromQuery(Name = "from")] DateOnly dateFrom,
        [FromQuery(Name = "to")] DateOnly dateTo,
-        [FromQuery(Name = "servicecodes")] string[] serviceCodes,
        [FromServices] IServiceCodeCostsService serviceCodeCostsService,
        CancellationToken cancellationToken,
        ILoggerFactory loggerFactory,
-       //  [FromQuery(Name = "environments")] string[] environments,
-       [FromQuery(Name = "timeunit")] string timeUnit = "month")
+       [FromQuery(Name = "timeunit")] string timeUnit = "day")
    {
-      var cdpEnvironments = CdpEnvironments.All;
-
-      _logger ??= loggerFactory.CreateLogger("CostsEndpoint");
-      _logger.LogInformation("Finding service costs for {dateFrom} to {dateTo} for environments {environments} with service codes {servicecodes}", dateFrom, dateTo, cdpEnvironments, serviceCodes);
-
-
       var reportTimeUnit = timeUnit switch
       {
          "month" => ReportTimeUnit.Monthly,
@@ -40,7 +31,7 @@ public static class CostsEndpoint
          "day" => ReportTimeUnit.Daily,
          _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
       };
-      var result = await serviceCodeCostsService.FindCosts(reportTimeUnit, serviceCodes, cdpEnvironments, dateFrom, dateTo, cancellationToken);
+      var result = await serviceCodeCostsService.FindAllCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
 
       return result == null
         ? Results.NotFound(new ApiError("Not found"))
