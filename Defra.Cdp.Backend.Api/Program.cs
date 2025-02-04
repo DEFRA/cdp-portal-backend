@@ -173,7 +173,8 @@ builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsServic
 builder.Services.AddSingleton<IEnabledApisService, EnabledApisService>();
 builder.Services.AddSingleton<ITfVanityUrlsService, TfVanityUrlsService>();
 builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
-builder.Services.AddSingleton<IVanityUrlService, VanityUrlService>();
+builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
+builder.Services.AddSingleton<IApiGatewaysService, ApiGatewaysService>();
 builder.Services.AddSingleton<IStatusService, StatusService>();
 builder.Services.AddSingleton<IServiceOverviewService, ServiceOverviewService>();
 
@@ -235,6 +236,7 @@ app.MapConfigEndpoint();
 app.MapSquidProxyConfigEndpoint();
 app.MapCostsEndpoint();
 app.MapVanityUrlsEndpoint();
+app.MapApiGatewaysEndpoint();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDecommissionEndpoint();

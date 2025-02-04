@@ -7,7 +7,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface IVanityUrlService
+public interface IVanityUrlsService
 {
     Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken);
@@ -18,7 +18,7 @@ public interface IVanityUrlService
 /**
  * Combines data from NginxVanityUrls, EnabledVanityUrls and Shuttering
  */
-public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : IVanityUrlService
+public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : IVanityUrlsService
 {
     
     public async Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken)
@@ -56,7 +56,7 @@ public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFa
     
     private readonly BsonDocument[] pipeline =
     [
-        new BsonDocument("$lookup",
+        new("$lookup",
             new BsonDocument
             {
                 { "from", ShutteredUrlsService.CollectionName },
@@ -64,7 +64,7 @@ public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFa
                 { "foreignField", "url" },
                 { "as", "shutteredData" }
             }),
-        new BsonDocument("$lookup",
+        new("$lookup",
             new BsonDocument
             {
                 { "from", EnabledVanityUrlsService.CollectionName },
@@ -72,7 +72,7 @@ public class VanityUrlService(IMongoDbClientFactory connectionFactory, ILoggerFa
                 { "foreignField", "url" },
                 { "as", "enabledData" }
             }),
-        new BsonDocument("$project",
+        new("$project",
             new BsonDocument
             {
                 { "url", 1 },

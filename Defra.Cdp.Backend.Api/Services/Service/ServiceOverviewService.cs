@@ -19,7 +19,7 @@ public class ServiceOverviewService(
     ITenantServicesService tenantService,
     IRepositoryService repositoryService,
     ISecretsService secretsService,
-    IVanityUrlService vanityUrlService,
+    IVanityUrlsService vanityUrlsService,
     IDeploymentsServiceV2 deploymentsService,
     SelfServiceOpsFetcher selfServiceOpsFetcher
 ) : IServiceOverviewService
@@ -33,7 +33,7 @@ public class ServiceOverviewService(
             CreationStatus = await selfServiceOpsFetcher.FindStatus(name),
             Deployments = await deploymentsService.FindWhatsRunningWhere(name, cancellationToken),
             LatestBuilds = await deployableArtifactsService.FindLatestTagsForRepo(name, 6, cancellationToken),
-            VanityUrls = await vanityUrlService.FindService(name, cancellationToken),
+            VanityUrls = await vanityUrlsService.FindService(name, cancellationToken),
             SquidProxyConfig = await squidProxyConfigService.FindSquidProxyConfig(name, cancellationToken),
             Secrets = await secretsService.FindAllSecrets(name, cancellationToken),
             Github = await repositoryService.FindRepositoryById(name, cancellationToken)
