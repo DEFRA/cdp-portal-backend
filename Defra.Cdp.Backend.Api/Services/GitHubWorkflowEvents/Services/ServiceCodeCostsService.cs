@@ -72,33 +72,14 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
 
    private async Task<List<ServiceCodeCostsRecord>> onlyLatestReports(List<ServiceCodeCostsRecord> costsRecords, CancellationToken cancellationToken)
    {
-      var latestRecords = new List<ServiceCodeCostsRecord>();
-      var environments = costsRecords.GroupBy(r => r.Environment)
-                                     .ToList();
-      foreach (var environment in environments)
-      {
-         var serviceCodes = environment.GroupBy(r => r.ServiceCode)
-                                       .ToList();
-         foreach (var serviceCode in serviceCodes)
-         {
-            var awsServices = serviceCode.GroupBy(r => r.AwsService)
-                                         .ToList();
-            foreach (var awsService in awsServices)
-            {
-               var dateFroms = awsService.GroupBy(r => r.CostReport.DateFrom)
-                                         .ToList();
-               foreach (var dateFrom in dateFroms)
-               {
-                  var latestRecord = dateFrom.OrderByDescending(r => r.EventTimestamp)
-                                             .OrderByDescending(r => r.CreatedAt)
-                                             .First();
-                  latestRecords.Add(latestRecord);
-               }
-
-            }
-         }
-      }
-      return latestRecords;
+      return costsRecords.GroupBy(r => r.Environment)
+                         .SelectMany(r => r.GroupBy(r => r.ServiceCode))
+                         .SelectMany(r => r.GroupBy(r => r.AwsService))
+                         .SelectMany(r => r.GroupBy(r => r.CostReport.DateFrom))
+                         .Select(r => r.OrderByDescending(r => r.EventTimestamp)
+                                       .OrderByDescending(r => r.CreatedAt)
+                                       .First())
+                         .ToList();
    }
 
 }
