@@ -77,13 +77,28 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
       var latestRecords = new List<ServiceCodeCostsRecord>();
       foreach (var environment in environments.Keys)
       {
-         var dateFroms = environments[environment].GroupBy(r => r.CostReport.DateFrom)
-                                                  .ToDictionary(g => g.Key, g => g.ToList());
-         foreach (var dateFrom in dateFroms.Keys)
+         var serviceCodes =
+           environments[environment].GroupBy(r => r.ServiceCode)
+                                    .ToDictionary(g => g.Key, g => g.ToList());
+         foreach (var serviceCode in serviceCodes.Keys)
          {
-            var latestRecord = dateFroms[dateFrom].OrderByDescending(r => r.EventTimestamp)
-                                                  .OrderByDescending(r => r.CreatedAt).First();
-            latestRecords.Add(latestRecord);
+            var awsServices =
+              serviceCodes[serviceCode].GroupBy(r => r.AwsService)
+                                       .ToDictionary(g => g.Key, g => g.ToList());
+            foreach (var awsService in awsServices.Keys)
+            {
+               var dateFroms =
+                 awsServices[awsService].GroupBy(r => r.CostReport.DateFrom)
+                                        .ToDictionary(g => g.Key, g => g.ToList());
+               foreach (var dateFrom in dateFroms.Keys)
+               {
+                  var latestRecord =
+                    dateFroms[dateFrom].OrderByDescending(r => r.EventTimestamp)
+                                       .OrderByDescending(r => r.CreatedAt).First();
+                  latestRecords.Add(latestRecord);
+               }
+
+            }
          }
       }
       return latestRecords;
