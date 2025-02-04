@@ -11,7 +11,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface ITotalCostsService : IEventsPersistenceService<TotalCostsPayload>
 {
-   public Task<List<TotalCostsRecord>> FindCosts(string environment, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
+   public Task<TotalCosts> FindAllCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
 }
 
 public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<TotalCostsRecord>(
@@ -45,9 +45,22 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
 
    }
 
-   public async Task<List<TotalCostsRecord>> FindCosts(string environment, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
+   public async Task<TotalCosts> FindAllCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
    {
-      return await Collection.Find(s => s.Environment == environment).ToListAsync(cancellationToken);
+      var eventType = timeUnit switch
+      {
+         ReportTimeUnit.Monthly => "last-calendar-month-total-cost",
+         ReportTimeUnit.ThirtyDays => "last-30-days-total-cost",
+         ReportTimeUnit.Daily => "last-calendar-day-total-cost",
+         _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
+      };
+      var filter = Builders<TotalCostsRecord>.Filter.Gte(r => r.CostReport.DateFrom, dateFrom) &
+                   Builders<TotalCostsRecord>.Filter.Lte(r => r.CostReport.DateTo, dateTo) &
+                   Builders<TotalCostsRecord>.Filter.Eq(r => r.EventType, eventType);
+      var sorting = Builders<TotalCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.Environment);
+
+      var costs = await Collection.Find(filter).Sort(sorting).Limit(2).ToListAsync(cancellationToken);
+      return new TotalCosts(timeUnit, dateFrom, dateTo, costs);
    }
 
 }

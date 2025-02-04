@@ -12,7 +12,7 @@ public static class CostsEndpoint
    public static void MapCostsEndpoint(this IEndpointRouteBuilder app)
    {
       // app.MapGet("/costs", FindCombinedCosts);
-      // app.MapGet("/costs/total", FindTotalCosts);
+      app.MapGet("/costs/total", FindTotalCosts);
       app.MapGet("/costs/servicecode", FindServiceCodeCosts);
    }
 
@@ -24,17 +24,29 @@ public static class CostsEndpoint
        ILoggerFactory loggerFactory,
        [FromQuery(Name = "timeunit")] string timeUnit = "day")
    {
-      var reportTimeUnit = timeUnit switch
-      {
-         "month" => ReportTimeUnit.Monthly,
-         "30day" => ReportTimeUnit.ThirtyDays,
-         "day" => ReportTimeUnit.Daily,
-         _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
-      };
+      var reportTimeUnit = ReportTimeUnits.ToTimeUnit(timeUnit);
+
       var result = await serviceCodeCostsService.FindAllCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
 
       return result == null
         ? Results.NotFound(new ApiError("Not found"))
         : Results.Ok(new ServiceCodesCostsResponse(result));
+   }
+
+   static async Task<IResult> FindTotalCosts(
+       [FromQuery(Name = "from")] DateOnly dateFrom,
+       [FromQuery(Name = "to")] DateOnly dateTo,
+       [FromServices] ITotalCostsService totalCostsService,
+       CancellationToken cancellationToken,
+       ILoggerFactory loggerFactory,
+       [FromQuery(Name = "timeunit")] string timeUnit = "day")
+   {
+      var reportTimeUnit = ReportTimeUnits.ToTimeUnit(timeUnit);
+
+      var result = await totalCostsService.FindAllCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
+
+      return result == null
+        ? Results.NotFound(new ApiError("Not found"))
+        : Results.Ok(new TotalCostsResponse(result));
    }
 }

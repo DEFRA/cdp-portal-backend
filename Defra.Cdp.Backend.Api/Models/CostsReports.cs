@@ -22,6 +22,20 @@ public enum ReportTimeUnit
    Monthly
 }
 
+public static class ReportTimeUnits
+{
+   public static ReportTimeUnit ToTimeUnit(string timeUnit)
+   {
+      return timeUnit switch
+      {
+         "day" => ReportTimeUnit.Daily,
+         "30day" => ReportTimeUnit.ThirtyDays,
+         "month" => ReportTimeUnit.Monthly,
+         _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
+      };
+   }
+}
+
 public static class CdpEnvironments
 {
    public static string[] All => new[] { "infra-dev", "management", "dev", "test", "ext-test", "prod" };
@@ -45,13 +59,50 @@ public record ServiceCodesCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, Date
       return CostsRecords.Where(x => x.ServiceCode == serviceCode).ToList();
    }
 
+   public List<ServiceCodeCostsRecord> GetCostsByEnvironment(string environment)
+   {
+      return CostsRecords.Where(x => x.Environment == environment).ToList();
+   }
+
    public Dictionary<String, List<ServiceCodeCostsRecord>> GetCostsByServiceCodes()
    {
       return CostsRecords.GroupBy(r => r.ServiceCode).ToDictionary(g => g.Key, g => g.ToList());
    }
+
    public Dictionary<String, List<ServiceCodeCostsRecord>> GetCostsByEnvironments()
    {
       return CostsRecords.GroupBy(r => r.Environment).ToDictionary(g => g.Key, g => g.ToList());
+   }
+
+   public Dictionary<DateOnly, List<ServiceCodeCostsRecord>> GetCostsByDateFrom()
+   {
+      return CostsRecords.GroupBy(r => r.CostReport.DateFrom).ToDictionary(g => g.Key, g => g.ToList());
+   }
+
+}
+
+
+public record TotalCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, List<TotalCostsRecord> CostsRecords)
+{
+
+   public List<TotalCostsRecord> GetCosts()
+   {
+      return CostsRecords;
+   }
+
+   public List<TotalCostsRecord> GetCostsByEnvironment(string environment)
+   {
+      return CostsRecords.Where(x => x.Environment == environment).ToList();
+   }
+
+   public Dictionary<String, List<TotalCostsRecord>> GetCostsByEnvironments()
+   {
+      return CostsRecords.GroupBy(r => r.Environment).ToDictionary(g => g.Key, g => g.ToList());
+   }
+
+   public Dictionary<DateOnly, List<TotalCostsRecord>> GetCostsByDateFrom()
+   {
+      return CostsRecords.GroupBy(r => r.CostReport.DateFrom).ToDictionary(g => g.Key, g => g.ToList());
    }
 
 }

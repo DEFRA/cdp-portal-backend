@@ -63,8 +63,8 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
       var filter = Builders<ServiceCodeCostsRecord>.Filter.Gte(r => r.CostReport.DateFrom, dateFrom) &
                    Builders<ServiceCodeCostsRecord>.Filter.Lte(r => r.CostReport.DateTo, dateTo) &
                    Builders<ServiceCodeCostsRecord>.Filter.Eq(r => r.EventType, eventType);
-      var sorting = Builders<ServiceCodeCostsRecord>.Sort.Descending(r => r.EventTimestamp);
-      var costs = await Collection.Find(filter).Sort(sorting).Limit(2).ToListAsync(cancellationToken);
+      var sorting = Builders<ServiceCodeCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.ServiceCode); ;
+      var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
       return new ServiceCodesCosts(timeUnit, dateFrom, dateTo, costs);
    }
 
