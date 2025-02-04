@@ -14,7 +14,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 public interface IServiceCodeCostsService : IEventsPersistenceService<ServiceCodeCostsPayload>
 {
 
-   public Task<ServiceCodesCosts> FindAllCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
+   public Task<ServiceCodesCosts> FindCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
 }
 
 public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<ServiceCodeCostsRecord>(
@@ -52,7 +52,7 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
 
    }
 
-   public async Task<ServiceCodesCosts> FindAllCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
+   public async Task<ServiceCodesCosts> FindCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
    {
       var eventType = timeUnit switch
       {
@@ -61,9 +61,10 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
          ReportTimeUnit.Daily => "last-calendar-day-costs-by-service-code",
          _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
       };
-      var filter = Builders<ServiceCodeCostsRecord>.Filter.Gte(r => r.CostReport.DateFrom, dateFrom) &
-                   Builders<ServiceCodeCostsRecord>.Filter.Lte(r => r.CostReport.DateTo, dateTo) &
-                   Builders<ServiceCodeCostsRecord>.Filter.Eq(r => r.EventType, eventType);
+      var builder = Builders<ServiceCodeCostsRecord>.Filter;
+      var filter = builder.Gte(r => r.CostReport.DateFrom, dateFrom) &
+                   builder.Lte(r => r.CostReport.DateTo, dateTo) &
+                   builder.Eq(r => r.EventType, eventType);
       var sorting = Builders<ServiceCodeCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.ServiceCode).Ascending(r => r.Environment);
       var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
       var trimmedCosts = await onlyLatestReports(costs, cancellationToken);

@@ -79,6 +79,10 @@ public record ServiceCodesCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, Date
       return CostsRecords.GroupBy(r => r.CostReport.DateFrom).ToDictionary(g => g.Key, g => g.ToList());
    }
 
+   public decimal SummarisedCost()
+   {
+      return CostsRecords.Select(costs => costs.CostReport.Cost).Sum();
+   }
 }
 
 
@@ -103,6 +107,11 @@ public record TotalCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly da
    public Dictionary<DateOnly, List<TotalCostsRecord>> GetCostsByDateFrom()
    {
       return CostsRecords.GroupBy(r => r.CostReport.DateFrom).ToDictionary(g => g.Key, g => g.ToList());
+   }
+
+   public decimal SummarisedCost()
+   {
+      return CostsRecords.Select(costs => costs.CostReport.Cost).Sum();
    }
 
 }

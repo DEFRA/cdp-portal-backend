@@ -26,7 +26,7 @@ public static class CostsEndpoint
    {
       var reportTimeUnit = ReportTimeUnits.ToTimeUnit(timeUnit);
 
-      var result = await serviceCodeCostsService.FindAllCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
+      var result = await serviceCodeCostsService.FindCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
 
       return result == null
         ? Results.NotFound(new ApiError("Not found"))
@@ -43,7 +43,7 @@ public static class CostsEndpoint
    {
       var reportTimeUnit = ReportTimeUnits.ToTimeUnit(timeUnit);
 
-      var result = await totalCostsService.FindAllCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
+      var result = await totalCostsService.FindCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
 
       return result == null
         ? Results.NotFound(new ApiError("Not found"))
