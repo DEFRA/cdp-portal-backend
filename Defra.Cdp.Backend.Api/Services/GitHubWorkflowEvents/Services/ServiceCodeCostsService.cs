@@ -72,29 +72,26 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
 
    private async Task<List<ServiceCodeCostsRecord>> onlyLatestReports(List<ServiceCodeCostsRecord> costsRecords, CancellationToken cancellationToken)
    {
-      var environments = costsRecords.GroupBy(r => r.Environment)
-                                     .ToDictionary(g => g.Key, g => g.ToList());
       var latestRecords = new List<ServiceCodeCostsRecord>();
-      foreach (var environment in environments.Keys)
+      var environments = costsRecords.GroupBy(r => r.Environment)
+                                     .ToList();
+      foreach (var environment in environments)
       {
-         var serviceCodes =
-           environments[environment].GroupBy(r => r.ServiceCode)
-                                    .ToDictionary(g => g.Key, g => g.ToList());
-         foreach (var serviceCode in serviceCodes.Keys)
+         var serviceCodes = environment.GroupBy(r => r.ServiceCode)
+                                       .ToList();
+         foreach (var serviceCode in serviceCodes)
          {
-            var awsServices =
-              serviceCodes[serviceCode].GroupBy(r => r.AwsService)
-                                       .ToDictionary(g => g.Key, g => g.ToList());
-            foreach (var awsService in awsServices.Keys)
+            var awsServices = serviceCode.GroupBy(r => r.AwsService)
+                                         .ToList();
+            foreach (var awsService in awsServices)
             {
-               var dateFroms =
-                 awsServices[awsService].GroupBy(r => r.CostReport.DateFrom)
-                                        .ToDictionary(g => g.Key, g => g.ToList());
-               foreach (var dateFrom in dateFroms.Keys)
+               var dateFroms = awsService.GroupBy(r => r.CostReport.DateFrom)
+                                         .ToList();
+               foreach (var dateFrom in dateFroms)
                {
-                  var latestRecord =
-                    dateFroms[dateFrom].OrderByDescending(r => r.EventTimestamp)
-                                       .OrderByDescending(r => r.CreatedAt).First();
+                  var latestRecord = dateFrom.OrderByDescending(r => r.EventTimestamp)
+                                             .OrderByDescending(r => r.CreatedAt)
+                                             .First();
                   latestRecords.Add(latestRecord);
                }
 

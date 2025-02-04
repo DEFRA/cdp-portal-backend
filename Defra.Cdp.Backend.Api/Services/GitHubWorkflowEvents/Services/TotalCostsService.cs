@@ -67,16 +67,17 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
    private async Task<List<TotalCostsRecord>> onlyLatestReports(List<TotalCostsRecord> costsRecords, CancellationToken cancellationToken)
    {
       var environments = costsRecords.GroupBy(r => r.Environment)
-                                     .ToDictionary(g => g.Key, g => g.ToList());
+                                     .ToList();
       var latestRecords = new List<TotalCostsRecord>();
-      foreach (var environment in environments.Keys)
+      foreach (var environment in environments)
       {
-         var dateFroms = environments[environment].GroupBy(r => r.CostReport.DateFrom)
-                                                  .ToDictionary(g => g.Key, g => g.ToList());
-         foreach (var dateFrom in dateFroms.Keys)
+         var dateFroms = environment.GroupBy(r => r.CostReport.DateFrom)
+                                    .ToList();
+         foreach (var dateFrom in dateFroms)
          {
-            var latestRecord = dateFroms[dateFrom].OrderByDescending(r => r.EventTimestamp)
-                                                  .OrderByDescending(r => r.CreatedAt).First();
+            var latestRecord = dateFrom.OrderByDescending(r => r.EventTimestamp)
+                                       .OrderByDescending(r => r.CreatedAt)
+                                       .First();
             latestRecords.Add(latestRecord);
          }
       }
