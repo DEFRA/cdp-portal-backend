@@ -36,16 +36,6 @@ public static class ReportTimeUnits
    }
 }
 
-public static class CdpEnvironments
-{
-   public static string[] All => new[] { "infra-dev", "management", "dev", "test", "ext-test", "prod" };
-
-   public static bool IsValid(string environment)
-   {
-      return All.Contains(environment);
-   }
-}
-
 public record ServiceCodesCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, List<ServiceCodeCostsRecord> CostsRecords)
 {
 

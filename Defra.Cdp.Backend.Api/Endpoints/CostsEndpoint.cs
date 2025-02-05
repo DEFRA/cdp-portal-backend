@@ -11,7 +11,6 @@ public static class CostsEndpoint
 
    public static void MapCostsEndpoint(this IEndpointRouteBuilder app)
    {
-      // app.MapGet("/costs", FindCombinedCosts);
       app.MapGet("/costs/total", FindTotalCosts);
       app.MapGet("/costs/servicecode", FindServiceCodeCosts);
    }
