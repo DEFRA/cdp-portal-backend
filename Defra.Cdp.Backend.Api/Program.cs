@@ -10,8 +10,10 @@ using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.PlatformEvents;
+using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Service;
 using Defra.Cdp.Backend.Api.Services.Status;
@@ -100,6 +102,8 @@ builder.Services.Configure<SecretEventListenerOptions>(
     builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
 builder.Services.Configure<GitHubWorkflowEventListenerOptions>(
     builder.Configuration.GetSection(GitHubWorkflowEventListenerOptions.Prefix));
+builder.Services.Configure<PlatformEventListenerOptions>(
+    builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
@@ -199,8 +203,10 @@ builder.Services.AddSingleton<SelfServiceOpsFetcher>();
 builder.Services.AddSingleton<UserServiceFetcher>();
 
 // GitHub Workflow Event Handlers
-builder.Services.AddSingleton<IGitHubEventHandler, GitHubWorkflowEventHandler>();
+builder.Services.AddSingleton<IGitHubWorkflowEventHandler, GitHubWorkflowEventHandler>();
 builder.Services.AddSingleton<GitHubWorkflowEventListener>();
+builder.Services.AddSingleton<IPlatformEventHandler, PlatformEventHandler>();
+builder.Services.AddSingleton<PlatformEventListener>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
@@ -274,6 +280,12 @@ var gitHubWorkflowEventListener = app.Services.GetService<GitHubWorkflowEventLis
 logger.Information("Starting GitHub Workflow Event listener - reading workflow events from SQS");
 Task.Run(() =>
     gitHubWorkflowEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
+
+var platformEventListener = app.Services.GetService<PlatformEventListener>();
+logger.Information("Starting Platform Event listener - reading portal events from SQS");
+Task.Run(() =>
+    platformEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 #pragma warning restore CS4014

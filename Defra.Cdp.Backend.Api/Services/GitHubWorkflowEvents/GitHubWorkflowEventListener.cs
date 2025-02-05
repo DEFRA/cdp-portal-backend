@@ -2,11 +2,12 @@ using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using Microsoft.Extensions.Options;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
 
 /**
  * Listens for events sent by GitHub Workflows
@@ -15,7 +16,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 public class GitHubWorkflowEventListener(
     IAmazonSQS sqs,
     IOptions<GitHubWorkflowEventListenerOptions> config,
-    IGitHubEventHandler eventHandler,
+    IGitHubWorkflowEventHandler eventHandler,
     ILogger<GitHubWorkflowEventListener> logger)
     : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
@@ -40,12 +41,12 @@ public class GitHubWorkflowEventListener(
         }
     }
 
-    private static GitHubWorkflowEventWrapper? TryParseMessageBody(string body)
+    private static CommonEventWrapper? TryParseMessageBody(string body)
     {
         Console.WriteLine(body);
         try
         {
-            return JsonSerializer.Deserialize<GitHubWorkflowEventWrapper>(body);
+            return JsonSerializer.Deserialize<CommonEventWrapper>(body);
         }
         catch (Exception e)
         {

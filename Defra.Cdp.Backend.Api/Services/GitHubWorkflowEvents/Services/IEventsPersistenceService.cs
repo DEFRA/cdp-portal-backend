@@ -1,8 +1,8 @@
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Models;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface IEventsPersistenceService<T>
 {
-    Task PersistEvent(Event<T> workflowEvent, CancellationToken cancellationToken);
+   Task PersistEvent(CommonEvent<T> workflowEvent, CancellationToken cancellationToken);
 }
