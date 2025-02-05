@@ -61,11 +61,11 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
                    builder.Eq(r => r.EventType, eventType);
       var sorting = Builders<TotalCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.Environment);
       var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
-      var trimmedCosts = await onlyLatestReports(costs, cancellationToken);
+      var trimmedCosts = onlyLatestReports(costs);
       return new TotalCosts(timeUnit, dateFrom, dateTo, trimmedCosts);
    }
 
-   private async Task<List<TotalCostsRecord>> onlyLatestReports(List<TotalCostsRecord> costsRecords, CancellationToken cancellationToken)
+   private List<TotalCostsRecord> onlyLatestReports(List<TotalCostsRecord> costsRecords)
    {
       return costsRecords.GroupBy(r => r.Environment)
                          .SelectMany(r => r.GroupBy(r => r.CostReport.DateFrom))

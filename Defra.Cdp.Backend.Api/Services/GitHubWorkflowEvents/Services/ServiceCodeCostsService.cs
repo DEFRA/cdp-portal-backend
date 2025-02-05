@@ -67,11 +67,11 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
                    builder.Eq(r => r.EventType, eventType);
       var sorting = Builders<ServiceCodeCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.ServiceCode).Ascending(r => r.Environment);
       var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
-      var trimmedCosts = await onlyLatestReports(costs, cancellationToken);
+      var trimmedCosts = onlyLatestReports(costs);
       return new ServiceCodesCosts(timeUnit, dateFrom, dateTo, trimmedCosts);
    }
 
-   private async Task<List<ServiceCodeCostsRecord>> onlyLatestReports(List<ServiceCodeCostsRecord> costsRecords, CancellationToken cancellationToken)
+   private List<ServiceCodeCostsRecord> onlyLatestReports(List<ServiceCodeCostsRecord> costsRecords)
    {
       return costsRecords.GroupBy(r => r.Environment)
                          .SelectMany(r => r.GroupBy(r => r.ServiceCode))
