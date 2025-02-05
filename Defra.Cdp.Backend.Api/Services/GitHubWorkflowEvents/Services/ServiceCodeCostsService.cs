@@ -6,12 +6,15 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
+using Microsoft.VisualBasic;
+using Defra.Cdp.Backend.Api.Endpoints;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IServiceCodeCostsService : IEventsPersistenceService<ServiceCodeCostsPayload>
 {
-   public Task<List<ServiceCodeCostsRecord>> FindCosts(string[] environments, string dateFrom, string dateTo, CancellationToken cancellationToken);
+
+   public Task<ServiceCodesCosts> FindCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
 }
 
 public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<ServiceCodeCostsRecord>(
@@ -19,6 +22,7 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
     CollectionName,
     loggerFactory), IServiceCodeCostsService
 {
+   private ILogger _logger = loggerFactory.CreateLogger("ServiceCodeCostsService");
    public const string CollectionName = "servicecodecosts";
 
    protected override List<CreateIndexModel<ServiceCodeCostsRecord>> DefineIndexes(IndexKeysDefinitionBuilder<ServiceCodeCostsRecord> builder)
@@ -48,9 +52,35 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
 
    }
 
-   public async Task<List<ServiceCodeCostsRecord>> FindCosts(string[] environments, string dateFrom, string dateTo, CancellationToken cancellationToken)
+   public async Task<ServiceCodesCosts> FindCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
    {
-      return await Collection.Find(s => environments.Contains(s.Environment)).ToListAsync(cancellationToken);
+      var eventType = timeUnit switch
+      {
+         ReportTimeUnit.Monthly => "last-calendar-month-costs-by-service-code",
+         ReportTimeUnit.ThirtyDays => "last-30-days-costs-by-service-code",
+         ReportTimeUnit.Daily => "last-calendar-day-costs-by-service-code",
+         _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
+      };
+      var builder = Builders<ServiceCodeCostsRecord>.Filter;
+      var filter = builder.Gte(r => r.CostReport.DateFrom, dateFrom) &
+                   builder.Lte(r => r.CostReport.DateTo, dateTo) &
+                   builder.Eq(r => r.EventType, eventType);
+      var sorting = Builders<ServiceCodeCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.ServiceCode).Ascending(r => r.Environment);
+      var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
+      var trimmedCosts = onlyLatestReports(costs);
+      return new ServiceCodesCosts(timeUnit, dateFrom, dateTo, trimmedCosts);
+   }
+
+   private List<ServiceCodeCostsRecord> onlyLatestReports(List<ServiceCodeCostsRecord> costsRecords)
+   {
+      return costsRecords.GroupBy(r => r.Environment)
+                         .SelectMany(r => r.GroupBy(r => r.ServiceCode))
+                         .SelectMany(r => r.GroupBy(r => r.AwsService))
+                         .SelectMany(r => r.GroupBy(r => r.CostReport.DateFrom))
+                         .Select(r => r.OrderByDescending(r => r.EventTimestamp)
+                                       .OrderByDescending(r => r.CreatedAt)
+                                       .First())
+                         .ToList();
    }
 
 }

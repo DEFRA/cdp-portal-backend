@@ -11,7 +11,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface ITotalCostsService : IEventsPersistenceService<TotalCostsPayload>
 {
-   public Task<List<TotalCostsRecord>> FindCosts(string environment, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
+   public Task<TotalCosts> FindCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken);
 }
 
 public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<TotalCostsRecord>(
@@ -19,6 +19,7 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
     CollectionName,
     loggerFactory), ITotalCostsService
 {
+   private ILogger _logger = loggerFactory.CreateLogger("TotalCostsService");
    public const string CollectionName = "totalcosts";
 
    protected override List<CreateIndexModel<TotalCostsRecord>> DefineIndexes(IndexKeysDefinitionBuilder<TotalCostsRecord> builder)
@@ -45,9 +46,33 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
 
    }
 
-   public async Task<List<TotalCostsRecord>> FindCosts(string environment, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
+   public async Task<TotalCosts> FindCosts(ReportTimeUnit timeUnit, DateOnly dateFrom, DateOnly dateTo, CancellationToken cancellationToken)
    {
-      return await Collection.Find(s => s.Environment == environment).ToListAsync(cancellationToken);
+      var eventType = timeUnit switch
+      {
+         ReportTimeUnit.Monthly => "last-calendar-month-total-cost",
+         ReportTimeUnit.ThirtyDays => "last-30-days-total-cost",
+         ReportTimeUnit.Daily => "last-calendar-day-total-cost",
+         _ => throw new ArgumentOutOfRangeException(nameof(timeUnit), timeUnit, null)
+      };
+      var builder = Builders<TotalCostsRecord>.Filter;
+      var filter = builder.Gte(r => r.CostReport.DateFrom, dateFrom) &
+                   builder.Lte(r => r.CostReport.DateTo, dateTo) &
+                   builder.Eq(r => r.EventType, eventType);
+      var sorting = Builders<TotalCostsRecord>.Sort.Descending(r => r.EventTimestamp).Ascending(r => r.Environment);
+      var costs = await Collection.Find(filter).Sort(sorting).ToListAsync(cancellationToken);
+      var trimmedCosts = onlyLatestReports(costs);
+      return new TotalCosts(timeUnit, dateFrom, dateTo, trimmedCosts);
+   }
+
+   private List<TotalCostsRecord> onlyLatestReports(List<TotalCostsRecord> costsRecords)
+   {
+      return costsRecords.GroupBy(r => r.Environment)
+                         .SelectMany(r => r.GroupBy(r => r.CostReport.DateFrom))
+                         .Select(r => r.OrderByDescending(r => r.EventTimestamp)
+                                       .OrderByDescending(r => r.CreatedAt)
+                                       .First())
+                         .ToList();
    }
 
 }
