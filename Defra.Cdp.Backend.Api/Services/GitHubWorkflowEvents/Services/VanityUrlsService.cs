@@ -5,7 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface IVanityUrlsService
 {

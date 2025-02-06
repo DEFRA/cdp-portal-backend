@@ -1,4 +1,4 @@
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Microsoft.AspNetCore.Mvc;
 using Defra.Cdp.Backend.Api.Models;
 using System.Text.Json.Serialization;

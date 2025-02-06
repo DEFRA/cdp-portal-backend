@@ -1,12 +1,13 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface ISquidProxyConfigService : IEventsPersistenceService<SquidProxyConfigPayload>
 {
@@ -35,7 +36,7 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
         return await Collection.Find(s => s.ServiceName == service).ToListAsync(cancellationToken);
     }
 
-    public async Task PersistEvent(Event<SquidProxyConfigPayload> workflowEvent, CancellationToken cancellationToken)
+    public async Task PersistEvent(CommonEvent<SquidProxyConfigPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;
         _logger.LogInformation("Persisting squid proxy config for environment: {Environment}", payload.Environment);

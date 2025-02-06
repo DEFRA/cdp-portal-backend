@@ -1,12 +1,13 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface ITenantBucketsService : IEventsPersistenceService<TenantBucketsPayload>
 {
@@ -41,7 +42,7 @@ public class TenantBucketsService(IMongoDbClientFactory connectionFactory, ILogg
         return [env, service, envServiceName];
     }
 
-    public async Task PersistEvent(Event<TenantBucketsPayload> workflowEvent, CancellationToken cancellationToken)
+    public async Task PersistEvent(CommonEvent<TenantBucketsPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;
         _logger.LogInformation($"Persisting tenant buckets for environment: {payload.Environment}");

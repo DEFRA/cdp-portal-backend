@@ -1,12 +1,13 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface IShutteredUrlsService : IEventsPersistenceService<ShutteredUrlsPayload>
 {
@@ -27,7 +28,7 @@ public class ShutteredUrlsService(IMongoDbClientFactory connectionFactory, ILogg
         return [urlIndex];
     }
 
-    public async Task PersistEvent(Event<ShutteredUrlsPayload> workflowEvent, CancellationToken cancellationToken)
+    public async Task PersistEvent(CommonEvent<ShutteredUrlsPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var env = workflowEvent.Payload.Environment;
         var urls = workflowEvent.Payload.Urls;

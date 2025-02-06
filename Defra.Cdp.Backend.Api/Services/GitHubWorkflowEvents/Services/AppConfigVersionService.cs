@@ -1,12 +1,13 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface IAppConfigVersionService : IEventsPersistenceService<AppConfigVersionPayload>
 {
@@ -20,7 +21,7 @@ public class AppConfigVersionService(IMongoDbClientFactory connectionFactory, IL
     private const string CollectionName = "appconfigversions";
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
 
-    public async Task PersistEvent(Event<AppConfigVersionPayload> workflowEvent, CancellationToken cancellationToken)
+    public async Task PersistEvent(CommonEvent<AppConfigVersionPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var logger = _loggerFactory.CreateLogger("AppConfigVersionService");
         var payload = workflowEvent.Payload;

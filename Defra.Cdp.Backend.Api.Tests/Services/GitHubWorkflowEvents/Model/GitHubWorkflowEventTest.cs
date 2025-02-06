@@ -1,9 +1,10 @@
 using System.Text.Json;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.GitHubWorkflowEvents.Model;
 
-public class EventTest
+public class GitHubWorkflowEventTest
 {
     [Fact]
     public void WillDeserializeAppConfigVersionEvent()
@@ -20,7 +21,7 @@ public class EventTest
                                    }
                                    """;
 
-        var workflowEvent = JsonSerializer.Deserialize<Event<AppConfigVersionPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigVersionPayload>>(messageBody);
 
         Assert.Equal("app-config-version", workflowEvent?.EventType);
         Assert.Equal("infra-dev", workflowEvent?.Payload.Environment);
@@ -45,7 +46,7 @@ public class EventTest
                                    }
                                    """;
 
-        var workflowEvent = JsonSerializer.Deserialize<Event<NginxVanityUrlsPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<NginxVanityUrlsPayload>>(messageBody);
 
         Assert.Equal("nginx-vanity-urls", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
@@ -78,7 +79,7 @@ public class EventTest
                                    }
                                    """;
 
-        var workflowEvent = JsonSerializer.Deserialize<Event<SquidProxyConfigPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<SquidProxyConfigPayload>>(messageBody);
 
         Assert.Equal("squid-proxy-config", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
@@ -131,7 +132,7 @@ public class EventTest
 
                                    """;
         
-        var workflowEvent = JsonSerializer.Deserialize<Event<TenantBucketsPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TenantBucketsPayload>>(messageBody);
 
         Assert.Equal("tenant-buckets", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
@@ -185,7 +186,7 @@ public class EventTest
                                    }
                                    """;
         
-        var workflowEvent = JsonSerializer.Deserialize<Event<TenantServicesPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TenantServicesPayload>>(messageBody);
 
         Assert.Equal("tenant-services", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
