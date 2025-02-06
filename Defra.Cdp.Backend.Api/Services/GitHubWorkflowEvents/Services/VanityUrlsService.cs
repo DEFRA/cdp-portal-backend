@@ -18,7 +18,7 @@ public interface IVanityUrlsService
 /**
  * Combines data from NginxVanityUrls, EnabledVanityUrls and Shuttering
  */
-public class VanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : IVanityUrlsService
+public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanityUrlsService
 {
     
     public async Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken)

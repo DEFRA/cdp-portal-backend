@@ -11,11 +11,11 @@ public static class ConfigEndpoint
     }
 
     private static async Task<IResult> LatestAppConfig(
-        IAppConfigVersionService appConfigVersionService,
+        IAppConfigVersionsService appConfigVersionsService,
         string environment,
         CancellationToken cancellationToken)
     {
-        var result = await appConfigVersionService.FindLatestAppConfigVersion(environment, cancellationToken);
+        var result = await appConfigVersionsService.FindLatestAppConfigVersion(environment, cancellationToken);
         return result == null ? Results.NotFound(new ApiError("Not found")) : Results.Ok(result);
     }
 }

@@ -9,14 +9,14 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
-public interface IAppConfigVersionService : IEventsPersistenceService<AppConfigVersionPayload>
+public interface IAppConfigVersionsService : IEventsPersistenceService<AppConfigVersionPayload>
 {
     Task<AppConfigVersion?> FindLatestAppConfigVersion(string environment, CancellationToken ct);
 }
 
-public class AppConfigVersionService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+public class AppConfigVersionsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<AppConfigVersion>(connectionFactory,
-        CollectionName, loggerFactory), IAppConfigVersionService
+        CollectionName, loggerFactory), IAppConfigVersionsService
 {
     private const string CollectionName = "appconfigversions";
     private readonly ILoggerFactory _loggerFactory = loggerFactory;

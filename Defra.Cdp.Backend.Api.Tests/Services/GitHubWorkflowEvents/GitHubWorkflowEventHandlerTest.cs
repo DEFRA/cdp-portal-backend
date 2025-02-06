@@ -8,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.GitHubWorkflowEvents;
 
 public class GitHubWorkflowEventHandlerTest
 {
-    private readonly IAppConfigVersionService appConfigVersionService = Substitute.For<IAppConfigVersionService>();
+    private readonly IAppConfigVersionsService appConfigVersionsService = Substitute.For<IAppConfigVersionsService>();
     private readonly INginxVanityUrlsService vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
     private readonly ISquidProxyConfigService squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
     private readonly ITenantBucketsService tenantBucketsService = Substitute.For<ITenantBucketsService>();
@@ -21,7 +21,7 @@ public class GitHubWorkflowEventHandlerTest
     private GitHubWorkflowEventHandler createHandler()
     {
         return new GitHubWorkflowEventHandler(
-            appConfigVersionService,
+            appConfigVersionsService,
             vanityUrlsService,
             squidProxyConfigService,
             tenantBucketsService,
@@ -55,7 +55,7 @@ public class GitHubWorkflowEventHandlerTest
         await eventHandler.Handle(eventType, messageBody, new CancellationToken());
 
 
-        await appConfigVersionService.Received(1).PersistEvent(
+        await appConfigVersionsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<AppConfigVersionPayload>>(e =>
                 e.EventType == "app-config-version" && e.Payload.CommitSha == "abc123" &&
                 e.Payload.Environment == "infra-dev"),
@@ -98,13 +98,13 @@ public class GitHubWorkflowEventHandlerTest
             }
             """;
 
-        await eventHandler.Handle(eventType, messageBody, new CancellationToken());
+        await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
         await vanityUrlsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<NginxVanityUrlsPayload>>(e =>
                 e.EventType == "nginx-vanity-urls" && e.Payload.Environment == "test" && e.Payload.Services.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
@@ -150,7 +150,7 @@ public class GitHubWorkflowEventHandlerTest
                 e.EventType == "squid-proxy-config" && e.Payload.Environment == "test" &&
                 e.Payload.Services.Count == 3),
             Arg.Any<CancellationToken>());
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
@@ -262,7 +262,7 @@ public class GitHubWorkflowEventHandlerTest
             Arg.Is<CommonEvent<TenantBucketsPayload>>(e =>
                 e.EventType == "tenant-buckets" && e.Payload.Environment == "test" && e.Payload.Buckets.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
@@ -321,7 +321,7 @@ public class GitHubWorkflowEventHandlerTest
             Arg.Is<CommonEvent<TenantServicesPayload>>(e =>
                 e.EventType == "tenant-services" && e.Payload.Environment == "test" && e.Payload.Services.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
@@ -334,6 +334,7 @@ public class GitHubWorkflowEventHandlerTest
         await enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
     }
+
 
     [Fact]
     public async Task WillProcessTfVanityUrlsEvent()
@@ -372,7 +373,7 @@ public class GitHubWorkflowEventHandlerTest
                 e.EventType == "tf-vanity-urls" && e.Payload.Environment == "ext-test" &&
                 e.Payload.VanityUrls.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
@@ -417,7 +418,7 @@ public class GitHubWorkflowEventHandlerTest
                 e.EventType == "enabled-apis" && e.Payload.Environment == "ext-test" &&
                 e.Payload.Apis.Count == 1),
             Arg.Any<CancellationToken>());
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
@@ -449,7 +450,7 @@ public class GitHubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await appConfigVersionService.DidNotReceive()
+        await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
