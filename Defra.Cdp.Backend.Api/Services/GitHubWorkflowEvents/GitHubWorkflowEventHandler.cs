@@ -15,7 +15,7 @@ public interface IGitHubWorkflowEventHandler
  * All messages have the same outer body detailing the source & action.
  */
 public class GitHubWorkflowEventHandler(
-    IAppConfigVersionService appConfigVersionService,
+    IAppConfigVersionsService appConfigVersionsService,
     INginxVanityUrlsService nginxVanityUrlsService,
     ISquidProxyConfigService squidProxyConfigService,
     ITenantBucketsService tenantBucketsService,
@@ -32,7 +32,7 @@ public class GitHubWorkflowEventHandler(
         switch (eventWrapper.EventType)
         {
             case "app-config-version":
-                await HandleEvent(eventWrapper, messageBody, appConfigVersionService, cancellationToken);
+                await HandleEvent(eventWrapper, messageBody, appConfigVersionsService, cancellationToken);
                 break;
             case "nginx-vanity-urls":
                 await HandleEvent(eventWrapper, messageBody, nginxVanityUrlsService, cancellationToken);

@@ -166,7 +166,7 @@ builder.Services.AddSingleton<EcrMessageHandler>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
-builder.Services.AddSingleton<IAppConfigVersionService, AppConfigVersionService>();
+builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<INginxVanityUrlsService, NginxVanityUrlsService>();
 builder.Services.AddSingleton<IServiceCodeCostsService, ServiceCodeCostsService>();
 builder.Services.AddSingleton<ISquidProxyConfigService, SquidProxyConfigService>();
