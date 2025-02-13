@@ -289,6 +289,19 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment, cancellationToken: ct);
     }
 
+    private async Task<List<UserDetails>> UserDetailsList(CancellationToken ct)
+    {
+        var userFilter = Builders<DeploymentV2>.Filter.And(
+            Builders<DeploymentV2>.Filter.Ne(d => d.User, null),
+            Builders<DeploymentV2>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
+        );
+
+        var users = await Collection
+            .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
+            .ToListAsync(ct);
+        return users;
+    }
+
     public async Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct)
     {
         var serviceNames = await Collection
@@ -299,14 +312,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .Distinct(d => d.Status, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var userFilter = Builders<DeploymentV2>.Filter.And(
-            Builders<DeploymentV2>.Filter.Ne(d => d.User, null),
-            Builders<DeploymentV2>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
-        );
-        
-        var users = await Collection
-            .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
-            .ToListAsync(ct);
+        var users = await UserDetailsList(ct);
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
@@ -324,14 +330,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .Distinct(d => d.Status, filter, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var userFilter = Builders<DeploymentV2>.Filter.And(
-            Builders<DeploymentV2>.Filter.Ne(d => d.User, null),
-            Builders<DeploymentV2>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
-        );
-        
-        var users = await Collection
-            .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
-            .ToListAsync(ct);
+        var users = await UserDetailsList(ct);
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
