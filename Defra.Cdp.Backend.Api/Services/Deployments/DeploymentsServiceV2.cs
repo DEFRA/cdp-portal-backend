@@ -46,7 +46,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     private readonly IRepositoryService _repositoryService;
 
     private readonly HashSet<string> _excludedDisplayNames =
-        new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "github workflow" };
+        new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "GitHub Workflow" };
     
     public DeploymentsServiceV2(IMongoDbClientFactory connectionFactory, IRepositoryService repositoryService, ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
     {
