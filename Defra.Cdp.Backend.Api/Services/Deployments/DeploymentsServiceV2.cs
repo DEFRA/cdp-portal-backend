@@ -44,6 +44,9 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
     private readonly IRepositoryService _repositoryService;
+
+    private readonly HashSet<string> _excludedDisplayNames =
+        new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "github workflow" };
     
     public DeploymentsServiceV2(IMongoDbClientFactory connectionFactory, IRepositoryService repositoryService, ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
     {
@@ -296,8 +299,11 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .Distinct(d => d.Status, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var userFilter =
-            new FilterDefinitionBuilder<DeploymentV2>().Where(d => d.User != null && d.User.DisplayName != "n/a");
+        var userFilter = Builders<DeploymentV2>.Filter.And(
+            Builders<DeploymentV2>.Filter.Ne(d => d.User, null),
+            Builders<DeploymentV2>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
+        );
+        
         var users = await Collection
             .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
             .ToListAsync(ct);
@@ -318,8 +324,11 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .Distinct(d => d.Status, filter, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var userFilter =
-            new FilterDefinitionBuilder<DeploymentV2>().Where(d => d.User != null && d.User.DisplayName != "n/a");
+        var userFilter = Builders<DeploymentV2>.Filter.And(
+            Builders<DeploymentV2>.Filter.Ne(d => d.User, null),
+            Builders<DeploymentV2>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
+        );
+        
         var users = await Collection
             .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
             .ToListAsync(ct);
