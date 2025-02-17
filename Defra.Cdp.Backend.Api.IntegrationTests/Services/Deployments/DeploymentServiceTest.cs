@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
@@ -11,25 +12,31 @@ using NSubstitute.ReturnsExtensions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Deployments;
 
-public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
+public class DeploymentServiceTest(MongoIntegrationTest fixture) :  ServiceTest(fixture)
 {
-    readonly MongoIntegrationTest Fixture;
-
-    readonly IRepositoryService repositoryService = Substitute.For<IRepositoryService>();
     readonly IUserServiceFetcher userServiceFetcher = Substitute.For<IUserServiceFetcher>();
-    
-    public DeploymentServiceTest(MongoIntegrationTest fixture)
-    {
-        Fixture = fixture;
-        Task.Run(() => Fixture.InitializeAsync()).Wait();
-    }
     
     [Fact]
     public async Task RegisterDeploymentWithAuditSection()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "DeploymentServiceTest");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
+        await repositoryService.Upsert(new Repository
+        {
+            Id = "test-backend",
+            Teams = [new RepositoryTeam("test-team", "3333", "test team")],
+            CreatedAt = DateTime.Now,
+            Description = "",
+            Topics = [],
+            IsArchived = false,
+            PrimaryLanguage = "",
+            IsPrivate = false,
+            IsTemplate = false,
+            Url = "",
+        }, new CancellationToken());
+        
         var deployment = DeploymentV2.FromRequest(new RequestedDeployment
         {
             Cpu = "1024",
@@ -42,13 +49,6 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
             Version = "1.0.0",
             User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
         });
-
-        repositoryService.FindRepositoryById(deployment.Service, Arg.Any<CancellationToken>())
-            .Returns(new Repository
-            {
-                Id = deployment.Service,
-                Teams = [new RepositoryTeam("test-team", "3333", "test team")]
-            });
         
         var fullUserDetails = new UserServiceUser("Test User", "test.user@test.com", "9999-9999-9999",
             [new TeamIds("3333", "test team"), new TeamIds("9999", "admins")]);
@@ -67,6 +67,7 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
     public async Task RegisterDeploymentWhenAuditDataIsUnavailable()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         var deployment = DeploymentV2.FromRequest(new RequestedDeployment
@@ -81,9 +82,6 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
             Version = "1.0.0",
             User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
         });
-
-        repositoryService.FindRepositoryById(deployment.Service, Arg.Any<CancellationToken>())
-            .ReturnsNull();
 
         userServiceFetcher.GetUser(deployment.User!.Id, Arg.Any<CancellationToken>())
             .ReturnsNull();
@@ -100,9 +98,10 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
     public async Task LinkDeployment()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
-        var lambdaId = "ecs/12345";
+        const string lambdaId = "ecs/12345";
         var deployment = DeploymentV2.FromRequest(new RequestedDeployment
         {
             Cpu = "1024",
@@ -115,13 +114,6 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
             Version = "1.0.0",
             User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
         });
-
-        repositoryService.FindRepositoryById(deployment.Service, Arg.Any<CancellationToken>())
-            .Returns(new Repository()
-            {
-                Id = deployment.Service,
-                Teams = [new RepositoryTeam("test-team", "3333", "test team")]
-            });
 
         var ct = new CancellationToken();
         await service.RegisterDeployment(deployment, new CancellationToken());
@@ -142,6 +134,7 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
     public async Task FindWhatsRunningWhereWithNoData()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         var result = await service.FindWhatsRunningWhere(null, null, null, null, null, new CancellationToken());
@@ -154,6 +147,7 @@ public class DeploymentServiceTest : IClassFixture<MongoIntegrationTest>
     public async Task FindWhatsRunningWhereForService()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         var deployment1 = new DeploymentV2
