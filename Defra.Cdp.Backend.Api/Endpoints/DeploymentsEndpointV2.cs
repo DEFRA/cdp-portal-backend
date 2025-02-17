@@ -53,7 +53,7 @@ public static class DeploymentsEndpointV2
     // GET /v2/deployments/filters
     private static async Task<IResult> GetDeploymentsFilters(
         IDeploymentsServiceV2 deploymentsService,
-        UserServiceFetcher userServiceFetcher,
+        IUserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)
     {
         var deploymentFilters = await deploymentsService.GetDeploymentsFilters(cancellationToken);
@@ -102,7 +102,7 @@ public static class DeploymentsEndpointV2
     // GET /v2/whats-running-where/filters
     private static async Task<IResult> GetWhatsRunningWhereFilters(
         IDeploymentsServiceV2 deploymentsService,
-        UserServiceFetcher userServiceFetcher,
+        IUserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)
     {
         var whatsRunningWhereFilters = await deploymentsService.GetWhatsRunningWhereFilters(cancellationToken);

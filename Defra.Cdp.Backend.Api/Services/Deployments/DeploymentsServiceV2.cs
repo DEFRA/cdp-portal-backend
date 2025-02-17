@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Github;
+using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
@@ -44,13 +45,18 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
     private readonly IRepositoryService _repositoryService;
-
+    private readonly IUserServiceFetcher _userServiceFetcher;
     private readonly HashSet<string> _excludedDisplayNames =
         new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "GitHub Workflow" };
     
-    public DeploymentsServiceV2(IMongoDbClientFactory connectionFactory, IRepositoryService repositoryService, ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
+    public DeploymentsServiceV2(
+        IMongoDbClientFactory connectionFactory, 
+        IRepositoryService repositoryService, 
+        IUserServiceFetcher userServiceFetcher, 
+        ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
     {
         _repositoryService = repositoryService;
+        _userServiceFetcher = userServiceFetcher;
     }
 
     protected override List<CreateIndexModel<DeploymentV2>> DefineIndexes(IndexKeysDefinitionBuilder<DeploymentV2> builder)
@@ -70,9 +76,40 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
     public async Task RegisterDeployment(DeploymentV2 deployment, CancellationToken ct)
     {
-        await Collection.InsertOneAsync(deployment, null, ct);
+        await Collection.InsertOneAsync(await WithAuditData(deployment, ct), null, ct);
     }
 
+    private async Task<DeploymentV2> WithAuditData(DeploymentV2 deployment, CancellationToken ct)
+    {
+        deployment.Audit = new Audit();
+        // Record who owned the service at that point in time
+        try
+        {
+            var repo = await _repositoryService.FindRepositoryById(deployment.Service, ct);
+            var teams = repo?.Teams ?? [];
+            deployment.Audit.ServiceOwners = teams.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Failed to lookup teams for {services}, {ex}", deployment.Service, ex);
+        }
+        
+        // Record which teams the user belonged to at that point in time
+        if (deployment.User?.Id != null)
+        {
+            try
+            {
+                var user = await _userServiceFetcher.GetUser(deployment.User.Id, ct);
+                deployment.Audit.User = user?.user;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Failed to lookup user for {userId}, {ex}", deployment.User?.Id, ex);
+            }
+        }
+        return deployment;
+    }
+    
     public async Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct)
     {
         // Before we can start recording events, we need to match the CDP Id (which is generated in the portal)

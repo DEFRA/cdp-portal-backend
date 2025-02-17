@@ -129,7 +129,7 @@ public static class ArtifactsEndpoint
     // GET /services/filters
     private static async Task<IResult> GetAllServicesFilters(
         IDeployableArtifactsService deployableArtifactsService,
-        UserServiceFetcher userServiceFetcher,
+        IUserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)
     {
         var allServicesFilters = await deployableArtifactsService.GetAllServicesFilters(cancellationToken);
