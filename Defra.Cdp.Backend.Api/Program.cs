@@ -200,7 +200,7 @@ builder.Services.AddSingleton<SecretEventListener>();
 
 // fetchers
 builder.Services.AddSingleton<SelfServiceOpsFetcher>();
-builder.Services.AddSingleton<UserServiceFetcher>();
+builder.Services.AddSingleton<IUserServiceFetcher, UserServiceFetcher>();
 
 // GitHub Workflow Event Handlers
 builder.Services.AddSingleton<IGitHubWorkflowEventHandler, GitHubWorkflowEventHandler>();

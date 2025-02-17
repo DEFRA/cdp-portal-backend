@@ -38,9 +38,13 @@ public class DeploymentV2
     public string? LastDeploymentStatus { get; set; }
     public string? LastDeploymentMessage { get; set; }
     
-    public List<TestRun> DeploymentTestRuns { get; set; } = new();
+    public List<TestRun> DeploymentTestRuns { get; set; } = [];
 
     public string? TaskDefinitionArn { get; set; }
+    
+    // Audit data is not returned in the API
+    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+    public Audit? Audit { get; set; }
     
     public static DeploymentV2 FromRequest(RequestedDeployment req)
     {
@@ -130,6 +134,13 @@ public class DeploymentV2
             Instances.Remove(oldestKey);
         }
     }
+}
+
+
+public class Audit
+{
+    public List<RepositoryTeam> ServiceOwners { get; set; } = [];
+    public UserServiceUser? User { get; set; }
 }
 
 public class DeploymentInstanceStatus

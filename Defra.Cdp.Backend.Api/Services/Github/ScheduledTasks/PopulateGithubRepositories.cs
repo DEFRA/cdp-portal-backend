@@ -25,7 +25,7 @@ public sealed class PopulateGithubRepositories(
     IRepositoryService repositoryService,
     MongoLock mongoLock,
     IHttpClientFactory clientFactory,
-    UserServiceFetcher userServiceFetcher,
+    IUserServiceFetcher userServiceFetcher,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues)
     : IJob
