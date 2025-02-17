@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
+using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
@@ -12,7 +13,7 @@ using NSubstitute.ReturnsExtensions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Deployments;
 
-public class DeploymentServiceTest(MongoIntegrationTest fixture) :  ServiceTest(fixture)
+public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
     readonly IUserServiceFetcher userServiceFetcher = Substitute.For<IUserServiceFetcher>();
     
