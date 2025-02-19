@@ -23,3 +23,12 @@ jobs:
       - run: dotnet restore
       - run: dotnet build
       - run: dotnet test
+  test:
+    name: Run Journey Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t defradigital/cdp-portal-backend:${{github.sha}} .
+      - uses: DEFRA/cdp-portal-journey-tests/run-journey-tests@main
+        with:
+          portal-backend: ${{github.sha}}
