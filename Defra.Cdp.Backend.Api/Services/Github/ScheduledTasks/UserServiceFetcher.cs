@@ -19,7 +19,7 @@ public class UserServiceFetcher : IUserServiceFetcher
         _baseUrl = configuration.GetValue<string>("UserServiceBackendUrl")!;
         if (string.IsNullOrWhiteSpace(_baseUrl))
             throw new ArgumentNullException("userServiceBackendUrl", "User service backend url cannot be null");
-        _client = httpClientFactory.CreateClient("DefaultClient");
+        _client = httpClientFactory.CreateClient("ServiceClient");
     }
 
     public async Task<UserServiceTeamResponse?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken)
