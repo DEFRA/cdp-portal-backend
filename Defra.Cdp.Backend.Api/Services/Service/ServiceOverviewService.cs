@@ -4,7 +4,7 @@ using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
-using Defra.Cdp.Backend.Api.Utils.Fetchers;
+using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.Service;
 
@@ -21,7 +21,7 @@ public class ServiceOverviewService(
     ISecretsService secretsService,
     IVanityUrlsService vanityUrlsService,
     IDeploymentsServiceV2 deploymentsService,
-    SelfServiceOpsFetcher selfServiceOpsFetcher
+    SelfServiceOpsClient selfServiceOpsClient
 ) : IServiceOverviewService
 {
     public async Task<ServiceV2?> GetService(string name, CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ public class ServiceOverviewService(
         {
             Name = name,
             TenantService = await tenantService.FindAllServices(name, cancellationToken),
-            CreationStatus = await selfServiceOpsFetcher.FindStatus(name),
+            CreationStatus = await selfServiceOpsClient.FindStatus(name),
             Deployments = await deploymentsService.FindWhatsRunningWhere(name, cancellationToken),
             LatestBuilds = await deployableArtifactsService.FindLatestTagsForRepo(name, 6, cancellationToken),
             VanityUrls = await vanityUrlsService.FindService(name, cancellationToken),

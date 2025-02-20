@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using MongoDB.Bson;
@@ -36,7 +37,7 @@ public interface IDeploymentsServiceV2
     Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct);
     Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
-    Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken ct);
+    Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct);
     Task Decommission(string serviceName, CancellationToken ct);
 }
 
@@ -94,8 +95,9 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             Logger.LogError("Failed to lookup teams for {services}, {ex}", deployment.Service, ex);
         }
         
-        // Record which teams the user belonged to at that point in time
-        if (deployment.User?.Id != null)
+        // Record which teams the user belonged to at that point in time unless its an auto-deployment
+        if (deployment.User?.Id != null && 
+            deployment.User.Id != AutoDeploymentConstants.AutoDeploymentId)
         {
             try
             {
@@ -303,7 +305,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return await Collection.Find(d => d.CdpDeploymentId == deploymentId).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<DeploymentSettings?> FindDeploymentConfig(string service, string environment, CancellationToken ct)
+    public async Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<DeploymentV2>();
         var filter = fb.And(fb.Eq(d => d.Service, service), fb.Eq(d => d.Environment, environment));

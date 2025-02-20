@@ -1,35 +1,53 @@
-using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 
-namespace Defra.Cdp.Backend.Api.Utils.Fetchers;
+namespace Defra.Cdp.Backend.Api.Utils.Clients;
 
-public class SelfServiceOpsFetcher
+public class SelfServiceOpsClient
 {
     private readonly string _baseUrl;
     private readonly HttpClient _client;
 
-    public SelfServiceOpsFetcher(IConfiguration configuration, IHttpClientFactory httpClientFactory)
+    public SelfServiceOpsClient(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _baseUrl = configuration.GetValue<string>("SelfServiceOpsUrl")!;
         if (string.IsNullOrWhiteSpace(_baseUrl))
             throw new Exception("Self service ops backend url cannot be null");
-        _client = httpClientFactory.CreateClient("DefaultClient");
+        _client = httpClientFactory.CreateClient("ServiceClient");
     }
 
-    public async Task<HttpStatusCode> TriggerTestSuite(string imageName, string environment, UserDetails? user,
+    public async Task TriggerTestSuite(string imageName, string environment, UserDetails? user,
         CancellationToken cancellationToken)
     {
         var body = new { imageName, environment, user };
         var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var result = await _client.PostAsync(_baseUrl + "/trigger-test-suite", payload, cancellationToken);
         result.EnsureSuccessStatusCode();
-        return result.StatusCode;
     }
-    
+
+    public async Task AutoDeployService(string imageName, string version, string environment,
+        UserDetails user,
+        DeploymentSettings deploymentSettings,
+        CancellationToken cancellationToken)
+    {
+        var body = new
+        {
+            imageName,
+            version,
+            environment,
+            user,
+            cpu = deploymentSettings.Cpu,
+            memory = deploymentSettings.Memory,
+            instanceCount = deploymentSettings.InstanceCount
+        };
+        var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        var result = await _client.PostAsync(_baseUrl + "/auto-deploy-service", payload, cancellationToken);
+        result.EnsureSuccessStatusCode();
+    }
+
     public async Task<CreationStatus?> FindStatus(string service)
     {
         var response = await _client.GetAsync($"{_baseUrl}/status/{service}");
@@ -41,6 +59,7 @@ public class SelfServiceOpsFetcher
         {
             return null;
         }
+
         return new CreationStatus
         {
             Status = status.RepositoryStatus.Status,
@@ -68,15 +87,13 @@ public class SelfServiceOpsStatus
 
     public class RepoStatus
     {
-        [property: JsonPropertyName("status")]
-        public required string Status { get; init; }
-        
-        [property: JsonPropertyName("kind")]
-        public required string Kind { get; init; }
-        
+        [property: JsonPropertyName("status")] public required string Status { get; init; }
+
+        [property: JsonPropertyName("kind")] public required string Kind { get; init; }
+
         [property: JsonPropertyName("started")]
         public DateTime? Started { get; init; }
-        
+
         [property: JsonPropertyName("creator")]
         public User? Creator { get; init; }
     }
@@ -84,8 +101,8 @@ public class SelfServiceOpsStatus
 
 public class User
 {
-    [property: JsonPropertyName("id")]
-    string? Id { get; init; }
+    [property: JsonPropertyName("id")] string? Id { get; init; }
+
     [property: JsonPropertyName("displayName")]
     string? DisplayName { get; init; }
 }

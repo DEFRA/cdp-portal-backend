@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
-using Defra.Cdp.Backend.Api.Utils.Fetchers;
+using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.Service;
 

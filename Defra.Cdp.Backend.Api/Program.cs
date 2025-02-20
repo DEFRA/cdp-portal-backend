@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
@@ -20,7 +21,7 @@ using Defra.Cdp.Backend.Api.Services.Status;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
-using Defra.Cdp.Backend.Api.Utils.Fetchers;
+using Defra.Cdp.Backend.Api.Utils.Clients;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -65,6 +66,8 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddHttpClient("DefaultClient", HttpClientConfiguration.Default)
     .AddHeaderPropagation();
+
+builder.Services.AddHttpClient("ServiceClient", HttpClientConfiguration.Default);
 
 builder.Services.AddHttpClient("GitHubClient", HttpClientConfiguration.GitHub)
     .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
@@ -162,7 +165,7 @@ builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
 builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();
 builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
-builder.Services.AddSingleton<EcrMessageHandler>();
+builder.Services.AddSingleton<EcrEventHandler>();
 builder.Services.AddSingleton<TemplatesFromConfig>();
 builder.Services.AddSingleton<ITemplatesService, TemplatesService>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
@@ -192,6 +195,7 @@ builder.Services.AddSingleton<LambdaMessageHandlerV2>();
 
 // Deployment Trigger Event Handlers
 builder.Services.AddSingleton<DeploymentTriggerEventHandler>();
+builder.Services.AddSingleton<IAutoDeploymentTriggerExecutor, AutoDeploymentTriggerExecutor>();
 
 // Secret Event Handlers
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
@@ -199,7 +203,7 @@ builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
 builder.Services.AddSingleton<SecretEventListener>();
 
 // fetchers
-builder.Services.AddSingleton<SelfServiceOpsFetcher>();
+builder.Services.AddSingleton<SelfServiceOpsClient>();
 builder.Services.AddSingleton<IUserServiceFetcher, UserServiceFetcher>();
 
 // GitHub Workflow Event Handlers
@@ -211,6 +215,7 @@ builder.Services.AddSingleton<PlatformEventListener>();
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
 
+builder.Services.AddSingleton<IAutoDeploymentTriggerService, AutoDeploymentTriggerService>();
 builder.Services.AddSingleton<IDeploymentTriggerService, DeploymentTriggerService>();
 
 builder.Services.AddSingleton<MongoLock>();

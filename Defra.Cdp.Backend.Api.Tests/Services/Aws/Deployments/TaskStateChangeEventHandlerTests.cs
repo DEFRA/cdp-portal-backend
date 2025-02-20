@@ -5,10 +5,8 @@ using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using NSubstitute.ReceivedExtensions;
 using NSubstitute.ReturnsExtensions;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws.Deployments;
@@ -23,7 +21,7 @@ class MockEnvironmentLookup : IEnvironmentLookup
 
 public class TaskStateChangeEventHandlerTests
 {
-    private readonly EcsTaskStateChangeEvent _testEvent = new EcsTaskStateChangeEvent(
+    private readonly EcsTaskStateChangeEvent _testEvent = new(
         "12345", 
         "ECS Task State Change",
         "1111111111",
