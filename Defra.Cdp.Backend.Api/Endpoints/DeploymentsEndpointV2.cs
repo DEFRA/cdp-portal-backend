@@ -146,7 +146,7 @@ public static class DeploymentsEndpointV2
         string environment,
         CancellationToken cancellationToken)
     {
-        var result = await deploymentsService.FindDeploymentConfig(service, environment, cancellationToken);
+        var result = await deploymentsService.FindDeploymentSettings(service, environment, cancellationToken);
         return result == null ? Results.NotFound(new ApiError("Not found")) : Results.Ok(result);
     }
 }

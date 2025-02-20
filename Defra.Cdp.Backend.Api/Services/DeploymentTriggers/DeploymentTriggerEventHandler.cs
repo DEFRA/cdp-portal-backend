@@ -1,14 +1,14 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Utils.Fetchers;
+using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 
 public class DeploymentTriggerEventHandler(
     IDeploymentsServiceV2 deploymentsService,
     IDeploymentTriggerService deploymentTriggerService,
-    SelfServiceOpsFetcher selfServiceOpsFetcher,
+    SelfServiceOpsClient selfServiceOpsClient,
     ILogger<DeploymentTriggerEventHandler> logger)
 {
     public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
@@ -37,7 +37,7 @@ public class DeploymentTriggerEventHandler(
                 logger.LogInformation("{id} Triggering test run for {deploymentId} {testSuite}", id,
                     ecsEvent.Detail.DeploymentId, trigger.TestSuite);
 
-                await selfServiceOpsFetcher.TriggerTestSuite(trigger.TestSuite, deployment.Environment, deployment.User,
+                await selfServiceOpsClient.TriggerTestSuite(trigger.TestSuite, deployment.Environment, deployment.User,
                     cancellationToken);
             }
         }

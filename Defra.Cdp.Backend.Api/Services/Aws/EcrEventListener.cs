@@ -2,6 +2,7 @@ using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Options;
@@ -10,7 +11,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public class EcrEventListener(
     IAmazonSQS sqs,
-    EcrMessageHandler handler,
+    EcrEventHandler eventHandler,
     IOptions<EcrEventListenerOptions> config,
     IEcrEventsService ecrEventService,
     ILogger<EcrEventListener> logger)
@@ -31,7 +32,7 @@ public class EcrEventListener(
 
         try
         {
-            await handler.Handle(message.MessageId, message.Body, cancellationToken);
+            await eventHandler.Handle(message.MessageId, message.Body, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -40,9 +41,10 @@ public class EcrEventListener(
     }
 }
 
-public class EcrMessageHandler(
-        IArtifactScanner docker,
+public class EcrEventHandler(
+        IArtifactScanner artifactScanner,
         IDeployableArtifactsService artifactsService,
+        IAutoDeploymentTriggerExecutor autoDeploymentTriggerExecutor,
         ILogger<EcrEventListener> logger)
 {
     public async Task Handle(string id, string body, CancellationToken cancellationToken)
@@ -70,8 +72,9 @@ public class EcrMessageHandler(
                 logger.LogInformation("Not processing {Id}, tag [{ImageTag}] is not semver", id, ecrEvent.Detail.ImageTag);
                 break;
             case "PUSH":
-                var result = await docker.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
-                logger.LogInformation("Scanned {Sha256} ({Repo}:{Tag}) {Result}", result.Artifact?.Sha256, result.Artifact?.Repo, result.Artifact?.Tag, result.Success ? "OK" : "FAILED");
+                var scanResult = await artifactScanner.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
+                logger.LogInformation("Scanned {Sha256} ({Repo}:{Tag}) {Result}", scanResult.Artifact?.Sha256, scanResult.Artifact?.Repo, scanResult.Artifact?.Tag, scanResult.Success ? "OK" : "FAILED");
+                await autoDeploymentTriggerExecutor.Handle(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
                 break;
             case "DELETE":
                 var deleted = await artifactsService.RemoveAsync(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
