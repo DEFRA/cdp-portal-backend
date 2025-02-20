@@ -20,7 +20,8 @@ public class UpdateTestSuiteTests
     private readonly IDeploymentsServiceV2 _deploymentsService = Substitute.For<IDeploymentsServiceV2>();
     private readonly ITestRunService _testRunService = Substitute.For<ITestRunService>();
     
-    [Fact] public async Task TestEventNotLinkable()
+    [Fact] 
+    public async Task TestEventNotLinkable()
     {
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
