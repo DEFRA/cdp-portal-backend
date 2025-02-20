@@ -1,0 +1,213 @@
+{
+  "version": "0",
+  "id": "88050d0f-5e3b-8605-1ad1-c2e245088c65",
+  "detail-type": "ECS Task State Change",
+  "source": "aws.ecs",
+  "account": "120185944470",
+  "time": "2025-02-13T13:53:50Z",
+  "region": "eu-west-2",
+  "resources": [
+    "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3"
+  ],
+  "detail": {
+    "attachments": [
+      {
+        "id": "814173cc-5600-4d15-bd8f-1e49a3f66778",
+        "type": "eni",
+        "status": "DELETED",
+        "details": [
+          {
+            "name": "subnetId",
+            "value": "subnet-0dee13d9a3956231b"
+          },
+          {
+            "name": "networkInterfaceId",
+            "value": "eni-0e1f8705d13dbebab"
+          },
+          {
+            "name": "macAddress",
+            "value": "02:19:5c:7a:14:af"
+          },
+          {
+            "name": "privateDnsName",
+            "value": "ip-10-249-119-47.eu-west-2.compute.internal"
+          },
+          {
+            "name": "privateIPv4Address",
+            "value": "10.249.119.47"
+          }
+        ]
+      }
+    ],
+    "attributes": [
+      {
+        "name": "ecs.cpu-architecture",
+        "value": "x86_64"
+      }
+    ],
+    "availabilityZone": "eu-west-2c",
+    "clusterArn": "arn:aws:ecs:eu-west-2:120185944470:cluster/perf-test-ecs-public",
+    "connectivity": "CONNECTED",
+    "connectivityAt": "2025-02-13T13:42:15.131Z",
+    "containers": [
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3/13e6575f-da0c-4440-a0ea-9d1e87b1f9d8",
+        "exitCode": 0,
+        "lastStatus": "STOPPED",
+        "name": "forms-perf-test-forwarder",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-forwarder-proxy:latest",
+        "imageDigest": "sha256:fd68297b7b4cbc626794aa5b85eb1e44136cab387bc69bcfced15041c3c8ff27",
+        "runtimeId": "0c0a0d55efda4a08a8a7bf0adb8b3ad3-2700444480",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3",
+        "networkInterfaces": [
+          {
+            "attachmentId": "814173cc-5600-4d15-bd8f-1e49a3f66778",
+            "privateIpv4Address": "10.249.119.47"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "STOPPED"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3/3ee2413e-926f-4d82-90b7-93d5e6adb4ad",
+        "exitCode": 143,
+        "lastStatus": "STOPPED",
+        "name": "forms-perf-test-timeout",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-timeout-docker:latest",
+        "imageDigest": "sha256:d55cf9a4b6a4edc702cc89b82ce0453eea1eb536d77a3ede5ecac41017937830",
+        "runtimeId": "0c0a0d55efda4a08a8a7bf0adb8b3ad3-1728718441",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3",
+        "networkInterfaces": [
+          {
+            "attachmentId": "814173cc-5600-4d15-bd8f-1e49a3f66778",
+            "privateIpv4Address": "10.249.119.47"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "STOPPED"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3/b69b38b0-80fb-4795-98fd-076417413d4c",
+        "exitCode": 0,
+        "lastStatus": "STOPPED",
+        "name": "forms-perf-test",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/forms-perf-test:latest",
+        "imageDigest": "sha256:2f90858df5d1223636110a15c45c6c6971b9e6757cb87b4cd5df760e580731f7",
+        "runtimeId": "0c0a0d55efda4a08a8a7bf0adb8b3ad3-3616742631",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3",
+        "networkInterfaces": [
+          {
+            "attachmentId": "814173cc-5600-4d15-bd8f-1e49a3f66778",
+            "privateIpv4Address": "10.249.119.47"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "STOPPED"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3/d80d583a-2a0c-4894-9463-de226ab9abbe",
+        "exitCode": 143,
+        "lastStatus": "STOPPED",
+        "name": "forms-perf-test-sidecar",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-standalone-chrome:latest",
+        "imageDigest": "sha256:a45cd7cc241be0cba76f8489d75bdd6f2369743ee667cc143b7047388aa146be",
+        "runtimeId": "0c0a0d55efda4a08a8a7bf0adb8b3ad3-1636740249",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3",
+        "networkInterfaces": [
+          {
+            "attachmentId": "814173cc-5600-4d15-bd8f-1e49a3f66778",
+            "privateIpv4Address": "10.249.119.47"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "STOPPED"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3/f7748e69-2429-418d-867a-f90d0fc9d966",
+        "exitCode": 0,
+        "lastStatus": "STOPPED",
+        "name": "forms-perf-test_log_router",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-fluent-bit:latest",
+        "imageDigest": "sha256:2e6352601f19e4e41a5640f138e769beb4357ef77f6fe300146936ff38cc815b",
+        "runtimeId": "0c0a0d55efda4a08a8a7bf0adb8b3ad3-3658254050",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3",
+        "networkInterfaces": [
+          {
+            "attachmentId": "814173cc-5600-4d15-bd8f-1e49a3f66778",
+            "privateIpv4Address": "10.249.119.47"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "STOPPED"
+          }
+        ]
+      }
+    ],
+    "cpu": "4096",
+    "createdAt": "2025-02-13T13:42:11.089Z",
+    "desiredStatus": "STOPPED",
+    "enableExecuteCommand": true,
+    "ephemeralStorage": {
+      "sizeInGiB": 20
+    },
+    "executionStoppedAt": "2025-02-13T13:53:13.031Z",
+    "group": "family:forms-perf-test",
+    "launchType": "FARGATE",
+    "lastStatus": "STOPPED",
+    "memory": "8192",
+    "overrides": {
+      "containerOverrides": [
+        {
+          "name": "forms-perf-test-forwarder"
+        },
+        {
+          "name": "forms-perf-test-timeout"
+        },
+        {
+          "name": "forms-perf-test"
+        },
+        {
+          "name": "forms-perf-test-sidecar"
+        },
+        {
+          "name": "forms-perf-test_log_router"
+        }
+      ]
+    },
+    "platformVersion": "1.4.0",
+    "pullStartedAt": "2025-02-13T13:42:22.886Z",
+    "pullStoppedAt": "2025-02-13T13:42:45.535Z",
+    "startedAt": "2025-02-13T13:43:04.855Z",
+    "stoppingAt": "2025-02-13T13:53:37.838Z",
+    "stoppedAt": "2025-02-13T13:53:50.705Z",
+    "stoppedReason": "Essential container in task exited",
+    "stopCode": "EssentialContainerExited",
+    "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/0c0a0d55efda4a08a8a7bf0adb8b3ad3",
+    "taskDefinitionArn": "arn:aws:ecs:eu-west-2:120185944470:task-definition/forms-perf-test:78",
+    "updatedAt": "2025-02-13T13:53:50.705Z",
+    "version": 6
+  }
+}

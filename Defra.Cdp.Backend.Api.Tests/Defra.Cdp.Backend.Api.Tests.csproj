@@ -35,6 +35,24 @@
     <Content Include="Resources\payload-get-all-secrets.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Resources\ecs\tests\task-stop-missing-secret.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Resources\ecs\tests\task-stop-out-of-memory.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Resources\ecs\tests\task-stop-test-suite-fail.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Resources\ecs\tests\task-stop-test-suite-pass.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Resources\ecs\tests\task-stop-timeout-sidecar.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Resources\ecs\tests\task-start-pending.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -43,6 +61,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\ecs\" />
+    <Content Include="Resources\ecs\tests\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\Defra.Cdp.Backend.Api\Defra.Cdp.Backend.Api.csproj" />

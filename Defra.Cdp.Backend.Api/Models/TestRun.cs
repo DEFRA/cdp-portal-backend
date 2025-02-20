@@ -5,6 +5,33 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
+public class FailureReason(string containerName, string reason)
+{
+    [property: JsonPropertyName("containerName")]
+    public string ContainerName { get; set; } = containerName;
+
+    [property: JsonPropertyName("reason")] 
+    public string Reason { get; set; } = reason;
+
+    protected bool Equals(FailureReason other)
+    {
+        return ContainerName == other.ContainerName && Reason == other.Reason;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+        return Equals((FailureReason)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(ContainerName, Reason);
+    }
+}
+
 public sealed class TestRun
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
@@ -41,6 +68,9 @@ public sealed class TestRun
     [property: JsonPropertyName("tag")]
     public string? Tag { get; set; }
 
+    [property: JsonPropertyName("failureReasons")]
+    public List<FailureReason> FailureReasons { get; set; } = [];
+    
    public static TestRun FromDeployment(DeploymentV2 deployment, string testSuite)
    {
       return new TestRun
