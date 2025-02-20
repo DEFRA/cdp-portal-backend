@@ -30,7 +30,9 @@ public sealed record EcsContainer(
     [property: JsonPropertyName("desiredStatus")]
     string DesiredStatus,
     [property: JsonPropertyName("exitCode")]       
-    int? ExitCode = null
+    int? ExitCode = null,
+    [property: JsonPropertyName("reason")]       
+    string? Reason = null
 );
 
 public sealed record EcsEventDetail(
@@ -52,7 +54,11 @@ public sealed record EcsEventDetail(
     [property: JsonPropertyName("startedBy")]
     string StartedBy,
     [property: JsonPropertyName("deploymentId")]
-    string? EcsSvcDeploymentId
+    string? EcsSvcDeploymentId,
+    [property: JsonPropertyName("stopCode")]
+    string? StopCode = default,
+    [property: JsonPropertyName("stoppedReason")]
+    string? StoppedReason = default
 );
 
 public sealed record EcsEventCopy(

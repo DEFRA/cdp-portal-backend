@@ -1,0 +1,188 @@
+{
+  "version": "0",
+  "id": "fc024d9f-9e7e-17da-d180-5b4dfb5338b6",
+  "detail-type": "ECS Task State Change",
+  "source": "aws.ecs",
+  "account": "120185944470",
+  "time": "2025-02-13T13:28:43Z",
+  "region": "eu-west-2",
+  "resources": [
+    "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77"
+  ],
+  "detail": {
+    "attachments": [
+      {
+        "id": "90575635-6f32-4dd8-908d-5363ae4fca10",
+        "type": "eni",
+        "status": "ATTACHED",
+        "details": [
+          {
+            "name": "subnetId",
+            "value": "subnet-0631a52a88376473c"
+          },
+          {
+            "name": "networkInterfaceId",
+            "value": "eni-02b9205a31679c5ce"
+          },
+          {
+            "name": "macAddress",
+            "value": "0a:bc:5b:de:f7:37"
+          },
+          {
+            "name": "privateDnsName",
+            "value": "ip-10-249-114-126.eu-west-2.compute.internal"
+          },
+          {
+            "name": "privateIPv4Address",
+            "value": "10.249.114.126"
+          }
+        ]
+      }
+    ],
+    "attributes": [
+      {
+        "name": "ecs.cpu-architecture",
+        "value": "x86_64"
+      }
+    ],
+    "availabilityZone": "eu-west-2b",
+    "clusterArn": "arn:aws:ecs:eu-west-2:120185944470:cluster/perf-test-ecs-public",
+    "containers": [
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77/40dee8be-2977-4808-9676-4500bb5986b2",
+        "lastStatus": "RUNNING",
+        "name": "forms-perf-test_log_router",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-fluent-bit:latest",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+        "networkInterfaces": [
+          {
+            "attachmentId": "90575635-6f32-4dd8-908d-5363ae4fca10",
+            "privateIpv4Address": "10.249.114.126"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "RUNNING"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77/8a21605c-0286-4f7d-beaa-df50347e9afa",
+        "lastStatus": "RUNNING",
+        "name": "forms-perf-test",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/forms-perf-test:latest",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+        "networkInterfaces": [
+          {
+            "attachmentId": "90575635-6f32-4dd8-908d-5363ae4fca10",
+            "privateIpv4Address": "10.249.114.126"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "RUNNING"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77/ae40adce-ec61-4b19-b3eb-110e0b7356c1",
+        "lastStatus": "RUNNING",
+        "name": "forms-perf-test-timeout",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-timeout-docker:latest",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+        "networkInterfaces": [
+          {
+            "attachmentId": "90575635-6f32-4dd8-908d-5363ae4fca10",
+            "privateIpv4Address": "10.249.114.126"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "RUNNING"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77/e2c62b38-20ab-4002-8acb-78251002be3b",
+        "lastStatus": "RUNNING",
+        "name": "forms-perf-test-sidecar",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-standalone-chrome:latest",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+        "networkInterfaces": [
+          {
+            "attachmentId": "90575635-6f32-4dd8-908d-5363ae4fca10",
+            "privateIpv4Address": "10.249.114.126"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "RUNNING"
+          }
+        ]
+      },
+      {
+        "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77/f7c2e73a-40de-46c3-837d-5dedea98c9f8",
+        "lastStatus": "RUNNING",
+        "name": "forms-perf-test-forwarder",
+        "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-forwarder-proxy:latest",
+        "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+        "networkInterfaces": [
+          {
+            "attachmentId": "90575635-6f32-4dd8-908d-5363ae4fca10",
+            "privateIpv4Address": "10.249.114.126"
+          }
+        ],
+        "cpu": "0",
+        "managedAgents": [
+          {
+            "name": "ExecuteCommandAgent",
+            "status": "RUNNING"
+          }
+        ]
+      }
+    ],
+    "cpu": "4096",
+    "createdAt": "2025-02-13T13:28:13.034Z",
+    "desiredStatus": "RUNNING",
+    "enableExecuteCommand": true,
+    "ephemeralStorage": {
+      "sizeInGiB": 20
+    },
+    "group": "family:forms-perf-test",
+    "launchType": "FARGATE",
+    "lastStatus": "RUNNING",
+    "memory": "8192",
+    "overrides": {
+      "containerOverrides": [
+        {
+          "name": "forms-perf-test_log_router"
+        },
+        {
+          "name": "forms-perf-test"
+        },
+        {
+          "name": "forms-perf-test-timeout"
+        },
+        {
+          "name": "forms-perf-test-sidecar"
+        },
+        {
+          "name": "forms-perf-test-forwarder"
+        }
+      ]
+    },
+    "platformVersion": "1.4.0",
+    "taskArn": "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+    "taskDefinitionArn": "arn:aws:ecs:eu-west-2:120185944470:task-definition/forms-perf-test:77",
+    "updatedAt": "2025-02-13T13:28:43.476Z",
+    "version": 2
+  }
+}

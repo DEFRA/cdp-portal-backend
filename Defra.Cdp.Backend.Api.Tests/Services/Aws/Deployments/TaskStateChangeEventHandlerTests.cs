@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
@@ -104,7 +105,6 @@ public class TaskStateChangeEventHandlerTests
     {
 
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
-        
         var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
         var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
         var testRunService = Substitute.For<ITestRunService>();
@@ -128,4 +128,5 @@ public class TaskStateChangeEventHandlerTests
         await deploymentsService.Received().FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>());
         await deploymentsService.DidNotReceive().UpdateDeployment(Arg.Any<DeploymentV2>(), Arg.Any<CancellationToken>());
     }
+
 }

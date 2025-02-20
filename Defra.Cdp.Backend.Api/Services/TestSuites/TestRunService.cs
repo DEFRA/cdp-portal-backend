@@ -12,7 +12,7 @@ public interface ITestRunService
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken cancellationToken);
     public Task CreateTestRun(TestRun testRun, CancellationToken cancellationToken);
     public Task<TestRun?> Link(TestRunMatchIds ids,  DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken);
-    public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp , CancellationToken cancellationToken);
+    public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp, List<FailureReason> failureReasons, CancellationToken cancellationToken);
     Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
 
@@ -84,11 +84,12 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         return await Collection.FindOneAndUpdateAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp, CancellationToken cancellationToken)
+    public async Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp, List<FailureReason> failureReasons, CancellationToken cancellationToken)
     {
         var update = Builders<TestRun>.Update
             .Set(t => t.TaskStatus, taskStatus)
-            .Set(t => t.TaskLastUpdate, ecsEventTimestamp);
+            .Set(t => t.TaskLastUpdate, ecsEventTimestamp)
+            .Set(t => t.FailureReasons, failureReasons);
 
         if (testStatus != null)
         {
