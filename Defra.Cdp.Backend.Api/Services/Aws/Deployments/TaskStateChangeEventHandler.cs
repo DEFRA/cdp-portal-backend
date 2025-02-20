@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
@@ -8,38 +9,25 @@ using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
-public class TaskStateChangeEventHandler
+public class TaskStateChangeEventHandler(
+    IOptions<EcsEventListenerOptions> config,
+    IEnvironmentLookup environmentLookup,
+    IDeploymentsServiceV2 deploymentsService,
+    IDeployableArtifactsService deployableArtifactsService,
+    ITestRunService testRunService,
+    ILogger<TaskStateChangeEventHandler> logger)
 {
-    private readonly List<string> _containersToIgnore;
-    private readonly IDeployableArtifactsService _deployableArtifactsService;
-    private readonly IDeploymentsServiceV2 _deploymentsService;
-    private readonly ITestRunService _testRunService;
-    private readonly IEnvironmentLookup _environmentLookup;
-    private readonly ILogger<TaskStateChangeEventHandler> _logger;
+    private readonly List<string> _containersToIgnore = config.Value.ContainerToIgnore;
 
-    public TaskStateChangeEventHandler(
-        IOptions<EcsEventListenerOptions> config,
-        IEnvironmentLookup environmentLookup,
-        IDeploymentsServiceV2 deploymentsService,
-        IDeployableArtifactsService deployableArtifactsService,
-        ITestRunService testRunService,
-        ILogger<TaskStateChangeEventHandler> logger)
-    {
-        _deploymentsService = deploymentsService;
-        _environmentLookup = environmentLookup;
-        _logger = logger;
-        _deployableArtifactsService = deployableArtifactsService;
-        _testRunService = testRunService;
-        _containersToIgnore = config.Value.ContainerToIgnore;
-    }
+    private static readonly ISet<string> failureReasonsToIgnore = ImmutableHashSet.Create("UserInitiated", "EssentialContainerExited", "ServiceSchedulerInitiated");
 
     public async Task Handle(string id, EcsTaskStateChangeEvent ecsTaskStateChangeEvent,
         CancellationToken cancellationToken)
     {
-        var env = _environmentLookup.FindEnv(ecsTaskStateChangeEvent.Account);
+        var env = environmentLookup.FindEnv(ecsTaskStateChangeEvent.Account);
         if (env == null)
         {
-            _logger.LogError(
+            logger.LogError(
                 "Unable to convert {DeploymentId} to a deployment event, unknown environment/account: {Account} check the mappings!",
                 ecsTaskStateChangeEvent.DeploymentId, ecsTaskStateChangeEvent.Account);
             return;
@@ -50,7 +38,7 @@ public class TaskStateChangeEventHandler
         if (artifact == null)
         {
             var containerList = string.Join(",", ecsTaskStateChangeEvent.Detail.Containers.Select(c => c.Image));
-            _logger.LogWarning("No known artifact found for task {id}, [{containers}]", id, containerList);
+            logger.LogWarning("No known artifact found for task {id}, [{containers}]", id, containerList);
             return;
         }
 
@@ -67,7 +55,7 @@ public class TaskStateChangeEventHandler
         }
 
 
-        _logger.LogWarning("Artifact {artifactName} was not a known runMode {runMode}", artifact.ServiceName,
+        logger.LogWarning("Artifact {artifactName} was not a known runMode {runMode}", artifact.ServiceName,
             artifact.RunMode);
     }
 
@@ -82,28 +70,28 @@ public class TaskStateChangeEventHandler
         {
             var lambdaId = ecsTaskStateChangeEvent.Detail.StartedBy.Trim();
             var instanceTaskId = ecsTaskStateChangeEvent.Detail.TaskArn;
-            _logger.LogInformation("Starting UpdateDeployment for {LambdaId}, instance {InstanceId}", lambdaId,
+            logger.LogInformation("Starting UpdateDeployment for {LambdaId}, instance {InstanceId}", lambdaId,
                 instanceTaskId);
 
             // find the original requested deployment by the lambda id
-            var deployment = await _deploymentsService.FindDeploymentByLambdaId(lambdaId, cancellationToken);
+            var deployment = await deploymentsService.FindDeploymentByLambdaId(lambdaId, cancellationToken);
 
             if (deployment == null)
             {
                 // Fallback to matching on the most recent for that container/version
                 var taskDefArn = ecsTaskStateChangeEvent.Detail.TaskDefinitionArn;
-                deployment = await _deploymentsService.FindDeploymentByTaskArn(taskDefArn, cancellationToken);
+                deployment = await deploymentsService.FindDeploymentByTaskArn(taskDefArn, cancellationToken);
 
                 if (deployment == null)
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Failed to find a matching deployment for ecs deployment id {LambdaId} or {TaskDefArn}, it may have been triggered by a different instance of portal",
                         lambdaId,
                         taskDefArn);
                     return;
                 }
 
-                _logger.LogWarning("Falling back to matching on Task-Definition Arn {CdpId} -> {TaskDefArn}",
+                logger.LogWarning("Falling back to matching on Task-Definition Arn {CdpId} -> {TaskDefArn}",
                     deployment.CdpDeploymentId, taskDefArn);
             }
 
@@ -111,13 +99,13 @@ public class TaskStateChangeEventHandler
                 ecsTaskStateChangeEvent.Detail.LastStatus);
             if (instanceStatus == null)
             {
-                _logger.LogWarning("Skipping unknown status for desired:{desired}, last:{last}",
+                logger.LogWarning("Skipping unknown status for desired:{desired}, last:{last}",
                     ecsTaskStateChangeEvent.Detail.DesiredStatus, ecsTaskStateChangeEvent.Detail.LastStatus);
                 return;
             }
 
             // Update the specific instance status
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Updating instance status for cdpID: {cdpId}, lambdaId: {lambdaId} instance {instanceId}, {msgId}",
                 deployment.CdpDeploymentId, lambdaId, instanceTaskId, ecsTaskStateChangeEvent.DeploymentId);
             deployment.Instances[instanceTaskId] =
@@ -133,12 +121,17 @@ public class TaskStateChangeEventHandler
 
             deployment.TaskDefinitionArn = ecsTaskStateChangeEvent.Detail.TaskArn;
 
-            await _deploymentsService.UpdateDeployment(deployment, cancellationToken);
-            _logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
+            if (deployment.FailureReasons.Count == 0)
+            {
+                deployment.FailureReasons = ExtractFailureReasons(ecsTaskStateChangeEvent);
+            }
+
+            await deploymentsService.UpdateDeployment(deployment, cancellationToken);
+            logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to update deployment: {Message}", ex.Message);
+            logger.LogError("Failed to update deployment: {Message}", ex.Message);
         }
     }
 
@@ -151,18 +144,18 @@ public class TaskStateChangeEventHandler
         try
         {
             // TODO: have an allow-list of events we can process
-            var env = _environmentLookup.FindEnv(ecsTaskStateChangeEvent.Account);
+            var env = environmentLookup.FindEnv(ecsTaskStateChangeEvent.Account);
 
             var taskArn = ecsTaskStateChangeEvent.Detail.TaskArn;
 
             // see if we've already linked a test run to the arn
-            var testRun = await _testRunService.FindByTaskArn(taskArn, cancellationToken);
+            var testRun = await testRunService.FindByTaskArn(taskArn, cancellationToken);
 
             // if it's not there, find a candidate to link it to
             if (testRun == null)
             {
-                _logger.LogInformation("trying to link {id}", artifact.ServiceName);
-                testRun = await _testRunService.Link(
+                logger.LogInformation("trying to link {id}", artifact.ServiceName);
+                testRun = await testRunService.Link(
                     new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp), 
                     artifact,
                     taskArn, 
@@ -172,7 +165,7 @@ public class TaskStateChangeEventHandler
             // if the linking fails, we have nothing to write the data to so bail
             if (testRun == null)
             {
-                _logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
+                logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
                 return;
             }
 
@@ -185,14 +178,14 @@ public class TaskStateChangeEventHandler
                 ecsTaskStateChangeEvent.Detail.LastStatus);
             var failureReasons = ExtractFailureReasons(ecsTaskStateChangeEvent);
 
-            _logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
+            logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
                 testRun.RunId, taskStatus, testResults);
-            await _testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp,
+            await testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp,
                 failureReasons, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to update test suite: {ex}", ex);
+            logger.LogError("Failed to update test suite: {ex}", ex);
         }
     }
 
@@ -210,12 +203,12 @@ public class TaskStateChangeEventHandler
             if (artifact == null) continue;
             if (_containersToIgnore.Contains(artifact.Repo))
             {
-                _logger.LogDebug("skipping ignored {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag,
+                logger.LogDebug("skipping ignored {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag,
                     artifact.Sha256);
                 continue;
             }
 
-            _logger.LogDebug("found artifact {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag, artifact.Sha256);
+            logger.LogDebug("found artifact {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag, artifact.Sha256);
             return artifact;
         }
 
@@ -234,8 +227,8 @@ public class TaskStateChangeEventHandler
         var artifact = tag switch
         {
             // We don't store the latest tag, so we just the highest semver
-            "latest" => await _deployableArtifactsService.FindLatest(repo, cancellationToken),
-            _ => await _deployableArtifactsService.FindByTag(repo, tag, cancellationToken)
+            "latest" => await deployableArtifactsService.FindLatest(repo, cancellationToken),
+            _ => await deployableArtifactsService.FindByTag(repo, tag, cancellationToken)
         };
 
         return artifact;
@@ -249,14 +242,14 @@ public class TaskStateChangeEventHandler
 
         if (!string.IsNullOrWhiteSpace(digest))
         {
-            return await _deployableArtifactsService.FindBySha256(digest, cancellationToken);
+            return await deployableArtifactsService.FindBySha256(digest, cancellationToken);
         }
 
         // Second instances for some reason don't have the image tag, but the sha, so use that
         var (_, sha256) = SplitSha(ecsContainer.Image);
         if (!string.IsNullOrWhiteSpace(sha256))
         {
-            return await _deployableArtifactsService.FindBySha256(sha256, cancellationToken);
+            return await deployableArtifactsService.FindBySha256(sha256, cancellationToken);
         }
 
         return null;
@@ -285,7 +278,8 @@ public class TaskStateChangeEventHandler
 
         return (null, null);
     }
-    
+
+ 
     public static List<FailureReason> ExtractFailureReasons(EcsTaskStateChangeEvent ecsEvent)
     {
         var failureReasons = ecsEvent.Detail.Containers
@@ -304,10 +298,12 @@ public class TaskStateChangeEventHandler
         // Find any non-standard task level exit codes filtering out expected codes
         // EssentialContainerExited - i.e. tests have finished
         // UserInitiated - killed via the kill button
-        if (ecsEvent.Detail is
-            { StopCode: not (null or "UserInitiated" or "EssentialContainerExited"), StoppedReason: not null, })
+        if (ecsEvent.Detail is { StopCode: not null, StoppedReason: not null, })
         {
-            failureReasons.Add(new FailureReason("ECS Task", ecsEvent.Detail.StoppedReason));
+            if (!failureReasonsToIgnore.Contains(ecsEvent.Detail.StopCode))
+            {
+                failureReasons.Add(new FailureReason("ECS Task", ecsEvent.Detail.StoppedReason));
+            }
         }
 
         return failureReasons;

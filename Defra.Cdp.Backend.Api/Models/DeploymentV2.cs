@@ -45,6 +45,8 @@ public class DeploymentV2
     // Audit data is not returned in the API
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public Audit? Audit { get; set; }
+
+    public List<FailureReason> FailureReasons = [];
     
     public static DeploymentV2 FromRequest(RequestedDeployment req)
     {
