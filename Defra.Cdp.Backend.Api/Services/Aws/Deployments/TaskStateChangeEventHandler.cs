@@ -174,10 +174,10 @@ public class TaskStateChangeEventHandler(
             // TODO: use sha256 instead once data is fixed
             var container = ecsTaskStateChangeEvent.Detail.Containers.FirstOrDefault(c => c.Name == artifact.Repo);
             var testResults = GenerateTestSuiteStatus(container);
-            var taskStatus = GenerateTestSuiteTaskStatus(ecsTaskStateChangeEvent.Detail.DesiredStatus,
-                ecsTaskStateChangeEvent.Detail.LastStatus);
             var failureReasons = ExtractFailureReasons(ecsTaskStateChangeEvent);
-
+            var taskStatus = GenerateTestSuiteTaskStatus(ecsTaskStateChangeEvent.Detail.DesiredStatus,
+                ecsTaskStateChangeEvent.Detail.LastStatus, failureReasons.Count > 0);
+            
             logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
                 testRun.RunId, taskStatus, testResults);
             await testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp,
@@ -325,8 +325,9 @@ public class TaskStateChangeEventHandler(
     /**
   * Interpret the overall status of the test run's ECS task
   */
-    public static string GenerateTestSuiteTaskStatus(string desired, string last)
+    public static string GenerateTestSuiteTaskStatus(string desired, string last, bool hasFailures)
     {
+        if (hasFailures) return "failed";
         return desired switch
         {
             "RUNNING" => last switch

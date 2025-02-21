@@ -29,7 +29,12 @@ public class GenerateStatusTests
 
         foreach (var testcase in data)
         {
-            Assert.Equal(TaskStateChangeEventHandler.GenerateTestSuiteTaskStatus(testcase[0], testcase[1]), testcase[2]);
+            Assert.Equal(testcase[2], TaskStateChangeEventHandler.GenerateTestSuiteTaskStatus(testcase[0], testcase[1], false));
+        }
+        
+        foreach (var testcase in data)
+        {
+            Assert.Equal("failed", TaskStateChangeEventHandler.GenerateTestSuiteTaskStatus(testcase[0], testcase[1], true));
         }
     }
 }
