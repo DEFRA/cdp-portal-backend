@@ -260,6 +260,7 @@ app.MapAdminEndpoint();
 app.MapServiceStatusEndpoint();
 app.MapServiceEndpoint();
 app.MapHealthChecks("/health");
+app.MapAutoDeploymentTriggerEndpoint();
 
 // Start the ecs and ecr services
 #pragma warning disable CS4014

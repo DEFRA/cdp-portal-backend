@@ -205,14 +205,6 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         );
     }
 
-    public async Task<List<string?>> FindAllUniqueGithubRepos(CancellationToken cancellationToken)
-    {
-        return await Collection
-            .Distinct(d => d.GithubUrl, FilterDefinition<DeployableArtifact>.Empty,
-                cancellationToken: cancellationToken)
-            .ToListAsync(cancellationToken);
-    }
-
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(
         IndexKeysDefinitionBuilder<DeployableArtifact> builder)
     {

@@ -9,7 +9,7 @@ public record AutoDeploymentTrigger
 {
    [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
    [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-   public ObjectId? Id { get; init; } = default!;
+   public ObjectId? Id { get; init; }
 
    public DateTime Created { get; init; } = DateTime.Now;
 

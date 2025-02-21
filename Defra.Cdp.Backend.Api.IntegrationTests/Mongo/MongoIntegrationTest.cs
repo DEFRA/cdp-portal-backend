@@ -9,18 +9,20 @@ public class MongoIntegrationTest : IAsyncDisposable
 
     public async Task InitializeAsync()
     {
-        if (_mongoDbContainer == null)
+        if (_mongoDbContainer != null)
         {
-            // Initialize MongoDB container with a specific version
-            _mongoDbContainer = new MongoDbBuilder()
-                .WithImage("mongo:6.0")
-                .Build();
-
-            // Start the container
-            await _mongoDbContainer.StartAsync();
-
-            connectionString = _mongoDbContainer.GetConnectionString();
+            await _mongoDbContainer.DisposeAsync();
         }
+
+        // Initialize MongoDB container with a specific version
+        _mongoDbContainer = new MongoDbBuilder()
+            .WithImage("mongo:6.0")
+            .Build();
+
+        // Start the container
+        await _mongoDbContainer.StartAsync();
+
+        connectionString = _mongoDbContainer.GetConnectionString();
     }
 
     
