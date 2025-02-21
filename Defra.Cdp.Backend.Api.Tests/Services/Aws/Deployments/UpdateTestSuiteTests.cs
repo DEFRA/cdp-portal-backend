@@ -279,7 +279,7 @@ public class UpdateTestSuiteTests
         
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
-            "finished",
+            "failed",
             "failed",
             Arg.Any<DateTime>(),
             Arg.Is<List<FailureReason>>(l => 
@@ -320,7 +320,7 @@ public class UpdateTestSuiteTests
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
-            "finished",
+            "failed",
             "failed",
             Arg.Any<DateTime>(),
             Arg.Is<List<FailureReason>>(l => l.Count == 1 && l.Contains(new FailureReason("forms-perf-test-timeout", "Test suite exceeded maximum run time"))),
@@ -358,7 +358,7 @@ public class UpdateTestSuiteTests
         
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
-            "finished",
+            "failed",
             null,
             Arg.Any<DateTime>(),
             Arg.Is<List<FailureReason>>(l => l.Count == 1 && l.Contains(new FailureReason("ECS Task", "ResourceInitializationError: unable to pull secrets or registry auth: execution resource retrieval failed: unable to retrieve secret from asm: service call has been retried 1 time(s): retrieved secret from Secrets Manager did not contain json key MY_SECRET"))),
