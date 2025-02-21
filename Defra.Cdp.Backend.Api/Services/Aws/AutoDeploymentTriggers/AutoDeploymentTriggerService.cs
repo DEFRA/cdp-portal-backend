@@ -8,7 +8,8 @@ public interface IAutoDeploymentTriggerService
 {
    public Task<AutoDeploymentTrigger?> FindForServiceName(string serviceName, CancellationToken cancellationToken);
    
-   public Task PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken);
+   public Task<AutoDeploymentTrigger?> PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken);
+   public Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken);
 }
 
 public class AutoDeploymentTriggerService(
@@ -34,9 +35,12 @@ public class AutoDeploymentTriggerService(
          .SingleOrDefaultAsync(cancellationToken);
    }
 
-   public async Task PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken)
+   public async Task<AutoDeploymentTrigger?> PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken)
    {
        _logger.LogInformation("Persisting auto deployment trigger for service: {Service}", autoDeploymentTrigger.ServiceName);
+
+       //We don't want to allow auto-deployment to prod
+       autoDeploymentTrigger.Environments.Remove("prod");
 
        var triggerInDb = await FindForServiceName(autoDeploymentTrigger.ServiceName, cancellationToken);
     
@@ -50,5 +54,12 @@ public class AutoDeploymentTriggerService(
        {
            await Collection.InsertOneAsync(autoDeploymentTrigger, cancellationToken: cancellationToken);
        }
+
+       return await FindForServiceName(autoDeploymentTrigger.ServiceName, cancellationToken);
+   }
+
+   public async Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken)
+   {
+       return await Collection.Find(_ => true).ToListAsync(cancellationToken: cancellationToken);
    }
 }
