@@ -338,6 +338,9 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         var users = await Collection
             .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
             .ToListAsync(ct);
+
+        users.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
+        
         return users;
     }
 
@@ -352,6 +355,9 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .ToListAsync(ct);
 
         var users = await UserDetailsList(ct);
+
+        serviceNames.Sort();
+        statuses.Sort();
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
@@ -370,6 +376,9 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .ToListAsync(ct);
 
         var users = await UserDetailsList(ct);
+
+        serviceNames.Sort();
+        statuses.Sort();
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
     }
