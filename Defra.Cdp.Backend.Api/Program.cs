@@ -111,6 +111,7 @@ builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
 builder.Services.AddScoped<IValidator<RequestedUndeployment>, RequestedUndeploymentValidator>();
+builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
 
 // SQS provider
 logger.Information("Attempting to add SQS, ECR and Docker Client");
