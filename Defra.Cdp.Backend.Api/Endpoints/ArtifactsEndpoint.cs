@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -20,6 +21,8 @@ public static class ArtifactsEndpoint
         app.MapGet(ArtifactsBaseRoute, ListRepos);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}", ListImagesForRepo);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage);
+        app.MapPost($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}/annotations", AddAnnotation);
+        app.MapDelete($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}/annotations", DeleteAnnotations);
         app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent);
         app.MapGet(DeployablesBaseRoute, ListDeployables);
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
@@ -58,6 +61,42 @@ public static class ArtifactsEndpoint
         {
             image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);    
         }
+        return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
+    }
+    
+    // POST /artifacts/{repo}/{tag}/annotations
+    private static async Task<IResult> AddAnnotation(IDeployableArtifactsService deployableArtifactsService, string repo,
+        string tag, 
+        IValidator<RequestedAnnotation> validator,
+        RequestedAnnotation requestedAnnotation,
+        CancellationToken cancellationToken)
+    {
+        var validatedResult = await validator.ValidateAsync(requestedAnnotation, cancellationToken);
+        if (!validatedResult.IsValid) return Results.ValidationProblem(validatedResult.ToDictionary());
+
+        await deployableArtifactsService.AddAnnotation(repo, tag, requestedAnnotation.Title.ToLower(), requestedAnnotation.Description, cancellationToken);
+        var image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
+        return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
+    }
+
+
+    // DELETE /artifacts/{repo}/{tag}/annotations
+    private static async Task<IResult> DeleteAnnotations(IDeployableArtifactsService deployableArtifactsService,
+        string repo,
+        string tag,
+        [FromQuery(Name = "title")] string? title,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            await deployableArtifactsService.RemoveAnnotations(repo, tag, cancellationToken);    
+        }
+        else
+        {
+            await deployableArtifactsService.RemoveAnnotation(repo, tag, title.ToLower(), cancellationToken);
+        }
+        
+        var image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
         return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
     }
 
