@@ -71,6 +71,9 @@ public sealed class TestRun
     [property: JsonPropertyName("failureReasons")]
     public List<FailureReason> FailureReasons { get; set; } = [];
     
+    [property: JsonPropertyName("configVersion")]
+    public string? ConfigVersion { get; set; }
+    
    public static TestRun FromDeployment(DeploymentV2 deployment, string testSuite)
    {
       return new TestRun
@@ -78,7 +81,7 @@ public sealed class TestRun
          RunId = Guid.NewGuid().ToString(),
          TestSuite = testSuite,
          Environment = deployment.Environment,
-         User = deployment.User ?? null,
+         User = deployment.User!,
          Created = DateTime.Now
       };
    }
