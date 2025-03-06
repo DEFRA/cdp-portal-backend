@@ -17,6 +17,11 @@ public abstract class ServiceTest : IClassFixture<MongoIntegrationTest>
 
     protected CommonEvent<T> EventFromJson<T>(string json)
     {
-        return (CommonEvent<T>)JsonSerializer.Deserialize(json, typeof(CommonEvent<T>))!;
+        return FromJson<CommonEvent<T>>(json);
+    }
+
+    protected T FromJson<T>(string json)
+    {
+        return (T)JsonSerializer.Deserialize(json, typeof(T))!;
     }
 }

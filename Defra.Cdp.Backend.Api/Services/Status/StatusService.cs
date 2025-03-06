@@ -21,7 +21,7 @@ public class StatusService(
     public async Task<Status> GetTenantStatus(string service, CancellationToken cancellationToken = default)
     {
         var images = await deployableArtifactsService.FindAllTagsForRepo(service, cancellationToken);
-        var secrets = await secretsService.FindAllSecrets(service, cancellationToken);
+        var secrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
         var github = await repositoryService.FindRepositoryById(service, cancellationToken);
         var squid = await squidProxyConfigService.FindSquidProxyConfig(service, cancellationToken);
         var tenant = await tenantService.FindAllServices(service, cancellationToken);

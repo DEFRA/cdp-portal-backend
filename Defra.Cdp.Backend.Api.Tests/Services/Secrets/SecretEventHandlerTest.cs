@@ -23,7 +23,11 @@ public class SecretEventHandlerTest
         service
             .UpdateSecrets(Arg.Any<List<TenantSecrets>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
-        await eventHandler.Handle(mockPayload, new CancellationToken());
+        
+        service.FindAllSecretsForEnvironment(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TenantSecrets>());
+        
+        await eventHandler.Handle(mockPayload, CancellationToken.None);
 
         await service.ReceivedWithAnyArgs().UpdateSecrets(Arg.Any<List<TenantSecrets>>(), Arg.Any<CancellationToken>());
 
