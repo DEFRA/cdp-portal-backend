@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.Secrets;
 
 public interface ISecretEventHandler
 {
-   Task Handle(MessageHeader header, CancellationToken cancellationToken);
+    Task Handle(MessageHeader header, CancellationToken cancellationToken);
 }
 
 /**
@@ -45,7 +45,7 @@ public class SecretEventHandler(
         var body = header.Body?.Deserialize<BodyGetAllSecretKeys>();
         if (body == null)
         {
-            logger.LogInformation("Failed to parse body of 'get_all_secret_keys' message");   
+            logger.LogInformation("Failed to parse body of 'get_all_secret_keys' message");
             return;
         }
 
@@ -70,6 +70,22 @@ public class SecretEventHandler(
                 LastChangedDate = value.LastChangedDate,
                 CreatedDate = value.CreatedDate
             });
+        }
+
+        var secretsInDb = await secretsService.FindAllSecretsForEnvironment(body.Environment, cancellationToken);
+
+        var secretsToDelete = secretsInDb.ExceptBy(secrets.Select(s => s.Service),
+            s => s.Service).ToList();
+
+        if (secretsToDelete.Count != 0)
+        {
+            logger.LogInformation("Deleting {Count} secrets", secretsToDelete.Count);
+            await secretsService.DeleteSecrets(secretsToDelete, cancellationToken);
+        }
+
+        if (secrets.Count != 0)
+        {
+            await secretsService.UpdateSecrets(secrets, cancellationToken);
         }
 
         await secretsService.UpdateSecrets(secrets, cancellationToken);
@@ -114,10 +130,12 @@ public class SecretEventHandler(
         }
         else
         {
-         logger.LogInformation("Add Secret: Secret {SecretKey} not found in pending secrets for {Service} in {Environment}", body.SecretKey, service, body.Environment);
+            logger.LogInformation(
+                "Add Secret: Secret {SecretKey} not found in pending secrets for {Service} in {Environment}",
+                body.SecretKey, service, body.Environment);
         }
     }
-    
+
     public static MessageHeader? TryParseMessageHeader(string body)
     {
         try
@@ -125,7 +143,7 @@ public class SecretEventHandler(
             var header = JsonSerializer.Deserialize<MessageHeader>(body);
             return header?.Source != "cdp-secret-manager-lambda" ? null : header;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             return null;
         }

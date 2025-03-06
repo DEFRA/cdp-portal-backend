@@ -35,7 +35,7 @@ public class ServiceOverviewService(
             LatestBuilds = await deployableArtifactsService.FindLatestTagsForRepo(name, 6, cancellationToken),
             VanityUrls = await vanityUrlsService.FindService(name, cancellationToken),
             SquidProxyConfig = await squidProxyConfigService.FindSquidProxyConfig(name, cancellationToken),
-            Secrets = await secretsService.FindAllSecrets(name, cancellationToken),
+            Secrets = await secretsService.FindAllServiceSecrets(name, cancellationToken),
             Github = await repositoryService.FindRepositoryById(name, cancellationToken)
         };
         

@@ -19,7 +19,7 @@ public static class TenantSecretsEndpoint
         [FromServices] IPendingSecretsService pendingSecretsService,
         string environment, string service, CancellationToken cancellationToken)
     {
-        var secrets = await secretsService.FindSecrets(environment, service, cancellationToken);
+        var secrets = await secretsService.FindServiceSecretsForEnvironment(environment, service, cancellationToken);
         if (secrets == null) return Results.NotFound(new ApiError("No secrets found"));
 
         var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
@@ -28,7 +28,7 @@ public static class TenantSecretsEndpoint
         var exceptionMessage =
             await pendingSecretsService.PullExceptionMessage(environment, service, cancellationToken);
 
-        pendingSecretKeys?.Sort();
+        pendingSecretKeys.Sort();
         secrets.Keys.Sort();
 
         return Results.Ok( new TenantSecretsResponse(
@@ -45,7 +45,7 @@ public static class TenantSecretsEndpoint
     private static async Task<IResult> FindAllTenantSecrets(
         [FromServices] ISecretsService secretsService, string service, CancellationToken cancellationToken)
     {
-        var allSecrets = await secretsService.FindAllSecrets(service, cancellationToken);
+        var allSecrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
         return !allSecrets.Any() ?  Results.NotFound(new ApiError("No secrets found")) : Results.Ok(allSecrets);
     }
 

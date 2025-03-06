@@ -8,9 +8,15 @@ public interface ISecretsService
 {
     public Task UpdateSecrets(TenantSecrets secret, CancellationToken cancellationToken);
     public Task UpdateSecrets(List<TenantSecrets> secrets, CancellationToken cancellationToken);
-    public Task<TenantSecrets?> FindSecrets(string environment, string service, CancellationToken cancellationToken);
+    public Task DeleteSecrets(List<TenantSecrets> secrets, CancellationToken cancellationToken);
 
-    public Task<Dictionary<string, TenantSecretKeys>> FindAllSecrets(string service,
+    public Task<TenantSecrets?> FindServiceSecretsForEnvironment(string environment, string service,
+        CancellationToken cancellationToken);
+
+    public Task<Dictionary<string, TenantSecretKeys>> FindAllServiceSecrets(string service,
+        CancellationToken cancellationToken);
+
+    public Task<List<TenantSecrets>> FindAllSecretsForEnvironment(string environment,
         CancellationToken cancellationToken);
 
     public Task AddSecretKey(string environment, string service, string secretKey, CancellationToken cancellationToken);
@@ -23,14 +29,14 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
     {
     }
 
-    public async Task<TenantSecrets?> FindSecrets(string environment, string service,
+    public async Task<TenantSecrets?> FindServiceSecretsForEnvironment(string environment, string service,
         CancellationToken cancellationToken)
     {
         return await Collection.Find(t => t.Service == service && t.Environment == environment)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<Dictionary<string, TenantSecretKeys>> FindAllSecrets(string service,
+    public async Task<Dictionary<string, TenantSecretKeys>> FindAllServiceSecrets(string service,
         CancellationToken cancellationToken)
     {
         var allServiceSecrets = await Collection.Find(t => t.Service == service)
@@ -45,6 +51,14 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
                     tenantSecret.Keys.Sort();
                     return tenantSecret.AsTenantSecretKeys();
                 });
+    }
+
+    public async Task<List<TenantSecrets>> FindAllSecretsForEnvironment(string environment,
+        CancellationToken cancellationToken)
+    {
+        return await Collection.Find(t => t.Environment == environment)
+            .ToListAsync(cancellationToken);
+
     }
 
     public async Task UpdateSecrets(TenantSecrets secret, CancellationToken cancellationToken)
@@ -72,6 +86,13 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
         if (updateSecretModels.Any())
             await Collection.BulkWriteAsync(updateSecretModels, new BulkWriteOptions(), cancellationToken);
     }
+    
+    public async Task DeleteSecrets(List<TenantSecrets> secrets, CancellationToken cancellationToken)
+    {
+        var filter = Builders<TenantSecrets>.Filter.In("_id", secrets.Select(v => v.Id));
+        await Collection.DeleteManyAsync(filter, cancellationToken);
+    }
+
 
     public async Task AddSecretKey(string environment, string service, string secretKey,
         CancellationToken cancellationToken

@@ -130,7 +130,7 @@ public static class DeploymentsEndpointV2
         var deployment = DeploymentV2.FromRequest(requestedDeployment);
         
         // Record what secrets the service has
-        var secrets = await secretsService.FindSecrets(deployment.Environment, deployment.Service, cancellationToken);
+        var secrets = await secretsService.FindServiceSecretsForEnvironment(deployment.Environment, deployment.Service, cancellationToken);
         if (secrets != null)
         {
             deployment.Secrets = secrets.AsTenantSecretKeys();
