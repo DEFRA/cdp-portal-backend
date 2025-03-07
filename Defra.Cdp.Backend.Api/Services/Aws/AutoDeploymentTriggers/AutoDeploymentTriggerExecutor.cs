@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
@@ -19,6 +20,7 @@ public class AutoDeploymentTriggerExecutor(
     IAutoDeploymentTriggerService autoDeploymentTriggerService,
     IDeploymentsServiceV2 deploymentsService,
     SelfServiceOpsClient selfServiceOpsClient,
+    IAppConfigVersionsService appConfigVersionsService,
     ILogger<AutoDeploymentTriggerExecutor> logger
 ) : IAutoDeploymentTriggerExecutor
 {
@@ -28,18 +30,25 @@ public class AutoDeploymentTriggerExecutor(
 
         if (trigger != null)
         {
-            logger.LogInformation("Auto-deployment trigger found for {repositoryName} to {Environments}", repositoryName, trigger.Environments);
+            logger.LogInformation("Auto-deployment trigger found for {repositoryName} to {Environments}",
+                repositoryName, trigger.Environments);
 
             foreach (var environment in trigger.Environments)
             {
                 var deploymentSettings =
                     await deploymentsService.FindDeploymentSettings(repositoryName, environment, cancellationToken);
-
                 if (deploymentSettings == null)
                 {
                     logger.LogError(
                         "Could not find deployment settings for repository {repositoryName} in environment {environment}",
                         repositoryName, environment);
+                    continue;
+                }
+
+                var configVersion = await appConfigVersionsService.FindLatestAppConfigVersion(environment, cancellationToken);
+                if (configVersion == null)
+                {
+                    logger.LogError("Could not find latest config version for environment: {environment}", environment);
                     continue;
                 }
 
@@ -49,10 +58,11 @@ public class AutoDeploymentTriggerExecutor(
 
                 var userDetails = JsonSerializer.Deserialize<UserDetails>(" { \"id\": \"" +
                                                                           AutoDeploymentConstants.AutoDeploymentId
-                                                                          + "\", \"displayName\": \"Auto-deployment\" } ")!;
+                                                                          + "\", \"displayName\": \"Auto-deployment\" } ")
+                    !;
 
                 await selfServiceOpsClient.AutoDeployService(repositoryName, imageTag, environment, userDetails,
-                    deploymentSettings, cancellationToken);
+                    deploymentSettings, configVersion.CommitSha, cancellationToken);
             }
         }
     }
