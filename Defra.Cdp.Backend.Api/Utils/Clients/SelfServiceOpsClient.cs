@@ -31,6 +31,7 @@ public class SelfServiceOpsClient
     public async Task AutoDeployService(string imageName, string version, string environment,
         UserDetails user,
         DeploymentSettings deploymentSettings,
+        string configVersion,
         CancellationToken cancellationToken)
     {
         var body = new
@@ -41,7 +42,8 @@ public class SelfServiceOpsClient
             user,
             cpu = deploymentSettings.Cpu,
             memory = deploymentSettings.Memory,
-            instanceCount = deploymentSettings.InstanceCount
+            instanceCount = deploymentSettings.InstanceCount,
+            configVersion
         };
         var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var result = await _client.PostAsync(_baseUrl + "/auto-deploy-service", payload, cancellationToken);
