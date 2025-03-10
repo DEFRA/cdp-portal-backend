@@ -157,7 +157,6 @@ public class TaskStateChangeEventHandler(
                 logger.LogInformation("trying to link {id}", artifact.ServiceName);
                 testRun = await testRunService.Link(
                     new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp), 
-                    artifact,
                     taskArn, 
                     cancellationToken);
             }

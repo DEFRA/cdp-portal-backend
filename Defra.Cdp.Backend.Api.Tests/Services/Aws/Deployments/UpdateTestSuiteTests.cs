@@ -76,7 +76,6 @@ public class UpdateTestSuiteTests
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
         _testRunService.Link(
             Arg.Any<TestRunMatchIds>(),
-            Arg.Any<DeployableArtifact>(),
             ecsEvent.Detail.TaskArn,
             Arg.Any<CancellationToken>()
         ).Returns(new TestRun
