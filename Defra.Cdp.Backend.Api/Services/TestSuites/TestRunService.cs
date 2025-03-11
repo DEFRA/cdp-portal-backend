@@ -11,7 +11,7 @@ public interface ITestRunService
     public Task<Dictionary<string, TestRun>> FindLatestTestRuns(CancellationToken cancellationToken);
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken cancellationToken);
     public Task CreateTestRun(TestRun testRun, CancellationToken cancellationToken);
-    public Task<TestRun?> Link(TestRunMatchIds ids,  DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken);
+    public Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken cancellationToken);
     public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp, List<FailureReason> failureReasons, CancellationToken cancellationToken);
     Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
@@ -64,7 +64,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
         await Collection.InsertOneAsync(testRun, new InsertOneOptions(), cancellationToken);
    }
 
-    public async Task<TestRun?> Link(TestRunMatchIds ids, DeployableArtifact artifact, string taskArn, CancellationToken cancellationToken)
+    public async Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken cancellationToken)
     {
         var fb = new FilterDefinitionBuilder<TestRun>();
 
@@ -78,8 +78,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
 
         var update = Builders<TestRun>
             .Update
-            .Set(d => d.TaskArn, taskArn)
-            .Set(d => d.Tag, artifact.Tag);
+            .Set(d => d.TaskArn, taskArn);
 
         return await Collection.FindOneAndUpdateAsync(filter, update, cancellationToken: cancellationToken);
     }
