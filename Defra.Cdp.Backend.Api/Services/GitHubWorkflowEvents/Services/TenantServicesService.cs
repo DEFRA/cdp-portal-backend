@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -16,10 +17,13 @@ public interface ITenantServicesService : IEventsPersistenceService<TenantServic
 
     public Task<List<TenantServiceRecord>> FindAllServices(string service, CancellationToken cancellationToken);
 
-   public Task Decommission(string serviceName, CancellationToken ct);
+    public Task<List<TenantServiceRecord>> FindServicesByTeam(string team, CancellationToken cancellationToken);
 }
 
-public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+public class TenantServicesService(
+    IMongoDbClientFactory connectionFactory,
+    IRepositoryService repositoryService,
+    ILoggerFactory loggerFactory)
     : MongoService<TenantServiceRecord>(connectionFactory,
         CollectionName, loggerFactory), ITenantServicesService
 {
@@ -41,16 +45,25 @@ public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILog
         var service = new CreateIndexModel<TenantServiceRecord>(
             builder.Descending(s => s.ServiceName)
         );
-        return [env, service, envServiceName];
+
+        var team = new CreateIndexModel<TenantServiceRecord>(
+            builder.Descending(s => s.Teams)
+        );
+
+        return [env, service, envServiceName, team];
     }
 
-    public async Task PersistEvent(CommonEvent<TenantServicesPayload> workflowEvent, CancellationToken cancellationToken)
+    public async Task PersistEvent(CommonEvent<TenantServicesPayload> workflowEvent,
+        CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;
         _logger.LogInformation("Persisting tenant services for environment: {Environment}", payload.Environment);
 
+        var teamsLookup = await repositoryService.TeamsLookup(cancellationToken);
         var tenantServices = payload.Services.Select(s => new TenantServiceRecord(payload.Environment, s.Name, s.Zone,
-            s.Mongo, s.Redis, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues, s.ApiEnabled, s.ApiType)).ToList();
+            s.Mongo, s.Redis, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues, s.ApiEnabled, s.ApiType,
+            teamsLookup[s.Name].FirstOrDefault([]))
+        ).ToList();
 
         var servicesInDb = await FindAllServicesInEnvironment(payload.Environment, cancellationToken);
 
@@ -118,10 +131,11 @@ public class TenantServicesService(IMongoDbClientFactory connectionFactory, ILog
             .ToListAsync(cancellationToken);
     }
 
-   public async Task Decommission(string serviceName, CancellationToken ct)
-   {
-      await Collection.DeleteManyAsync(d => d.ServiceName == serviceName, ct);
-   }
+    public async Task<List<TenantServiceRecord>> FindServicesByTeam(string team, CancellationToken cancellationToken)
+    {
+        var filter = new FilterDefinitionBuilder<TenantServiceRecord>().ElemMatch(r => r.Teams, r => r.Github == team);
+        return await Collection.Find(filter).ToListAsync(cancellationToken);
+    }
 }
 
 [BsonIgnoreExtraElements]
@@ -136,14 +150,16 @@ public record TenantServiceRecord(
     List<string>? Buckets,
     List<string>? Queues,
     bool? ApiEnabled,
-    string? ApiType)
+    string? ApiType,
+    List<RepositoryTeam>? Teams
+)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
 
-   public virtual bool Equals(TenantServiceRecord? other)
+    public virtual bool Equals(TenantServiceRecord? other)
     {
         return Environment == other?.Environment &&
                ServiceName == other.ServiceName &&
@@ -155,7 +171,8 @@ public record TenantServiceRecord(
                Buckets == other.Buckets &&
                Queues == (other.Queues) &&
                ApiEnabled == other.ApiEnabled &&
-               ApiType == other.ApiType;
+               ApiType == other.ApiType &&
+               Teams == other.Teams;
     }
 
     public override int GetHashCode()
@@ -172,6 +189,7 @@ public record TenantServiceRecord(
         hashCode.Add(Queues);
         hashCode.Add(ApiEnabled);
         hashCode.Add(ApiType);
+        hashCode.Add(Teams);
         return hashCode.ToHashCode();
     }
 }

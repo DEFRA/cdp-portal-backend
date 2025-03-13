@@ -1,3 +1,4 @@
+using System.Dynamic;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
@@ -17,7 +18,7 @@ public interface IRepositoryService
 
     Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken);
-    
+
     Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken);
 
@@ -29,6 +30,8 @@ public interface IRepositoryService
     Task<Repository?> FindRepositoryWithTopicById(CdpTopic topic, string id, CancellationToken cancellationToken);
 
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
+
+    Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken);
 }
 
 public class RepositoryService : MongoService<Repository>, IRepositoryService
@@ -101,7 +104,8 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         return repositories;
     }
 
-    public async Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates, CancellationToken cancellationToken)
+    public async Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
+        CancellationToken cancellationToken)
     {
         var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.TeamId == id);
 
@@ -168,6 +172,15 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             .ToListAsync(cancellationToken);
     }
 
+    private record ServiceAndTeams(string Service, IEnumerable<RepositoryTeam> Teams);
+
+    public async Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken)
+    {
+        var filter = Builders<Repository>.Filter.Empty;
+        var results = await Collection.Find(filter).ToCursorAsync(cancellationToken);
+        return results.ToEnumerable(cancellationToken).ToLookup(r => r.Id, r => r.Teams.ToList());
+    }
+
     private List<string> ProvideCdpTopics(CdpTopic topic)
     {
         return new List<CdpTopic> { CdpTopic.Cdp, topic }.ConvertAll<string>(t => t.ToString().ToLower());
@@ -184,14 +197,14 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
         var teamIdIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.Teams.Select(t => t.TeamId)),
             new CreateIndexOptions { Sparse = true });
 
-        return new List<CreateIndexModel<Repository>>
-        {
+        return
+        [
             createdAtIndex,
             teamsIndex,
             languageIndex,
             isTemplateIndex,
             isArchivedIndex,
             teamIdIndex
-        };
+        ];
     }
 }

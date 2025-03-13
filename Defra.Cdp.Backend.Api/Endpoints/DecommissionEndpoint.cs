@@ -24,7 +24,6 @@ public static class DecommissionEndpoint
       // Current requirement is to not delete deployments until we have a audit for deployments 
       // await deploymentsServiceV2.Decommission(serviceName, cancellationToken); 
       await testRunService.Decommission(serviceName, cancellationToken);
-      await tenantServicesService.Decommission(serviceName, cancellationToken);
       return Results.Ok();
    }
 }
