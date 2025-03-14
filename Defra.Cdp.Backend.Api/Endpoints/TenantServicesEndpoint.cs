@@ -18,7 +18,7 @@ public static class TenantServicesEndpoint
         string environment,
         CancellationToken cancellationToken)
     {
-        var result = await tenantServicesService.FindOne( new TenantServiceFilter(name: service, environment: environment), cancellationToken);
+        var result = await tenantServicesService.FindOne( new TenantServiceFilter{name = service, environment = environment}, cancellationToken);
         return result == null
             ? Results.NotFound(new ApiError("Not found"))
             : Results.Ok(new TenantServicesResponse(result));
@@ -29,7 +29,7 @@ public static class TenantServicesEndpoint
         string service,
         CancellationToken cancellationToken)
     {
-        var result = await tenantServicesService.Find( new TenantServiceFilter(name: service), cancellationToken);
+        var result = await tenantServicesService.Find( new TenantServiceFilter{name = service}, cancellationToken);
 
         if (result.Count == 0)
         {

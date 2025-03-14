@@ -63,7 +63,7 @@ public class TenantServicesService(
             teamsLookup[s.Name].FirstOrDefault([]))
         ).ToList();
 
-        var servicesInDb = await Find(new TenantServiceFilter(environment: payload.Environment), cancellationToken);
+        var servicesInDb = await Find(new TenantServiceFilter{ environment = payload.Environment }, cancellationToken);
 
         var servicesToDelete = servicesInDb.ExceptBy(tenantServices.Select(s => s.ServiceName),
             s => s.ServiceName).ToList();
@@ -120,7 +120,7 @@ public class TenantServicesService(
     }
 }
 
-public class TenantServiceFilter(string? team = null, string? environment = null, string? name = null, bool isTest = false, bool isService = false)
+public record TenantServiceFilter(string? team = null, string? environment = null, string? name = null, bool isTest = false, bool isService = false)
 {
     public FilterDefinition<TenantServiceRecord> Filter()
     {

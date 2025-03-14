@@ -27,7 +27,9 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
             , CancellationToken.None);
 
         // Create existing data
-        var resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter(name: "foo", environment: "test"), CancellationToken.None);
+        var resultFoo =
+            await tenantServicesService.FindOne(new TenantServiceFilter { name = "foo", environment = "test" },
+                CancellationToken.None);
         Assert.Equivalent(resultFoo?.Teams, _fooRepository.Teams);
 
         // Update teams in repositories service
@@ -48,7 +50,9 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
             }
             , CancellationToken.None);
 
-        var updatedResults = await tenantServicesService.FindOne(new TenantServiceFilter(name: "foo", environment: "test"), CancellationToken.None);
+        var updatedResults =
+            await tenantServicesService.FindOne(new TenantServiceFilter { name = "foo", environment = "test" },
+                CancellationToken.None);
         Assert.Equivalent(updatedResults?.Teams, updatedFooRepository.Teams);
     }
 
@@ -69,10 +73,14 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
             }
             , CancellationToken.None);
 
-        var resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter(name: "foo", environment: "test"), CancellationToken.None);
+        var resultFoo =
+            await tenantServicesService.FindOne(new TenantServiceFilter { name = "foo", environment = "test" },
+                CancellationToken.None);
         Assert.Equivalent(resultFoo?.Teams, new List<RepositoryTeam> { new("foo-team", "1234", "foo-team") });
 
-        var resultBar = await tenantServicesService.FindOne(new TenantServiceFilter(name: "bar", environment: "test"), CancellationToken.None);
+        var resultBar =
+            await tenantServicesService.FindOne(new TenantServiceFilter { name = "bar", environment = "test" },
+                CancellationToken.None);
 
         Assert.NotNull(resultBar?.Teams);
         Assert.Empty(resultBar.Teams);
@@ -93,8 +101,12 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
             }
             , CancellationToken.None);
 
-        var resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter(name: "foo", environment: "test"), CancellationToken.None);
-        var resultBar = await tenantServicesService.FindOne(new TenantServiceFilter(name: "bar", environment: "test"), CancellationToken.None);
+        var resultFoo =
+            await tenantServicesService.FindOne(new TenantServiceFilter { name = "foo", environment = "test" },
+                CancellationToken.None);
+        var resultBar =
+            await tenantServicesService.FindOne(new TenantServiceFilter { name = "bar", environment = "test" },
+                CancellationToken.None);
         Assert.NotNull(resultFoo);
         Assert.NotNull(resultBar);
 
@@ -105,13 +117,15 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
                 Payload = new() { Environment = "test", Services = [_sampleEvent.Services[0]] }
             }
             , CancellationToken.None);
-        resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter(name: "foo", environment: "test"), CancellationToken.None);
-        resultBar = await tenantServicesService.FindOne(new TenantServiceFilter(name: "bar", environment: "test"), CancellationToken.None);
+        resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter { name = "foo", environment = "test" },
+            CancellationToken.None);
+        resultBar = await tenantServicesService.FindOne(new TenantServiceFilter { name = "bar", environment = "test" },
+            CancellationToken.None);
         Assert.NotNull(resultFoo);
         Assert.Null(resultBar);
     }
 
-    
+
     [Fact]
     public async Task WillFilterResults()
     {
@@ -129,43 +143,47 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
             }
             , CancellationToken.None);
 
-        
+
         // Find By Name
-        var result = await tenantServicesService.Find(new TenantServiceFilter(name: "foo"), CancellationToken.None);
+        var result = await tenantServicesService.Find(new TenantServiceFilter { name = "foo" }, CancellationToken.None);
         Assert.Single(result);
         Assert.Equal("foo", result[0].ServiceName);
 
         // Find By Env
-        result = await tenantServicesService.Find(new TenantServiceFilter(environment: "test"), CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { environment = "test" },
+            CancellationToken.None);
         Assert.Equal(3, result.Count);
-        
-        result = await tenantServicesService.Find(new TenantServiceFilter(environment: "prod"), CancellationToken.None);
+
+        result = await tenantServicesService.Find(new TenantServiceFilter { environment = "prod" },
+            CancellationToken.None);
         Assert.Empty(result);
 
         // Find by Team
-        result = await tenantServicesService.Find(new TenantServiceFilter(team: "foo-team"), CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { team = "foo-team" },
+            CancellationToken.None);
         Assert.Equal(2, result.Count);
         Assert.Contains(result, t => t.ServiceName == "foo");
         Assert.Contains(result, t => t.ServiceName == "foo-tests");
 
         // Find by Team and name
-        result = await tenantServicesService.Find(new TenantServiceFilter(team: "foo-team", name: "foo"), CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter(team: "foo-team", name: "foo"),
+            CancellationToken.None);
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "foo");
-        
+
         // Find test suites
-        result = await tenantServicesService.Find(new TenantServiceFilter(isTest: true), CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { isTest = true }, CancellationToken.None);
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "foo-tests");
 
         // Find services suites
-        result = await tenantServicesService.Find(new TenantServiceFilter(isService: true), CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { isService = true }, CancellationToken.None);
         Assert.Equal(2, result.Count);
         Assert.Contains(result, t => t.ServiceName == "foo");
         Assert.Contains(result, t => t.ServiceName == "bar");
     }
-    
-    
+
+
     private readonly TenantServicesPayload _sampleEvent = new()
     {
         Environment = "test",
@@ -207,8 +225,8 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         IsTemplate = false,
         IsPrivate = false
     };
-    
-    
+
+
     private readonly Repository _fooTestRepository = new()
     {
         Id = "foo-tests",
