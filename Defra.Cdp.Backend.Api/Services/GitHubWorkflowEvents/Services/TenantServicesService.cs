@@ -12,12 +12,10 @@ namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 
 public interface ITenantServicesService : IEventsPersistenceService<TenantServicesPayload>
 {
-    public Task<TenantServiceRecord?> FindService(string service, string environment,
-        CancellationToken cancellationToken);
+    public Task<List<TenantServiceRecord>> Find(TenantServiceFilter filter, CancellationToken cancellationToken);
 
-    public Task<List<TenantServiceRecord>> FindAllServices(string service, CancellationToken cancellationToken);
+    public Task<TenantServiceRecord?> FindOne(TenantServiceFilter filter, CancellationToken cancellationToken);
 
-    public Task<List<TenantServiceRecord>> FindServicesByTeam(string team, CancellationToken cancellationToken);
 }
 
 public class TenantServicesService(
@@ -65,7 +63,7 @@ public class TenantServicesService(
             teamsLookup[s.Name].FirstOrDefault([]))
         ).ToList();
 
-        var servicesInDb = await FindAllServicesInEnvironment(payload.Environment, cancellationToken);
+        var servicesInDb = await Find(new TenantServiceFilter{ Environment = payload.Environment }, cancellationToken);
 
         var servicesToDelete = servicesInDb.ExceptBy(tenantServices.Select(s => s.ServiceName),
             s => s.ServiceName).ToList();
@@ -111,30 +109,49 @@ public class TenantServicesService(
         await Collection.DeleteManyAsync(filter, cancellationToken);
     }
 
-    private async Task<List<TenantServiceRecord>> FindAllServicesInEnvironment(string environment,
-        CancellationToken cancellationToken)
+    public async Task<List<TenantServiceRecord>> Find(TenantServiceFilter filter, CancellationToken cancellationToken)
     {
-        return await Collection.Find(s => s.Environment == environment)
-            .ToListAsync(cancellationToken);
+        return await Collection.Find(filter.Filter()).ToListAsync(cancellationToken);
     }
-
-    public async Task<TenantServiceRecord?> FindService(string service, string environment,
-        CancellationToken cancellationToken)
+    
+    public async Task<TenantServiceRecord?> FindOne(TenantServiceFilter filter, CancellationToken cancellationToken)
     {
-        return await Collection.Find(s => s.ServiceName == service && s.Environment == environment)
-            .SingleOrDefaultAsync(cancellationToken);
+        return await Collection.Find(filter.Filter()).FirstOrDefaultAsync(cancellationToken);
     }
+}
 
-    public async Task<List<TenantServiceRecord>> FindAllServices(string service, CancellationToken cancellationToken)
+public record TenantServiceFilter(string? Team = null, string? Environment = null, string? Name = null, bool IsTest = false, bool IsService = false)
+{
+    public FilterDefinition<TenantServiceRecord> Filter()
     {
-        return await Collection.Find(s => s.ServiceName == service)
-            .ToListAsync(cancellationToken);
-    }
+        var builder = Builders<TenantServiceRecord>.Filter;
+        var filter = builder.Empty;
+        
+        if (Team != null)
+        {
+            filter &= builder.ElemMatch(t => t.Teams, t => t.Github == Team);
+        }
 
-    public async Task<List<TenantServiceRecord>> FindServicesByTeam(string team, CancellationToken cancellationToken)
-    {
-        var filter = new FilterDefinitionBuilder<TenantServiceRecord>().ElemMatch(r => r.Teams, r => r.Github == team);
-        return await Collection.Find(filter).ToListAsync(cancellationToken);
+        if (Environment != null)
+        {
+            filter &= builder.Eq(t => t.Environment, Environment);
+        }
+
+        if (Name != null)
+        {
+            filter &= builder.Eq(t => t.ServiceName, Name);
+        }
+
+        if (IsService)
+        {
+            filter &= builder.Eq(t => t.TestSuite, null);
+        } 
+        else if (IsTest)
+        {
+            filter &= builder.Ne(t => t.TestSuite, null);
+        }
+
+        return filter;
     }
 }
 

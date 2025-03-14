@@ -29,7 +29,7 @@ public class ServiceOverviewService(
         var service = new ServiceV2
         {
             Name = name,
-            TenantService = await tenantService.FindAllServices(name, cancellationToken),
+            TenantService = await tenantService.Find(new TenantServiceFilter{Name = name}, cancellationToken),
             CreationStatus = await selfServiceOpsClient.FindStatus(name),
             Deployments = await deploymentsService.FindWhatsRunningWhere(name, cancellationToken),
             LatestBuilds = await deployableArtifactsService.FindLatestTagsForRepo(name, 6, cancellationToken),
