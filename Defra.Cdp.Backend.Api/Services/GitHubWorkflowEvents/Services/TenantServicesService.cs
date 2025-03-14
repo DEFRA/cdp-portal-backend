@@ -63,7 +63,7 @@ public class TenantServicesService(
             teamsLookup[s.Name].FirstOrDefault([]))
         ).ToList();
 
-        var servicesInDb = await Find(new TenantServiceFilter{ environment = payload.Environment }, cancellationToken);
+        var servicesInDb = await Find(new TenantServiceFilter{ Environment = payload.Environment }, cancellationToken);
 
         var servicesToDelete = servicesInDb.ExceptBy(tenantServices.Select(s => s.ServiceName),
             s => s.ServiceName).ToList();
@@ -120,33 +120,33 @@ public class TenantServicesService(
     }
 }
 
-public record TenantServiceFilter(string? team = null, string? environment = null, string? name = null, bool isTest = false, bool isService = false)
+public record TenantServiceFilter(string? Team = null, string? Environment = null, string? Name = null, bool IsTest = false, bool IsService = false)
 {
     public FilterDefinition<TenantServiceRecord> Filter()
     {
         var builder = Builders<TenantServiceRecord>.Filter;
         var filter = builder.Empty;
         
-        if (team != null)
+        if (Team != null)
         {
-            filter &= builder.ElemMatch(t => t.Teams, t => t.Github == team);
+            filter &= builder.ElemMatch(t => t.Teams, t => t.Github == Team);
         }
 
-        if (environment != null)
+        if (Environment != null)
         {
-            filter &= builder.Eq(t => t.Environment, environment);
+            filter &= builder.Eq(t => t.Environment, Environment);
         }
 
-        if (name != null)
+        if (Name != null)
         {
-            filter &= builder.Eq(t => t.ServiceName, name);
+            filter &= builder.Eq(t => t.ServiceName, Name);
         }
 
-        if (isService)
+        if (IsService)
         {
             filter &= builder.Eq(t => t.TestSuite, null);
         } 
-        else if (isTest)
+        else if (IsTest)
         {
             filter &= builder.Ne(t => t.TestSuite, null);
         }

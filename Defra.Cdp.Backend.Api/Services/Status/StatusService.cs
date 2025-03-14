@@ -24,7 +24,7 @@ public class StatusService(
         var secrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
         var github = await repositoryService.FindRepositoryById(service, cancellationToken);
         var squid = await squidProxyConfigService.FindSquidProxyConfig(service, cancellationToken);
-        var tenant = await tenantService.Find(new TenantServiceFilter{ name = service }, cancellationToken);
+        var tenant = await tenantService.Find(new TenantServiceFilter{ Name = service }, cancellationToken);
 
         var status = new Status
         {
