@@ -20,23 +20,24 @@ public static class TenantSecretsEndpoint
         string environment, string service, CancellationToken cancellationToken)
     {
         var secrets = await secretsService.FindServiceSecretsForEnvironment(environment, service, cancellationToken);
-        if (secrets == null) return Results.NotFound(new ApiError("No secrets found"));
-
         var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
+        
+        if (secrets == null && pendingSecrets == null) return Results.NotFound(new ApiError("No secrets found"));
+        
         var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? new List<string>();
 
         var exceptionMessage =
             await pendingSecretsService.PullExceptionMessage(environment, service, cancellationToken);
 
         pendingSecretKeys.Sort();
-        secrets.Keys.Sort();
+        secrets?.Keys.Sort();
 
         return Results.Ok( new TenantSecretsResponse(
-            secrets.Service,
-            secrets.Environment,
-            secrets.Keys,
-            secrets.LastChangedDate,
-            secrets.CreatedDate,
+            secrets?.Service ?? pendingSecrets.Service,
+            secrets?.Environment ?? pendingSecrets.Environment,
+            secrets?.Keys ?? pendingSecretKeys,
+            secrets?.LastChangedDate ?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
+            secrets?.CreatedDate?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
             pendingSecretKeys,
             exceptionMessage)
         );
