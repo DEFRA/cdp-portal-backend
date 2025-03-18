@@ -16,6 +16,7 @@ public interface ITenantServicesService : IEventsPersistenceService<TenantServic
 
     public Task<TenantServiceRecord?> FindOne(TenantServiceFilter filter, CancellationToken cancellationToken);
 
+    public Task RefreshTeams(CancellationToken cancellationToken);
 }
 
 public class TenantServicesService(
@@ -118,18 +119,50 @@ public class TenantServicesService(
     {
         return await Collection.Find(filter.Filter()).FirstOrDefaultAsync(cancellationToken);
     }
+    
+    public async Task RefreshTeams(CancellationToken cancellationToken)
+    {
+        var teamsLookup = await repositoryService.TeamsLookup(cancellationToken);
+
+        var updateServicesModels = teamsLookup.Select(t =>
+        {
+
+            var service = t.Key;
+            var teams = teamsLookup[t.Key].First();
+
+            var filterBuilder = Builders<TenantServiceRecord>.Filter;
+            var filter = filterBuilder.Where(tsr => tsr.ServiceName == service);
+
+            var updateBuilder = Builders<TenantServiceRecord>.Update;
+            var update = updateBuilder.Set(tsr => tsr.Teams, teams);
+
+            return new UpdateManyModel<TenantServiceRecord>(filter, update) { IsUpsert = false };
+        });
+
+        await Collection.BulkWriteAsync(updateServicesModels.ToList(), new BulkWriteOptions(), cancellationToken);
+    }
 }
 
-public record TenantServiceFilter(string? Team = null, string? Environment = null, string? Name = null, bool IsTest = false, bool IsService = false)
+public record TenantServiceFilter(string? Team = null, List<string>? TeamIds = null, string? Environment = null, string? Name = null, bool IsTest = false, bool IsService = false)
 {
     public FilterDefinition<TenantServiceRecord> Filter()
     {
         var builder = Builders<TenantServiceRecord>.Filter;
         var filter = builder.Empty;
         
+        // GitHub Team
         if (Team != null)
         {
             filter &= builder.ElemMatch(t => t.Teams, t => t.Github == Team);
+        }
+        
+        // AAD Ids
+        if (TeamIds != null)
+        {
+            filter &= builder.ElemMatch<RepositoryTeam>(
+                t => t.Teams,
+                Builders<RepositoryTeam>.Filter.In(rt => rt.TeamId, TeamIds)
+            );
         }
 
         if (Environment != null)
