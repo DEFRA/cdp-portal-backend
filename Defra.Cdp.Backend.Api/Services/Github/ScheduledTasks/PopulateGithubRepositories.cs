@@ -1,6 +1,7 @@
 using System.Text;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
 using Quartz;
@@ -26,6 +27,7 @@ public sealed class PopulateGithubRepositories(
     MongoLock mongoLock,
     IHttpClientFactory clientFactory,
     IUserServiceFetcher userServiceFetcher,
+    ITenantServicesService tenantServicesService,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues)
     : IJob
@@ -51,6 +53,9 @@ public sealed class PopulateGithubRepositories(
                 headerPropagationValues.Headers ??=
                     new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
                 await RepopulateGithubRepos(context);
+                
+                // Ensure tenant service team data is up-to-date
+                await tenantServicesService.RefreshTeams(context.CancellationToken);
             }
             catch (Exception e)
             {
@@ -110,6 +115,7 @@ public sealed class PopulateGithubRepositories(
         await repositoryService.UpsertMany(repositories, cancellationToken);
         await repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
         _logger.LogInformation("Successfully repopulated repositories and team information");
+
     }
 
     public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result,
