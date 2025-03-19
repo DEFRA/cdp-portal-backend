@@ -13,9 +13,7 @@ public static class TestSuiteEndpoint
         app.MapGet("test-run/{runId}", FindTestRun);
         app.MapGet("test-run", FindTestRunsForSuite); // filter by test e.g. /test-run?name=foo-tests 
         app.MapPost("test-run", CreateTestRun);
-        app.MapGet("test-suite", FindAllTestSuites);
         app.MapGet("test-suites", FindAllTestSuites);
-        app.MapGet("test-suite/{name}", FindTestSuites);
         app.MapGet("test-suites/{name}", FindTestSuites);
         return app;
     }
