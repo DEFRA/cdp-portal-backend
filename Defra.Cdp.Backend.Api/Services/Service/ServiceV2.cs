@@ -12,7 +12,7 @@ public class ServiceV2
     public List<VanityUrlRecord> VanityUrls { get; set; } = [];
     public List<RepositoryTeam> Teams { get; set; } = [];
     public List<TagInfo> LatestBuilds { get; set; } = [];
-    public List<DeploymentV2> Deployments { get; set; } = [];
+    public List<Deployment> Deployments { get; set; } = [];
     public List<TenantServiceRecord>? TenantService { get; set; }
     public List<ServiceUrl> Metrics { get; set; } = [];
     public List<ServiceUrl> Logs { get; set; }  = [];

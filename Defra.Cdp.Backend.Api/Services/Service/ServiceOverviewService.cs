@@ -20,7 +20,7 @@ public class ServiceOverviewService(
     IRepositoryService repositoryService,
     ISecretsService secretsService,
     IVanityUrlsService vanityUrlsService,
-    IDeploymentsServiceV2 deploymentsService,
+    IDeploymentsService deploymentsService,
     SelfServiceOpsClient selfServiceOpsClient
 ) : IServiceOverviewService
 {

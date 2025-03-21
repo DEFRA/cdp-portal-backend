@@ -6,7 +6,7 @@ using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public class DeploymentV2
+public class Deployment
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
@@ -48,9 +48,9 @@ public class DeploymentV2
 
     public List<FailureReason> FailureReasons = [];
     
-    public static DeploymentV2 FromRequest(RequestedDeployment req)
+    public static Deployment FromRequest(RequestedDeployment req)
     {
-        return new DeploymentV2
+        return new Deployment
         {
             CdpDeploymentId = req.DeploymentId,
             Environment = req.Environment,
@@ -67,7 +67,7 @@ public class DeploymentV2
         };
     }
     
-    public static DeploymentV2? FromLambdaMessage(EcsDeploymentLambdaEvent e)
+    public static Deployment? FromLambdaMessage(EcsDeploymentLambdaEvent e)
     {
         var req = e.Request;
         if (req == null || e.CdpDeploymentId == null)
@@ -77,7 +77,7 @@ public class DeploymentV2
         
         var commitSha = req.EnvFiles.Select( env => ExtractCommitSha(env.Value)).Where(sha => sha != null).FirstOrDefault("");
         
-        return new DeploymentV2
+        return new Deployment
         {
             CdpDeploymentId = e.CdpDeploymentId,
             Environment = req.Environment,

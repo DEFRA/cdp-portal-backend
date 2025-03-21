@@ -15,7 +15,7 @@ public class EcsEventListener(
     IOptions<EcsEventListenerOptions> config,
     IEcsEventsService ecsEventsService,
     TaskStateChangeEventHandler taskStateChangeEventHandler,
-    LambdaMessageHandlerV2 lambdaMessageHandlerV2,
+    LambdaMessageHandler lambdaMessageHandler,
     DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
     DeploymentTriggerEventHandler deploymentTriggerEventHandler,
     ILogger<EcsEventListener> logger)
@@ -68,7 +68,7 @@ public class EcsEventListener(
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
                 }
                 
-                await lambdaMessageHandlerV2.Handle(id, ecsLambdaEvent, cancellationToken);
+                await lambdaMessageHandler.Handle(id, ecsLambdaEvent, cancellationToken);
                 break;
             case "ECS Deployment State Change":
                 var ecsDeploymentEvent = JsonSerializer.Deserialize<EcsDeploymentStateChangeEvent>(messageBody);

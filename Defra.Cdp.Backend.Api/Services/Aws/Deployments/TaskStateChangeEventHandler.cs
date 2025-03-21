@@ -12,7 +12,7 @@ namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 public class TaskStateChangeEventHandler(
     IOptions<EcsEventListenerOptions> config,
     IEnvironmentLookup environmentLookup,
-    IDeploymentsServiceV2 deploymentsService,
+    IDeploymentsService deploymentsService,
     IDeployableArtifactsService deployableArtifactsService,
     ITestRunService testRunService,
     ILogger<TaskStateChangeEventHandler> logger)

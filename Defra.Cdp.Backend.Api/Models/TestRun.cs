@@ -74,7 +74,7 @@ public sealed class TestRun
     [property: JsonPropertyName("configVersion")]
     public string? ConfigVersion { get; set; }
     
-   public static TestRun FromDeployment(DeploymentV2 deployment, string testSuite)
+   public static TestRun FromDeployment(Deployment deployment, string testSuite)
    {
       return new TestRun
       {

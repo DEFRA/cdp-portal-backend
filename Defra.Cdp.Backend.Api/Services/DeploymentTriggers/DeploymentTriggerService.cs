@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 
 public interface IDeploymentTriggerService
 {
-    public Task<List<DeploymentTrigger>> FindTriggersForDeployment(DeploymentV2 deployment,
+    public Task<List<DeploymentTrigger>> FindTriggersForDeployment(Deployment deployment,
         CancellationToken cancellationToken);
 }
 
@@ -26,7 +26,7 @@ public class DeploymentTriggerService(
         return [repositoryIndex, testSuiteIndex];
     }
 
-    public async Task<List<DeploymentTrigger>> FindTriggersForDeployment(DeploymentV2 deployment,
+    public async Task<List<DeploymentTrigger>> FindTriggersForDeployment(Deployment deployment,
         CancellationToken cancellationToken)
     {
         return await Collection.Find(t =>

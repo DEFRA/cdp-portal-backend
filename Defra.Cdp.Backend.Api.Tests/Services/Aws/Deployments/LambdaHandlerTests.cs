@@ -11,8 +11,8 @@ public class LambdaHandlerTests
     [Fact]
     public async Task TestLambdaHandlerLinksExistingDeployment()
     {
-        var service = Substitute.For<IDeploymentsServiceV2>();
-        var handler = new LambdaMessageHandlerV2(service, new NullLogger<LambdaMessageHandlerV2>());
+        var service = Substitute.For<IDeploymentsService>();
+        var handler = new LambdaMessageHandler(service, new NullLogger<LambdaMessageHandler>());
         
         
         var lambdaEvent = new EcsDeploymentLambdaEvent(
@@ -33,7 +33,7 @@ public class LambdaHandlerTests
         );
    
         // setup mocks
-        var lookupResult = Task.FromResult<DeploymentV2?>(null); 
+        var lookupResult = Task.FromResult<Deployment?>(null); 
         service.FindDeploymentByLambdaId(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(lookupResult);
         service.LinkDeployment(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -50,8 +50,8 @@ public class LambdaHandlerTests
     [Fact]
     public async Task TestLambdaHandlerNotUpdateAnExistingLink()
     {
-        var service = Substitute.For<IDeploymentsServiceV2>();
-        var handler = new LambdaMessageHandlerV2(service, new NullLogger<LambdaMessageHandlerV2>());
+        var service = Substitute.For<IDeploymentsService>();
+        var handler = new LambdaMessageHandler(service, new NullLogger<LambdaMessageHandler>());
         
         var lambdaEvent = new EcsDeploymentLambdaEvent(
             "ECS Lambda Deployment Created",
@@ -71,7 +71,7 @@ public class LambdaHandlerTests
         );
    
         // setup mocks
-        var lookupResult = Task.FromResult<DeploymentV2?>(new DeploymentV2()); 
+        var lookupResult = Task.FromResult<Deployment?>(new Deployment()); 
         service.FindDeploymentByLambdaId(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(lookupResult);
         service.LinkDeployment(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -90,8 +90,8 @@ public class LambdaHandlerTests
     {
         // This would happen when the deployment originated from a different deployment of the portal
         
-        var service = Substitute.For<IDeploymentsServiceV2>();
-        var handler = new LambdaMessageHandlerV2(service, new NullLogger<LambdaMessageHandlerV2>());
+        var service = Substitute.For<IDeploymentsService>();
+        var handler = new LambdaMessageHandler(service, new NullLogger<LambdaMessageHandler>());
         
         var lambdaEvent = new EcsDeploymentLambdaEvent(
             "ECS Lambda Deployment Created",
@@ -111,14 +111,14 @@ public class LambdaHandlerTests
         );
    
         // setup mocks
-        var lookupResult = Task.FromResult<DeploymentV2?>(null); 
+        var lookupResult = Task.FromResult<Deployment?>(null); 
         service.FindDeploymentByLambdaId(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(lookupResult);
         
         // fail linking as there's no existing deployment
         service.LinkDeployment(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
 
-        service.RegisterDeployment(Arg.Any<DeploymentV2>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        service.RegisterDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         
         service.UpdateDeploymentStatus(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
             Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
@@ -127,7 +127,7 @@ public class LambdaHandlerTests
 
         await service.Received().FindDeploymentByLambdaId("ecs-svc/5730707953135730843", Arg.Any<CancellationToken>());
         await service.Received().LinkDeployment("12345678", "ecs-svc/5730707953135730843", Arg.Any<CancellationToken>());
-        await service.Received().RegisterDeployment(Arg.Any<DeploymentV2>(), Arg.Any<CancellationToken>());
+        await service.Received().RegisterDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
         await service.Received().UpdateDeploymentStatus("ecs-svc/5730707953135730843", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 }
