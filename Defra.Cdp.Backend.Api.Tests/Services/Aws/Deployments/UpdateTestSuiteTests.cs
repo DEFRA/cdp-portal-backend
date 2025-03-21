@@ -17,7 +17,7 @@ public class UpdateTestSuiteTests
 
     private readonly OptionsWrapper<EcsEventListenerOptions> _config = new(new EcsEventListenerOptions());
     private readonly IDeployableArtifactsService _artifactsService = Substitute.For<IDeployableArtifactsService>();
-    private readonly IDeploymentsServiceV2 _deploymentsService = Substitute.For<IDeploymentsServiceV2>();
+    private readonly IDeploymentsService _deploymentsService = Substitute.For<IDeploymentsService>();
     private readonly ITestRunService _testRunService = Substitute.For<ITestRunService>();
     
     [Fact] 

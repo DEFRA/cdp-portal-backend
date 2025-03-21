@@ -3,15 +3,15 @@ using Defra.Cdp.Backend.Api.Services.Deployments;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
-public class LambdaMessageHandlerV2
+public class LambdaMessageHandler
 {
-    private readonly IDeploymentsServiceV2 _deploymentsServiceV2;
-    private readonly ILogger<LambdaMessageHandlerV2> _logger;
+    private readonly IDeploymentsService _deploymentsService;
+    private readonly ILogger<LambdaMessageHandler> _logger;
 
-    public LambdaMessageHandlerV2(IDeploymentsServiceV2 deploymentsServiceV2, ILogger<LambdaMessageHandlerV2> logger)
+    public LambdaMessageHandler(IDeploymentsService deploymentsService, ILogger<LambdaMessageHandler> logger)
     {
 
-        _deploymentsServiceV2 = deploymentsServiceV2;
+        _deploymentsService = deploymentsService;
         _logger = logger;
     }
         
@@ -34,20 +34,20 @@ public class LambdaMessageHandlerV2
         }
 
         // Link CDP id to ECS id if needed
-        var alreadyLinked = await _deploymentsServiceV2.FindDeploymentByLambdaId(lambdaId, cancellationToken) != null;
+        var alreadyLinked = await _deploymentsService.FindDeploymentByLambdaId(lambdaId, cancellationToken) != null;
         if (!alreadyLinked)
         {
-            var linked = await _deploymentsServiceV2.LinkDeployment(cdpDeploymentId, lambdaId, cancellationToken);
+            var linked = await _deploymentsService.LinkDeployment(cdpDeploymentId, lambdaId, cancellationToken);
             if (!linked)
             {
                 // If linking fails it's likely the deployment came from a different instance of portal
                 // Use the original request, if present to generate the missing deployment record.
-                var deployment = DeploymentV2.FromLambdaMessage(ecsDeploymentLambdaEvent);
+                var deployment = Deployment.FromLambdaMessage(ecsDeploymentLambdaEvent);
                 if (deployment != null)
                 {
                     // cdp & ecs id's are already present so no need to re-link
                     _logger.LogInformation("Creating deployment record for {cdpDeploymentId} linked to {lamdaId}. This deployment was not found in the database, it likely originated from a different portal.", cdpDeploymentId, lambdaId);
-                    await _deploymentsServiceV2.RegisterDeployment(deployment, cancellationToken);
+                    await _deploymentsService.RegisterDeployment(deployment, cancellationToken);
                 }
                 else
                 {
@@ -64,7 +64,7 @@ public class LambdaMessageHandlerV2
         var reason = ecsDeploymentLambdaEvent.Detail.Reason;
         if (eventName != null && reason != null)
         {
-            await _deploymentsServiceV2.UpdateDeploymentStatus(lambdaId, eventName, reason, cancellationToken);
+            await _deploymentsService.UpdateDeploymentStatus(lambdaId, eventName, reason, cancellationToken);
         }
 
         _logger.LogInformation("Successfully linked requested deployed {cdpDeploymentId} to {lambdaId}", cdpDeploymentId, lambdaId);

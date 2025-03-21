@@ -15,14 +15,12 @@ public static class DecommissionEndpoint
 
     static async Task<IResult> DecommissionService(
         [FromServices] IDeployableArtifactsService deployableArtifactsService,
-        [FromServices] IDeploymentsServiceV2 deploymentsServiceV2,
+        [FromServices] IDeploymentsService deploymentsService,
         [FromServices] ITestRunService testRunService,
         [FromServices] ITenantServicesService tenantServicesService,
          String serviceName, CancellationToken cancellationToken)
    {
       await deployableArtifactsService.Decommission(serviceName, cancellationToken);
-      // Current requirement is to not delete deployments until we have a audit for deployments 
-      // await deploymentsServiceV2.Decommission(serviceName, cancellationToken); 
       await testRunService.Decommission(serviceName, cancellationToken);
       return Results.Ok();
    }

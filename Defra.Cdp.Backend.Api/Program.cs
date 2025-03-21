@@ -157,7 +157,7 @@ builder.Services.AddQuartzHostedService(options =>
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
-builder.Services.AddSingleton<IDeploymentsServiceV2, DeploymentsServiceV2>();
+builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IUndeploymentsService, UndeploymentsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
@@ -190,7 +190,7 @@ builder.Services.AddTransient<ProxyHttpMessageHandler>();
 // Deployment Event Handlers
 builder.Services.AddSingleton<TaskStateChangeEventHandler>();
 builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
-builder.Services.AddSingleton<LambdaMessageHandlerV2>();
+builder.Services.AddSingleton<LambdaMessageHandler>();
 
 // Deployment Trigger Event Handlers
 builder.Services.AddSingleton<DeploymentTriggerEventHandler>();
@@ -250,7 +250,7 @@ app.MapApiGatewaysEndpoint();
 app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
     .CreateLogger(typeof(ArtifactsEndpoint)));
 app.MapDecommissionEndpoint();
-app.MapDeploymentsEndpointV2();
+app.MapDeploymentsEndpoint();
 app.MapUndeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapTestSuiteEndpoint();

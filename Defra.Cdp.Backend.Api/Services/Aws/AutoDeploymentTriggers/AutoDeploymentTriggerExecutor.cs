@@ -18,7 +18,7 @@ public interface IAutoDeploymentTriggerExecutor
 
 public class AutoDeploymentTriggerExecutor(
     IAutoDeploymentTriggerService autoDeploymentTriggerService,
-    IDeploymentsServiceV2 deploymentsService,
+    IDeploymentsService deploymentsService,
     SelfServiceOpsClient selfServiceOpsClient,
     IAppConfigVersionsService appConfigVersionsService,
     ILogger<AutoDeploymentTriggerExecutor> logger

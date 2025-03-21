@@ -4,12 +4,12 @@ using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 namespace Defra.Cdp.Backend.Api.Tests.Models;
 using static DeploymentStatus;
 
-public class DeploymentV2Tests
+public class DeploymentTests
 {
     [Fact]
     public void TestTrimInstances()
     {
-        var deployment = new DeploymentV2
+        var deployment = new Deployment
         {
             InstanceCount = 1
         };
@@ -30,7 +30,7 @@ public class DeploymentV2Tests
     [Fact]
     public void TestTrimInstancesWhenNoneShouldBeRemoved()
     {
-        var deployment = new DeploymentV2
+        var deployment = new Deployment
         {
             InstanceCount = 1
         };
@@ -51,7 +51,7 @@ public class DeploymentV2Tests
     {
         var input =
             "arn:aws:s3:::cdp-management-service-configs/e695d47d5d5a9bd9519b0b4c412c79f052d2c35a/global/global_fixed.env";
-        var result = DeploymentV2.ExtractCommitSha(input);
+        var result = Deployment.ExtractCommitSha(input);
         
         Assert.Equal("e695d47d5d5a9bd9519b0b4c412c79f052d2c35a", result);
     }
@@ -61,7 +61,7 @@ public class DeploymentV2Tests
     {
         var input =
             "arn:aws:s3:::cdp-management-service-configs/global/global_fixed.env";
-        var result = DeploymentV2.ExtractCommitSha(input);
+        var result = Deployment.ExtractCommitSha(input);
         
         Assert.Null(result);
     }
@@ -86,7 +86,7 @@ public class DeploymentV2Tests
             )
         );
 
-        var deployment = DeploymentV2.FromLambdaMessage(lambda);
+        var deployment = Deployment.FromLambdaMessage(lambda);
         Assert.NotNull(deployment);
         Assert.Equal(1, deployment.InstanceCount);
         Assert.Equal("12345678", deployment.CdpDeploymentId);

@@ -45,7 +45,7 @@ public class DeploymentStatus
         };
     }
 
-    public static bool IsUnstable(DeploymentV2 d)
+    public static bool IsUnstable(Deployment d)
     {
         // No extra instances means its fine
         if (d.Instances.Count <= d.InstanceCount) return false;
@@ -73,7 +73,7 @@ public class DeploymentStatus
         return alive > 0 && dead >= s_UnstableThreshold;
     }
 
-    public static string CalculateOverallStatus(DeploymentV2 d)
+    public static string CalculateOverallStatus(Deployment d)
     {
         // Undeployments will never have any more events
         if (d.InstanceCount == 0)

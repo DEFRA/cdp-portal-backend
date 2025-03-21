@@ -6,7 +6,7 @@ using Defra.Cdp.Backend.Api.Utils.Clients;
 namespace Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 
 public class DeploymentTriggerEventHandler(
-    IDeploymentsServiceV2 deploymentsService,
+    IDeploymentsService deploymentsService,
     IDeploymentTriggerService deploymentTriggerService,
     SelfServiceOpsClient selfServiceOpsClient,
     ILogger<DeploymentTriggerEventHandler> logger)

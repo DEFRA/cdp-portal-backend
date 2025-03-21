@@ -7,23 +7,22 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
-public static class DeploymentsEndpointV2
+public static class DeploymentsEndpoint
 {
-    public static void MapDeploymentsEndpointV2(this IEndpointRouteBuilder app)
+    public static void MapDeploymentsEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/v2/deployments", FindLatestDeployments);
-        app.MapGet("/v2/deployments/{deploymentId}", FindDeployments);
-        app.MapGet("/v2/deployments/filters/", GetDeploymentsFilters);
-        app.MapGet("/v2/whats-running-where", WhatsRunningWhere);
-        app.MapGet("/v2/whats-running-where/{service}", WhatsRunningWhereForService);
-        app.MapGet("/v2/whats-running-where/filters", GetWhatsRunningWhereFilters);
-        app.MapPost("/v2/deployments", RegisterDeployment);
-        app.MapPost("/deployments", RegisterDeployment); // fallback while we migrate self-service-ops off v1
-        app.MapGet("/v2/deployment-config/{service}/{environment}", DeploymentConfig);
+        app.MapGet("/deployments", FindLatestDeployments);
+        app.MapGet("/deployments/{deploymentId}", FindDeployments);
+        app.MapGet("/deployments/filters/", GetDeploymentsFilters);
+        app.MapGet("/whats-running-where", WhatsRunningWhere);
+        app.MapGet("/whats-running-where/{service}", WhatsRunningWhereForService);
+        app.MapGet("/whats-running-where/filters", GetWhatsRunningWhereFilters);
+        app.MapPost("/deployments", RegisterDeployment);
+        app.MapGet("/deployment-settings/{service}/{environment}", FindDeploymentSettings);
     }
 
-    // GET /v2/deployments or with query params GET /v2/deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
-    private static async Task<IResult> FindLatestDeployments(IDeploymentsServiceV2 deploymentsService,
+    // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
+    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
         [FromQuery(Name = "favouriteTeamIds")] string[]? favouriteTeamIds,
         [FromQuery(Name = "environment")] string? environment,
         [FromQuery(Name = "service")] string? service,
@@ -43,16 +42,16 @@ public static class DeploymentsEndpointV2
             status,
             team,
             offset ?? 0,
-            page ?? DeploymentsServiceV2.DefaultPage,
-            size ?? DeploymentsServiceV2.DefaultPageSize,
+            page ?? DeploymentsService.DefaultPage,
+            size ?? DeploymentsService.DefaultPageSize,
             cancellationToken
         );
         return Results.Ok(deploymentsPage);
     }
 
-    // GET /v2/deployments/filters
+    // GET /deployments/filters
     private static async Task<IResult> GetDeploymentsFilters(
-        IDeploymentsServiceV2 deploymentsService,
+        IDeploymentsService deploymentsService,
         IUserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)
     {
@@ -66,7 +65,7 @@ public static class DeploymentsEndpointV2
     }
 
     // Get /deployments/{deploymentId}
-    private static async Task<IResult> FindDeployments(IDeploymentsServiceV2 deploymentsService, string deploymentId,
+    private static async Task<IResult> FindDeployments(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
@@ -77,8 +76,8 @@ public static class DeploymentsEndpointV2
         return Results.Ok(deployment);
     }
 
-    // GET /v2/whats-running-where or with query params GET /v2/whats-running-where?environments=dev&service=forms-runner&status=running
-    private static async Task<IResult> WhatsRunningWhere(IDeploymentsServiceV2 deploymentsService,
+    // GET /whats-running-where or with query params GET /whats-running-where?environments=dev&service=forms-runner&status=running
+    private static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
         [FromQuery(Name = "environments")] string[]? environments,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "team")] string? team,
@@ -91,17 +90,17 @@ public static class DeploymentsEndpointV2
         return Results.Ok(deployments);
     }
 
-    // GET /v2/whats-running-where/{service}
-    private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsServiceV2 deploymentsService,
+    // GET /whats-running-where/{service}
+    private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
         return Results.Ok(deployments);
     }
 
-    // GET /v2/whats-running-where/filters
+    // GET /whats-running-where/filters
     private static async Task<IResult> GetWhatsRunningWhereFilters(
-        IDeploymentsServiceV2 deploymentsService,
+        IDeploymentsService deploymentsService,
         IUserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)
     {
@@ -114,7 +113,7 @@ public static class DeploymentsEndpointV2
     }
 
     private static async Task<IResult> RegisterDeployment(
-        IDeploymentsServiceV2 deploymentsServiceV2,
+        IDeploymentsService deploymentsService,
         ISecretsService secretsService,
         IValidator<RequestedDeployment> validator,
         RequestedDeployment requestedDeployment,
@@ -127,7 +126,7 @@ public static class DeploymentsEndpointV2
         var logger = loggerFactory.CreateLogger("RegisterDeployment");
         logger.LogInformation("Registering deployment {DeploymentId}", requestedDeployment.DeploymentId);
 
-        var deployment = DeploymentV2.FromRequest(requestedDeployment);
+        var deployment = Deployment.FromRequest(requestedDeployment);
         
         // Record what secrets the service has
         var secrets = await secretsService.FindServiceSecretsForEnvironment(deployment.Environment, deployment.Service, cancellationToken);
@@ -136,12 +135,12 @@ public static class DeploymentsEndpointV2
             deployment.Secrets = secrets.AsTenantSecretKeys();
         }
         
-        await deploymentsServiceV2.RegisterDeployment(deployment, cancellationToken);
+        await deploymentsService.RegisterDeployment(deployment, cancellationToken);
         return Results.Ok();
     }
 
-    private static async Task<IResult> DeploymentConfig(
-        IDeploymentsServiceV2 deploymentsService,
+    private static async Task<IResult> FindDeploymentSettings(
+        IDeploymentsService deploymentsService,
         string service,
         string environment,
         CancellationToken cancellationToken)

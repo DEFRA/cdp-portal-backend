@@ -52,11 +52,11 @@ public class TaskStateChangeEventHandlerTests
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
         
         var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
-        var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
+        var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
 
         deploymentsService.FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>())
-            .Returns(new DeploymentV2());
+            .Returns(new Deployment());
         
         var handler = new TaskStateChangeEventHandler(config, 
             new MockEnvironmentLookup(),
@@ -69,7 +69,7 @@ public class TaskStateChangeEventHandlerTests
         
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.DidNotReceiveWithAnyArgs().FindDeploymentByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await deploymentsService.Received().UpdateDeployment(Arg.Any<DeploymentV2>(), Arg.Any<CancellationToken>());
+        await deploymentsService.Received().UpdateDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
     
     [Fact]
@@ -79,11 +79,11 @@ public class TaskStateChangeEventHandlerTests
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
         
         var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
-        var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
+        var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
 
         deploymentsService.FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>()).ReturnsNull();
-        deploymentsService.FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>()).Returns(new DeploymentV2());
+        deploymentsService.FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>()).Returns(new Deployment());
         
         
         var handler = new TaskStateChangeEventHandler(config, 
@@ -97,7 +97,7 @@ public class TaskStateChangeEventHandlerTests
         
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.Received().FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>());
-        await deploymentsService.Received().UpdateDeployment(Arg.Any<DeploymentV2>(), Arg.Any<CancellationToken>());
+        await deploymentsService.Received().UpdateDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class TaskStateChangeEventHandlerTests
 
         var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
         var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
-        var deploymentsService = Substitute.For<IDeploymentsServiceV2>();
+        var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
 
         deploymentsService.FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>()).ReturnsNull();
@@ -126,7 +126,7 @@ public class TaskStateChangeEventHandlerTests
         
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.Received().FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>());
-        await deploymentsService.DidNotReceive().UpdateDeployment(Arg.Any<DeploymentV2>(), Arg.Any<CancellationToken>());
+        await deploymentsService.DidNotReceive().UpdateDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
 
 }

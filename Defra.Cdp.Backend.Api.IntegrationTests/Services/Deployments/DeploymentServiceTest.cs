@@ -22,7 +22,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "DeploymentServiceTest");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         await repositoryService.Upsert(new Repository
         {
@@ -38,7 +38,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
             Url = "",
         }, new CancellationToken());
         
-        var deployment = DeploymentV2.FromRequest(new RequestedDeployment
+        var deployment = Deployment.FromRequest(new RequestedDeployment
         {
             Cpu = "1024",
             Memory = "1024",
@@ -69,9 +69,9 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
-        var deployment = DeploymentV2.FromRequest(new RequestedDeployment
+        var deployment = Deployment.FromRequest(new RequestedDeployment
         {
             Cpu = "1024",
             Memory = "1024",
@@ -100,10 +100,10 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         const string lambdaId = "ecs/12345";
-        var deployment = DeploymentV2.FromRequest(new RequestedDeployment
+        var deployment = Deployment.FromRequest(new RequestedDeployment
         {
             Cpu = "1024",
             Memory = "1024",
@@ -136,7 +136,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         var result = await service.FindWhatsRunningWhere(null, null, null, null, null, new CancellationToken());
         
@@ -149,9 +149,9 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsServiceV2(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
-        var deployment1 = new DeploymentV2
+        var deployment1 = new Deployment
         {
             CdpDeploymentId = Guid.NewGuid().ToString(),
             Environment = "test",
@@ -165,7 +165,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
             },
             Status = DeploymentStatus.Stopped
         };
-        var deployment2 = new DeploymentV2
+        var deployment2 = new Deployment
         {
             CdpDeploymentId = Guid.NewGuid().ToString(),
             Environment = "test",

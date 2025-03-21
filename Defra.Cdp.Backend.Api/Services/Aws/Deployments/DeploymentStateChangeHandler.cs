@@ -7,11 +7,11 @@ namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
 public class DeploymentStateChangeEventHandler
 {
-   private readonly IDeploymentsServiceV2 _deploymentsService;
+   private readonly IDeploymentsService _deploymentsService;
    private readonly ILogger<DeploymentStateChangeEventHandler> _logger;
 
    public DeploymentStateChangeEventHandler(
-     IDeploymentsServiceV2 deploymentsService,
+     IDeploymentsService deploymentsService,
       ILogger<DeploymentStateChangeEventHandler> logger
    )
     {

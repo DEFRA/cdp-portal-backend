@@ -10,7 +10,7 @@ public class DeploymentStatusTests
     [Fact]
     public void TestUnstableDetector()
     {
-        var stable = new DeploymentV2
+        var stable = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -21,7 +21,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
-        var unstable = new DeploymentV2
+        var unstable = new Deployment
         {
             InstanceCount = 1, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -36,7 +36,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
 
-        var stopped = new DeploymentV2
+        var stopped = new Deployment
         {
             InstanceCount = 4, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -58,12 +58,12 @@ public class DeploymentStatusTests
     [Fact]
     public void TestOverallStatus()
     {
-        var deploymentRequestedBeforeDeploymentStatus = new DeploymentV2
+        var deploymentRequestedBeforeDeploymentStatus = new Deployment
         {
             InstanceCount = 2, 
             Status = Requested
         };
-        var runningWithoutDeploymentComplete = new DeploymentV2
+        var runningWithoutDeploymentComplete = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -74,7 +74,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
-        var runningWithoutDeploymentStatus = new DeploymentV2
+        var runningWithoutDeploymentStatus = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -84,7 +84,7 @@ public class DeploymentStatusTests
             }
         };
         
-        var runningWithDeploymentComplete = new DeploymentV2
+        var runningWithDeploymentComplete = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -95,7 +95,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
         
-        var pending = new DeploymentV2
+        var pending = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -106,7 +106,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
-        var stopping = new DeploymentV2
+        var stopping = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -117,7 +117,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
-        var stopped = new DeploymentV2
+        var stopped = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -128,7 +128,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
         
-        var failed = new DeploymentV2
+        var failed = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -152,7 +152,7 @@ public class DeploymentStatusTests
     [Fact]
     public void TestOverallStatusWithFailures()
     {
-        var runningWithOldFailure = new DeploymentV2
+        var runningWithOldFailure = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -164,7 +164,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
         
-        var recoveringFromCrash = new DeploymentV2
+        var recoveringFromCrash = new Deployment
         {
             InstanceCount = 1, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -175,7 +175,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
         
-        var crashLoop = new DeploymentV2
+        var crashLoop = new Deployment
         {
             InstanceCount = 1, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>
@@ -199,7 +199,7 @@ public class DeploymentStatusTests
     [Fact]
     public void TestOverallStatusWhenInstancesComeUpSlow()
     {
-        var running = new DeploymentV2
+        var running = new Deployment
         {
             InstanceCount = 2, 
             Instances = new Dictionary<string, DeploymentInstanceStatus>

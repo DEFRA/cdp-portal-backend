@@ -9,15 +9,15 @@ using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
-public interface IDeploymentsServiceV2
+public interface IDeploymentsService
 {
-    Task                RegisterDeployment(DeploymentV2 deployment, CancellationToken ct);
+    Task                RegisterDeployment(Deployment deployment, CancellationToken ct);
     Task<bool>          LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
-    Task                UpdateDeployment(DeploymentV2 deployment, CancellationToken ct);
-    Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
+    Task                UpdateDeployment(Deployment deployment, CancellationToken ct);
+    Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
     Task<bool>          UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
     
-    Task<Paginated<DeploymentV2>> FindLatest(
+    Task<Paginated<Deployment>> FindLatest(
         string[]? favouriteTeamIds,
         string? environment,
         string? service,
@@ -29,19 +29,18 @@ public interface IDeploymentsServiceV2
         int size = 0,
         CancellationToken ct = new()
     );
-    Task<DeploymentV2?> FindDeployment(string deploymentId, CancellationToken ct);
-    Task<DeploymentV2?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
+    Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct);
+    Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
-    Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
+    Task<List<Deployment>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
         string? user, string? status, CancellationToken ct);
-    Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
+    Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct);
     Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
     Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct);
-    Task Decommission(string serviceName, CancellationToken ct);
 }
 
-public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServiceV2
+public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 {
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
@@ -50,7 +49,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     private readonly HashSet<string> _excludedDisplayNames =
         new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "GitHub Workflow" };
     
-    public DeploymentsServiceV2(
+    public DeploymentsService(
         IMongoDbClientFactory connectionFactory, 
         IRepositoryService repositoryService, 
         IUserServiceFetcher userServiceFetcher, 
@@ -60,13 +59,13 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         _userServiceFetcher = userServiceFetcher;
     }
 
-    protected override List<CreateIndexModel<DeploymentV2>> DefineIndexes(IndexKeysDefinitionBuilder<DeploymentV2> builder)
+    protected override List<CreateIndexModel<Deployment>> DefineIndexes(IndexKeysDefinitionBuilder<Deployment> builder)
     {
-        var created           = new CreateIndexModel<DeploymentV2>(builder.Descending(d => d.Created));
-        var updated           = new CreateIndexModel<DeploymentV2>(builder.Descending(d => d.Updated));
-        var lambdaId          = new CreateIndexModel<DeploymentV2>(builder.Descending(d => d.LambdaId));
-        var cdpDeploymentId   = new CreateIndexModel<DeploymentV2>(builder.Descending(d => d.CdpDeploymentId));
-        var envServiceVersion = new CreateIndexModel<DeploymentV2>(builder.Combine(
+        var created           = new CreateIndexModel<Deployment>(builder.Descending(d => d.Created));
+        var updated           = new CreateIndexModel<Deployment>(builder.Descending(d => d.Updated));
+        var lambdaId          = new CreateIndexModel<Deployment>(builder.Descending(d => d.LambdaId));
+        var cdpDeploymentId   = new CreateIndexModel<Deployment>(builder.Descending(d => d.CdpDeploymentId));
+        var envServiceVersion = new CreateIndexModel<Deployment>(builder.Combine(
             builder.Descending(d => d.Environment),
             builder.Descending(d => d.Service),
             builder.Descending(d => d.Version)
@@ -75,12 +74,12 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return [created, updated, lambdaId, cdpDeploymentId, envServiceVersion];
     }
 
-    public async Task RegisterDeployment(DeploymentV2 deployment, CancellationToken ct)
+    public async Task RegisterDeployment(Deployment deployment, CancellationToken ct)
     {
         await Collection.InsertOneAsync(await WithAuditData(deployment, ct), null, ct);
     }
 
-    private async Task<DeploymentV2> WithAuditData(DeploymentV2 deployment, CancellationToken ct)
+    private async Task<Deployment> WithAuditData(Deployment deployment, CancellationToken ct)
     {
         deployment.Audit = new Audit();
         // Record who owned the service at that point in time
@@ -117,12 +116,12 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         // Before we can start recording events, we need to match the CDP Id (which is generated in the portal)
         // to the ID of the lambda that triggered the deployment (lambda Id) which will appear in subsequent ECS messages
         // in the `startedBy` field.
-        var update = new UpdateDefinitionBuilder<DeploymentV2>().Set(d => d.LambdaId, lambdaId);
+        var update = new UpdateDefinitionBuilder<Deployment>().Set(d => d.LambdaId, lambdaId);
         var result = await Collection.UpdateOneAsync(d => d.CdpDeploymentId == cdpId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
     }
     
-    public async Task<DeploymentV2?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct)
+    public async Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct)
     {
         return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
     }
@@ -131,7 +130,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     {
         var deployment = await FindDeploymentByLambdaId(lambdaId, ct);
 
-        var update = new UpdateDefinitionBuilder<DeploymentV2>()
+        var update = new UpdateDefinitionBuilder<Deployment>()
             .Set(d => d.LastDeploymentStatus, eventName)
             .Set(d => d.LastDeploymentMessage, reason);
         
@@ -145,19 +144,19 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return result.ModifiedCount == 1;
     }
 
-    public async Task<DeploymentV2?>  FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
+    public async Task<Deployment?>  FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
     {
-        var fb = new FilterDefinitionBuilder<DeploymentV2>();
+        var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.Eq(d => d.TaskDefinitionArn, taskArn);
-        var latestFirst = new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Created);
+        var latestFirst = new SortDefinitionBuilder<Deployment>().Descending(d => d.Created);
         return await Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
+    public async Task<List<Deployment>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
         string? user, string? status, CancellationToken ct)
 
     {
-        var builder = Builders<DeploymentV2>.Filter;
+        var builder = Builders<Deployment>.Filter;
         var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);
 
         if (environments?.Length > 0)
@@ -193,13 +192,13 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         if (!string.IsNullOrWhiteSpace(service))
         {
             var partialServiceFilter =
-                Builders<DeploymentV2>.Filter.Regex(d => d.Service,  new BsonRegularExpression(service, "i"));
+                Builders<Deployment>.Filter.Regex(d => d.Service,  new BsonRegularExpression(service, "i"));
             filter &= partialServiceFilter;
         }
         
-        var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
+        var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
-            .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
+            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.Updated))
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
             
@@ -207,16 +206,16 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
     }
 
-    public async Task<List<DeploymentV2>> FindWhatsRunningWhere(string serviceName, CancellationToken ct)
+    public async Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken ct)
     {
-        var fb = new FilterDefinitionBuilder<DeploymentV2>();
+        var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.And(
             fb.Eq(d => d.Service, serviceName),
             fb.In(d => d.Status, new[] { Running, Pending, Undeployed })
         );
-        var pipeline = new EmptyPipelineDefinition<DeploymentV2>()
+        var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
-            .Sort(new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Updated))
+            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.Updated))
             .Group(d => new { d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
 
@@ -224,7 +223,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .ToListAsync(ct);
     }
 
-    public async Task<Paginated<DeploymentV2>> FindLatest(string[]? favouriteTeamIds, string? environment,
+    public async Task<Paginated<Deployment>> FindLatest(string[]? favouriteTeamIds, string? environment,
         string? service, string? user,
         string? status,
         string? team,
@@ -234,7 +233,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
         CancellationToken ct = new()
     )
     {
-        var builder = Builders<DeploymentV2>.Filter;
+        var builder = Builders<Deployment>.Filter;
         var filter = builder.Empty;
 
         if (!string.IsNullOrWhiteSpace(environment))
@@ -297,19 +296,19 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
 
-        return new Paginated<DeploymentV2>(deployments, page, size, totalPages);
+        return new Paginated<Deployment>(deployments, page, size, totalPages);
     }
 
-    public async Task<DeploymentV2?> FindDeployment(string deploymentId, CancellationToken ct)
+    public async Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct)
     {
         return await Collection.Find(d => d.CdpDeploymentId == deploymentId).FirstOrDefaultAsync(ct);
     }
 
     public async Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct)
     {
-        var fb = new FilterDefinitionBuilder<DeploymentV2>();
+        var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.And(fb.Eq(d => d.Service, service), fb.Eq(d => d.Environment, environment));
-        var sort = new SortDefinitionBuilder<DeploymentV2>().Descending(d => d.Created);
+        var sort = new SortDefinitionBuilder<Deployment>().Descending(d => d.Created);
 
         return await Collection
             .Find(filter)
@@ -318,25 +317,20 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task Decommission(string serviceName, CancellationToken ct)
-    {
-        await Collection.DeleteManyAsync(d => d.Service == serviceName, ct);
-    }
-
-    public async Task UpdateDeployment(DeploymentV2 deployment, CancellationToken ct)
+    public async Task UpdateDeployment(Deployment deployment, CancellationToken ct)
     {
         await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment, cancellationToken: ct);
     }
 
     private async Task<List<UserDetails>> UserDetailsList(CancellationToken ct)
     {
-        var userFilter = Builders<DeploymentV2>.Filter.And(
-            Builders<DeploymentV2>.Filter.Ne(d => d.User, null),
-            Builders<DeploymentV2>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
+        var userFilter = Builders<Deployment>.Filter.And(
+            Builders<Deployment>.Filter.Ne(d => d.User, null),
+            Builders<Deployment>.Filter.Nin(d => d.User!.DisplayName, _excludedDisplayNames)
         );
 
         var users = await Collection
-            .Distinct<DeploymentV2, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
+            .Distinct<Deployment, UserDetails>(d => d.User!, userFilter, cancellationToken: ct)
             .ToListAsync(ct);
 
         users.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
@@ -347,11 +341,11 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
     public async Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct)
     {
         var serviceNames = await Collection
-            .Distinct(d => d.Service, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
+            .Distinct(d => d.Service, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
             .ToListAsync(ct);
 
         var statuses = await Collection
-            .Distinct(d => d.Status, FilterDefinition<DeploymentV2>.Empty, cancellationToken: ct)
+            .Distinct(d => d.Status, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
             .ToListAsync(ct);
 
         var users = await UserDetailsList(ct);
@@ -364,7 +358,7 @@ public class DeploymentsServiceV2 : MongoService<DeploymentV2>, IDeploymentsServ
 
     public async Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct)
     {
-        var builder = Builders<DeploymentV2>.Filter;
+        var builder = Builders<Deployment>.Filter;
         var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);
 
         var serviceNames = await Collection
