@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
-using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.Extensions.Logging;
 using NSubstitute;

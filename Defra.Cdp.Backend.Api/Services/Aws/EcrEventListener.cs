@@ -2,7 +2,7 @@ using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Options;

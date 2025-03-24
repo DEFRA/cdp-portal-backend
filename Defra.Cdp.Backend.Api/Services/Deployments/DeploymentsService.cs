@@ -1,6 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using MongoDB.Bson;
