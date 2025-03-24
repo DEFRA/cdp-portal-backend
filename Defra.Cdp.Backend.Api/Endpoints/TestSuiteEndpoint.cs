@@ -30,10 +30,16 @@ public static class TestSuiteEndpoint
         return Results.Ok(result);
     }
 
-    static async Task<IResult> FindTestRunsForSuite([FromServices] ITestRunService testRunService, string name,
+    private static async Task<IResult> FindTestRunsForSuite([FromServices] ITestRunService testRunService,
+        string name,
+        [FromQuery(Name = "offset")] int ? offset,
+        [FromQuery(Name = "page")] int ? page,
+        [FromQuery(Name = "size")] int ? size,
         CancellationToken cancellationToken)
     {
-        var result = await testRunService.FindTestRunsForTestSuite(name, 100, cancellationToken);
+        var result = await testRunService.FindTestRunsForTestSuite(name, offset ?? 0,
+            page ?? TestRunService.DefaultPage,
+            size ?? TestRunService.DefaultPageSize, cancellationToken);
         return Results.Ok(result);
     }
 
