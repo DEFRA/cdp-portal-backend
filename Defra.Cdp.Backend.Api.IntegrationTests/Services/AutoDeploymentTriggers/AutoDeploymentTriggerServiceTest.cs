@@ -3,10 +3,10 @@ using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Microsoft.Extensions.Logging;
 
-namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Aws.AutoDeploymentTriggers;
+namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.AutoDeploymentTriggers;
 
 public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
@@ -31,7 +31,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
                 """)!;
         
         await autoDeploymentTriggerService.PersistTrigger(trigger, CancellationToken.None);
-        var triggerFromDb = await autoDeploymentTriggerService.FindForServiceName("cdp-portal-frontend", CancellationToken.None);
+        var triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-frontend", CancellationToken.None);
         
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
@@ -50,7 +50,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
                 """)!;
         
         await autoDeploymentTriggerService.PersistTrigger(updatedTrigger, CancellationToken.None);
-        triggerFromDb = await autoDeploymentTriggerService.FindForServiceName("cdp-portal-frontend", CancellationToken.None);
+        triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-frontend", CancellationToken.None);
         
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
@@ -79,7 +79,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
                 """)!;
         
         await autoDeploymentTriggerService.PersistTrigger(trigger, CancellationToken.None);
-        var triggerFromDb = await autoDeploymentTriggerService.FindForServiceName("cdp-portal-backend", CancellationToken.None);
+        var triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
         
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
@@ -94,7 +94,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
                 """)!;
         
         await autoDeploymentTriggerService.PersistTrigger(updatedTrigger, CancellationToken.None);
-        triggerFromDb = await autoDeploymentTriggerService.FindForServiceName("cdp-portal-backend", CancellationToken.None);
+        triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
         
         Assert.Null(triggerFromDb);
     }
@@ -120,7 +120,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
                 """)!;
         
         await autoDeploymentTriggerService.PersistTrigger(trigger, CancellationToken.None);
-        var triggerFromDb = await autoDeploymentTriggerService.FindForServiceName("cdp-portal-backend", CancellationToken.None);
+        var triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
         
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);

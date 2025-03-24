@@ -4,11 +4,11 @@ using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
-using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
@@ -193,7 +193,7 @@ builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandler>();
 
 // Deployment Trigger Event Handlers
-builder.Services.AddSingleton<DeploymentTriggerEventHandler>();
+builder.Services.AddSingleton<AutoTestRunTriggerEventHandler>();
 builder.Services.AddSingleton<IAutoDeploymentTriggerExecutor, AutoDeploymentTriggerExecutor>();
 
 // Secret Event Handlers
@@ -215,7 +215,7 @@ builder.Services.AddSingleton<PlatformEventListener>();
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
 
 builder.Services.AddSingleton<IAutoDeploymentTriggerService, AutoDeploymentTriggerService>();
-builder.Services.AddSingleton<IDeploymentTriggerService, DeploymentTriggerService>();
+builder.Services.AddSingleton<IAutoTestRunTriggerService, AutoTestRunTriggerService>();
 
 builder.Services.AddSingleton<MongoLock>();
 
@@ -260,6 +260,7 @@ app.MapServiceStatusEndpoint();
 app.MapServiceEndpoint();
 app.MapHealthChecks("/health");
 app.MapAutoDeploymentTriggerEndpoint();
+app.MapAutoTestRunTriggerEndpoint();
 
 // Start the ecs and ecr services
 #pragma warning disable CS4014

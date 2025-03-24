@@ -1,7 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Defra.Cdp.Backend.Api.Services.TestSuites;
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -12,17 +10,13 @@ public static class AutoDeploymentTriggerEndpoint
     {
         app.MapGet("auto-deployments", FindAll);
         app.MapGet("auto-deployments/{serviceName}", FindForServiceName);
-        app.MapPost("auto-deployments", Create);
+        app.MapPost("auto-deployments", Save);
     }
 
-    static async Task<IResult> FindForServiceName( [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, string serviceName, CancellationToken cancellationToken)
+    private static async Task<IResult> FindForServiceName( [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, string serviceName, CancellationToken cancellationToken)
     {
-        var result = await autoDeploymentTriggerService.FindForServiceName(serviceName, cancellationToken);
-        if (result == null)
-        {
-            return Results.NotFound();
-        }
-        return Results.Ok(result);
+        var result = await autoDeploymentTriggerService.FindForService(serviceName, cancellationToken);
+        return result == null ? Results.NotFound() : Results.Ok(result);
     }
 
     private static async Task<IResult> FindAll( [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, CancellationToken cancellationToken)
@@ -30,7 +24,7 @@ public static class AutoDeploymentTriggerEndpoint
         return Results.Ok(await autoDeploymentTriggerService.FindAll(cancellationToken));
     }
 
-    static async Task<IResult> Create( [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, AutoDeploymentTrigger trigger, CancellationToken cancellationToken)
+    private static async Task<IResult> Save( [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, AutoDeploymentTrigger trigger, CancellationToken cancellationToken)
     {
         var persistedTrigger = await autoDeploymentTriggerService.PersistTrigger(trigger, cancellationToken);
         return persistedTrigger == null ? Results.Accepted("auto-deployments") : Results.Created($"auto-deployments/{persistedTrigger.ServiceName}", persistedTrigger);

@@ -3,13 +3,13 @@ using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 
-namespace Defra.Cdp.Backend.Api.Services.DeploymentTriggers;
+namespace Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 
-public class DeploymentTriggerEventHandler(
+public class AutoTestRunTriggerEventHandler(
     IDeploymentsService deploymentsService,
-    IDeploymentTriggerService deploymentTriggerService,
+    IAutoTestRunTriggerService autoTestRunTriggerService,
     SelfServiceOpsClient selfServiceOpsClient,
-    ILogger<DeploymentTriggerEventHandler> logger)
+    ILogger<AutoTestRunTriggerEventHandler> logger)
 {
     public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
     {
@@ -29,15 +29,18 @@ public class DeploymentTriggerEventHandler(
         }
         else
         {
-            var deploymentTriggers =
-                await deploymentTriggerService.FindTriggersForDeployment(deployment, cancellationToken);
+            var trigger = await autoTestRunTriggerService.FindForService(deployment.Service, cancellationToken);
 
-            foreach (var trigger in deploymentTriggers)
+            var testSuitesOrEmptyList =
+                trigger?.EnvironmentTestSuitesMap.GetValueOrDefault(deployment.Environment, []) ?? [];
+
+            foreach (var testSuite in testSuitesOrEmptyList)
             {
-                logger.LogInformation("{id} Triggering test run for {deploymentId} {testSuite}", id,
-                    ecsEvent.Detail.DeploymentId, trigger.TestSuite);
+                logger.LogInformation("{id} Triggering test run for {deploymentId} {testSuite} in {environment}",
+                    id,
+                    ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment);
 
-                await selfServiceOpsClient.TriggerTestSuite(trigger.TestSuite, deployment.Environment, deployment.User,
+                await selfServiceOpsClient.TriggerTestSuite(testSuite, deployment.Environment, deployment.User,
                     cancellationToken);
             }
         }

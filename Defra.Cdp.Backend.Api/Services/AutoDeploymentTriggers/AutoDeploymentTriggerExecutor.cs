@@ -4,7 +4,7 @@ using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 
-namespace Defra.Cdp.Backend.Api.Services.Aws.AutoDeploymentTriggers;
+namespace Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 
 internal static class AutoDeploymentConstants
 {
@@ -26,7 +26,7 @@ public class AutoDeploymentTriggerExecutor(
 {
     public async Task Handle(String repositoryName, String imageTag, CancellationToken cancellationToken)
     {
-        var trigger = await autoDeploymentTriggerService.FindForServiceName(repositoryName, cancellationToken);
+        var trigger = await autoDeploymentTriggerService.FindForService(repositoryName, cancellationToken);
 
         if (trigger != null)
         {
