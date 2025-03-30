@@ -183,6 +183,43 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.Contains(result, t => t.ServiceName == "bar");
     }
 
+    [Fact]
+    public async Task WillForceUpdate()
+    {
+        var logger = new NullLoggerFactory();
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
+        var repositoryService = new RepositoryService(mongoFactory, logger);
+        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, logger);
+
+        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
+        await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
+            {
+                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
+            }
+            , CancellationToken.None);
+
+
+        // Check initial state
+        var tenant = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo" }, CancellationToken.None);
+        Assert.Equal( "foo-team", tenant?.Teams?[0].Github);
+        
+        // Update the teams in github
+        var updatedFooRepository = new Repository
+        {
+            Id = "foo",
+            Teams = [new RepositoryTeam("bar-team", "9999", "bar-team")],
+            IsArchived = false,
+            IsTemplate = false,
+            IsPrivate = false
+        };
+        await repositoryService.Upsert(updatedFooRepository, CancellationToken.None);
+        
+        // Force refresh
+        await tenantServicesService.RefreshTeams(CancellationToken.None);
+        
+        tenant = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo" }, CancellationToken.None);
+        Assert.Equal( "bar-team", tenant?.Teams?[0].Github);
+    }
 
     private readonly TenantServicesPayload _sampleEvent = new()
     {
