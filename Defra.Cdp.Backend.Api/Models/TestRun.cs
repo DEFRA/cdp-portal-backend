@@ -46,6 +46,10 @@ public sealed class TestRun
 
     [property: JsonPropertyName("environment")]
     public string Environment { get; init; } = default!;
+
+    [property: JsonPropertyName("cpu")] public int Cpu { get; init; } = default!;
+
+    [property: JsonPropertyName("memory")] public int Memory { get; init; } = default!;
     
     [property: JsonPropertyName("user")]
     public UserDetails User { get; init; } = default!;

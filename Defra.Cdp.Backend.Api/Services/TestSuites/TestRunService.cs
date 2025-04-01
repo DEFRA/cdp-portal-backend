@@ -92,6 +92,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
 
     public async Task CreateTestRun(TestRun testRun, CancellationToken ct)
     {
+        testRun.TaskStatus = "starting";
         await Collection.InsertOneAsync(testRun, new InsertOneOptions(), ct);
    }
 

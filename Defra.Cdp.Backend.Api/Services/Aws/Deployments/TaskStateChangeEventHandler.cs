@@ -154,7 +154,7 @@ public class TaskStateChangeEventHandler(
             // if it's not there, find a candidate to link it to
             if (testRun == null)
             {
-                logger.LogInformation("trying to link {id}", artifact.ServiceName);
+                logger.LogInformation("trying to link {id} in environment:{env}", artifact.ServiceName, env);
                 testRun = await testRunService.Link(
                     new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp), 
                     taskArn, 
