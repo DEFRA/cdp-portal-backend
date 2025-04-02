@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
@@ -8,6 +9,7 @@ namespace Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 public class AutoTestRunTriggerEventHandler(
     IDeploymentsService deploymentsService,
     IAutoTestRunTriggerService autoTestRunTriggerService,
+    ITestRunService testRunService,
     SelfServiceOpsClient selfServiceOpsClient,
     ILogger<AutoTestRunTriggerEventHandler> logger)
 {
@@ -40,8 +42,11 @@ public class AutoTestRunTriggerEventHandler(
                     id,
                     ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment);
 
+                var testRunSettings =
+                    await testRunService.FindTestRunSettings(testSuite, deployment.Environment, cancellationToken);
+
                 await selfServiceOpsClient.TriggerTestSuite(testSuite, deployment.Environment, deployment.User,
-                    cancellationToken);
+                    testRunSettings, cancellationToken);
             }
         }
     }

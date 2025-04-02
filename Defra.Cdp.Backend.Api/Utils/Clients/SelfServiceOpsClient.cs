@@ -20,9 +20,19 @@ public class SelfServiceOpsClient
     }
 
     public async Task TriggerTestSuite(string imageName, string environment, UserDetails? user,
-        CancellationToken cancellationToken)
+        TestRunSettings? testRunSettings, CancellationToken cancellationToken)
     {
-        var body = new { imageName, environment, user };
+        const int defaultCpu = 4096;
+        const int defaultMemory = 8192;
+
+        var body = new
+        {
+            imageName,
+            environment,
+            cpu = testRunSettings?.Cpu ?? defaultCpu,
+            memory = testRunSettings?.Memory ?? defaultMemory,
+            user
+        };
         var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var result = await _client.PostAsync(_baseUrl + "/trigger-test-suite", payload, cancellationToken);
         result.EnsureSuccessStatusCode();

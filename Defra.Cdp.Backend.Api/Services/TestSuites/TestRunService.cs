@@ -20,6 +20,8 @@ public interface ITestRunService
     public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
         List<FailureReason> failureReasons, CancellationToken ct);
 
+    public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
+
     Task Decommission(string serviceName, CancellationToken ct);
 }
 
@@ -138,4 +140,18 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
     {
         await Collection.DeleteManyAsync(  t => t.TestSuite == serviceName, ct);
     }
+
+    public async Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct)
+    {
+        var fb = new FilterDefinitionBuilder<TestRun>();
+        var filter = fb.And(fb.Eq(t => t.TestSuite, name), fb.Eq(t => t.Environment, environment));
+        var sort = new SortDefinitionBuilder<TestRun>().Descending(t => t.Created);
+
+        return await Collection
+            .Find(filter)
+            .Sort(sort)
+            .Project(t => new TestRunSettings { Cpu = t.Cpu, Memory = t.Memory })
+            .FirstOrDefaultAsync(ct);
+    }
+
 }
