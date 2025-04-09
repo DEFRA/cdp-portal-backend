@@ -44,15 +44,19 @@ public class SelfServiceOpsClient
         string configVersion,
         CancellationToken cancellationToken)
     {
+        const string defaultCpu = "1024"; // 1 vCPU
+        const string defaultMemory = "2048"; // 2 GB
+        const int defaultInstanceCount = 1;
+
         var body = new
         {
             imageName,
             version,
             environment,
             user,
-            cpu = deploymentSettings.Cpu,
-            memory = deploymentSettings.Memory,
-            instanceCount = deploymentSettings.InstanceCount,
+            cpu = deploymentSettings.Cpu ?? defaultCpu,
+            memory = deploymentSettings.Memory ?? defaultMemory,
+            instanceCount = deploymentSettings.InstanceCount ?? defaultInstanceCount,
             configVersion
         };
         var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
