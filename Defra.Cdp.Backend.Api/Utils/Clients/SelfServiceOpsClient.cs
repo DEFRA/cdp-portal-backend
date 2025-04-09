@@ -19,18 +19,18 @@ public class SelfServiceOpsClient
         _client = httpClientFactory.CreateClient("ServiceClient");
     }
 
-    public async Task TriggerTestSuite(string imageName, string environment, UserDetails? user,
+    public async Task TriggerTestSuite(string imageName, string environment, UserDetails user,
         TestRunSettings? testRunSettings, CancellationToken cancellationToken)
     {
-        const int defaultCpu = 4096;
-        const int defaultMemory = 8192;
+        const int defaultTestSuiteCpu = 4096; // 4 vCPU
+        const int defaultTestSuiteMemory = 8192; // 8 GB
 
         var body = new
         {
             imageName,
             environment,
-            cpu = testRunSettings?.Cpu ?? defaultCpu,
-            memory = testRunSettings?.Memory ?? defaultMemory,
+            cpu = testRunSettings?.Cpu ?? defaultTestSuiteCpu,
+            memory = testRunSettings?.Memory ?? defaultTestSuiteMemory,
             user
         };
         var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
