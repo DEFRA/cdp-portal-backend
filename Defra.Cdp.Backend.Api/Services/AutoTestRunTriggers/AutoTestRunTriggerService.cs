@@ -6,9 +6,15 @@ namespace Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 
 public interface IAutoTestRunTriggerService
 {
-    public Task<AutoTestRunTrigger?> FindForService(string service, CancellationToken cancellationToken);
+    public Task<AutoTestRunTrigger?> FindForService(string serviceName, CancellationToken cancellationToken);
 
-    public Task<AutoTestRunTrigger?> PersistTrigger(AutoTestRunTrigger autoTestRunTrigger,
+    public Task<AutoTestRunTrigger?> SaveTrigger(AutoTestRunTrigger autoTestRunTrigger,
+        CancellationToken cancellationToken);
+
+    public Task<AutoTestRunTrigger?> RemoveTestRun(AutoTestRunTrigger autoTestRunTrigger,
+        CancellationToken cancellationToken);
+
+    public Task<AutoTestRunTrigger?> UpdateTestRun(AutoTestRunTrigger autoTestRunTrigger,
         CancellationToken cancellationToken);
 }
 
@@ -30,39 +36,101 @@ public class AutoTestRunTriggerService(
         return [repositoryIndex];
     }
 
-    public async Task<AutoTestRunTrigger?> FindForService(string service, CancellationToken cancellationToken)
+    public async Task<AutoTestRunTrigger?> FindForService(string serviceName,
+        CancellationToken cancellationToken)
     {
-        return await Collection.Find(t => t.ServiceName == service)
+        return await Collection.Find(t => t.ServiceName == serviceName)
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<AutoTestRunTrigger?> PersistTrigger(AutoTestRunTrigger autoTestRunTrigger,
+    public async Task<AutoTestRunTrigger?> SaveTrigger(AutoTestRunTrigger autoTestRunTrigger,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Persisting auto test-run trigger for service: {Service}",
+        _logger.LogInformation("Creating auto test-run trigger for service: {Service}",
             autoTestRunTrigger.ServiceName);
 
-        //We don't want to allow auto-test-run on prod
-        autoTestRunTrigger.EnvironmentTestSuitesMap.Remove("prod");
-
-        foreach (var env in autoTestRunTrigger.EnvironmentTestSuitesMap.Keys.Where(env =>
-                     autoTestRunTrigger.EnvironmentTestSuitesMap[env]?.Count == 0))
-        {
-            autoTestRunTrigger.EnvironmentTestSuitesMap.Remove(env);
-        }
+        // Do not allow auto-deployment to prod
+        autoTestRunTrigger.Environments.Remove("prod");
 
         var triggerInDb = await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
 
+        _logger.LogInformation("DB trigger is: {TriggerInDb}", triggerInDb);
+        
         if (triggerInDb != null)
         {
-            var filter = Builders<AutoTestRunTrigger>.Filter.Eq("_id", triggerInDb.Id);
-            await Collection.DeleteManyAsync(filter, cancellationToken);
+            // Update existing trigger
+            if (autoTestRunTrigger.Environments.Count == 0)
+                triggerInDb.TestSuites.Remove(autoTestRunTrigger.TestSuite);
+            else
+                triggerInDb.TestSuites[autoTestRunTrigger.TestSuite] = autoTestRunTrigger.Environments;
+
+            var filter = Builders<AutoTestRunTrigger>.Filter.Eq(t => t.ServiceName, autoTestRunTrigger.ServiceName);
+            var update = Builders<AutoTestRunTrigger>.Update.Set(t => t.TestSuites, triggerInDb.TestSuites);
+
+            await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
+        }
+        else
+        {
+            // Create new trigger
+            var newTrigger = new AutoTestRunTrigger
+            {
+                ServiceName = autoTestRunTrigger.ServiceName,
+                TestSuites = new Dictionary<string, List<string>>
+                {
+                    { autoTestRunTrigger.TestSuite, autoTestRunTrigger.Environments }
+                }
+            };
+
+            await Collection.InsertOneAsync(newTrigger, cancellationToken: cancellationToken);
         }
 
-        if (autoTestRunTrigger.EnvironmentTestSuitesMap.Count > 0)
-        {
-            await Collection.InsertOneAsync(autoTestRunTrigger, cancellationToken: cancellationToken);
-        }
+        return await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
+    }
+
+    public async Task<AutoTestRunTrigger?> RemoveTestRun(AutoTestRunTrigger autoTestRunTrigger,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Removing test run {TestSuite} for service: {Service}", autoTestRunTrigger.TestSuite,
+            autoTestRunTrigger.ServiceName);
+
+        var triggerInDb = await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
+
+        _logger.LogInformation("DB trigger is: {TriggerInDb}", triggerInDb);
+
+        if (triggerInDb == null) return null;
+
+        triggerInDb.TestSuites.Remove(autoTestRunTrigger.TestSuite);
+
+        var filter = Builders<AutoTestRunTrigger>.Filter.Eq(t => t.ServiceName, autoTestRunTrigger.ServiceName);
+        var update = Builders<AutoTestRunTrigger>.Update.Set(t => t.TestSuites, triggerInDb.TestSuites);
+
+        await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
+
+        return await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
+    }
+
+    public async Task<AutoTestRunTrigger?> UpdateTestRun(AutoTestRunTrigger autoTestRunTrigger,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Updating test run {TestSuite} for service: {Service}", autoTestRunTrigger.TestSuite,
+            autoTestRunTrigger.ServiceName);
+
+        var triggerInDb = await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
+
+        _logger.LogInformation("DB trigger is: {TriggerInDb}", triggerInDb);
+
+        if (triggerInDb == null) return null;
+
+        // Update existing trigger
+        if (autoTestRunTrigger.Environments.Count == 0)
+            triggerInDb.TestSuites.Remove(autoTestRunTrigger.TestSuite);
+        else
+            triggerInDb.TestSuites[autoTestRunTrigger.TestSuite] = autoTestRunTrigger.Environments;
+
+        var filter = Builders<AutoTestRunTrigger>.Filter.Eq(t => t.ServiceName, autoTestRunTrigger.ServiceName);
+        var update = Builders<AutoTestRunTrigger>.Update.Set(t => t.TestSuites, triggerInDb.TestSuites);
+
+        await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
 
         return await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
     }

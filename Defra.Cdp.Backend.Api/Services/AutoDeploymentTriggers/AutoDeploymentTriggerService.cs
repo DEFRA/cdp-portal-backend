@@ -40,7 +40,7 @@ public class AutoDeploymentTriggerService(
    {
        _logger.LogInformation("Persisting auto deployment trigger for service: {Service}", autoDeploymentTrigger.ServiceName);
 
-       //We don't want to allow auto-deployment to prod
+       // Do not allow auto-deployment to prod
        autoDeploymentTrigger.Environments.Remove("prod");
 
        var triggerInDb = await FindForService(autoDeploymentTrigger.ServiceName, cancellationToken);
