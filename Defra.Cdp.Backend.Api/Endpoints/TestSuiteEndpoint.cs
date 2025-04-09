@@ -62,7 +62,7 @@ public static class TestSuiteEndpoint
         [FromServices] ITestRunService testRunService, CancellationToken cancellationToken)
     {
         var testSuitesByEnvironment =
-            await tenantServicesService.Find(new TenantServiceFilter(Team: teamId, IsTest: true), cancellationToken);
+            await tenantServicesService.Find(new TenantServiceFilter(TeamId: teamId, IsTest: true), cancellationToken);
         var testSuites = testSuitesByEnvironment.GroupBy(s => s.ServiceName).ToDictionary(k => k.Key, v => v.First())
             .Values.ToList();
         var latestTestRuns = await testRunService.FindLatestTestRuns(cancellationToken);

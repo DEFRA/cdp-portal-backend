@@ -120,7 +120,13 @@ public class TenantServicesService(
     }
 }
 
-public record TenantServiceFilter(string? Team = null, string? Environment = null, string? Name = null, bool IsTest = false, bool IsService = false)
+public record TenantServiceFilter(
+    string? Team = null,
+    string? TeamId = null,
+    string? Environment = null,
+    string? Name = null,
+    bool IsTest = false,
+    bool IsService = false)
 {
     public FilterDefinition<TenantServiceRecord> Filter()
     {
@@ -130,6 +136,11 @@ public record TenantServiceFilter(string? Team = null, string? Environment = nul
         if (Team != null)
         {
             filter &= builder.ElemMatch(t => t.Teams, t => t.Github == Team);
+        }
+
+        if (TeamId != null)
+        {
+            filter &= builder.ElemMatch(t => t.Teams, t => t.TeamId == TeamId);
         }
 
         if (Environment != null)
