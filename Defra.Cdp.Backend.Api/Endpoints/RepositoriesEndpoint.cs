@@ -61,6 +61,9 @@ public static class RepositoriesEndpoint
         // Get a Teams repositories
         app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories);
 
+        // Get a Teams Test repositories
+        app.MapGet($"{RepositoriesBaseRoute}/all/tests/{{teamId}}", GetTeamTestRepositories);
+
         app.MapGet($"{RepositoriesBaseRoute}/{{id}}", GetRepositoryById);
     }
 
@@ -119,6 +122,15 @@ public static class RepositoriesEndpoint
             cancellationToken);
 
         return Results.Ok(new AllTeamRepositoriesResponse(libraries, services, templates, tests));
+    }
+
+    private static async Task<IResult> GetTeamTestRepositories(IRepositoryService repositoryService, string teamId,
+        CancellationToken cancellationToken)
+    {
+        var tests = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Test,
+            cancellationToken);
+
+        return Results.Ok(new MultipleRepositoriesResponse(tests));
     }
 
     public sealed record MultipleRepositoriesResponse(string Message, IEnumerable<Repository> Repositories)
