@@ -171,6 +171,12 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "foo");
 
+        // Find by TeamId and name
+        result = await tenantServicesService.Find(new TenantServiceFilter(TeamId: "1234", Name: "foo"),
+            CancellationToken.None);
+        Assert.Single(result);
+        Assert.Contains(result, t => t.ServiceName == "foo");
+
         // Find test suites
         result = await tenantServicesService.Find(new TenantServiceFilter { IsTest = true }, CancellationToken.None);
         Assert.Single(result);
