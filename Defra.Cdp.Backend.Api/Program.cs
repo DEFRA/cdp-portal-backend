@@ -13,6 +13,7 @@ using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.Migrations;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
@@ -115,7 +116,7 @@ builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationV
 
 // SQS provider
 logger.Information("Attempting to add SQS, ECR and Docker Client");
-builder.Services.AddSqsClient(builder.Configuration, builder.IsDevMode());
+builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 
 // GitHub credential factory for the cron job
 builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
@@ -219,6 +220,10 @@ builder.Services.AddSingleton<IAutoTestRunTriggerService, AutoTestRunTriggerServ
 
 builder.Services.AddSingleton<MongoLock>();
 
+// migrations
+builder.Services.AddSingleton<IAvailableMigrations, AvailableMigrations>();
+
+
 // Validators
 // Add every validator we can find in the assembly that contains this Program
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -261,6 +266,7 @@ app.MapServiceEndpoint();
 app.MapHealthChecks("/health");
 app.MapAutoDeploymentTriggerEndpoint();
 app.MapAutoTestRunTriggerEndpoint();
+app.MapMigrationEndpoints();
 
 // Start the ecs and ecr services
 #pragma warning disable CS4014
