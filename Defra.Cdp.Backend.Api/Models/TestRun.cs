@@ -53,6 +53,8 @@ public sealed class TestRun
     
     [property: JsonPropertyName("user")]
     public UserDetails User { get; init; } = default!;
+
+    public DeploymentDetails Deployment { get; init; } = default!;
     
     [property: JsonPropertyName("created")]
     public DateTime Created  { get; init; } = DateTime.Now;
@@ -89,5 +91,16 @@ public sealed class TestRun
          Created = DateTime.Now
       };
    }
+}
 
+public sealed class DeploymentDetails
+{
+    [property: JsonPropertyName("deploymentId")]
+    public string? DeploymentId { get; init; } = default!;
+
+    [property: JsonPropertyName("version")]
+    public string? Version { get; init; } = default!;
+
+    [property: JsonPropertyName("service")]
+    public string? Service { get; init; } = default!;
 }
