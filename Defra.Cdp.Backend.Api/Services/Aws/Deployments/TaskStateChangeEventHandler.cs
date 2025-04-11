@@ -38,7 +38,7 @@ public class TaskStateChangeEventHandler(
         if (artifact == null)
         {
             var containerList = string.Join(",", ecsTaskStateChangeEvent.Detail.Containers.Select(c => c.Image));
-            logger.LogWarning("No known artifact found for task {id}, [{containers}]", id, containerList);
+            logger.LogWarning("No known artifact found for task {Id}, [{Containers}]", id, containerList);
             return;
         }
 
@@ -55,7 +55,7 @@ public class TaskStateChangeEventHandler(
         }
 
 
-        logger.LogWarning("Artifact {artifactName} was not a known runMode {runMode}", artifact.ServiceName,
+        logger.LogWarning("Artifact {ArtifactName} was not a known runMode {RunMode}", artifact.ServiceName,
             artifact.RunMode);
     }
 
@@ -99,14 +99,14 @@ public class TaskStateChangeEventHandler(
                 ecsTaskStateChangeEvent.Detail.LastStatus);
             if (instanceStatus == null)
             {
-                logger.LogWarning("Skipping unknown status for desired:{desired}, last:{last}",
+                logger.LogWarning("Skipping unknown status for desired:{Desired}, last:{Last}",
                     ecsTaskStateChangeEvent.Detail.DesiredStatus, ecsTaskStateChangeEvent.Detail.LastStatus);
                 return;
             }
 
             // Update the specific instance status
             logger.LogInformation(
-                "Updating instance status for cdpID: {cdpId}, lambdaId: {lambdaId} instance {instanceId}, {msgId}",
+                "Updating instance status for cdpID: {CdpId}, lambdaId: {LambdaId} instance {InstanceId}, {MsgId}",
                 deployment.CdpDeploymentId, lambdaId, instanceTaskId, ecsTaskStateChangeEvent.DeploymentId);
             deployment.Instances[instanceTaskId] =
                 new DeploymentInstanceStatus(instanceStatus, ecsTaskStateChangeEvent.Timestamp);
@@ -127,7 +127,7 @@ public class TaskStateChangeEventHandler(
             }
 
             await deploymentsService.UpdateDeployment(deployment, cancellationToken);
-            logger.LogInformation("Updated deployment {id}, {status}", deployment.LambdaId, deployment.Status);
+            logger.LogInformation("Updated deployment {Id}, {Status}", deployment.LambdaId, deployment.Status);
         }
         catch (Exception ex)
         {
@@ -154,7 +154,7 @@ public class TaskStateChangeEventHandler(
             // if it's not there, find a candidate to link it to
             if (testRun == null)
             {
-                logger.LogInformation("trying to link {id} in environment:{env}", artifact.ServiceName, env);
+                logger.LogInformation("trying to link {Id} in environment:{Env}", artifact.ServiceName, env);
                 testRun = await testRunService.Link(
                     new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp), 
                     taskArn, 
@@ -164,7 +164,7 @@ public class TaskStateChangeEventHandler(
             // if the linking fails, we have nothing to write the data to so bail
             if (testRun == null)
             {
-                logger.LogWarning("Failed to find any test job for event {taskArn}", taskArn);
+                logger.LogWarning("Failed to find any test job for event {TaskArn}", taskArn);
                 return;
             }
 
@@ -176,15 +176,15 @@ public class TaskStateChangeEventHandler(
             var failureReasons = ExtractFailureReasons(ecsTaskStateChangeEvent);
             var taskStatus = GenerateTestSuiteTaskStatus(ecsTaskStateChangeEvent.Detail.DesiredStatus,
                 ecsTaskStateChangeEvent.Detail.LastStatus, failureReasons.Count > 0);
-            
-            logger.LogInformation("Updating {name} test-suite {runId} status to {status}:{result}", testRun.TestSuite,
+
+            logger.LogInformation("Updating {Name} test-suite {RunId} status to {Status}:{Result}", testRun.TestSuite,
                 testRun.RunId, taskStatus, testResults);
             await testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp,
                 failureReasons, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError("Failed to update test suite: {ex}", ex);
+            logger.LogError("Failed to update test suite: {Ex}", ex);
         }
     }
 
@@ -202,12 +202,12 @@ public class TaskStateChangeEventHandler(
             if (artifact == null) continue;
             if (_containersToIgnore.Contains(artifact.Repo))
             {
-                logger.LogDebug("skipping ignored {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag,
+                logger.LogDebug("skipping ignored {Repo} {Tag}, {Sha256}", artifact.Repo, artifact.Tag,
                     artifact.Sha256);
                 continue;
             }
 
-            logger.LogDebug("found artifact {repo} {tag}, {sha256}", artifact.Repo, artifact.Tag, artifact.Sha256);
+            logger.LogDebug("found artifact {Repo} {Tag}, {Sha256}", artifact.Repo, artifact.Tag, artifact.Sha256);
             return artifact;
         }
 

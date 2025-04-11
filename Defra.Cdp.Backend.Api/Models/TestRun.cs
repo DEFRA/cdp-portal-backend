@@ -96,11 +96,11 @@ public sealed class TestRun
 public sealed class DeploymentDetails
 {
     [property: JsonPropertyName("deploymentId")]
-    public string? DeploymentId { get; init; } = default!;
+    public string? DeploymentId { get; init; }
 
     [property: JsonPropertyName("version")]
-    public string? Version { get; init; } = default!;
+    public string? Version { get; init; }
 
     [property: JsonPropertyName("service")]
-    public string? Service { get; init; } = default!;
+    public string? Service { get; init; }
 }
