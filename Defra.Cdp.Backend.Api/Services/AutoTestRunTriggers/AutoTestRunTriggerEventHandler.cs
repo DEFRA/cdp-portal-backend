@@ -56,8 +56,8 @@ public class AutoTestRunTriggerEventHandler(
                     Id = AutoTestRunConstants.AutoTestRunId, DisplayName = "Auto test runner"
                 };
 
-                await selfServiceOpsClient.TriggerTestSuite(testSuite, deployment.Environment, userDetails,
-                    testRunSettings, cancellationToken);
+                await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails,
+                    deployment, testRunSettings, cancellationToken);
             }
         }
     }

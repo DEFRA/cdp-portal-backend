@@ -19,7 +19,7 @@ public class SelfServiceOpsClient
         _client = httpClientFactory.CreateClient("ServiceClient");
     }
 
-    public async Task TriggerTestSuite(string imageName, string environment, UserDetails user,
+    public async Task TriggerTestSuite(string imageName, UserDetails user, Deployment deployment,
         TestRunSettings? testRunSettings, CancellationToken cancellationToken)
     {
         const int defaultTestSuiteCpu = 4096; // 4 vCPU
@@ -28,10 +28,16 @@ public class SelfServiceOpsClient
         var body = new
         {
             imageName,
-            environment,
+            environment = deployment.Environment,
             cpu = testRunSettings?.Cpu ?? defaultTestSuiteCpu,
             memory = testRunSettings?.Memory ?? defaultTestSuiteMemory,
-            user
+            user,
+            deployment = new DeploymentDetails
+            {
+                DeploymentId = deployment.CdpDeploymentId,
+                Service = deployment.Service,
+                Version = deployment.Version
+            }
         };
         var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var result = await _client.PostAsync(_baseUrl + "/trigger-test-suite", payload, cancellationToken);
