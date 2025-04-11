@@ -114,8 +114,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
             .Update
             .Set(d => d.TaskArn, taskArn);
 
-        return await Collection.FindOneAndUpdateAsync(  filter, update,
-            cancellationToken: ct);
+        return await Collection.FindOneAndUpdateAsync(  filter, update, cancellationToken: ct);
     }
 
     public async Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
