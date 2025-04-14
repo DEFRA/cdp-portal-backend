@@ -24,7 +24,6 @@ public class DockerClientTests
     private readonly IDeployableArtifactsService _deployableServiceMock = Substitute.For<IDeployableArtifactsService>();
     private readonly IDockerClient _dockerClientMock = Substitute.For<IDockerClient>();
 
-    private readonly HttpClient _httpMock = Substitute.For<HttpClient>();
     private readonly ILayerService _layerServiceMock = Substitute.For<ILayerService>();
     private readonly IRepositoryService _repositoryService = Substitute.For<IRepositoryService>();
 

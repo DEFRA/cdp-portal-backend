@@ -1,11 +1,11 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 
-public interface IGitHubWorkflowEventHandler
+public interface IGithubWorkflowEventHandler
 {
     Task Handle(CommonEventWrapper eventWrapper, string messageBody, CancellationToken cancellationToken);
 }
@@ -14,7 +14,7 @@ public interface IGitHubWorkflowEventHandler
  * Handles specific payloads sent by the secret manager lambda.
  * All messages have the same outer body detailing the source & action.
  */
-public class GitHubWorkflowEventHandler(
+public class GithubWorkflowEventHandler(
     IAppConfigVersionsService appConfigVersionsService,
     INginxVanityUrlsService nginxVanityUrlsService,
     ISquidProxyConfigService squidProxyConfigService,
@@ -24,8 +24,8 @@ public class GitHubWorkflowEventHandler(
     IEnabledVanityUrlsService enabledVanityUrlsService,
     IEnabledApisService enabledApisService,
     ITfVanityUrlsService tfVanityUrlsService,
-    ILogger<GitHubWorkflowEventHandler> logger)
-    : IGitHubWorkflowEventHandler
+    ILogger<GithubWorkflowEventHandler> logger)
+    : IGithubWorkflowEventHandler
 {
     public async Task Handle(CommonEventWrapper eventWrapper, string messageBody, CancellationToken cancellationToken)
     {
@@ -71,7 +71,7 @@ public class GitHubWorkflowEventHandler(
         var workflowEvent = JsonSerializer.Deserialize<CommonEvent<T>>(messageBody);
         if (workflowEvent == null)
         {
-            logger.LogInformation("Failed to parse GitHub workflow event - message: {MessageBody}", messageBody);
+            logger.LogInformation("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
             return;
         }
 

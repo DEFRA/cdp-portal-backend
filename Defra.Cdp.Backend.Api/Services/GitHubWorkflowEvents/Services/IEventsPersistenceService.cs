@@ -1,6 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 
-namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IEventsPersistenceService<T>
 {

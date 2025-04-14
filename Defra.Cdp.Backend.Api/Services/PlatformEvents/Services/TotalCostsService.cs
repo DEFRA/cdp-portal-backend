@@ -6,7 +6,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 

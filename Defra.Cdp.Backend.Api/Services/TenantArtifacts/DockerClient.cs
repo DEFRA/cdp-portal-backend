@@ -53,7 +53,7 @@ public class DockerClient : IDockerClient
         var response = await _client.SendAsync(req);
         await using var stream = await response.Content.ReadAsStreamAsync();
         var tagList = await JsonSerializer.DeserializeAsync<ImageTagList>(stream);
-        if (tagList == null) throw new Exception($"Failed to get tag-list for ${repo}.");
+        if (tagList == null) throw new Exception($"Failed to get tag-list for {repo}.");
 
         return tagList;
     }
@@ -161,7 +161,7 @@ public class DockerClient : IDockerClient
                 // so it can be reprocessed in the future (in which case may as well store it compressed)
                 if (filesToExtract.Any(frx => frx.IsMatch(tar.Entry.Key)))
                 {
-                    _logger.LogInformation("Extracted {EntryKey} from ${SourceName} size: {EntrySize}", tar.Entry.Key,
+                    _logger.LogInformation("Extracted {EntryKey} from {SourceName} size: {EntrySize}", tar.Entry.Key,
                         sourceName, tar.Entry.Size);
                     var sr = new StreamReader(tar.OpenEntryStream());
                     var data = sr.ReadToEnd();

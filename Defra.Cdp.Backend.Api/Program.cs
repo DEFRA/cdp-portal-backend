@@ -9,16 +9,18 @@ using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubEvents;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Service;
-using Defra.Cdp.Backend.Api.Services.Status;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
 using Defra.Cdp.Backend.Api.Utils.Clients;
@@ -103,8 +105,11 @@ builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSec
 builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
 builder.Services.Configure<SecretEventListenerOptions>(
     builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
-builder.Services.Configure<GitHubWorkflowEventListenerOptions>(
-    builder.Configuration.GetSection(GitHubWorkflowEventListenerOptions.Prefix));
+builder.Services.Configure<GithubWorkflowEventListenerOptions>(
+    builder.Configuration.GetSection(GithubWorkflowEventListenerOptions.Prefix));
+builder.Services.Configure<GithubEventListenerOptions>(
+    builder.Configuration.GetSection(GithubEventListenerOptions.Prefix));
+builder.Services.Configure<GithubOptions>(builder.Configuration.GetSection(GithubOptions.Prefix));
 builder.Services.Configure<PlatformEventListenerOptions>(
     builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
@@ -158,6 +163,7 @@ builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
+builder.Services.AddSingleton<ILegacyStatusService, LegacyStatusService>();
 builder.Services.AddSingleton<IUndeploymentsService, UndeploymentsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
@@ -181,7 +187,7 @@ builder.Services.AddSingleton<ITfVanityUrlsService, TfVanityUrlsService>();
 builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
 builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
 builder.Services.AddSingleton<IApiGatewaysService, ApiGatewaysService>();
-builder.Services.AddSingleton<IStatusService, StatusService>();
+builder.Services.AddSingleton<ITenantStatusService, TenantStatusService>();
 builder.Services.AddSingleton<IServiceOverviewService, ServiceOverviewService>();
 
 // Proxy
@@ -206,8 +212,10 @@ builder.Services.AddSingleton<SelfServiceOpsClient>();
 builder.Services.AddSingleton<IUserServiceFetcher, UserServiceFetcher>();
 
 // GitHub Workflow Event Handlers
-builder.Services.AddSingleton<IGitHubWorkflowEventHandler, GitHubWorkflowEventHandler>();
-builder.Services.AddSingleton<GitHubWorkflowEventListener>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, GithubWorkflowEventHandler>();
+builder.Services.AddSingleton<GithubWorkflowEventListener>();
+builder.Services.AddSingleton<IGithubEventHandler, GithubEventHandler>();
+builder.Services.AddSingleton<GithubEventListener>();
 builder.Services.AddSingleton<IPlatformEventHandler, PlatformEventHandler>();
 builder.Services.AddSingleton<PlatformEventListener>();
 
@@ -253,6 +261,7 @@ app.MapDecommissionEndpoint();
 app.MapDeploymentsEndpoint();
 app.MapUndeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
+app.MapEntitiesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
@@ -282,10 +291,16 @@ Task.Run(() =>
     secretEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
-var gitHubWorkflowEventListener = app.Services.GetService<GitHubWorkflowEventListener>();
+var gitHubWorkflowEventListener = app.Services.GetService<GithubWorkflowEventListener>();
 logger.Information("Starting GitHub Workflow Event listener - reading workflow events from SQS");
 Task.Run(() =>
     gitHubWorkflowEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
+
+var gitHubEventListener = app.Services.GetService<GithubEventListener>();
+logger.Information("Starting GitHub Event listener - reading github events from SQS");
+Task.Run(() =>
+    gitHubEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var platformEventListener = app.Services.GetService<PlatformEventListener>();

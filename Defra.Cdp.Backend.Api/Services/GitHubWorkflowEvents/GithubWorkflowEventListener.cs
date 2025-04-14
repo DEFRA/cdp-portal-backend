@@ -4,20 +4,19 @@ using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
 using Microsoft.Extensions.Options;
 
-namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 
 /**
- * Listens for events sent by GitHub Workflows
+ * Listens for events sent by Github Workflows
  * Messages are sent by the workflows and contain event specific payloads
  */
-public class GitHubWorkflowEventListener(
+public class GithubWorkflowEventListener(
     IAmazonSQS sqs,
-    IOptions<GitHubWorkflowEventListenerOptions> config,
-    IGitHubWorkflowEventHandler eventHandler,
-    ILogger<GitHubWorkflowEventListener> logger)
+    IOptions<GithubWorkflowEventListenerOptions> config,
+    IGithubWorkflowEventHandler eventHandler,
+    ILogger<GithubWorkflowEventListener> logger)
     : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
@@ -43,7 +42,6 @@ public class GitHubWorkflowEventListener(
 
     private static CommonEventWrapper? TryParseMessageBody(string body)
     {
-        Console.WriteLine(body);
         try
         {
             return JsonSerializer.Deserialize<CommonEventWrapper>(body);

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
 public record AppConfigVersionPayload
 {

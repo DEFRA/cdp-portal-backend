@@ -1,13 +1,13 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
-namespace Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface ITfVanityUrlsService : IEventsPersistenceService<TfVanityUrlsPayload>;
 

@@ -1,8 +1,8 @@
 namespace Defra.Cdp.Backend.Api.Config;
 
-public class GitHubWorkflowEventListenerOptions
+public class GithubEventListenerOptions
 {
-    public const string Prefix = "GitHubWorkflowEvents";
+    public const string Prefix = "GithubEvents";
     public string QueueUrl { get; set; } = null!;
     public bool Enabled { get; set; }
 }

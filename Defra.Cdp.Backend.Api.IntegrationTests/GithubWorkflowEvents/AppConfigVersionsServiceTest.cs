@@ -1,8 +1,8 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
