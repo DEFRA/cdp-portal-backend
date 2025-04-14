@@ -44,7 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\GitHubWorkflowEvents\events\" />
+    <Folder Include="Services\GithubWorkflowEvents\events\" />
   </ItemGroup>
 
 </Project>

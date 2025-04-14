@@ -1,4 +1,4 @@
-using Defra.Cdp.Backend.Api.Services.Status;
+using Defra.Cdp.Backend.Api.Services.TenantStatus;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -9,9 +9,9 @@ public static class ServiceStatusEndpoint
         app.MapGet("/service-status/{service}", GetStatus);
     }
 
-    private static async Task<IResult> GetStatus(IStatusService statusService, string service, CancellationToken cancellationToken)
+    private static async Task<IResult> GetStatus(ITenantStatusService tenantStatusService, string service, CancellationToken cancellationToken)
     {
-        var status = await statusService.GetTenantStatus(service, cancellationToken);
+        var status = await tenantStatusService.GetTenantStatus(service, cancellationToken);
         return Results.Ok(status);
     }
 }

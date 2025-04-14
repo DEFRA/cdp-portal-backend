@@ -1,10 +1,10 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.GitHubWorkflowEvents.Model;
+namespace Defra.Cdp.Backend.Api.Tests.Services.GithubWorkflowEvents.Model;
 
-public class GitHubWorkflowEventTest
+public class GithubWorkflowEventTest
 {
     [Fact]
     public void WillDeserializeAppConfigVersionEvent()

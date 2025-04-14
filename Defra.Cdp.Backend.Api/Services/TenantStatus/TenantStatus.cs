@@ -1,6 +1,6 @@
-namespace Defra.Cdp.Backend.Api.Services.Status;
+namespace Defra.Cdp.Backend.Api.Services.TenantStatus;
 
-public class Status
+public class TenantStatus
 {
     public required string Name { get; set; }
     public int ImageCount { get; set; }

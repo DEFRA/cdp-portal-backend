@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.AspNetCore.Mvc;
@@ -8,14 +8,13 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class TestSuiteEndpoint
 {
-    public static IEndpointRouteBuilder MapTestSuiteEndpoint(this IEndpointRouteBuilder app)
+    public static void MapTestSuiteEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("test-run/{runId}", FindTestRun);
         app.MapGet("test-run", FindTestRunsForSuite); // filter by test e.g. /test-run?name=foo-tests 
         app.MapPost("test-run", CreateTestRun);
         app.MapGet("test-suites", FindAllTestSuites);
         app.MapGet("test-suites/{name}", FindTestSuites);
-        return app;
     }
 
     static async Task<IResult> FindTestRun([FromServices] ITestRunService testRunService, string runId,

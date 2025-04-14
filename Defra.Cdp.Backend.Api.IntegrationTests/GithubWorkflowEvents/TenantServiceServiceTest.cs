@@ -3,8 +3,8 @@ using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Github;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;

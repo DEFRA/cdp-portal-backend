@@ -1,24 +1,24 @@
 using Defra.Cdp.Backend.Api.Services.Github;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
-namespace Defra.Cdp.Backend.Api.Services.Status;
+namespace Defra.Cdp.Backend.Api.Services.TenantStatus;
 
-public interface IStatusService
+public interface ITenantStatusService
 {
-    public Task<Status> GetTenantStatus(string service, CancellationToken cancellationToken = default);
+    public Task<TenantStatus> GetTenantStatus(string service, CancellationToken cancellationToken = default);
 }
 
-public class StatusService(
+public class TenantStatusService(
     IDeployableArtifactsService deployableArtifactsService,
     ISquidProxyConfigService squidProxyConfigService,
     ITenantServicesService tenantService,
     IRepositoryService repositoryService,
     ISecretsService secretsService
-    ) : IStatusService
+    ) : ITenantStatusService
 {
-    public async Task<Status> GetTenantStatus(string service, CancellationToken cancellationToken = default)
+    public async Task<TenantStatus> GetTenantStatus(string service, CancellationToken cancellationToken = default)
     {
         var images = await deployableArtifactsService.FindAllTagsForRepo(service, cancellationToken);
         var secrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
@@ -26,7 +26,7 @@ public class StatusService(
         var squid = await squidProxyConfigService.FindSquidProxyConfig(service, cancellationToken);
         var tenant = await tenantService.Find(new TenantServiceFilter{ Name = service }, cancellationToken);
 
-        var status = new Status
+        var status = new TenantStatus
         {
             Name = service,
             ImageCount = images.Count,

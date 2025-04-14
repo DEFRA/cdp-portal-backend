@@ -1,12 +1,12 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Model;
-using Defra.Cdp.Backend.Api.Services.GitHubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using NSubstitute;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.GitHubWorkflowEvents;
+namespace Defra.Cdp.Backend.Api.Tests.Services.GithubWorkflowEvents;
 
-public class GitHubWorkflowEventHandlerTest
+public class GithubWorkflowEventHandlerTest
 {
     private readonly IAppConfigVersionsService appConfigVersionsService = Substitute.For<IAppConfigVersionsService>();
     private readonly INginxVanityUrlsService vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
@@ -18,9 +18,9 @@ public class GitHubWorkflowEventHandlerTest
     private readonly IEnabledApisService enabledApisService = Substitute.For<IEnabledApisService>();
     private readonly ITfVanityUrlsService tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
 
-    private GitHubWorkflowEventHandler createHandler()
+    private GithubWorkflowEventHandler createHandler()
     {
-        return new GitHubWorkflowEventHandler(
+        return new GithubWorkflowEventHandler(
             appConfigVersionsService,
             vanityUrlsService,
             squidProxyConfigService,
@@ -30,7 +30,7 @@ public class GitHubWorkflowEventHandlerTest
             enabledUrlsService,
             enabledApisService,
             tfVanityUrlsService,
-            ConsoleLogger.CreateLogger<GitHubWorkflowEventHandler>());
+            ConsoleLogger.CreateLogger<GithubWorkflowEventHandler>());
     }
 
     [Fact]
@@ -433,7 +433,7 @@ public class GitHubWorkflowEventHandlerTest
     }
 
     [Fact]
-    public async Task UnrecognizedGitHubWorkflowEvent()
+    public async Task UnrecognizedGithubWorkflowEvent()
     {
         var eventHandler = createHandler();
 

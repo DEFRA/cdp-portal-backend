@@ -52,7 +52,7 @@ public class LambdaMessageHandler
                 else
                 {
                     _logger.LogWarning(
-                        "Failed to link cdp ${cdpDeploymentId} to ecs ${lambdaId}. If the deployment was triggered in a different environment this is to be expected.",
+                        "Failed to link cdp {cdpDeploymentId} to ecs {lambdaId}. If the deployment was triggered in a different environment this is to be expected.",
                         cdpDeploymentId, lambdaId);
                     return;
                 }
