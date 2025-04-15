@@ -34,7 +34,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
         Assert.Equal(1, triggerFromDb.TestSuites.Count);
-        Assert.Equal(["cdp-env-test-suite"], triggerFromDb.TestSuites.Keys);
+        Assert.Equal(new List<string> { "cdp-env-test-suite" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["infra-dev", "dev"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
 
         var updatedTrigger = JsonSerializer.Deserialize<AutoTestRunTrigger>("""
@@ -51,7 +51,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
         Assert.Equal(2, triggerFromDb.TestSuites.Count);
-        Assert.Equal(["cdp-env-test-suite", "cdp-portal-perf-tests"], triggerFromDb.TestSuites.Keys);
+        Assert.Equal(new List<string> { "cdp-env-test-suite", "cdp-portal-perf-tests" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["infra-dev", "dev"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
         Assert.Equal(["dev"], triggerFromDb.TestSuites["cdp-portal-perf-tests"]);
     }
@@ -81,7 +81,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-user-service-backend", triggerFromDb.ServiceName);
         Assert.Equal(1, triggerFromDb.TestSuites.Count);
-        Assert.Equal(["cdp-portal-journey-tests"], triggerFromDb.TestSuites.Keys);
+        Assert.Equal(new List<string> { "cdp-portal-journey-tests" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["infra-dev", "dev", "test"], triggerFromDb.TestSuites["cdp-portal-journey-tests"]);
 
         var updatedTrigger = JsonSerializer.Deserialize<AutoTestRunTrigger>("""
@@ -99,7 +99,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-user-service-backend", triggerFromDb.ServiceName);
         Assert.Equal(1, triggerFromDb.TestSuites.Count);
-        Assert.Equal(["cdp-portal-journey-tests"], triggerFromDb.TestSuites.Keys);
+        Assert.Equal(new List<string> { "cdp-portal-journey-tests" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["dev"], triggerFromDb.TestSuites["cdp-portal-journey-tests"]);
     }
 
@@ -128,7 +128,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
         Assert.Equal(1, triggerFromDb.TestSuites.Count);
-        Assert.Equal(["cdp-env-test-suite"], triggerFromDb.TestSuites.Keys);
+        Assert.Equal(new List<string> { "cdp-env-test-suite" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["perf-test", "dev"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
 
         var updatedTrigger = JsonSerializer.Deserialize<AutoTestRunTrigger>("""
@@ -144,7 +144,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
-        Assert.Equal(0, triggerFromDb.TestSuites.Count);
+        Assert.Empty(triggerFromDb.TestSuites);
     }
 
     [Fact]
@@ -171,9 +171,8 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-uploader", triggerFromDb.ServiceName);
-        Assert.Equal(1, triggerFromDb.TestSuites.Count);
-        Assert.Equal(["cdp-uploader-smoke-tests"], triggerFromDb.TestSuites.Keys);
+        Assert.Single(triggerFromDb.TestSuites);
+        Assert.Equal(new List<string> { "cdp-uploader-smoke-tests" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["management", "dev"], triggerFromDb.TestSuites["cdp-uploader-smoke-tests"]);
     }
-
 }

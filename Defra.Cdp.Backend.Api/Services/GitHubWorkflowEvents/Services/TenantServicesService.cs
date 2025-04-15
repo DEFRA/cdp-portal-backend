@@ -59,7 +59,7 @@ public class TenantServicesService(
 
         var teamsLookup = await repositoryService.TeamsLookup(cancellationToken);
         var tenantServices = payload.Services.Select(s => new TenantServiceRecord(payload.Environment, s.Name, s.Zone,
-            s.Mongo, s.Redis, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues, s.ApiEnabled, s.ApiType,
+            s.Mongo, s.Redis, s.Postgres, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues, s.ApiEnabled, s.ApiType,
             teamsLookup[s.Name].FirstOrDefault([]))
         ).ToList();
 
@@ -126,7 +126,8 @@ public record TenantServiceFilter(
     string? Environment = null,
     string? Name = null,
     bool IsTest = false,
-    bool IsService = false)
+    bool IsService = false,
+    bool HasPostgres = false)
 {
     public FilterDefinition<TenantServiceRecord> Filter()
     {
@@ -162,6 +163,11 @@ public record TenantServiceFilter(
             filter &= builder.Ne(t => t.TestSuite, null);
         }
 
+        if (HasPostgres)
+        {
+            filter &= builder.Eq(t => t.Postgres, HasPostgres);
+        }
+
         return filter;
     }
 }
@@ -173,6 +179,7 @@ public record TenantServiceRecord(
     string Zone,
     bool Mongo,
     bool Redis,
+    bool Postgres,    
     string ServiceCode,
     string? TestSuite,
     List<string>? Buckets,
@@ -194,6 +201,7 @@ public record TenantServiceRecord(
                Zone == other.Zone &&
                Mongo == other.Mongo &&
                Redis == other.Redis &&
+               Postgres == other.Postgres &&
                ServiceCode == other.ServiceCode &&
                TestSuite == other.TestSuite &&
                Buckets == other.Buckets &&
@@ -211,6 +219,7 @@ public record TenantServiceRecord(
         hashCode.Add(Zone);
         hashCode.Add(Mongo);
         hashCode.Add(Redis);
+        hashCode.Add(Postgres);
         hashCode.Add(ServiceCode);
         hashCode.Add(TestSuite);
         hashCode.Add(Buckets);

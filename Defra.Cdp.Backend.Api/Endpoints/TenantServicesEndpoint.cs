@@ -47,5 +47,6 @@ public static class TenantServicesEndpoint
         [JsonPropertyName("zone")] public string Zone { get; } = record.Zone;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("testSuite")] public string? TestSuite { get; } = record.TestSuite;
+        [JsonPropertyName("postgres")] public bool Postgres { get; } = record.Postgres;
     }
 }
