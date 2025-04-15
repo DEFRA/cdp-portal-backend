@@ -308,7 +308,8 @@ public class GithubWorkflowEventHandlerTest
                                            "mongo": true,
                                            "redis": false,
                                            "service_code": "CDP",
-                                           "name": "backend-service"
+                                           "name": "backend-service",
+                                           "rds_aurora_postgres": true
                                          }
                                        ]
                                      }
@@ -319,7 +320,8 @@ public class GithubWorkflowEventHandlerTest
 
         await tenantServicesService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<TenantServicesPayload>>(e =>
-                e.EventType == "tenant-services" && e.Payload.Environment == "test" && e.Payload.Services.Count == 2),
+                e.EventType == "tenant-services" && e.Payload.Environment == "test" && e.Payload.Services.Count == 2 &&
+                e.Payload.Services[0].Postgres == false && e.Payload.Services[1].Postgres == true),
             Arg.Any<CancellationToken>());
         await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());

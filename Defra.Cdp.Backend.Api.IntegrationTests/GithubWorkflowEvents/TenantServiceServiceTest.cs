@@ -152,7 +152,7 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         // Find By Env
         result = await tenantServicesService.Find(new TenantServiceFilter { Environment = "test" },
             CancellationToken.None);
-        Assert.Equal(3, result.Count);
+        Assert.Equal(4, result.Count);
 
         result = await tenantServicesService.Find(new TenantServiceFilter { Environment = "prod" },
             CancellationToken.None);
@@ -184,9 +184,14 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
 
         // Find services suites
         result = await tenantServicesService.Find(new TenantServiceFilter { IsService = true }, CancellationToken.None);
-        Assert.Equal(2, result.Count);
+        Assert.Equal(3, result.Count);
         Assert.Contains(result, t => t.ServiceName == "foo");
         Assert.Contains(result, t => t.ServiceName == "bar");
+        
+        // Find services with postgres
+        result = await tenantServicesService.Find(new TenantServiceFilter { HasPostgres = true }, CancellationToken.None);
+        Assert.Single(result);
+        Assert.Contains(result, t => t.ServiceName == "postgres-service");
     }
 
 
@@ -219,7 +224,16 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
                 Redis = false,
                 TestSuite = "foo-tests",
                 ServiceCode = "FOO"
-            }
+            },
+            new Service
+            {
+                Name = "postgres-service",
+                Zone = "private",
+                Mongo = false,
+                Redis = false,
+                Postgres = true,
+                ServiceCode = "POS"
+            }            
         ]
     };
 

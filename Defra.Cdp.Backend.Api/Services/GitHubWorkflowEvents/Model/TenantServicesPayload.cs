@@ -14,6 +14,7 @@ public record Service
     [JsonPropertyName("zone")] public required string Zone { get; init; }
     [JsonPropertyName("mongo")] public required bool Mongo { get; init; }
     [JsonPropertyName("redis")] public required bool Redis { get; init; }
+    [JsonPropertyName("rds_aurora_postgres")] public bool Postgres { get; init; }
     [JsonPropertyName("service_code")] public required string ServiceCode { get; init; }
     [JsonPropertyName("test_suite")] public string? TestSuite { get; init; }
     [JsonPropertyName("buckets")] public List<string>? Buckets { get; init; }
