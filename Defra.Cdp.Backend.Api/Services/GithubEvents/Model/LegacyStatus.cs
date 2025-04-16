@@ -67,12 +67,15 @@ public record LegacyStatus
     public WorkflowDetails? CdpGrafanaSvc{ get; set; }
 }
 
+
+[BsonIgnoreExtraElements]
 public class Team
 {
     [property: JsonPropertyName("teamId")] public string TeamId { get; set; }
     [property: JsonPropertyName("name")] public string Name { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Creator
 {
     [property: JsonPropertyName("id")] public string Id { get; set; }
@@ -81,13 +84,14 @@ public class Creator
     public string DisplayName { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class WorkflowDetails
 {
     [property: JsonPropertyName("status")]
     public string Status { get; set; }
 
     [property: JsonPropertyName("result")]
-    public string Result { get; set; }
+    public Object Result { get; set; }
 
     [property: JsonPropertyName("trigger")]
     public Trigger Trigger { get; set; }
@@ -97,6 +101,7 @@ public class WorkflowDetails
     public Main? Main { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Trigger
 {
     [property: JsonPropertyName("org")]
@@ -112,6 +117,7 @@ public class Trigger
     public TriggerInputs Inputs { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class TriggerInputs
 {
     [property: JsonPropertyName("serviceTypeTemplate")]
@@ -156,12 +162,14 @@ public class TriggerInputs
     public string ServiceZone { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Main
 {
     [property: JsonPropertyName("workflow")]
     public Workflow? Workflow { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Workflow
 {
     [property: JsonPropertyName("name")]
