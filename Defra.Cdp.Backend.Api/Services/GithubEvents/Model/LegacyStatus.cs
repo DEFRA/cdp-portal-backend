@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
 
+[BsonIgnoreExtraElements]
 public record LegacyStatus
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
