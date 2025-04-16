@@ -3,7 +3,6 @@ using Defra.Cdp.Backend.Api.Services.Entities.LegacyHelpers;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
 
-    
     public record GithubEventMessage
     {
         [JsonPropertyName("github_event")] public required string GithubEvent { get; init; }
@@ -14,7 +13,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
 
     public class WorkflowRun
     {
-        [JsonPropertyName("id")] public int? Id { get; init; }
+        [JsonPropertyName("id")] public long? Id { get; init; }
         [JsonPropertyName("name")] public string? Name { get; init; }
         [JsonPropertyName("head_branch")] public string? HeadBranch { get; init; }
         [JsonPropertyName("head_sha")] public string? HeadSha { get; init; }

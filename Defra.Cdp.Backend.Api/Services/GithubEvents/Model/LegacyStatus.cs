@@ -17,7 +17,7 @@ public record LegacyStatus
     public string RepositoryName { get; set; }
 
     [property: JsonPropertyName("portalVersion")]
-    public int PortalVersion { get; set; }
+    public long PortalVersion { get; set; }
 
     [property: JsonPropertyName("kind")] public string Kind { get; set; }
     [property: JsonPropertyName("status")] public string Status { get; set; }
@@ -167,7 +167,7 @@ public class Workflow
     public string Name { get; set; }
 
     [property: JsonPropertyName("id")]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     [property: JsonPropertyName("html_url")]
     [BsonElement("html_url")]
