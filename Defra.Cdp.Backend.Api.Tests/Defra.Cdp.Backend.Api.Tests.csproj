@@ -70,6 +70,12 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\codebuild\" />
+    <Content Include="Resources\codebuild\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Defra.Cdp.Backend.Api\Defra.Cdp.Backend.Api.csproj" />

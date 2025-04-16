@@ -18,6 +18,7 @@ public class EcsEventListener(
     LambdaMessageHandler lambdaMessageHandler,
     DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
     AutoTestRunTriggerEventHandler autoTestRunTriggerEventHandler,
+    CodeBuildStateChangeHandler codeBuildStateChangeHandler,
     ILogger<EcsEventListener> logger)
     : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
@@ -80,6 +81,25 @@ public class EcsEventListener(
                 await deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 await autoTestRunTriggerEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
+            
+            case "CodeBuild Lambda Created":
+                var codebuildLambdaCreated = JsonSerializer.Deserialize<CodeBuildLambdaEvent>(messageBody);
+                if (codebuildLambdaCreated == null)
+                {
+                    throw new Exception($"Unable to parse CodeBuildStateChangeEvent message {unknownEvent.Id}");
+                }
+                await codeBuildStateChangeHandler.Handle(id, codebuildLambdaCreated, cancellationToken);
+                break;
+            
+            case "CodeBuild Build State Change":
+                var codebuildStateChange = JsonSerializer.Deserialize<CodeBuildStateChangeEvent>(messageBody);
+                if (codebuildStateChange == null)
+                {
+                    throw new Exception($"Unable to parse CodeBuildStateChangeEvent message {unknownEvent.Id}");
+                }
+                await codeBuildStateChangeHandler.Handle(id, codebuildStateChange, cancellationToken);
+                break;
+            
             default:
                 logger.LogInformation("Not processing {Id}, no handler for {messageType}. message was {MessageBody}",
                     id, unknownEvent?.DetailType, messageBody);
