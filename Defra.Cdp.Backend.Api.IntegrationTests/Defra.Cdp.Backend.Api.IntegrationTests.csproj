@@ -30,7 +30,10 @@
 
 
   <ItemGroup>
-    <Folder Include="Services\Aws\" />
+    <None Remove="Resources\codebuild\" />
+    <Content Include="Resources\codebuild\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
-
+  
 </Project>

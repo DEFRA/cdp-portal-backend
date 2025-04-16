@@ -25,6 +25,6 @@ public class DeploymentStateChangeEventHandler
         if (!updated)
         {
          _logger.LogWarning("{id} Failed to record EcsDeploymentStateChange {deploymentId}", id, ecsEvent.Detail.DeploymentId);
-      }
+        }
    }
 }

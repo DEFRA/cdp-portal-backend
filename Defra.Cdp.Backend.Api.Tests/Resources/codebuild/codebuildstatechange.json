@@ -1,0 +1,212 @@
+{
+  "account": "0000",
+  "detailType": "CodeBuild Build State Change",
+  "region": "eu-west-2",
+  "source": "aws.codebuild",
+  "time": "2025-04-14T11:48:12Z",
+  "notificationRuleArn": "arn:aws:codestar-notifications:eu-west-2:0000:notificationrule/2ea28b4da14de167b5a9c3b8346f1933316250d2",
+  "detail": {
+    "build-status": "SUCCEEDED",
+    "project-name": "kurne-test-liquibase",
+    "build-id": "arn:aws:codebuild:eu-west-2:0000:build/kurne-test-liquibase:b93ef1d9-47fa-4a91-b8cf-902987cd9fbc",
+    "additional-information": {
+      "cache": {
+        "type": "NO_CACHE"
+      },
+      "build-number": 12,
+      "timeout-in-minutes": 60,
+      "build-complete": true,
+      "initiator": "cdp-infra-dev-devops",
+      "build-start-time": "Apr 14, 2025 11:47:31 AM",
+      "source": {
+        "location": "temp-connection-logs/AWSLogs/506190012364/bar.zip",
+        "type": "S3"
+      },
+      "artifact": {
+        "location": ""
+      },
+      "vpc-config": {
+        "security-group-ids": [
+          "sg-0"
+        ],
+        "subnets": [
+          {
+            "build-fleet-az": "eu-west",
+            "customer-az": "eu-west",
+            "subnet-id": "subnet-0"
+          }
+        ],
+        "vpc-id": "vpc-0"
+      },
+      "environment": {
+        "image": "0000.dkr.ecr.eu-west-2.amazonaws.com/liquibase:latest",
+        "privileged-mode": false,
+        "image-pull-credentials-type": "SERVICE_ROLE",
+        "compute-type": "BUILD_GENERAL1_SMALL",
+        "type": "LINUX_CONTAINER",
+        "environment-variables": [
+          {
+            "name": "PGHOST",
+            "type": "PLAINTEXT",
+            "value": "cdp-example-node-postgres-be.0000.eu-west-2.rds.amazonaws.com"
+          },
+          {
+            "name": "PGDATABASE",
+            "type": "PLAINTEXT",
+            "value": "cdp_example_node_postgres_be"
+          },
+          {
+            "name": "PGUSER",
+            "type": "PLAINTEXT",
+            "value": "cdp_example_node_postgres_be_ddl"
+          },
+          {
+            "name": "REGION",
+            "type": "PLAINTEXT",
+            "value": "eu-west-2"
+          },
+          {
+            "name": "PGPORT",
+            "type": "PLAINTEXT",
+            "value": "5432"
+          },
+          {
+            "name": "LIQUIBASE_COMMAND_USERNAME",
+            "type": "PLAINTEXT",
+            "value": "cdp_example_node_postgres_be_ddl"
+          },
+          {
+            "name": "LIQUIBASE_COMMAND_URL",
+            "type": "PLAINTEXT",
+            "value": "jdbc:postgresql://cdp-example-node-postgres-be.c0000.eu-west-2.rds.amazonaws.com/cdp_example_node_postgres_be?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory"
+          },
+          {
+            "name": "LIQUIBASE_COMMAND_CHANGELOG_FILE",
+            "type": "PLAINTEXT",
+            "value": "/changelog/db.changelog.xml"
+          }
+        ]
+      },
+      "project-file-system-locations": [],
+      "network-interface": {
+        "eni-id": "eni-065b161e928e0a4cf",
+        "subnet-id": "subnet-0bbbf9ff1edc414bb"
+      },
+      "logs": {
+        "group-name": "/aws/codebuild/kurne-test-liquibase",
+        "stream-name": "b93ef1d9-47fa-4a91-b8cf-902987cd9fbc",
+        "deep-link": "https://console.aws.amazon.com/cloudwatch/home?region=eu-west-2#logsV2:log-groups/log-group/$252Faws$252Fcodebuild$252Fkurne-test-liquibase/log-events/b93ef1d9-47fa-4a91-b8cf-902987cd9fbc"
+      },
+      "phases": [
+        {
+          "phase-context": [],
+          "start-time": "Apr 14, 2025 11:47:31 AM",
+          "end-time": "Apr 14, 2025 11:47:31 AM",
+          "duration-in-seconds": 0,
+          "phase-type": "SUBMITTED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [],
+          "start-time": "Apr 14, 2025 11:47:31 AM",
+          "end-time": "Apr 14, 2025 11:47:32 AM",
+          "duration-in-seconds": 1,
+          "phase-type": "QUEUED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:47:32 AM",
+          "end-time": "Apr 14, 2025 11:48:01 AM",
+          "duration-in-seconds": 28,
+          "phase-type": "PROVISIONING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:01 AM",
+          "end-time": "Apr 14, 2025 11:48:01 AM",
+          "duration-in-seconds": 0,
+          "phase-type": "DOWNLOAD_SOURCE",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:01 AM",
+          "end-time": "Apr 14, 2025 11:48:01 AM",
+          "duration-in-seconds": 0,
+          "phase-type": "INSTALL",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:01 AM",
+          "end-time": "Apr 14, 2025 11:48:04 AM",
+          "duration-in-seconds": 2,
+          "phase-type": "PRE_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:04 AM",
+          "end-time": "Apr 14, 2025 11:48:11 AM",
+          "duration-in-seconds": 6,
+          "phase-type": "BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:11 AM",
+          "end-time": "Apr 14, 2025 11:48:11 AM",
+          "duration-in-seconds": 0,
+          "phase-type": "POST_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:11 AM",
+          "end-time": "Apr 14, 2025 11:48:11 AM",
+          "duration-in-seconds": 0,
+          "phase-type": "UPLOAD_ARTIFACTS",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Apr 14, 2025 11:48:11 AM",
+          "end-time": "Apr 14, 2025 11:48:11 AM",
+          "duration-in-seconds": 0,
+          "phase-type": "FINALIZING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "start-time": "Apr 14, 2025 11:48:11 AM",
+          "phase-type": "COMPLETED"
+        }
+      ],
+      "queued-timeout-in-minutes": 480
+    },
+    "current-phase": "COMPLETED",
+    "current-phase-context": "[: ]",
+    "version": "1"
+  },
+  "resources": [
+    "arn:aws:codebuild:eu-west-2:0000:build/kurne-test-liquibase:b93ef1d9-47fa-4a91-b8cf-902987cd9fbc"
+  ],
+  "additionalAttributes": {}
+}
