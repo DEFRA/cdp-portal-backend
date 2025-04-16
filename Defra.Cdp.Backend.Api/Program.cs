@@ -205,6 +205,7 @@ builder.Services.AddTransient<ProxyHttpMessageHandler>();
 builder.Services.AddSingleton<TaskStateChangeEventHandler>();
 builder.Services.AddSingleton<DeploymentStateChangeEventHandler>();
 builder.Services.AddSingleton<LambdaMessageHandler>();
+builder.Services.AddSingleton<CodeBuildStateChangeHandler>();
 
 // Deployment Trigger Event Handlers
 builder.Services.AddSingleton<AutoTestRunTriggerEventHandler>();
