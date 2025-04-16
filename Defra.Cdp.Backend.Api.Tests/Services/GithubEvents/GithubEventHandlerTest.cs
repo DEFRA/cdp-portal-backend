@@ -49,7 +49,8 @@ public class GithubEventHandlerTest
             CreatePerfTestSuite = "create_perf_test_suite.yml",
             CreateTenantService = "create-service.yml",
             ApplyTenantService = "apply.yml",
-            ManualApplyTenantService = "manual.yml"
+            ManualApplyTenantService = "manual.yml",
+            NotifyPortal = "notify-portal.yml"
         }
     };
 

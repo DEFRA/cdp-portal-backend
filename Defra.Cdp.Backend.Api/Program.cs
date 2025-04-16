@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
+using MongoDB.Bson.Serialization;
 using Quartz;
 using Serilog;
 using Serilog.Extensions.Logging;
