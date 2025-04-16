@@ -236,7 +236,7 @@ public class GithubEventHandler(
 
 public record TrimmedWorkflowRun(
     string? name,
-    int? id,
+    long? id,
     [property: BsonElement("html_url")] string? htmlUrl,
     [property: BsonElement("created_at")] DateTime? createdAt,
     [property: BsonElement("updated_at")] DateTime? updatedAt,
