@@ -1,13 +1,20 @@
-using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Migrations;
 
+public enum LinkMigrationOutcome
+{
+    LinkedOk,
+    AlreadyLinked,
+    UnknownMigrationId
+}
+
 public interface IDatabaseMigrationService
 {
     public Task CreateMigration(DatabaseMigration migration, CancellationToken ct);
-    public Task<DatabaseMigration?> Link(string cdpMigrationId, string buildId, CancellationToken ct);
+    public Task<LinkMigrationOutcome> Link(string cdpMigrationId, string buildId, CancellationToken ct);
+    
     public Task<bool> UpdateStatus(string buildId, string status, DateTime timestamp, CancellationToken ct);
 
     public Task<DatabaseMigration?> FindByCdpMigrationId(string cdpMigrationId, CancellationToken ct);
@@ -45,13 +52,25 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
         await Collection.InsertOneAsync(migration, cancellationToken: ct);
     }
 
-    public async Task<DatabaseMigration?> Link(string cdpMigrationId, string buildId, CancellationToken ct)
+    public async Task<LinkMigrationOutcome> Link(string cdpMigrationId, string buildId, CancellationToken ct)
     {
         var fb = Builders<DatabaseMigration>.Filter;
         var filter = fb.And(fb.Eq(m => m.CdpMigrationId, cdpMigrationId), fb.Eq(m => m.BuildId, null));
         var update = Builders<DatabaseMigration>.Update.Set(m => m.BuildId, buildId);
         await Collection.UpdateOneAsync(filter, update, null, ct);
-        return Collection.Find(fb.Eq(m => m.CdpMigrationId, cdpMigrationId)).FirstOrDefault(ct);
+        var linkedRecord = Collection.Find(fb.Eq(m => m.CdpMigrationId, cdpMigrationId)).FirstOrDefault(ct);
+        if (linkedRecord == null)
+        {
+            return LinkMigrationOutcome.UnknownMigrationId;
+        }
+
+        if (linkedRecord.BuildId == buildId)
+        {
+            return LinkMigrationOutcome.LinkedOk;
+        }
+        
+        return LinkMigrationOutcome.AlreadyLinked;
+
     }
 
     public async Task<bool> UpdateStatus(string buildId, string status, DateTime timestamp, CancellationToken ct)

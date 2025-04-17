@@ -34,11 +34,50 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
             Version = "0.1.0",
         }, CancellationToken.None);
         
+        
+        
         var lambdaEvent = new CodeBuildLambdaEvent(
             CdpMigrationId: cdpMigrationId,
             BuildId: buildId,
             Account: AwsAccount,
             Time: DateTime.Now
+        );
+        await handler.Handle("id", lambdaEvent, CancellationToken.None);
+
+        var result = await service.FindByBuildId(buildId, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal(cdpMigrationId, result.CdpMigrationId);
+        Assert.Equal(buildId, result.BuildId);
+    }
+    
+    [Fact]
+    public async Task CreatingOnLinkFailure()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "CodeBuildStateChangeHandler");
+        var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
+        var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
+
+        const string buildId = "arn:aws:codebuild:eu-west-2:0000000000:build/kurne-test-liquibase:43245435";
+        const string cdpMigrationId = "cdp-43545511";
+        
+        var lambdaEvent = new CodeBuildLambdaEvent(
+            CdpMigrationId: cdpMigrationId,
+            BuildId: buildId,
+            Account: AwsAccount,
+            Time: DateTime.Now,
+            Request: new DatabaseMigrationRequest
+            {
+                Environment = "test",
+                CdpMigrationId = cdpMigrationId,
+                Service = "foo",
+                User = new User
+                {
+                    Id = "1234",
+                    DisplayName = "test user"
+                },
+                Version = "0.1.0"
+            }
         );
         await handler.Handle("id", lambdaEvent, CancellationToken.None);
 

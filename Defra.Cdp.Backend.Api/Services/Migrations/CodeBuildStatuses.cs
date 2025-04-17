@@ -8,4 +8,5 @@ public static class CodeBuildStatuses
     public const string InProgress = "IN_PROGRESS";
     public const string Stopped = "STOPPED";
     public const string TimedOut = "TIMED_OUT";
+    public const string Requested = "REQUESTED";
 }

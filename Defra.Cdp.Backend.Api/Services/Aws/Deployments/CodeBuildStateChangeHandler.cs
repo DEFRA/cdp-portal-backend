@@ -25,14 +25,32 @@ public class CodeBuildStateChangeHandler(IDatabaseMigrationService databaseMigra
     {
         
         var result = await databaseMigrationService.Link(lambdaEvent.CdpMigrationId, lambdaEvent.BuildId, cancellationToken);
-        if (result == null)
+        switch (result)
         {
-            logger.LogWarning("Failed to link migration {CdpMigrationId} to Build Id {BuildId}", lambdaEvent.CdpMigrationId, lambdaEvent.BuildId);    
-        }
-        else
-        {
-            logger.LogInformation("Linked migration {CdpMigrationId} to Build Id {BuildId}", lambdaEvent.CdpMigrationId,
-                lambdaEvent.BuildId);
+            case LinkMigrationOutcome.LinkedOk:
+                logger.LogInformation("Linked migration {CdpMigrationId} to Build Id {BuildId}", lambdaEvent.CdpMigrationId,
+                    lambdaEvent.BuildId);
+                return;
+            case LinkMigrationOutcome.AlreadyLinked:
+                logger.LogInformation("Migration {CdpMigrationId} is already linked to a different build id", lambdaEvent.CdpMigrationId);
+                return;
+            case LinkMigrationOutcome.UnknownMigrationId:
+                if (lambdaEvent.Request != null)
+                {
+                    logger.LogInformation("Unknown migration {CdpMigrationId} attempting to create from request",
+                        lambdaEvent.CdpMigrationId);
+                    var migration = DatabaseMigration.FromRequest(lambdaEvent.Request);
+                    await databaseMigrationService.CreateMigration(migration, cancellationToken);
+                    var createFromRequest = await databaseMigrationService.Link(migration.CdpMigrationId, lambdaEvent.BuildId, cancellationToken);
+                    logger.LogInformation("create migration from request outcome {Outcome}", createFromRequest.ToString());
+                }
+                else
+                {
+                    logger.LogInformation("Unknown migration {CdpMigrationId}", lambdaEvent.CdpMigrationId);
+                }
+                return;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 }
