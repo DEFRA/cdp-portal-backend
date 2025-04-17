@@ -71,7 +71,7 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
         }
         while (response.IsTruncated);
         
-        return migrations.OrderBy(d => d.Created).ToList();
+        return migrations.OrderByDescending(d => d.Created).ToList();
     }
 
 
