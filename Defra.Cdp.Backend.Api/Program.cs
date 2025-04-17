@@ -232,6 +232,7 @@ builder.Services.AddSingleton<MongoLock>();
 
 // migrations
 builder.Services.AddSingleton<IAvailableMigrations, AvailableMigrations>();
+builder.Services.AddSingleton<IDatabaseMigrationService, DatabaseMigrationService>();
 
 
 // Validators

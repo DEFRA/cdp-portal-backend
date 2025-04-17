@@ -10,8 +10,12 @@ public interface IDatabaseMigrationService
     public Task<DatabaseMigration?> Link(string cdpMigrationId, string buildId, CancellationToken ct);
     public Task<bool> UpdateStatus(string buildId, string status, DateTime timestamp, CancellationToken ct);
 
+    public Task<DatabaseMigration?> FindByCdpMigrationId(string cdpMigrationId, CancellationToken ct);
     public Task<DatabaseMigration?> FindByBuildId(string buildId, CancellationToken ct);
-    public Task<List<DatabaseMigration>> FindByService(string service, CancellationToken ct);
+    
+    public Task<List<DatabaseMigration>> Find(DatabaseMigrationFilter filter, CancellationToken ct);
+    public Task<DatabaseMigration?> FindOne(DatabaseMigrationFilter filter, CancellationToken ct);
+    public Task<List<DatabaseMigration>> LatestForService(string service, CancellationToken ct);
 }
 
 public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : 
@@ -21,7 +25,19 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
     
     protected override List<CreateIndexModel<DatabaseMigration>> DefineIndexes(IndexKeysDefinitionBuilder<DatabaseMigration> builder)
     {
-        return [];
+        var cdpMigrationId = new CreateIndexModel<DatabaseMigration>(builder.Ascending(m => m.CdpMigrationId));
+        var buildId = new CreateIndexModel<DatabaseMigration>(builder.Ascending(m => m.BuildId));
+        var serviceAndEnv = new CreateIndexModel<DatabaseMigration>(builder.Combine(
+            builder.Ascending(m => m.Service),
+            builder.Ascending(m => m.Environment)
+        ));
+        
+        return
+        [
+            cdpMigrationId,
+            buildId,
+            serviceAndEnv
+        ];
     }
 
     public async Task CreateMigration(DatabaseMigration migration, CancellationToken ct)
@@ -48,13 +64,76 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
         return result.ModifiedCount > 0;
     }
 
+    public async Task<DatabaseMigration?> FindByCdpMigrationId(string cdpMigrationId, CancellationToken ct)
+    {
+        return await Collection.Find(m => m.CdpMigrationId == cdpMigrationId).FirstOrDefaultAsync(ct);
+    }
+
     public async Task<DatabaseMigration?> FindByBuildId(string buildId, CancellationToken ct)
     {
         return await Collection.Find(m => m.BuildId == buildId).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<DatabaseMigration>> FindByService(string service, CancellationToken ct)
+    public async Task<List<DatabaseMigration>> Find(DatabaseMigrationFilter filter, CancellationToken ct)
     {
-        return await Collection.Find(m => m.Service == service).ToListAsync(ct);
+        return await Collection.Find(filter.Filter()).SortBy(m => m.Updated).ToListAsync(ct);
+    }
+
+    public async Task<DatabaseMigration?> FindOne(DatabaseMigrationFilter filter, CancellationToken ct)
+    {
+        return await Collection.Find(filter.Filter()).SortBy(m => m.Updated).FirstOrDefaultAsync(ct);
+    }
+    
+    public async Task<List<DatabaseMigration>> LatestForService(string service, CancellationToken ct)
+    {
+        var pipeline = new EmptyPipelineDefinition<DatabaseMigration>()
+            .Match(m => m.Service == service && m.Status == CodeBuildStatuses.Succeeded)
+            .Sort(new SortDefinitionBuilder<DatabaseMigration>().Descending(d => d.Updated))
+            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
+            .Project(grp => grp.Root);
+            
+        return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
+    }
+}
+
+public record DatabaseMigrationFilter(
+    string? Service = null,
+    string? Environment = null,
+    string? BuildId = null,
+    string? CdpMigrationId = null,
+    string? Status = null
+)
+{
+    public FilterDefinition<DatabaseMigration> Filter()
+    {
+        var builder = Builders<DatabaseMigration>.Filter;
+        var filter = builder.Empty;
+
+        if (Environment != null)
+        {
+            filter &= builder.Eq(t => t.Environment, Environment);
+        }
+
+        if (Service != null)
+        {
+            filter &= builder.Eq(t => t.Service, Service);
+        }
+
+        if (BuildId != null)
+        {
+            filter &= builder.Eq(t => t.BuildId, BuildId);
+        } 
+
+        if (CdpMigrationId != null)
+        {
+            filter &= builder.Ne(t => t.CdpMigrationId, CdpMigrationId);
+        }
+
+        if (Status != null)
+        {
+            filter &= builder.Ne(t => t.Status, Status);
+        }
+
+        return filter;
     }
 }
