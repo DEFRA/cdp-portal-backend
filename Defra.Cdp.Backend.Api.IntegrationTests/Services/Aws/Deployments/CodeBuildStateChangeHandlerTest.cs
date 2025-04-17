@@ -4,17 +4,16 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Migrations;
-using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.Extensions.Logging.Abstractions;
-using Newtonsoft.Json;
+using File = System.IO.File;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using User = Defra.Cdp.Backend.Api.Utils.Clients.User;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Aws.Deployments;
 
 public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : ServiceTest(fixture)
 {
     private const string AwsAccount = "0000000000";
-    
     
     [Fact]
     public async Task TestCreateAndLinkingMessages()
@@ -89,6 +88,80 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
         build = await service.FindByBuildId(buildId, CancellationToken.None);
         Assert.NotNull(build);
         Assert.Equal("SUCCEEDED", build.Status);
+    }
 
+
+    [Fact]
+    public async Task TestLatestForService()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "CodeBuildStateChangeHandler");
+        var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
+
+        List<DatabaseMigration> migrations =
+        [
+            new DatabaseMigration
+            {
+                Environment = "test",
+                CdpMigrationId = "1",
+                Service = "test-backend",
+                User = new User(),
+                Version = "0.4.0",
+                Status = CodeBuildStatuses.Succeeded,
+                Updated = DateTime.Now.AddDays(-5)
+            },
+
+            new DatabaseMigration
+            {
+                Environment = "test",
+                CdpMigrationId = "1",
+                Service = "test-backend",
+                User = new User(),
+                Version = "0.5.0",
+                Status = CodeBuildStatuses.Succeeded,
+                Updated = DateTime.Now
+            },
+            new DatabaseMigration
+            {
+                Environment = "dev",
+                CdpMigrationId = "1",
+                Service = "test-backend",
+                User = new User(),
+                Version = "0.4.0",
+                Status = CodeBuildStatuses.Succeeded,
+                Updated = DateTime.Now.AddDays(-4)
+            },
+            new DatabaseMigration
+            {
+                Environment = "dev",
+                CdpMigrationId = "1",
+                Service = "test-backend",
+                User = new User(),
+                Version = "0.5.0",
+                Status = CodeBuildStatuses.Succeeded,
+                Updated = DateTime.Now.AddDays(-1)
+            },
+            new DatabaseMigration
+            {
+                Environment = "test",
+                CdpMigrationId = "1",
+                Service = "another-backend",
+                User = new User(),
+                Version = "0.4.0",
+                Status = CodeBuildStatuses.Succeeded,
+                Updated = DateTime.Now
+            }
+        ];
+
+        foreach (var databaseMigration in migrations)
+        {
+            await service.CreateMigration(databaseMigration, CancellationToken.None);
+        }
+
+
+        var result = await service.LatestForService("test-backend", CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, m => m.Environment == "dev" && m.Version == "0.5.0");
+        Assert.Contains(result, m => m.Environment == "test" && m.Version == "0.5.0");
     }
 }

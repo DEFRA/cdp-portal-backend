@@ -4,9 +4,9 @@ namespace Defra.Cdp.Backend.Api.Models;
 
 public sealed record CodeBuildLambdaEvent(
 
-    [property: JsonPropertyName("cdpMigrationId")]
+    [property: JsonPropertyName("cdp-migration-id")]
     string CdpMigrationId,
-    [property: JsonPropertyName("buildId")]
+    [property: JsonPropertyName("build-id")]
     string BuildId,
     [property: JsonPropertyName("account")]
     string Account,

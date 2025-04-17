@@ -49,6 +49,7 @@ public class EcsEventListener(
     {
         var unknownEvent = JsonSerializer.Deserialize<EcsEventHeader>(messageBody);
         
+        logger.LogInformation(unknownEvent?.DetailType);
         switch (unknownEvent?.DetailType)
         {
             case "ECS Task State Change":
@@ -90,7 +91,6 @@ public class EcsEventListener(
                 }
                 await codeBuildStateChangeHandler.Handle(id, codebuildLambdaCreated, cancellationToken);
                 break;
-            
             case "CodeBuild Build State Change":
                 var codebuildStateChange = JsonSerializer.Deserialize<CodeBuildStateChangeEvent>(messageBody);
                 if (codebuildStateChange == null)
