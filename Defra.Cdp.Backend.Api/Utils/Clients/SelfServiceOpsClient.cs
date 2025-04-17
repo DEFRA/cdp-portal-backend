@@ -123,8 +123,8 @@ public class SelfServiceOpsStatus
 
 public class User
 {
-    [property: JsonPropertyName("id")] string? Id { get; init; }
+    [property: JsonPropertyName("id")] public string? Id { get; init; }
 
     [property: JsonPropertyName("displayName")]
-    string? DisplayName { get; init; }
+    public string? DisplayName { get; init; }
 }

@@ -1,17 +1,19 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Migrations;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
 public sealed record CodeBuildLambdaEvent(
-
     [property: JsonPropertyName("cdp-migration-id")]
     string CdpMigrationId,
     [property: JsonPropertyName("build-id")]
     string BuildId,
     [property: JsonPropertyName("account")]
     string Account,
-    [property: JsonPropertyName("time")]
-    DateTime Time
+    [property: JsonPropertyName("time")] 
+    DateTime Time,
+    [property: JsonPropertyName("request")] 
+    DatabaseMigrationRequest? Request = null
 );
 
 public sealed record CodeBuildStateChangeEvent(

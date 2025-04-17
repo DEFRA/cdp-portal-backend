@@ -70,8 +70,8 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
             request.ContinuationToken = response.NextContinuationToken;
         }
         while (response.IsTruncated);
-       
-        return migrations;
+        
+        return migrations.OrderBy(d => d.Created).ToList();
     }
 
 
