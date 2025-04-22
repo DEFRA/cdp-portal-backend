@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -35,8 +36,8 @@ public class DatabaseMigration
     [property: JsonPropertyName("user")]
     public required User User { get; init; }
     
-    [property: JsonPropertyName("requested")]
-    public DateTime Requested { get; init; } = DateTime.Now;
+    [property: JsonPropertyName("created")]
+    public DateTime Created { get; set; } = DateTime.Now;
     
     [property: JsonPropertyName("updated")]
     public DateTime Updated { get; init; }  = DateTime.Now;
