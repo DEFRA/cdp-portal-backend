@@ -43,7 +43,7 @@ public class DatabaseMigration
     public DateTime Updated { get; init; }  = DateTime.Now;
 
     [property: JsonPropertyName("status")] public string Status { get; init; } = CodeBuildStatuses.Requested;
-
+    
     public static DatabaseMigration FromRequest(DatabaseMigrationRequest request)
     {
         return new DatabaseMigration
