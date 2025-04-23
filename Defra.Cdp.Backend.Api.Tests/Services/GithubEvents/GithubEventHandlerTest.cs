@@ -16,6 +16,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.GithubEvents;
 public class GithubEventHandlerTest
 {
     private readonly ILegacyStatusService _legacyStatusService = Substitute.For<ILegacyStatusService>();
+    private readonly IStatusUpdateService _statusUpdateService = Substitute.For<IStatusUpdateService>();
     private readonly ITenantServicesService _tenantServicesService = Substitute.For<ITenantServicesService>();
 
     private readonly IDeployableArtifactsService _deployableArtifactsService =
@@ -26,17 +27,16 @@ public class GithubEventHandlerTest
     private readonly GithubOptions _opts = new()
     {
         Organisation = "DEFRA",
-        Repos =
-            new GithubReposOptions
-            {
-                CdpTfSvcInfra = "cdp-tf-svc-infra",
-                CdpAppConfig = "cdp-app-config",
-                CdpAppDeployments = "cdp-app-deployments",
-                CdpCreateWorkflows = "cdp-create-workflows",
-                CdpGrafanaSvc = "cdp-grafana-svc",
-                CdpNginxUpstreams = "cdp-nginx-upstreams",
-                CdpSquidProxy = "cdp-squid-proxy"
-            },
+        Repos = new GithubReposOptions
+        {
+            CdpTfSvcInfra = "cdp-tf-svc-infra",
+            CdpAppConfig = "cdp-app-config",
+            CdpAppDeployments = "cdp-app-deployments",
+            CdpCreateWorkflows = "cdp-create-workflows",
+            CdpGrafanaSvc = "cdp-grafana-svc",
+            CdpNginxUpstreams = "cdp-nginx-upstreams",
+            CdpSquidProxy = "cdp-squid-proxy"
+        },
         Workflows = new GithubWorkflowsOptions
         {
             CreateAppConfig = "create-service.yml",
@@ -57,7 +57,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task ShouldNotProcessWorkflowsNotOnMainBranch()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         var msg = """
@@ -79,7 +79,7 @@ public class GithubEventHandlerTest
 
         await _legacyStatusService.DidNotReceive().UpdateWorkflowStatus(Arg.Any<string>(), Arg.Any<string>(),
             Arg.Any<string>(), Arg.Any<Status>(), Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.DidNotReceive().UpdateOverallStatus(Arg.Any<string>(), CancellationToken.None);
+        await _statusUpdateService.DidNotReceive().UpdateOverallStatus(Arg.Any<string>(), CancellationToken.None);
         await _legacyStatusService.DidNotReceive().StatusForRepositoryName(Arg.Any<string>(), CancellationToken.None);
         await _tenantServicesService.DidNotReceive().FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.DidNotReceive()
@@ -90,7 +90,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task CallHandleTriggeredWorkflowForValidRepoNotCdpTfSvcInfra()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -125,7 +125,7 @@ public class GithubEventHandlerTest
         await _legacyStatusService.Received(1).StatusForRepositoryName("wf-name", CancellationToken.None);
         await _legacyStatusService.Received(1).UpdateWorkflowStatus("wf-name", "cdp-app-config",
             Arg.Any<string>(), Arg.Any<Status>(), Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.Received(1).UpdateOverallStatus("wf-name", CancellationToken.None);
+        await _statusUpdateService.Received(1).UpdateOverallStatus("wf-name", CancellationToken.None);
         await _legacyStatusService.DidNotReceive().FindAllInProgressOrFailed(CancellationToken.None);
         await _tenantServicesService.DidNotReceive().FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.DidNotReceive()
@@ -136,7 +136,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task DontUpdateAnythingForTfSvcInfraIfCreateWorkflowAndItsCompleted()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService,_statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -166,7 +166,7 @@ public class GithubEventHandlerTest
         await _legacyStatusService.DidNotReceive().StatusForRepositoryName("wf-name", CancellationToken.None);
         await _legacyStatusService.DidNotReceive().UpdateWorkflowStatus("wf-name", "cdp-app-config",
             Arg.Any<string>(), Arg.Any<Status>(), Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.DidNotReceive().UpdateOverallStatus("wf-name", CancellationToken.None);
+        await _statusUpdateService.DidNotReceive().UpdateOverallStatus("wf-name", CancellationToken.None);
         await _legacyStatusService.DidNotReceive().FindAllInProgressOrFailed(CancellationToken.None);
         await _tenantServicesService.DidNotReceive().FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.DidNotReceive()
@@ -177,7 +177,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task NotProcessAnythingForUnsupportedRepo()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService,_statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -207,7 +207,7 @@ public class GithubEventHandlerTest
         await _legacyStatusService.DidNotReceive().StatusForRepositoryName("wf-name", CancellationToken.None);
         await _legacyStatusService.DidNotReceive().UpdateWorkflowStatus("wf-name", "cdp-app-config",
             Arg.Any<string>(), Arg.Any<Status>(), Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.DidNotReceive().UpdateOverallStatus("wf-name", CancellationToken.None);
+        await _statusUpdateService.DidNotReceive().UpdateOverallStatus("wf-name", CancellationToken.None);
         await _legacyStatusService.DidNotReceive().FindAllInProgressOrFailed(CancellationToken.None);
         await _tenantServicesService.DidNotReceive().FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.DidNotReceive()
@@ -218,7 +218,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task UpdatePendingServiceStatusThatHasTenantJsonEntry()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -276,7 +276,7 @@ public class GithubEventHandlerTest
         await _legacyStatusService.DidNotReceive().StatusForRepositoryName("wf-name", CancellationToken.None);
         await _legacyStatusService.Received(1).UpdateWorkflowStatus("wf-name", "cdp-tf-svc-infra",
             "main", Status.Success, Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.Received(1).UpdateOverallStatus("wf-name", CancellationToken.None);
+        await _statusUpdateService.Received(1).UpdateOverallStatus("wf-name", CancellationToken.None);
         await _legacyStatusService.Received(1).FindAllInProgressOrFailed(CancellationToken.None);
         await _tenantServicesService.Received(1).FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.Received(1)
@@ -287,7 +287,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task DoNotUpdatePendingServiceStatusThatHasNoTenantJsonEntry()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -324,20 +324,19 @@ public class GithubEventHandlerTest
         await _legacyStatusService.DidNotReceive().StatusForRepositoryName("wf-name", CancellationToken.None);
         await _legacyStatusService.DidNotReceive().UpdateWorkflowStatus("wf-name", "cdp-tf-svc-infra",
             "main", Status.Success, Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.DidNotReceive().UpdateOverallStatus("wf-name", CancellationToken.None);
+        await _statusUpdateService.DidNotReceive().UpdateOverallStatus("wf-name", CancellationToken.None);
         await _legacyStatusService.Received(1).FindAllInProgressOrFailed(CancellationToken.None);
         await _tenantServicesService.Received(1).FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.DidNotReceive()
             .CreatePlaceholderAsync("wf-name", "https://github.com/DEFRA/wf-name", ArtifactRunMode.Service,
                 CancellationToken.None);
     }
-    
-    
+
 
     [Fact]
     public async Task UpdatePendingTestSuiteStatusThatHasTenantJsonEntry()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService,_statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -395,7 +394,7 @@ public class GithubEventHandlerTest
         await _legacyStatusService.DidNotReceive().StatusForRepositoryName("a-test-suite", CancellationToken.None);
         await _legacyStatusService.Received(1).UpdateWorkflowStatus("a-test-suite", "cdp-tf-svc-infra",
             "main", Status.Success, Arg.Any<TrimmedWorkflowRun>());
-        await _legacyStatusService.Received(1).UpdateOverallStatus("a-test-suite", CancellationToken.None);
+        await _statusUpdateService.Received(1).UpdateOverallStatus("a-test-suite", CancellationToken.None);
         await _legacyStatusService.Received(1).FindAllInProgressOrFailed(CancellationToken.None);
         await _tenantServicesService.Received(1).FindOne(Arg.Any<TenantServiceFilter>(), CancellationToken.None);
         await _deployableArtifactsService.Received(1)

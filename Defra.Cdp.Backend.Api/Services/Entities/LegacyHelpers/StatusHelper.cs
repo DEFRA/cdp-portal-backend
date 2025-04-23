@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
 
@@ -5,7 +7,6 @@ namespace Defra.Cdp.Backend.Api.Services.Entities.LegacyHelpers;
 
 public static class StatusHelper
 {
-    
     private static readonly List<List<string>> s_statusPrecedence =
     [
         new() { Status.NotRequested.ToStringValue() },
@@ -23,7 +24,6 @@ public static class StatusHelper
             // Get the statuses that come after the matched index and return them as a flat list.
             s_statusPrecedence.Skip(idx + 1).SelectMany(x => x).ToList();
     }
-    
     
     public static List<string> GetStatusKeys(GithubReposOptions githubReposOptions, CreationType creationType)
     {
@@ -49,7 +49,6 @@ public static class StatusHelper
         };
     }
 
-
     public static Status NormaliseStatus(Status action, Status? conclusion)
     {
         switch (action)
@@ -74,6 +73,48 @@ public static class StatusHelper
             default:
                 return Status.Requested;
         }
+    }
+
+    public static Status CalculateOverallStatus(GithubReposOptions reposOptions, LegacyStatus statusRecord)
+    {
+        var statusKeys = StatusHelper.GetStatusKeys(reposOptions, statusRecord.Kind.ToType());
+
+        var allSuccess = CheckAllKeysWithGivenStatus(statusRecord, statusKeys, Status.Success);
+
+        var anyFailed = CheckAnyKeysWithGivenStatus(statusRecord, statusKeys, Status.Failure);
+
+        if (allSuccess)
+        {
+            return Status.Success;
+        }
+
+        return anyFailed ? Status.Failure : Status.InProgress;
+    }
+
+    private static bool CheckAllKeysWithGivenStatus(LegacyStatus statusRecord, List<string> statusKeys, Status status)
+    {
+        var properties = statusRecord.GetType().GetProperties();
+        return statusKeys.All(key =>
+        {
+            var keyProperty =
+                properties.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
+
+            return ((WorkflowDetails)statusRecord.GetType().GetProperty(keyProperty.Name)?.GetValue(statusRecord))
+                ?.Status.ToStatus() == status;
+        });
+    }
+
+    private static bool CheckAnyKeysWithGivenStatus(LegacyStatus statusRecord, List<string> statusKeys, Status status)
+    {
+        var properties = statusRecord.GetType().GetProperties();
+        return statusKeys.Any(key =>
+        {
+            var keyProperty =
+                properties.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
+
+            return ((WorkflowDetails)statusRecord.GetType().GetProperty(keyProperty.Name)?.GetValue(statusRecord))
+                ?.Status.ToStatus() == status;
+        });
     }
 }
 

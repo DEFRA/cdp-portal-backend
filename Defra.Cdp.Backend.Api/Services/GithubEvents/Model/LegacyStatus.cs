@@ -73,6 +73,15 @@ public class Team
 {
     [property: JsonPropertyName("teamId")] public string TeamId { get; set; }
     [property: JsonPropertyName("name")] public string Name { get; set; }
+
+    public Entities.Model.Team toTeam()
+    {
+        return new Entities.Model.Team
+        {
+            TeamId = TeamId,
+            Name = Name
+        };
+    }
 }
 
 [BsonIgnoreExtraElements]
@@ -82,6 +91,15 @@ public class Creator
 
     [property: JsonPropertyName("displayName")]
     public string DisplayName { get; set; }
+
+    public Entities.Model.Creator? toCreator()
+    {
+        return new Entities.Model.Creator
+        {
+            Id = Id,
+            Name = DisplayName
+        };
+    }
 }
 
 [BsonIgnoreExtraElements]
@@ -282,6 +300,17 @@ public static class StatusExtensions
             case "skipped": return Status.Skipped;
             case "success": return Status.Success;
             case "failure": return Status.Failure;
+            default: throw new ArgumentOutOfRangeException();
+        }
+    }
+    
+    public static Entities.Model.Status ToEntityStatus(this Status status)
+    {
+        switch (status)
+        {
+            case Status.InProgress: return Entities.Model.Status.InProgress;
+            case Status.Success: return Entities.Model.Status.Success;
+            case Status.Failure: return Entities.Model.Status.Failed;
             default: throw new ArgumentOutOfRangeException();
         }
     }

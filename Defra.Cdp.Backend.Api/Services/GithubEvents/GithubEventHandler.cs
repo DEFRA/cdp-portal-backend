@@ -19,6 +19,7 @@ public interface IGithubEventHandler
 
 public class GithubEventHandler(
     ILegacyStatusService legacyStatusService,
+    IStatusUpdateService statusUpdateService,
     ITenantServicesService tenantServicesService,
     IDeployableArtifactsService deployableArtifactsService,
     IOptions<GithubOptions> githubConfig,
@@ -35,8 +36,7 @@ public class GithubEventHandler(
         if (message.WorkflowRun.HeadBranch != "main")
         {
             logger.LogInformation(
-                $"Creation handler: Not processing workflow run {workflowRepo}/{workflowFileName}, not running on main branch",
-                workflowRepo, workflowFileName
+                $"Creation handler: Not processing workflow run {workflowRepo}/{workflowFileName}, not running on main branch"
             );
             return;
         }
@@ -172,7 +172,7 @@ public class GithubEventHandler(
             await legacyStatusService.UpdateWorkflowStatus(service.ServiceName, workflowRepo, "main", status,
                 trimWorkflowRun);
 
-            await legacyStatusService.UpdateOverallStatus(service.ServiceName, ct);
+            await statusUpdateService.UpdateOverallStatus(service.ServiceName, ct);
 
             var runMode = ArtifactRunMode.Service;
             if (service.TestSuite != null)
@@ -225,7 +225,7 @@ public class GithubEventHandler(
                 TrimWorkflowRun(message.WorkflowRun)
             );
 
-            await legacyStatusService.UpdateOverallStatus(serviceRepo, cancellationToken);
+            await statusUpdateService.UpdateOverallStatus(serviceRepo, cancellationToken);
         }
         catch (Exception ex)
         {
