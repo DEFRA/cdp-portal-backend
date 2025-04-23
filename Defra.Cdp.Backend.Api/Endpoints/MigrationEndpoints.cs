@@ -1,9 +1,10 @@
+using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
-public static class Migrations
+public static class MigrationEndpoints
 {
     public static void MapMigrationEndpoints(this IEndpointRouteBuilder app)
     {
@@ -81,10 +82,11 @@ public static class Migrations
      */
     static async Task<IResult> RunMigration(
         [FromServices] IDatabaseMigrationService migrationService,
-        [FromBody] DatabaseMigration migration,
+        [FromServices] IRepositoryService repositoryService ,
+        [FromBody] DatabaseMigrationRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: check target service is postgres enabled & the version is valid
+        var migration = DatabaseMigration.FromRequest(request);
         await migrationService.CreateMigration(migration, cancellationToken);
         return Results.Ok();
     }

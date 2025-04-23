@@ -117,6 +117,7 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
 
 public record DatabaseMigrationFilter(
     string? Service = null,
+    List<string>? Services = null,
     string? Environment = null,
     string? BuildId = null,
     string? CdpMigrationId = null,
@@ -138,6 +139,11 @@ public record DatabaseMigrationFilter(
             filter &= builder.Eq(t => t.Service, Service);
         }
 
+        if (Services != null)
+        {
+            filter &= builder.In(t => t.Service, Services);
+        }
+        
         if (BuildId != null)
         {
             filter &= builder.Eq(t => t.BuildId, BuildId);
