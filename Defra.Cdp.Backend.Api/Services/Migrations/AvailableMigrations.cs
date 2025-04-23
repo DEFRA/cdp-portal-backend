@@ -22,6 +22,7 @@ public record MigrationVersion
 public interface IAvailableMigrations
 {
     public Task<List<MigrationVersion>> FindMigrationsForService(string service, CancellationToken ct);
+    public Task<List<string>> FindServicesWithMigrations(CancellationToken ct);
 }
 
 public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration) : IAvailableMigrations
@@ -42,8 +43,6 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
         {
             BucketName = _bucketName,
             Prefix = prefix
-            
-            
         };
 
         List<MigrationVersion> migrations = []; 
@@ -54,7 +53,6 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
             
             foreach (var s3Object in response.S3Objects)
             {
-                Console.WriteLine(s3Object.Key);
                 var version = ExtractVersion(s3Object.Key); 
                 if (s3Object.Key.EndsWith(MigrationFileName) && version != null)
                 {
@@ -72,6 +70,34 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
         while (response.IsTruncated);
         
         return migrations.OrderByDescending(d => d.Created).ToList();
+    }
+
+    public async Task<List<string>> FindServicesWithMigrations(CancellationToken ct)
+    {
+        if (_bucketName == null)
+        {
+            throw new Exception("Config error: MigrationsBucket has not been set");
+        }
+        
+        var request = new ListObjectsV2Request
+        {
+            BucketName = _bucketName,
+            Delimiter = "/"
+        };
+
+        List<string> services = []; 
+        ListObjectsV2Response response;
+        do
+        {
+            
+            response = await client.ListObjectsV2Async(request, ct);
+
+            services.AddRange(response.CommonPrefixes);
+            request.ContinuationToken = response.NextContinuationToken;
+        }
+        while (response.IsTruncated);
+
+        return services.Distinct().Select(s => s.Replace("/", "")).ToList();
     }
 
 

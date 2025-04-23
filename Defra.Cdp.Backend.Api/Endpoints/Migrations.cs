@@ -7,6 +7,7 @@ public static class Migrations
 {
     public static void MapMigrationEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/migrations/available", ListServicesWithMigrations);
         app.MapGet("/migrations/available/{service}", ListAvailableMigrationsForService);
         app.MapGet("/migrations/run/{id}", FindMigrationById);
         app.MapGet("/migrations/run", SearchMigrations);
@@ -14,6 +15,15 @@ public static class Migrations
         app.MapPost("/migrations/run", RunMigration);
     }
 
+    /**
+     * List services that have database migrations available
+    */
+    static async Task<IResult> ListServicesWithMigrations(IAvailableMigrations availableMigrations, CancellationToken cancellationToken)
+    {
+        var result = await availableMigrations.FindServicesWithMigrations(cancellationToken);
+        return Results.Ok(result);
+    }
+    
     /**
      * List available schema versions for a given service.
      */
