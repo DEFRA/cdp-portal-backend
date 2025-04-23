@@ -1,7 +1,7 @@
 using Defra.Cdp.Backend.Api.Services.Entities;
-using Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -9,44 +9,45 @@ public static class EntitiesEndpoint
 {
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/legacy-statuses", CreateLegacyStatus);
-        app.MapPost("/legacy-statuses/update", UpdateLegacyStatus);
-        app.MapPost("/legacy-statuses/{repositoryName}/overall-status", UpdateOverallStatus);
-        app.MapGet("/legacy-statuses/{repositoryName}", GetLegacyStatus);
-        app.MapGet("/legacy-statuses/in-progress", GetInProgressStatuses);
-        app.MapGet("/legacy-statuses/in-progress/Filters", GetInProgressFilters);
+        app.MapGet("/entities", GetEntities);
+        app.MapGet("/entities/filters", GetFilters);
+        app.MapPost("/entities", CreateEntity);
+        app.MapPost("/entities/update", UpdateEntity);
+        app.MapPost("/entities/{repositoryName}/overall-status", UpdateOverallStatus);
+        app.MapGet("/entities/{repositoryName}", GetEntity);
     }
 
-    private static async Task<IResult> GetInProgressStatuses([FromQuery(Name = "service")] string? service,
-        [FromQuery(Name = "teamId")] string? teamId, [FromQuery(Name = "kind")] string? kind,
-        ILegacyStatusService legacyStatusService, CancellationToken cancellationToken)
+    private static async Task<IResult> GetEntities([FromQuery] Type type,
+        [FromQuery] string? name,
+        [FromQuery] string? teamId,
+        IEntitiesService entitiesService, CancellationToken cancellationToken)
     {
-        var statuses = await legacyStatusService.GetInProgress(service, teamId, kind, cancellationToken);
+        var statuses = await entitiesService.GetEntities(type, name, teamId, cancellationToken);
         return Results.Ok(statuses);
     }
 
-    private static async Task<IResult> GetInProgressFilters([FromQuery(Name = "kind")] string? kind,
-        ILegacyStatusService legacyStatusService, CancellationToken cancellationToken)
+    private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type type,
+        IEntitiesService entitiesService, CancellationToken cancellationToken)
     {
-        var statuses = await legacyStatusService.GetInProgressFilters(kind, cancellationToken);
-        return statuses.Count > 0 ? Results.Ok(statuses[0]) : Results.Ok(new LegacyStatusService.InProgressFilters());
+        var filters = await entitiesService.GetFilters(type, cancellationToken);
+        return Results.Ok(filters);
     }
 
-    private static async Task<IResult> GetLegacyStatus(ILegacyStatusService legacyStatusService, string repositoryName,
+    private static async Task<IResult> GetEntity(ILegacyStatusService legacyStatusService, string repositoryName,
         CancellationToken cancellationToken)
     {
         var repositoryStatus = await legacyStatusService.StatusForRepositoryName(repositoryName, cancellationToken);
         return repositoryStatus != null ? Results.Ok(repositoryStatus) : Results.NotFound();
     }
 
-    private static async Task<IResult> CreateLegacyStatus(ILegacyStatusService legacyStatusService, LegacyStatus status,
+    private static async Task<IResult> CreateEntity(IEntitiesService entitiesService, Entity entity,
         CancellationToken cancellationToken)
     {
-        await legacyStatusService.Create(status, cancellationToken);
+        await entitiesService.Create(entity, cancellationToken);
         return Results.Ok();
     }
 
-    private static async Task<IResult> UpdateLegacyStatus(ILegacyStatusService legacyStatusService,
+    private static async Task<IResult> UpdateEntity(ILegacyStatusService legacyStatusService,
         LegacyStatusUpdateRequest updateRequest,
         CancellationToken cancellationToken)
     {
@@ -54,11 +55,11 @@ public static class EntitiesEndpoint
         return Results.Ok();
     }
 
-    private static async Task<IResult> UpdateOverallStatus(ILegacyStatusService legacyStatusService,
+    private static async Task<IResult> UpdateOverallStatus(IStatusUpdateService statusUpdateService,
         string repositoryName,
         CancellationToken cancellationToken)
     {
-        await legacyStatusService.UpdateOverallStatus(repositoryName, cancellationToken);
+        await statusUpdateService.UpdateOverallStatus(repositoryName, cancellationToken);
         return Results.Ok();
     }
 }

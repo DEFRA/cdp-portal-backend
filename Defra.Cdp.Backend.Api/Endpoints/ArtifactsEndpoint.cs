@@ -12,12 +12,9 @@ public static class ArtifactsEndpoint
     private const string DeployablesBaseRoute = "deployables";
     private const string FilesBaseRoute = "files";
     private const string ServicesBaseRoute = "services";
-    private static ILogger _logger = default!;
 
-    public static void MapDeployablesEndpoint(this IEndpointRouteBuilder app, ILogger logger)
+    public static void MapDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
-        _logger = logger;
-
         app.MapGet(ArtifactsBaseRoute, ListRepos);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}", ListImagesForRepo);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage);

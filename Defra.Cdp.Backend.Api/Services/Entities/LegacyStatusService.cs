@@ -15,17 +15,20 @@ public interface ILegacyStatusService
 {
     Task Create(LegacyStatus status, CancellationToken cancellationToken);
     Task UpdateField(LegacyStatusUpdateRequest updateRequest, CancellationToken cancellationToken);
-    Task UpdateOverallStatus(string repositoryName, CancellationToken cancellationToken);
     Task<LegacyStatus?> StatusForRepositoryName(string repositoryName, CancellationToken cancellationToken);
 
     Task UpdateWorkflowStatus(string serviceRepo, string workflowRepo, string headBranch, Status workflowStatus,
         TrimmedWorkflowRun trimWorkflowRun);
 
     Task<List<LegacyStatus>> FindAllInProgressOrFailed(CancellationToken cancellationToken);
-    Task<List<LegacyStatusService.InProgressFilters>> GetInProgressFilters(string? kind, CancellationToken cancellationToken);
+
+    Task<List<LegacyStatusService.InProgressFilters>> GetInProgressFilters(string? kind,
+        CancellationToken cancellationToken);
 
     Task<List<LegacyStatus>> GetInProgress(string? service, string? teamId, string? kind,
         CancellationToken cancellationToken);
+
+    Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken);
 }
 
 public class LegacyStatusService(
@@ -64,20 +67,11 @@ public class LegacyStatusService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateOverallStatus(string repositoryName, CancellationToken cancellationToken)
+    public async Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken)
     {
         var filter = Builders<LegacyStatus>.Filter.Eq(status => status.RepositoryName, repositoryName);
-
-        var currentStatus = await Collection.Find(filter).FirstOrDefaultAsync(cancellationToken: cancellationToken);
-
-        if (currentStatus == null)
-        {
-            return;
-        }
-
-        var updatedStatus = CalculateOverallStatus(currentStatus);
         var update = Builders<LegacyStatus>.Update
-            .Set(s => s.Status, updatedStatus.ToStringValue());
+            .Set(s => s.Status, overallStatus.ToStringValue());
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
@@ -103,26 +97,25 @@ public class LegacyStatusService(
 
         try
         {
-             var result = await Collection.UpdateOneAsync(filter, update);
-             
-             if (result.MatchedCount == 0)
-             {
-                 Console.WriteLine("No document matched the filter.");
-             }
-             else if (result.ModifiedCount > 0)
-             {
-                 Console.WriteLine("Document updated successfully.");
-             }
-             else
-             {
-                 Console.WriteLine("Document matched but no modifications were necessary.");
-             }
+            var result = await Collection.UpdateOneAsync(filter, update);
+
+            if (result.MatchedCount == 0)
+            {
+                Console.WriteLine("No document matched the filter.");
+            }
+            else if (result.ModifiedCount > 0)
+            {
+                Console.WriteLine("Document updated successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Document matched but no modifications were necessary.");
+            }
         }
         catch (Exception e)
         {
             Logger.LogError(e, "Error updating legacy status");
         }
-
     }
 
     public async Task<List<LegacyStatus>> FindAllInProgressOrFailed(CancellationToken cancellationToken)
@@ -131,49 +124,6 @@ public class LegacyStatusService(
             [Status.InProgress.ToStringValue(), Status.Failure.ToStringValue()]);
 
         return await Collection.Find(filter).ToListAsync(cancellationToken: cancellationToken);
-    }
-
-
-    private Status CalculateOverallStatus(LegacyStatus statusRecord)
-    {
-        var statusKeys = StatusHelper.GetStatusKeys(githubOptions.Value.Repos, statusRecord.Kind.ToType());
-
-        var allSuccess = CheckAllKeysWithGivenStatus(statusRecord, statusKeys, Status.Success);
-
-        var anyFailed = CheckAnyKeysWithGivenStatus(statusRecord, statusKeys, Status.Failure);
-
-        if (allSuccess)
-        {
-            return Status.Success;
-        }
-
-        return anyFailed ? Status.Failure : Status.InProgress;
-    }
-
-    private static bool CheckAllKeysWithGivenStatus(LegacyStatus statusRecord, List<string> statusKeys, Status status)
-    {
-        var properties = statusRecord.GetType().GetProperties();
-        return statusKeys.All(key =>
-        {
-            var keyProperty =
-                properties.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
-
-            return ((WorkflowDetails)statusRecord.GetType().GetProperty(keyProperty.Name)?.GetValue(statusRecord))
-                   ?.Status.ToStatus() == status;
-        });
-    }
-
-    private static bool CheckAnyKeysWithGivenStatus(LegacyStatus statusRecord, List<string> statusKeys, Status status)
-    {
-        var properties = statusRecord.GetType().GetProperties();
-        return statusKeys.Any(key =>
-        {
-            var keyProperty =
-                properties.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
-
-            return ((WorkflowDetails)statusRecord.GetType().GetProperty(keyProperty.Name)?.GetValue(statusRecord))
-                   ?.Status.ToStatus() == status;
-        });
     }
 
     public async Task<List<InProgressFilters>> GetInProgressFilters(string? kind, CancellationToken cancellationToken)
@@ -219,7 +169,7 @@ public class LegacyStatusService(
 
         return await Collection.Aggregate<InProgressFilters>(stages).ToListAsync(cancellationToken) ?? [];
     }
-    
+
     public class InProgressFilters
     {
         public List<string> Services { get; set; } = new();
@@ -228,7 +178,7 @@ public class LegacyStatusService(
 
     public class Team
     {
-        public Guid TeamId { get; set; }
+        public string TeamId { get; set; }
         public string Name { get; set; }
     }
 
@@ -241,7 +191,10 @@ public class LegacyStatusService(
         {
             new()
             {
-                { "$match", new BsonDocument { { "status", new BsonDocument { { "$in", new BsonArray(statuses) } } } } }
+                {
+                    "$match",
+                    new BsonDocument { { "status", new BsonDocument { { "$in", new BsonArray(statuses) } } } }
+                }
             }
         };
 

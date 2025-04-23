@@ -10,6 +10,7 @@ using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubEvents;
@@ -31,11 +32,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using Quartz;
 using Serilog;
-using Serilog.Extensions.Logging;
 using Environment = System.Environment;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -166,7 +169,9 @@ builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
+builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
 builder.Services.AddSingleton<ILegacyStatusService, LegacyStatusService>();
+builder.Services.AddSingleton<IStatusUpdateService, StatusUpdateService>();
 builder.Services.AddSingleton<IUndeploymentsService, UndeploymentsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
@@ -262,13 +267,13 @@ app.MapSquidProxyConfigEndpoint();
 app.MapCostsEndpoint();
 app.MapVanityUrlsEndpoint();
 app.MapApiGatewaysEndpoint();
-app.MapDeployablesEndpoint(new SerilogLoggerFactory(logger)
-    .CreateLogger(typeof(ArtifactsEndpoint)));
+app.MapDeployablesEndpoint();
 app.MapDecommissionEndpoint();
 app.MapDeploymentsEndpoint();
 app.MapUndeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapEntitiesEndpoint();
+app.MapLegacyStatusesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
@@ -318,5 +323,9 @@ Task.Run(() =>
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 #pragma warning restore CS4014
+
+BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
+BsonSerializer.RegisterSerializer(typeof(SubType), new EnumSerializer<SubType>(BsonType.String));
+BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(BsonType.String));
 
 app.Run();

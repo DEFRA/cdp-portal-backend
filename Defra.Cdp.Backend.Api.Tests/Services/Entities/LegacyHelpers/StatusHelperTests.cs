@@ -24,7 +24,8 @@ public class StatusHelperTests
     public void ReturnsCorrectListForInProgressStatus()
     {
         var result = StatusHelper.DontOverwriteStatus(Status.InProgress).OrderBy(x => x).ToList();
-        var expected = new List<string> { Status.Success.ToStringValue(), Status.Failure.ToStringValue() }.OrderBy(x => x)
+        var expected = new List<string> { Status.Success.ToStringValue(), Status.Failure.ToStringValue() }
+            .OrderBy(x => x)
             .ToList();
         Assert.Equal(expected, result);
     }
@@ -102,7 +103,7 @@ public class StatusHelperTests
         }.OrderBy(x => x).ToList();
         Assert.Equal(expected, result);
     }
-    
+
     [Fact]
     public void GetStatusKeys_ReturnsCorrectKeys_ForRepository()
     {
@@ -180,5 +181,156 @@ public class StatusHelperTests
     {
         var result = StatusHelper.NormaliseStatus(Status.Requested, null);
         Assert.Equal(Status.Requested, result);
+    }
+
+    GithubReposOptions reposOptions = new GithubReposOptions
+    {
+        CdpTfSvcInfra = "cdp-tf-svc-infra",
+        CdpAppConfig = "cdp-app-config",
+        CdpAppDeployments = "cdp-app-deployments",
+        CdpCreateWorkflows = "cdp-create-workflows",
+        CdpGrafanaSvc = "cdp-grafana-svc",
+        CdpNginxUpstreams = "cdp-nginx-upstreams",
+        CdpSquidProxy = "cdp-squid-proxy"
+    };
+
+    [Fact]
+    public void Should_Provide_Success_Status_For_Microservice()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.Microservice.ToStringValue(),
+                CdpAppConfig = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpNginxUpstreams = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpGrafanaSvc = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.Success, result);
+    }
+
+    [Fact]
+    public void Should_Provide_Failure_Status_For_Microservice()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.Microservice.ToStringValue(),
+                CdpAppConfig = new WorkflowDetails { Status = Status.Failure.ToStringValue() },
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpNginxUpstreams = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpGrafanaSvc = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.Failure, result);
+    }
+
+    [Fact]
+    public void Should_Provide_In_Progress_Status_For_Microservice()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.Microservice.ToStringValue(),
+                CdpAppConfig = new WorkflowDetails { Status = Status.Requested.ToStringValue() },
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpNginxUpstreams = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpGrafanaSvc = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.InProgress, result);
+    }
+
+    [Fact]
+    public void Should_Provide_Success_Status_For_Journey_Test_Suite()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.JourneyTestsuite.ToStringValue(),
+                CdpAppConfig = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.Success, result);
+    }
+
+    [Fact]
+    public void Should_Provide_Failure_Status_For_Journey_Test_Suite()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.JourneyTestsuite.ToStringValue(),
+                CdpAppConfig = new WorkflowDetails { Status = Status.Failure.ToStringValue() },
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.Failure, result);
+    }
+
+    [Fact]
+    public void Should_Provide_In_Progress_Status_For_Journey_Test_Suite()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.JourneyTestsuite.ToStringValue(),
+                CdpAppConfig = new WorkflowDetails { Status = Status.Requested.ToStringValue() },
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.InProgress, result);
+    }
+
+    [Fact]
+    public void Should_Provide_Success_Status_For_Repository()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.Repository.ToStringValue(),
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+            });
+        Assert.Equal(Status.Success, result);
+    }
+
+    [Fact]
+    public void Should_Provide_Failure_Status_For_Repository()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.Repository.ToStringValue(),
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Failure.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.Failure, result);
+    }
+
+    [Fact]
+    public void Should_Provide_In_Progress_Status_For_Repository()
+    {
+        var result = StatusHelper.CalculateOverallStatus(reposOptions,
+            new LegacyStatus
+            {
+                Kind = CreationType.Repository.ToStringValue(),
+                CdpCreateWorkflows = new WorkflowDetails { Status = Status.Requested.ToStringValue() },
+                
+            });
+        Assert.Equal(Status.InProgress, result);
     }
 }
