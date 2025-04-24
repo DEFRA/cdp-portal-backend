@@ -31,7 +31,7 @@ public class DatabaseMigration
     public required string Version { get; init; }
     
     [property: JsonPropertyName("kind")]
-    public string Kind { get; init; } = "postgres-liquibase";
+    public string Kind { get; init; } = "liquibase";
     
     [property: JsonPropertyName("user")]
     public required User User { get; init; }
