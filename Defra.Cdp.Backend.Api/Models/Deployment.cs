@@ -6,6 +6,7 @@ using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
+[BsonIgnoreExtraElements]
 public class Deployment
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]

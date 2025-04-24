@@ -12,6 +12,7 @@ public static class DeploymentsEndpoint
     public static void MapDeploymentsEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/deployments", FindLatestDeployments);
+        app.MapGet("/deployments-with-migrations", FindLatestDeploymentsWithMigrations);
         app.MapGet("/deployments/{deploymentId}", FindDeployments);
         app.MapGet("/deployments/filters/", GetDeploymentsFilters);
         app.MapGet("/whats-running-where", WhatsRunningWhere);
@@ -35,6 +36,33 @@ public static class DeploymentsEndpoint
         CancellationToken cancellationToken)
     {
         var deploymentsPage = await deploymentsService.FindLatest(
+            favouriteTeamIds,
+            environment,
+            service,
+            user,
+            status,
+            team,
+            offset ?? 0,
+            page ?? DeploymentsService.DefaultPage,
+            size ?? DeploymentsService.DefaultPageSize,
+            cancellationToken
+        );
+        return Results.Ok(deploymentsPage);
+    }
+    
+    private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService,
+        [FromQuery(Name = "favouriteTeamIds")] string[]? favouriteTeamIds,
+        [FromQuery(Name = "environment")] string? environment,
+        [FromQuery(Name = "service")] string? service,
+        [FromQuery(Name = "user")] string? user,
+        [FromQuery(Name = "status")] string? status,
+        [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "offset")] int? offset,
+        [FromQuery(Name = "page")] int? page,
+        [FromQuery(Name = "size")] int? size,
+        CancellationToken cancellationToken)
+    {
+        var deploymentsPage = await deploymentsService.FindLatestWithMigrations(
             favouriteTeamIds,
             environment,
             service,

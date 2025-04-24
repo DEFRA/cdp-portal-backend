@@ -3,6 +3,7 @@ using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
+using Defra.Cdp.Backend.Api.Services.Migrations;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
@@ -29,6 +30,21 @@ public interface IDeploymentsService
         int size = 0,
         CancellationToken ct = new()
     );
+    
+    
+    Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
+        string[]? favouriteTeamIds,
+        string? environment,
+        string? service,
+        string? user,
+        string? status,
+        string? team,
+        int offset = 0,
+        int page = 0,
+        int size = 0,
+        CancellationToken ct = new()
+    );
+    
     Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct);
     Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
@@ -297,6 +313,108 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
 
         return new Paginated<Deployment>(deployments, page, size, totalPages);
+    }
+    
+    
+    public async Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(string[]? favouriteTeamIds, string? environment,
+        string? service,
+        string? user,
+        string? status,
+        string? team,
+        int offset = 0,
+        int page = 0,
+        int size = 0,
+        CancellationToken ct = new()
+    )
+    {
+        var builder = Builders<Deployment>.Filter;
+        var builderMigration = Builders<DatabaseMigration>.Filter;
+        var filter = builder.Empty;
+        var migrationFilter = builderMigration.Empty;
+
+        if (!string.IsNullOrWhiteSpace(environment))
+        {
+            var environmentFilter = builder.Eq(d => d.Environment, environment);
+            filter &= environmentFilter;
+            migrationFilter &= builderMigration.Eq(m => m.Environment, environment);
+        }
+
+        if (!string.IsNullOrWhiteSpace(team))
+        {
+            var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
+            var servicesOwnedByTeam = repos.Select(r => r.Id).ToList();
+            var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
+            filter &= teamFilter;
+            migrationFilter &= builderMigration.In(m => m.Service, servicesOwnedByTeam);
+        }
+
+        if (!string.IsNullOrWhiteSpace(service))
+        {
+            var serviceFilter = builder.Regex(d => d.Service,
+                new BsonRegularExpression(service, "i"));
+            filter &= serviceFilter;
+            migrationFilter &= builderMigration.Regex(m => m.Service, new BsonRegularExpression(service, "i"));;
+        }
+
+        if (!string.IsNullOrWhiteSpace(user))
+        {
+            var userFilter = builder.Where(d =>
+                (d.User != null && d.User.Id == user)
+                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
+            filter &= userFilter;
+            
+            migrationFilter &= builderMigration.Where(d =>
+                (d.User.Id == user)
+                || (d.User.DisplayName != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
+        }
+        
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusLower = status.ToLower();
+            var statusFilter = builder.Where(d =>
+                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
+            filter &= statusFilter;
+            // Don't filter migration status as they're completely different to deployment status.
+        }
+
+        var migrationCollection = Collection.Database.GetCollection<DatabaseMigration>("migrations");
+        var migrationPipeline = new EmptyPipelineDefinition<DatabaseMigration>()
+            .Match(migrationFilter)
+            .Project(m => new DeploymentOrMigration
+        {
+            Migration = m,
+            Updated = m.Updated
+            
+        });
+
+        var pipeline = new EmptyPipelineDefinition<Deployment>()
+            .Match(filter)
+            .Project(d => new DeploymentOrMigration { Deployment = d, Updated = d.Updated})
+            .UnionWith(migrationCollection, migrationPipeline)
+            .Sort(new SortDefinitionBuilder<DeploymentOrMigration>().Descending(d => d.Updated))
+            .Skip(offset + size * (page - DefaultPage))
+            .Limit(size);
+
+        
+        //var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
+        var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
+        if (favouriteTeamIds?.Length > 0)
+        {
+            var repos = (await Task.WhenAll(favouriteTeamIds.Select(teamId =>
+                    _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
+                .SelectMany(r => r)
+                .ToList();
+
+            var servicesOwnedByTeam = repos.Select(r => r.Id);
+
+            //deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.GetValue("service").AsString)).ToList();
+        }
+
+        var totalDeployments = await Collection.CountDocumentsAsync(filter, cancellationToken: ct);
+
+        var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
+
+        return new Paginated<DeploymentOrMigration>(deployments, page, size, totalPages);
     }
 
     public async Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct)
