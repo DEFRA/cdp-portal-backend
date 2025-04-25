@@ -8,12 +8,12 @@ public static class MigrationEndpoints
 {
     public static void MapMigrationEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/migrations/available", ListServicesWithMigrations);
-        app.MapGet("/migrations/available/{service}", ListAvailableMigrationsForService);
-        app.MapGet("/migrations/run/{id}", FindMigrationById);
-        app.MapGet("/migrations/run", SearchMigrations);
+        app.MapGet("/migrations/services", ListServicesWithMigrations);
+        app.MapGet("/migrations/services/{service}", ListAvailableMigrationsForService);
+        app.MapGet("/migrations/runs/{id}", FindMigrationById);
+        app.MapGet("/migrations/runs", SearchMigrationRuns);
         app.MapGet("/migrations/latest/{service}", FindLatestForService);
-        app.MapPost("/migrations/run", RunMigration);
+        app.MapPost("/migrations/runs", RunMigration);
     }
 
     /**
@@ -56,7 +56,7 @@ public static class MigrationEndpoints
     /**
      * Returns a specific run by the internal CDP Migration ID.
      */
-    static async Task<IResult> SearchMigrations(IDatabaseMigrationService migrationService, 
+    static async Task<IResult> SearchMigrationRuns(IDatabaseMigrationService migrationService, 
         string? cdpMigrationId, 
         string? buildId,
         string? service,

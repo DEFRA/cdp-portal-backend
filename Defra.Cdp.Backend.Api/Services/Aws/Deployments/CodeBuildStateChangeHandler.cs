@@ -32,25 +32,26 @@ public class CodeBuildStateChangeHandler(IDatabaseMigrationService databaseMigra
                     lambdaEvent.BuildId);
                 return;
             case LinkMigrationOutcome.AlreadyLinked:
-                logger.LogInformation("Migration {CdpMigrationId} is already linked to a different build id", lambdaEvent.CdpMigrationId);
+                logger.LogWarning("Migration {CdpMigrationId} is already linked to a different build id", lambdaEvent.CdpMigrationId);
                 return;
             case LinkMigrationOutcome.UnknownMigrationId:
                 if (lambdaEvent.Request != null)
                 {
-                    logger.LogInformation("Unknown migration {CdpMigrationId} attempting to create from request",
+                    logger.LogDebug("Unknown migration {CdpMigrationId} attempting to create from request",
                         lambdaEvent.CdpMigrationId);
                     var migration = DatabaseMigration.FromRequest(lambdaEvent.Request);
                     await databaseMigrationService.CreateMigration(migration, cancellationToken);
                     var createFromRequest = await databaseMigrationService.Link(migration.CdpMigrationId, lambdaEvent.BuildId, cancellationToken);
-                    logger.LogInformation("create migration from request outcome {Outcome}", createFromRequest.ToString());
+                    logger.LogInformation("Created migration {Id} -> {BuildId} from request: {Outcome}", migration.CdpMigrationId, migration.BuildId, createFromRequest.ToString());
                 }
                 else
                 {
-                    logger.LogInformation("Unknown migration {CdpMigrationId}", lambdaEvent.CdpMigrationId);
+                    logger.LogWarning("Unknown migration {CdpMigrationId}", lambdaEvent.CdpMigrationId);
                 }
                 return;
             default:
-                throw new ArgumentOutOfRangeException();
+                logger.LogWarning("Unknown Link Outcome status: {result}", result);
+                return;
         }
     }
 }
