@@ -1,0 +1,17 @@
+{
+  "account": "506190012364", 
+  "detailType": "CodeBuild Lambda Created", 
+  "time": "2025-04-25T12:53:46.930084", 
+  "cdpMigrationId": "123456", 
+  "buildId": "cdp-example-node-postgres-be:d9866740-35a7-4ec1-8c6c-764429c14853", 
+  "request": {
+    "cdpMigrationId": "123456", 
+    "service": "cdp-example-node-postgres-be", 
+    "version": "0.1.0", 
+    "environment": "infra-dev",
+    "user": {
+      "id": "12345", 
+      "displayName": "Username"
+    }
+  }
+}
