@@ -35,7 +35,7 @@ public class CodeBuildStateChangeHandler(IDatabaseMigrationService databaseMigra
                 logger.LogWarning("Migration {CdpMigrationId} is already linked to a different build id", lambdaEvent.CdpMigrationId);
                 return;
             case LinkMigrationOutcome.UnknownMigrationId:
-                if (lambdaEvent.Request != null)
+                if (lambdaEvent.Request != null && !string.IsNullOrEmpty(lambdaEvent.BuildId))
                 {
                     logger.LogDebug("Unknown migration {CdpMigrationId} attempting to create from request",
                         lambdaEvent.CdpMigrationId);
