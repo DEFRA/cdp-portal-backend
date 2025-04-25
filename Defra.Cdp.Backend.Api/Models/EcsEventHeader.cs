@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Models;
 public class EcsEventHeader
 {
     [property: JsonPropertyName("id")] public string? Id { get; set; }
-    public string DetailType { get; set; }
+    public string DetailType { get; set; } = "";
     
     [JsonPropertyName("detailType")]
     public string DetailTypeCamel

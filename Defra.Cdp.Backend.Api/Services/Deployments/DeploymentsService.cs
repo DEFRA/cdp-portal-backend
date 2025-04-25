@@ -384,7 +384,6 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         {
             Migration = m,
             Updated = m.Updated
-            
         });
 
         var pipeline = new EmptyPipelineDefinition<Deployment>()
@@ -394,9 +393,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .Sort(new SortDefinitionBuilder<DeploymentOrMigration>().Descending(d => d.Updated))
             .Skip(offset + size * (page - DefaultPage))
             .Limit(size);
-
         
-        //var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
         var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
         if (favouriteTeamIds?.Length > 0)
         {
@@ -406,8 +403,9 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                 .ToList();
 
             var servicesOwnedByTeam = repos.Select(r => r.Id);
-
-            //deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.GetValue("service").AsString)).ToList();
+            deployments = deployments.OrderByDescending(d =>
+                servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service)
+            ).ToList();
         }
 
         var totalDeployments = await Collection.CountDocumentsAsync(filter, cancellationToken: ct);
