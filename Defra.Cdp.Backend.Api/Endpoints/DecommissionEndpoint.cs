@@ -1,5 +1,4 @@
-using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.AspNetCore.Mvc;
@@ -15,13 +14,15 @@ public static class DecommissionEndpoint
 
     static async Task<IResult> DecommissionService(
         [FromServices] IDeployableArtifactsService deployableArtifactsService,
-        [FromServices] IDeploymentsService deploymentsService,
         [FromServices] ITestRunService testRunService,
-        [FromServices] ITenantServicesService tenantServicesService,
+        [FromServices] IEntitiesService entitiesService,
+        [FromQuery(Name = "id")] string userId,
+        [FromQuery(Name = "displayName")] string userDisplayName,
          String serviceName, CancellationToken cancellationToken)
    {
       await deployableArtifactsService.Decommission(serviceName, cancellationToken);
       await testRunService.Decommission(serviceName, cancellationToken);
+      await entitiesService.Decommission(serviceName, userId, userDisplayName, cancellationToken);
       return Results.Ok();
    }
 }

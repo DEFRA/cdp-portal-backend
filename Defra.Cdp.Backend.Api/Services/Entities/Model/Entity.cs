@@ -29,13 +29,16 @@ public record Entity
     public DateTime? Created { get; set; }
 
     [property: JsonPropertyName("creator")]
-    public Creator? Creator { get; set; }
+    public Person? Creator { get; set; }
 
     [property: JsonPropertyName("teams")] public List<Team> Teams { get; set; }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     [property: JsonPropertyName("status")]
     public Status Status { get; set; }
+
+    [property: JsonPropertyName("decommissioned")]
+    public Decommission Decommissioned { get; set; }
 
     public static Entity from(LegacyStatus status)
     {
@@ -83,6 +86,15 @@ public record Entity
     }
 }
 
+public class Decommission
+{
+    [property: JsonPropertyName("decommissionedBy")]
+    public required Person DecommissionedBy { get; set; }
+
+    [property: JsonPropertyName("decommissionedAt")]
+    public required DateTime DecommissionedAt { get; set; }
+}
+
 public class Team
 {
     [property: JsonPropertyName("teamId")]
@@ -92,7 +104,7 @@ public class Team
     [property: JsonPropertyName("name")] public string? Name { get; set; }
 }
 
-public class Creator
+public class Person
 {
     [property: JsonPropertyName("id")] public string? Id { get; set; }
 

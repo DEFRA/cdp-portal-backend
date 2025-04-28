@@ -2,18 +2,20 @@ using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Status = Defra.Cdp.Backend.Api.Services.GithubEvents.Model.Status;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public interface IEntitiesService
 {
-    Task<List<Entity>> GetEntities(Type type, string? partialName, string? teamId, CancellationToken cancellationToken);
+    Task<List<Entity>> GetEntities(Type? type, string? partialName, string? teamId, bool includeDecommissioned,
+        CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
     Task Create(Entity entity, CancellationToken cancellationToken);
-    Task UpdateStatus(Entities.Model.Status overallStatus, string repositoryName, CancellationToken cancellationToken);
+    Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken);
+    Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken);
+    Task<Entity> GetEntity(string repositoryName, CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -29,12 +31,18 @@ public class EntitiesService(
         return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
     }
 
-    public async Task<List<Entity>> GetEntities(Type type, string? partialName, string? teamId,
+    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string? teamId,
+        bool includeDecommissioned,
         CancellationToken cancellationToken)
     {
         var builder = Builders<Entity>.Filter;
-        var filter = builder.Eq(e => e.Type, type);
+        var filter = builder.Empty;
 
+        if (type != null)
+        {
+            filter = builder.Eq(e => e.Type, type);
+        }
+        
         if (teamId != null)
         {
             var teamFilter = builder.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
@@ -46,6 +54,12 @@ public class EntitiesService(
             var partialServiceFilter =
                 builder.Regex(e => e.Name, new BsonRegularExpression(partialName, "i"));
             filter &= partialServiceFilter;
+        }
+        
+        if (!includeDecommissioned)
+        {
+            var decommissionedFilter = builder.Eq(e => e.Decommissioned, null);
+            filter &= decommissionedFilter;
         }
 
         return await Collection.Find(filter).ToListAsync(cancellationToken);
@@ -111,11 +125,32 @@ public class EntitiesService(
         await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateStatus(Entities.Model.Status overallStatus, string repositoryName, CancellationToken cancellationToken)
+    public async Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, repositoryName);
         var update = Builders<Entity>.Update.Set(e => e.Status, overallStatus);
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
+
+    public async Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken)
+    {
+        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, repositoryName);
+        var update = Builders<Entity>.Update.Set(e => e.Decommissioned, new Decommission
+        {
+            DecommissionedBy = new Person
+            {
+                Id = userId,
+                Name = userDisplayName
+            },
+            DecommissionedAt = DateTime.UtcNow
+        });
+        await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
+
+    public async Task<Entity> GetEntity(string repositoryName, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(e => e.Name == repositoryName)
+            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
 
     public class EntityFilters
