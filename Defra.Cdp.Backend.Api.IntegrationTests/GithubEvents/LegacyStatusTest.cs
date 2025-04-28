@@ -102,16 +102,15 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.Equal("example-template", persistedStatus.ServiceTypeTemplate);
         Assert.Equal("example-team", persistedStatus.Team.Name);
 
-        var persistedEntities = await entitiesService.GetEntities(Type.Microservice, "example-repo", null, CancellationToken.None);
-        Assert.Single(persistedEntities);
-        Assert.NotNull(persistedEntities[0]);
-        Assert.Equal("example-repo", persistedEntities[0].Name);
-        Assert.Equal(EntityStatus.InProgress, persistedEntities[0].Status);
-        Assert.Equal(Type.Microservice, persistedEntities[0].Type);
-        Assert.Equal(SubType.Backend, persistedEntities[0].SubType);
-        Assert.Equal("example-team", persistedEntities[0].Teams[0].Name);
-        Assert.Equal("example-creator", persistedEntities[0].Creator!.Name);
-        Assert.NotNull(persistedEntities[0].Created);
+        var persistedEntity = await entitiesService.GetEntity("example-repo", CancellationToken.None);
+        Assert.NotNull(persistedEntity);
+        Assert.Equal("example-repo", persistedEntity.Name);
+        Assert.Equal(EntityStatus.InProgress, persistedEntity.Status);
+        Assert.Equal(Type.Microservice, persistedEntity.Type);
+        Assert.Equal(SubType.Backend, persistedEntity.SubType);
+        Assert.Equal("example-team", persistedEntity.Teams[0].Name);
+        Assert.Equal("example-creator", persistedEntity.Creator!.Name);
+        Assert.NotNull(persistedEntity.Created);
 
         var sqs = Substitute.For<IAmazonSQS>();
         var tenantServicesService = new TenantServicesService(mongoFactory,
@@ -145,10 +144,9 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.Equal(Status.InProgress.ToStringValue(), updatedStatus.Status);
         Assert.Equal(Status.Requested.ToStringValue(), updatedStatus.CdpCreateWorkflows.Status);
         
-        var updatedEntities = await entitiesService.GetEntities(Type.Microservice, "example-repo", null, CancellationToken.None);
-        Assert.Single(updatedEntities);
-        Assert.NotNull(updatedEntities[0]);
-        Assert.Equal(EntityStatus.InProgress, updatedEntities[0].Status);
+        var updatedEntity = await entitiesService.GetEntity( "example-repo", CancellationToken.None);
+        Assert.NotNull(updatedEntity);
+        Assert.Equal(EntityStatus.InProgress, updatedEntity.Status);
 
         await githubEventListener.Handle(
             new Message { Body = GetBody(
@@ -165,10 +163,9 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.Equal(Status.InProgress.ToStringValue(), updatedStatus.Status);
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.CdpCreateWorkflows.Status);
         
-        updatedEntities = await entitiesService.GetEntities(Type.Microservice, "example-repo", null, CancellationToken.None);
-        Assert.Single(updatedEntities);
-        Assert.NotNull(updatedEntities[0]);
-        Assert.Equal(EntityStatus.InProgress, updatedEntities[0].Status);
+        updatedEntity = await entitiesService.GetEntity("example-repo", CancellationToken.None);
+        Assert.NotNull(updatedEntity);
+        Assert.Equal(EntityStatus.InProgress, updatedEntity.Status);
         
         await githubEventListener.Handle(
             new Message { Body = GetBody(
@@ -253,10 +250,9 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.CdpSquidProxy?.Status);
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.Status);
         
-        updatedEntities = await entitiesService.GetEntities(Type.Microservice, "example-repo", null, CancellationToken.None);
-        Assert.Single(updatedEntities);
-        Assert.NotNull(updatedEntities[0]);
-        Assert.Equal(EntityStatus.Success, updatedEntities[0].Status);
+        updatedEntity = await entitiesService.GetEntity( "example-repo", CancellationToken.None);
+        Assert.NotNull(updatedEntity);
+        Assert.Equal(EntityStatus.Success, updatedEntity.Status);
     }
 
 

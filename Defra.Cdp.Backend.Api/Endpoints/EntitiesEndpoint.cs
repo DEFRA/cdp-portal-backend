@@ -17,12 +17,13 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/{repositoryName}", GetEntity);
     }
 
-    private static async Task<IResult> GetEntities([FromQuery] Type type,
+    private static async Task<IResult> GetEntities([FromQuery] Type? type,
         [FromQuery] string? name,
         [FromQuery] string? teamId,
-        IEntitiesService entitiesService, CancellationToken cancellationToken)
+        IEntitiesService entitiesService, CancellationToken cancellationToken,
+        [FromQuery] bool includeDecommissioned = false)
     {
-        var statuses = await entitiesService.GetEntities(type, name, teamId, cancellationToken);
+        var statuses = await entitiesService.GetEntities(type, name, teamId, includeDecommissioned, cancellationToken);
         return Results.Ok(statuses);
     }
 

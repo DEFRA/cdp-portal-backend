@@ -92,9 +92,9 @@ public class Creator
     [property: JsonPropertyName("displayName")]
     public string DisplayName { get; set; }
 
-    public Entities.Model.Creator? toCreator()
+    public Entities.Model.Person? toCreator()
     {
-        return new Entities.Model.Creator
+        return new Entities.Model.Person
         {
             Id = Id,
             Name = DisplayName
