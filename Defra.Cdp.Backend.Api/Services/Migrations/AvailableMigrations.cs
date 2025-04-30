@@ -29,7 +29,7 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
 {
     private readonly string? _bucketName = configuration.GetValue<string>("MigrationsBucket");
 
-    private const string MigrationFileName = "migrations.zip"; // Subject to change, revisit once we do the upload action
+    private const string MigrationFileName = "migrations.tgz";
     
     public async Task<List<MigrationVersion>> FindMigrationsForService(string service, CancellationToken ct)
     {
