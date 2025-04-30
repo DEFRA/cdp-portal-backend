@@ -26,7 +26,6 @@ public class PlatformEventListener(
 
       try
       {
-         logger.LogDebug(message.Body);
          var eventType = TryParseMessageBody(message.Body);
          if (eventType != null)
 

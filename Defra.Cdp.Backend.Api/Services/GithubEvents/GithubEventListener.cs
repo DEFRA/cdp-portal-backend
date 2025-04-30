@@ -54,7 +54,6 @@ public class GithubEventListener(
 
     public async Task Handle(Message message, CancellationToken cancellationToken)
     {
-        logger.LogDebug(message.Body);
         var eventWrapper = TryParseMessageBody(message.Body);
         if (eventWrapper != null && ShouldHandleMessage(eventWrapper))
             await eventHandler.Handle(eventWrapper, cancellationToken);

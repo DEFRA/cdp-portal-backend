@@ -47,8 +47,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
                     }
                     catch (Exception exception)
                     {
-                        logger.LogError(message.Body);
-                        logger.LogError(exception.Message);
+                        logger.LogError("Message: {Id} - Exception: {Message}", message.MessageId, exception.Message);
                     }
 
                     var deleteRequest = new DeleteMessageRequest
