@@ -39,6 +39,7 @@ public interface IDeploymentsService
         string? user,
         string? status,
         string? team,
+        string? kind,
         int offset = 0,
         int page = 0,
         int size = 0,
@@ -60,6 +61,8 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 {
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
+    private const string Migration = "migration";
+    private const string Deployment = "deployment";
     private readonly IRepositoryService _repositoryService;
     private readonly IUserServiceFetcher _userServiceFetcher;
     private readonly HashSet<string> _excludedDisplayNames =
@@ -314,13 +317,15 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         return new Paginated<Deployment>(deployments, page, size, totalPages);
     }
-    
-    
-    public async Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(string[]? favouriteTeamIds, string? environment,
+
+    public async Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
+        string[]? favouriteTeamIds,
+        string? environment,
         string? service,
         string? user,
         string? status,
         string? team,
+        string? kind,
         int offset = 0,
         int page = 0,
         int size = 0,
@@ -353,7 +358,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             var serviceFilter = builder.Regex(d => d.Service,
                 new BsonRegularExpression(service, "i"));
             filter &= serviceFilter;
-            migrationFilter &= builderMigration.Regex(m => m.Service, new BsonRegularExpression(service, "i"));;
+            migrationFilter &= builderMigration.Regex(m => m.Service, new BsonRegularExpression(service, "i"));
         }
 
         if (!string.IsNullOrWhiteSpace(user))
@@ -371,10 +376,16 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         if (!string.IsNullOrWhiteSpace(status))
         {
             var statusLower = status.ToLower();
+
+            // Filter deployments by status
             var statusFilter = builder.Where(d =>
                 d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
             filter &= statusFilter;
-            // Don't filter migration status as they're completely different to deployment status.
+
+            // Filter migrations by status
+            var migrationStatusFilter = builderMigration.Where(m =>
+                m.Status.ToLower() == statusLower || m.Status.ToLower().Contains(statusLower));
+            migrationFilter &= migrationStatusFilter;
         }
 
         var migrationCollection = Collection.Database.GetCollection<DatabaseMigration>("migrations");
@@ -460,16 +471,22 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .Distinct(d => d.Service, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var statuses = await Collection
-            .Distinct(d => d.Status, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
-            .ToListAsync(ct);
+        var statuses = (await Collection
+                .Distinct(d => d.Status, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
+                .ToListAsync(ct))
+            .Concat(await Collection.Database.GetCollection<DatabaseMigration>("migrations")
+                .Distinct(d => d.Status, FilterDefinition<DatabaseMigration>.Empty, cancellationToken: ct)
+                .ToListAsync(ct))
+            .ToList();
 
         var users = await UserDetailsList(ct);
+
+        var kinds = new List<string> { Migration, Deployment };
 
         serviceNames.Sort();
         statuses.Sort();
 
-        return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
+        return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses, Kinds = kinds };
     }
 
     public async Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct)

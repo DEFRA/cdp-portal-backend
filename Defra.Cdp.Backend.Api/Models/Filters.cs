@@ -6,6 +6,7 @@ public sealed class DeploymentFilters
     public List<string> Statuses { get; init; } = default!;
     public List<UserDetails> Users { get; init; } = default!;
     public List<RepositoryTeam> Teams { get; set; } = default!;
+    public List<string> Kinds { get; set; } = default!;
 }
 
 public sealed class ServiceFilters
