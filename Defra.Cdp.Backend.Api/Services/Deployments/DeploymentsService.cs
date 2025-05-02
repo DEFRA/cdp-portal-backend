@@ -474,20 +474,29 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .Distinct(d => d.Service, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var statuses = (await Collection
-                .Distinct(d => d.Status, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
-                .ToListAsync(ct))
-            .Concat(await Collection.Database.GetCollection<DatabaseMigration>("migrations")
-                .Distinct(d => d.Status, FilterDefinition<DatabaseMigration>.Empty, cancellationToken: ct)
-                .ToListAsync(ct))
-            .ToList();
+        var deploymentStatusesTask = Collection
+            .Distinct(d => d.Status, FilterDefinition<Deployment>.Empty, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        var migrationStatusesTask = Collection.Database
+            .GetCollection<DatabaseMigration>("migrations")
+            .Distinct(m => m.Status, FilterDefinition<DatabaseMigration>.Empty, cancellationToken: ct)
+            .ToListAsync(ct);
+
+        await Task.WhenAll(deploymentStatusesTask, migrationStatusesTask);
+
+        var allStatuses = new HashSet<string>(
+            deploymentStatusesTask.Result
+                .Concat(migrationStatusesTask.Result)
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        var statuses = allStatuses.OrderBy(s => s).ToList();
 
         var users = await UserDetailsList(ct);
 
         var kinds = new List<string> { Deployment, Migration };
 
         serviceNames.Sort();
-        statuses.Sort();
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses, Kinds = kinds };
     }
