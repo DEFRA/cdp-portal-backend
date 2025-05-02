@@ -19,7 +19,7 @@ public interface IDeploymentsService
     Task<bool>          UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
     
     Task<Paginated<Deployment>> FindLatest(
-        string[]? favouriteTeamIds,
+        string[]? favourites,
         string? environment,
         string? service,
         string? user,
@@ -33,7 +33,7 @@ public interface IDeploymentsService
     
     
     Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
-        string[]? favouriteTeamIds,
+        string[]? favourites,
         string? environment,
         string? service,
         string? user,
@@ -242,7 +242,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .ToListAsync(ct);
     }
 
-    public async Task<Paginated<Deployment>> FindLatest(string[]? favouriteTeamIds, string? environment,
+    public async Task<Paginated<Deployment>> FindLatest(string[]? favourites, string? environment,
         string? service, string? user,
         string? status,
         string? team,
@@ -299,9 +299,9 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .SortByDescending(d => d.Created)
             .ToListAsync(ct);
 
-        if (favouriteTeamIds?.Length > 0)
+        if (favourites?.Length > 0)
         {
-            var repos = (await Task.WhenAll(favouriteTeamIds.Select(teamId =>
+            var repos = (await Task.WhenAll(favourites.Select(teamId =>
                     _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
                 .ToList();
@@ -319,7 +319,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     }
 
     public async Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
-        string[]? favouriteTeamIds,
+        string[]? favourites,
         string? environment,
         string? service,
         string? user,
@@ -327,8 +327,8 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         string? team,
         string? kind,
         int offset = 0,
-        int page = 0,
-        int size = 0,
+        int page = 1,
+        int size = 50,
         CancellationToken ct = new()
     )
     {
@@ -339,8 +339,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         if (!string.IsNullOrWhiteSpace(environment))
         {
-            var environmentFilter = builder.Eq(d => d.Environment, environment);
-            filter &= environmentFilter;
+            filter &= builder.Eq(d => d.Environment, environment);
             migrationFilter &= builderMigration.Eq(m => m.Environment, environment);
         }
 
@@ -348,44 +347,46 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         {
             var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
             var servicesOwnedByTeam = repos.Select(r => r.Id).ToList();
-            var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
-            filter &= teamFilter;
+            filter &= builder.In(d => d.Service, servicesOwnedByTeam);
             migrationFilter &= builderMigration.In(m => m.Service, servicesOwnedByTeam);
         }
 
         if (!string.IsNullOrWhiteSpace(service))
         {
-            var serviceFilter = builder.Regex(d => d.Service,
-                new BsonRegularExpression(service, "i"));
-            filter &= serviceFilter;
-            migrationFilter &= builderMigration.Regex(m => m.Service, new BsonRegularExpression(service, "i"));
+            var regex = new BsonRegularExpression(service, "i");
+            filter &= builder.Regex(d => d.Service, regex);
+            migrationFilter &= builderMigration.Regex(m => m.Service, regex);
         }
 
         if (!string.IsNullOrWhiteSpace(user))
         {
-            var userFilter = builder.Where(d =>
+            filter &= builder.Where(d =>
                 (d.User != null && d.User.Id == user)
                 || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
-            filter &= userFilter;
-            
-            migrationFilter &= builderMigration.Where(d =>
-                (d.User.Id == user)
-                || (d.User.DisplayName != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
+
+            migrationFilter &= builderMigration.Where(m =>
+                m.User.Id == user
+                || (m.User.DisplayName != null && m.User.DisplayName.ToLower().Contains(user.ToLower())));
         }
-        
+
         if (!string.IsNullOrWhiteSpace(status))
         {
             var statusLower = status.ToLower();
-
-            // Filter deployments by status
-            var statusFilter = builder.Where(d =>
+            filter &= builder.Where(d =>
                 d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-            filter &= statusFilter;
 
-            // Filter migrations by status
-            var migrationStatusFilter = builderMigration.Where(m =>
+            migrationFilter &= builderMigration.Where(m =>
                 m.Status.ToLower() == statusLower || m.Status.ToLower().Contains(statusLower));
-            migrationFilter &= migrationStatusFilter;
+        }
+
+        switch (kind)
+        {
+            case Migration:
+                filter = builder.Eq(m => m.CdpDeploymentId, null);
+                break;
+            case Deployment:
+                migrationFilter = builderMigration.Eq(m => m.CdpMigrationId, null);
+                break;
         }
 
         var migrationCollection = Collection.Database.GetCollection<DatabaseMigration>("migrations");
@@ -406,9 +407,12 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .Limit(size);
         
         var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
-        if (favouriteTeamIds?.Length > 0)
+
+        // TODO favourites should be on the entire result - "bring all favourite things to the front", not just on the current page
+        //  we may be able to do this in an easier way in the UI
+        if (favourites?.Length > 0)
         {
-            var repos = (await Task.WhenAll(favouriteTeamIds.Select(teamId =>
+            var repos = (await Task.WhenAll(favourites.Select(teamId =>
                     _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
                 .ToList();
@@ -481,7 +485,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         var users = await UserDetailsList(ct);
 
-        var kinds = new List<string> { Migration, Deployment };
+        var kinds = new List<string> { Deployment, Migration };
 
         serviceNames.Sort();
         statuses.Sort();

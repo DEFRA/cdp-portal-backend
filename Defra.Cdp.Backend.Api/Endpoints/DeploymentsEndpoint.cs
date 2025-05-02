@@ -24,7 +24,7 @@ public static class DeploymentsEndpoint
 
     // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
     private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService,
-        [FromQuery(Name = "favouriteTeamIds")] string[]? favouriteTeamIds,
+        [FromQuery(Name = "favourites")] string[]? favourites,
         [FromQuery(Name = "environment")] string? environment,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "user")] string? user,
@@ -36,7 +36,7 @@ public static class DeploymentsEndpoint
         CancellationToken cancellationToken)
     {
         var deploymentsPage = await deploymentsService.FindLatest(
-            favouriteTeamIds,
+            favourites,
             environment,
             service,
             user,
@@ -51,7 +51,7 @@ public static class DeploymentsEndpoint
     }
     
     private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService,
-        [FromQuery(Name = "favouriteTeamIds")] string[]? favouriteTeamIds,
+        [FromQuery(Name = "favourites")] string[]? favourites,
         [FromQuery(Name = "environment")] string? environment,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "user")] string? user,
@@ -64,7 +64,7 @@ public static class DeploymentsEndpoint
         CancellationToken cancellationToken)
     {
         var deploymentsPage = await deploymentsService.FindLatestWithMigrations(
-            favouriteTeamIds,
+            favourites,
             environment,
             service,
             user,
