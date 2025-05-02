@@ -394,15 +394,14 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .Match(migrationFilter)
             .Project(m => new DeploymentOrMigration
         {
-            Migration = m,
-            Updated = m.Updated
+            Migration = m, Created = m.Created
         });
 
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
-            .Project(d => new DeploymentOrMigration { Deployment = d, Updated = d.Updated})
+            .Project(d => new DeploymentOrMigration { Deployment = d, Created = d.Created })
             .UnionWith(migrationCollection, migrationPipeline)
-            .Sort(new SortDefinitionBuilder<DeploymentOrMigration>().Descending(d => d.Updated))
+            .Sort(new SortDefinitionBuilder<DeploymentOrMigration>().Descending(d => d.Created))
             .Skip(offset + size * (page - DefaultPage))
             .Limit(size);
         

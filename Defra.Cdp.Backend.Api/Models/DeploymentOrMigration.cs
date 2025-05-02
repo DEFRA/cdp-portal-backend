@@ -6,5 +6,5 @@ public class DeploymentOrMigration
 {
     public Deployment? Deployment { get; set; }
     public DatabaseMigration? Migration { get; set; }
-    public DateTime Updated { get; set; }
+    public DateTime Created { get; set; }
 }
