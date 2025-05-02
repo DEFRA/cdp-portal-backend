@@ -484,11 +484,13 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .ToListAsync(ct);
 
         await Task.WhenAll(deploymentStatusesTask, migrationStatusesTask);
-
+        
         var allStatuses = new HashSet<string>(
             deploymentStatusesTask.Result
                 .Concat(migrationStatusesTask.Result)
-                .Where(s => !string.IsNullOrWhiteSpace(s)));
+                .Where(s => !string.IsNullOrWhiteSpace(s)),
+            StringComparer.OrdinalIgnoreCase
+        );
 
         var statuses = allStatuses.OrderBy(s => s).ToList();
 
