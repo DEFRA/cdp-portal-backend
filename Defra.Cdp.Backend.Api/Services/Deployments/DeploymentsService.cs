@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
@@ -110,7 +111,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         }
         catch (Exception ex)
         {
-            Logger.LogError("Failed to lookup teams for {services}, {ex}", deployment.Service, ex);
+            Logger.LogError("Failed to lookup teams for {Services}, {Ex}", deployment.Service, ex);
         }
         
         // Record which teams the user belonged to at that point in time unless its an auto-deployment
@@ -124,7 +125,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             }
             catch (Exception ex)
             {
-                Logger.LogError("Failed to lookup user for {userId}, {ex}", deployment.User?.Id, ex);
+                Logger.LogError("Failed to lookup user for {UserId}, {Ex}", deployment.User?.Id, ex);
             }
         }
         return deployment;
@@ -361,72 +362,104 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         if (!string.IsNullOrWhiteSpace(user))
         {
             filter &= builder.Where(d =>
-                (d.User != null && d.User.Id == user)
-                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
-
+                d.User != null && (d.User.Id == user || d.User.DisplayName.ToLower().Contains(user.ToLower())));
             migrationFilter &= builderMigration.Where(m =>
-                m.User.Id == user
-                || (m.User.DisplayName != null && m.User.DisplayName.ToLower().Contains(user.ToLower())));
+                m.User.Id == user ||
+                (m.User.DisplayName != null && m.User.DisplayName.ToLower().Contains(user.ToLower())));
         }
 
         if (!string.IsNullOrWhiteSpace(status))
         {
             var statusLower = status.ToLower();
-            filter &= builder.Where(d =>
-                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-
-            migrationFilter &= builderMigration.Where(m =>
-                m.Status.ToLower() == statusLower || m.Status.ToLower().Contains(statusLower));
+            filter &= builder.Where(d => d.Status.ToLower().Contains(statusLower));
+            migrationFilter &= builderMigration.Where(m => m.Status.ToLower().Contains(statusLower));
         }
 
-        switch (kind)
-        {
-            case Migration:
-                filter = builder.Eq(m => m.CdpDeploymentId, null);
-                break;
-            case Deployment:
-                migrationFilter = builderMigration.Eq(m => m.CdpMigrationId, null);
-                break;
-        }
+        if (kind == nameof(Migration))
+            filter = builder.Eq(d => d.CdpDeploymentId, null);
+        else if (kind == nameof(Deployment))
+            migrationFilter = builderMigration.Eq(m => m.CdpMigrationId, null);
 
-        var migrationCollection = Collection.Database.GetCollection<DatabaseMigration>("migrations");
-        var migrationPipeline = new EmptyPipelineDefinition<DatabaseMigration>()
-            .Match(migrationFilter)
-            .Project(m => new DeploymentOrMigration
-        {
-            Migration = m, Created = m.Created
-        });
-
-        var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Match(filter)
-            .Project(d => new DeploymentOrMigration { Deployment = d, Created = d.Created })
-            .UnionWith(migrationCollection, migrationPipeline)
-            .Sort(new SortDefinitionBuilder<DeploymentOrMigration>().Descending(d => d.Created))
-            .Skip(offset + size * (page - DefaultPage))
-            .Limit(size);
-        
-        var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
-
-        // TODO favourites should be on the entire result - "bring all favourite things to the front", not just on the current page
-        //  we may be able to do this in an easier way in the UI
+        var favouriteServiceIds = new HashSet<string>();
         if (favourites?.Length > 0)
         {
             var repos = (await Task.WhenAll(favourites.Select(teamId =>
                     _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
-                .ToList();
-
-            var servicesOwnedByTeam = repos.Select(r => r.Id);
-            deployments = deployments.OrderByDescending(d =>
-                servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service)
-            ).ToList();
+                .Select(r => r.Id)
+                .ToHashSet();
+            favouriteServiceIds = repos;
         }
 
-        var totalDeployments = await Collection.CountDocumentsAsync(filter, cancellationToken: ct);
+        var favouriteArray = new BsonArray(favouriteServiceIds);
 
-        var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalDeployments / size));
+        var deploymentStages = BuildAggregationStages(filter, "Deployment", favouriteArray);
+        var migrationStages = BuildAggregationStages(migrationFilter, "Migration", favouriteArray);
+
+        var pipeline = new List<BsonDocument>();
+        pipeline.AddRange(deploymentStages);
+        pipeline.Add(new BsonDocument("$unionWith",
+            new BsonDocument { { "coll", "migrations" }, { "pipeline", new BsonArray(migrationStages) } }));
+        pipeline.Add(new BsonDocument("$sort", new BsonDocument { { "isFavourite", -1 }, { "Created", -1 } }));
+        pipeline.Add(new BsonDocument("$facet",
+            new BsonDocument
+            {
+                {
+                    "items",
+                    new BsonArray
+                    {
+                        new BsonDocument("$skip", offset + size * (page - 1)), new BsonDocument("$limit", size)
+                    }
+                },
+                { "total", new BsonArray { new BsonDocument("$count", "count") } }
+            }));
+
+        var result = await Collection.Aggregate<BsonDocument>(pipeline).FirstOrDefaultAsync(ct);
+
+        var rawItems = result["items"].AsBsonArray;
+        var total = result["total"].AsBsonArray.FirstOrDefault()?["count"].AsInt32 ?? 0;
+
+        var deployments = rawItems.Select(doc => new DeploymentOrMigration
+        {
+            Deployment =
+                doc["Deployment"].IsBsonNull
+                    ? null
+                    : BsonSerializer.Deserialize<Deployment>(doc["Deployment"].AsBsonDocument),
+            Migration =
+                doc["Migration"].IsBsonNull
+                    ? null
+                    : BsonSerializer.Deserialize<DatabaseMigration>(doc["Migration"].AsBsonDocument),
+            Created = doc["Created"].ToUniversalTime(),
+            IsFavourite = doc["isFavourite"].ToBoolean()
+        }).ToList();
+
+        var totalPages = Math.Max(1, (int)Math.Ceiling((double)total / size));
 
         return new Paginated<DeploymentOrMigration>(deployments, page, size, totalPages);
+    }
+
+    private static List<BsonDocument> BuildAggregationStages<T>(
+        FilterDefinition<T> filter,
+        string rootType,
+        BsonArray favouriteArray)
+    {
+        var serializer = BsonSerializer.SerializerRegistry.GetSerializer<T>();
+        var renderedFilter = filter.Render(serializer, BsonSerializer.SerializerRegistry);
+
+        return
+        [
+            new("$match", renderedFilter),
+            new("$addFields", new BsonDocument("isFavourite",
+                new BsonDocument("$in", new BsonArray { "$service", favouriteArray }))),
+            new BsonDocument("$project",
+                new BsonDocument
+                {
+                    { "Deployment", rootType == "Deployment" ? "$$ROOT" : BsonNull.Value },
+                    { "Migration", rootType == "Migration" ? "$$ROOT" : BsonNull.Value },
+                    { "Created", "$created" },
+                    { "isFavourite", "$isFavourite" }
+                })
+        ];
     }
 
     public async Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct)
