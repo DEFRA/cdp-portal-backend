@@ -15,7 +15,7 @@ public interface IEntitiesService
     Task Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken);
     Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken);
-    Task<Entity> GetEntity(string repositoryName, CancellationToken cancellationToken);
+    Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -147,7 +147,7 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task<Entity> GetEntity(string repositoryName, CancellationToken cancellationToken)
+    public async Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken)
     {
         return await Collection.Find(e => e.Name == repositoryName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
