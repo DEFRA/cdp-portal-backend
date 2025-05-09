@@ -34,10 +34,10 @@ public static class EntitiesEndpoint
         return Results.Ok(filters);
     }
 
-    private static async Task<IResult> GetEntity(ILegacyStatusService legacyStatusService, string repositoryName,
+    private static async Task<IResult> GetEntity(IEntitiesService entitiesService, string repositoryName,
         CancellationToken cancellationToken)
     {
-        var repositoryStatus = await legacyStatusService.StatusForRepositoryName(repositoryName, cancellationToken);
+        var repositoryStatus = await entitiesService.GetEntity(repositoryName, cancellationToken);
         return repositoryStatus != null ? Results.Ok(repositoryStatus) : Results.NotFound();
     }
 
