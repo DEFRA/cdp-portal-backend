@@ -7,7 +7,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class RepositoriesEndpoint
 {
     private const string RepositoriesBaseRoute = "repositories";
-    private const string GithubRepositoriesBaseRoute = "github-repo";
 
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
@@ -72,8 +71,8 @@ public static class RepositoriesEndpoint
     {
         var maybeRepository = await repositoryService.FindRepositoryById(id, cancellationToken);
         return maybeRepository == null
-            ? Results.NotFound(Results.NotFound(new ApiError($"{id} not found")))
-            : Results.Ok(new SingleRepositoryResponse(maybeRepository));
+            ? Results.NotFound(new ApiError($"{id} not found"))
+            : Results.Ok(maybeRepository);
     }
 
     private static async Task<IResult> GetAllRepositories(IRepositoryService repositoryService, string? team,
@@ -86,7 +85,7 @@ public static class RepositoriesEndpoint
 
         if (excludeTemplates.GetValueOrDefault()) repositories = repositories.Where(r => !r.IsTemplate).ToList();
 
-        return Results.Ok(new MultipleRepositoriesResponse(repositories));
+        return Results.Ok(repositories);
     }
 
     private static async Task<IResult> GetRepositoryWithTopicById(IRepositoryService repositoryService, string id,
@@ -95,7 +94,7 @@ public static class RepositoriesEndpoint
         var maybeRepository = await repositoryService.FindRepositoryWithTopicById(topic, id, cancellationToken);
         return maybeRepository == null
             ? Results.NotFound(new ApiError($"{id} not found"))
-            : Results.Ok(new SingleRepositoryResponse(maybeRepository));
+            : Results.Ok(maybeRepository);
     }
 
     private static async Task<IResult> GetRepositoriesByTopic(IRepositoryService repositoryService, CdpTopic topic,
@@ -103,7 +102,7 @@ public static class RepositoriesEndpoint
     {
         var repositories = await repositoryService.FindRepositoriesByTopic(topic, cancellationToken);
 
-        return Results.Ok(new MultipleRepositoriesResponse(repositories));
+        return Results.Ok(repositories);
     }
 
     private static async Task<IResult> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
@@ -127,44 +126,15 @@ public static class RepositoriesEndpoint
     private static async Task<IResult> GetTeamTestRepositories(IRepositoryService repositoryService, string teamId,
         CancellationToken cancellationToken)
     {
-        var tests = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Test,
+        var repositories = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Test,
             cancellationToken);
 
-        return Results.Ok(new MultipleRepositoriesResponse(tests));
+        return Results.Ok(repositories);
     }
 
-    public sealed record MultipleRepositoriesResponse(string Message, IEnumerable<Repository> Repositories)
-    {
-        public MultipleRepositoriesResponse(IEnumerable<Repository> repositories) : this("success", repositories)
-        {
-        }
-    }
-
-    public sealed record AllRepoTemplatesLibrariesResponse(string Message, IEnumerable<Repository> Repositories,
-        IEnumerable<Repository> Templates, IEnumerable<Repository> Libraries)
-    {
-        public AllRepoTemplatesLibrariesResponse(IEnumerable<Repository> repositories,
-            IEnumerable<Repository> templates) : this("success", repositories, templates,
-            Enumerable.Empty<Repository>())
-        {
-        }
-    }
-
-    public sealed record AllTeamRepositoriesResponse(string Message, IEnumerable<Repository> Libraries,
+    public sealed record AllTeamRepositoriesResponse(
+        IEnumerable<Repository> Libraries,
         IEnumerable<Repository> Services,
-        IEnumerable<Repository> Templates, IEnumerable<Repository> Tests)
-    {
-        public AllTeamRepositoriesResponse(IEnumerable<Repository> libraries, IEnumerable<Repository> services,
-            IEnumerable<Repository> templates, IEnumerable<Repository> tests) : this("success", libraries, services,
-            templates, tests)
-        {
-        }
-    }
-
-    public sealed record SingleRepositoryResponse(string Message, Repository Repository)
-    {
-        public SingleRepositoryResponse(Repository repository) : this("success", repository)
-        {
-        }
-    }
+        IEnumerable<Repository> Templates,
+        IEnumerable<Repository> Tests);
 }

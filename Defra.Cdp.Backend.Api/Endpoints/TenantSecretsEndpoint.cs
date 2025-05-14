@@ -60,27 +60,11 @@ public static class TenantSecretsEndpoint
     }
 
     private sealed record TenantSecretsResponse(
-        string Message,
         string Service,
         string Environment,
         List<string> Keys,
         string LastChangedDate,
         string CreatedDate,
         List<string>? Pending,
-        string? ExceptionMessage)
-    {
-        public TenantSecretsResponse(
-            string service, string environment, List<string> keys, string lastChangedDate, string createdDate,
-            List<string>? pending, string? exceptionMessage) : this(
-            "success",
-            service,
-            environment,
-            keys,
-            lastChangedDate,
-            createdDate,
-            pending,
-            exceptionMessage)
-        {
-        }
-    }
+        string? ExceptionMessage);
 }
