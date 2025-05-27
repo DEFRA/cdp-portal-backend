@@ -7,7 +7,7 @@ namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
 public interface IUndeploymentsService
 {
-    Task                RegisterUndeployment(Undeployment undeployment, CancellationToken ct);
+    Task RegisterUndeployment(Undeployment undeployment, CancellationToken ct);
     Task<Undeployment?> FindUndeployment(string undeploymentId, CancellationToken ct);
 }
 
@@ -22,8 +22,8 @@ public class UndeploymentsService : MongoService<Undeployment>, IUndeploymentsSe
 
     protected override List<CreateIndexModel<Undeployment>> DefineIndexes(IndexKeysDefinitionBuilder<Undeployment> builder)
     {
-        var created           = new CreateIndexModel<Undeployment>(builder.Descending(d => d.Created));
-        var updated           = new CreateIndexModel<Undeployment>(builder.Descending(d => d.Updated));
+        var created = new CreateIndexModel<Undeployment>(builder.Descending(d => d.Created));
+        var updated = new CreateIndexModel<Undeployment>(builder.Descending(d => d.Updated));
         var cdpUndeploymentId = new CreateIndexModel<Undeployment>(builder.Descending(d => d.CdpUndeploymentId));
 
 

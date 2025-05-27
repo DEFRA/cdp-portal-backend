@@ -6,7 +6,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
 
-public interface IRepositoryService
+public interface IRepositoryService : IResourceService
 {
     Task Upsert(Repository repository, CancellationToken cancellationToken);
 
@@ -206,5 +206,16 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             isArchivedIndex,
             teamIdIndex
         ];
+    }
+
+    public string ResourceName()
+    {
+        return "Repository";
+    }
+
+
+    public async Task<Boolean> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(r => r.Id == repositoryName).AnyAsync(cancellationToken);
     }
 }

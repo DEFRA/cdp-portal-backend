@@ -13,7 +13,7 @@ public class Bucket
     [JsonPropertyName("name")] public required string Name { get; init; }
 
     [JsonPropertyName("exists")] public required bool Exists { get; init; }
-    
+
     [JsonPropertyName("services_with_access")] public required List<string> ServicesWithAccess { get; init; }
 
 }

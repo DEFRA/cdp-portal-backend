@@ -90,11 +90,11 @@ public class ArtifactScanner : IArtifactScanner
         var image = await _dockerClient.LoadManifestImage(repo, manifest.config);
         var labels = new Dictionary<string, string>();
         if (image != null) labels = image.config.Labels;
-        
-        
+
+
         var isService = labels.TryGetValue("defra.cdp.service.name", out var serviceName);
         var isTestSuite = labels.TryGetValue("defra.cdp.testsuite.name", out var testName);
-        
+
         if (!isService && !isTestSuite)
             return ArtifactScannerResult.Failure($"Not an CDP service or test suite, image {repo}:{tag} is missing label defra.cdp.service.name or defra.cdp.testsuite.name");
 
@@ -117,7 +117,7 @@ public class ArtifactScanner : IArtifactScanner
         {
             Enum.TryParse(sRunMode, true, out runMode);
         }
-        
+
         long semver = 0;
 
         try
@@ -128,7 +128,7 @@ public class ArtifactScanner : IArtifactScanner
         {
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
-        
+
         var repository = await _repositoryService.FindRepositoryById(repo, cancellationToken);
         // Persist the results.
         var artifact = new DeployableArtifact

@@ -60,7 +60,7 @@ public class ApiGatewaysServiceTest(MongoIntegrationTest fixture) : ServiceTest(
 
         var shutteredUrlsService = new ShutteredUrlsService(mongoFactory, new LoggerFactory());
         await shutteredUrlsService.PersistEvent(shutteredEvent, CancellationToken.None);
-        
+
         var shutteredResult = await apiGatewaysService.FindService("pha-import-notifications", CancellationToken.None);
         Assert.NotNull(shutteredResult);
         Assert.Single(shutteredResult);

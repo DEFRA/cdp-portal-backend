@@ -38,7 +38,7 @@ public static class VanityUrlsEndpoint
         var response = result
             .GroupBy(g => g.Environment)
             .ToDictionary(k => k.Key, v => new VanityUrlsResponse(v.ToList()));
-        
+
         return Results.Ok(response);
     }
 

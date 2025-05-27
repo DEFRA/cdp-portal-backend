@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Utils.Clients;
 
 public static class AwsClients
 {
-   
+
     public static void AddAwsClients(this IServiceCollection service, IConfiguration configuration, bool isDevMode)
     {
         if (isDevMode)

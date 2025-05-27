@@ -11,10 +11,10 @@ using User = Defra.Cdp.Backend.Api.Utils.Clients.User;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Aws.Deployments;
 
-public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : ServiceTest(fixture)
+public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
     private const string AwsAccount = "0000000000";
-    
+
     [Fact]
     public async Task TestCreateAndLinkingMessages()
     {
@@ -24,7 +24,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
 
         const string buildId = "arn:aws:codebuild:eu-west-2:0000000000:build/kurne-test-liquibase:b93ef1d9-47fa-4a91-b8cf-902987cd9fbc";
         const string cdpMigrationId = "cdp-migration-0000";
-        
+
         await service.CreateMigration(new DatabaseMigration
         {
             Environment = "test",
@@ -33,9 +33,9 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
             User = new User(),
             Version = "0.1.0",
         }, CancellationToken.None);
-        
-        
-        
+
+
+
         var lambdaEvent = new CodeBuildLambdaEvent(
             CdpMigrationId: cdpMigrationId,
             BuildId: buildId,
@@ -50,7 +50,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
         Assert.Equal(cdpMigrationId, result.CdpMigrationId);
         Assert.Equal(buildId, result.BuildId);
     }
-    
+
     [Fact]
     public async Task CreatingOnLinkFailure()
     {
@@ -60,7 +60,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
 
         const string buildId = "arn:aws:codebuild:eu-west-2:0000000000:build/kurne-test-liquibase:43245435";
         const string cdpMigrationId = "cdp-43545511";
-        
+
         var lambdaEvent = new CodeBuildLambdaEvent(
             CdpMigrationId: cdpMigrationId,
             BuildId: buildId,
@@ -87,7 +87,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
         Assert.Equal(cdpMigrationId, result.CdpMigrationId);
         Assert.Equal(buildId, result.BuildId);
     }
-    
+
     [Fact]
     public async Task TestUpdateMessages()
     {
@@ -99,13 +99,13 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
         const string buildId =
             "arn:aws:codebuild:eu-west-2:000000000000:build/kurne-test-liquibase:d5ac2e30-dd0d-494f-a57d-515726439d85";
 
-        
-        var inProgressEvent =  JsonSerializer.Deserialize<CodeBuildStateChangeEvent>(File.ReadAllText("Resources/codebuild/in-progress.json"));
+
+        var inProgressEvent = JsonSerializer.Deserialize<CodeBuildStateChangeEvent>(File.ReadAllText("Resources/codebuild/in-progress.json"));
         Assert.NotNull(inProgressEvent);
 
         var succeededEvent = JsonSerializer.Deserialize<CodeBuildStateChangeEvent>(File.ReadAllText("Resources/codebuild/succeeded.json"));
         Assert.NotNull(succeededEvent);
-        
+
         await service.CreateMigration(new DatabaseMigration
         {
             Environment = "test",
@@ -122,7 +122,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture)  : Se
         var build = await service.FindByBuildId(buildId, CancellationToken.None);
         Assert.NotNull(build);
         Assert.Equal("IN_PROGRESS", build.Status);
-        
+
         await handler.Handle("2", succeededEvent, CancellationToken.None);
         build = await service.FindByBuildId(buildId, CancellationToken.None);
         Assert.NotNull(build);

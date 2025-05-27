@@ -86,7 +86,7 @@ public class SecretsService : MongoService<TenantSecrets>, ISecretsService
         if (updateSecretModels.Any())
             await Collection.BulkWriteAsync(updateSecretModels, new BulkWriteOptions(), cancellationToken);
     }
-    
+
     public async Task DeleteSecrets(List<TenantSecrets> secrets, CancellationToken cancellationToken)
     {
         var filter = Builders<TenantSecrets>.Filter.In("_id", secrets.Select(v => v.Id));

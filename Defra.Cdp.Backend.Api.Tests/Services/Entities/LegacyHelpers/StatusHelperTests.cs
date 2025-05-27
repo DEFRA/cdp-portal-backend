@@ -203,11 +203,11 @@ public class StatusHelperTests
                 Kind = CreationType.Microservice.ToStringValue(),
                 CdpAppConfig = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpNginxUpstreams = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpGrafanaSvc = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                
+
             });
         Assert.Equal(Status.Success, result);
     }
@@ -221,11 +221,11 @@ public class StatusHelperTests
                 Kind = CreationType.Microservice.ToStringValue(),
                 CdpAppConfig = new WorkflowDetails { Status = Status.Failure.ToStringValue() },
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpNginxUpstreams = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpGrafanaSvc = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                
+
             });
         Assert.Equal(Status.Failure, result);
     }
@@ -239,11 +239,11 @@ public class StatusHelperTests
                 Kind = CreationType.Microservice.ToStringValue(),
                 CdpAppConfig = new WorkflowDetails { Status = Status.Requested.ToStringValue() },
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpTfSvcInfra = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpNginxUpstreams = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpGrafanaSvc = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                
+
             });
         Assert.Equal(Status.InProgress, result);
     }
@@ -257,9 +257,9 @@ public class StatusHelperTests
                 Kind = CreationType.JourneyTestsuite.ToStringValue(),
                 CdpAppConfig = new WorkflowDetails { Status = Status.Success.ToStringValue() },
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                
+                CdpTfSvcInfra = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+
             });
         Assert.Equal(Status.Success, result);
     }
@@ -273,9 +273,9 @@ public class StatusHelperTests
                 Kind = CreationType.JourneyTestsuite.ToStringValue(),
                 CdpAppConfig = new WorkflowDetails { Status = Status.Failure.ToStringValue() },
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                
+                CdpTfSvcInfra = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+
             });
         Assert.Equal(Status.Failure, result);
     }
@@ -289,9 +289,9 @@ public class StatusHelperTests
                 Kind = CreationType.JourneyTestsuite.ToStringValue(),
                 CdpAppConfig = new WorkflowDetails { Status = Status.Requested.ToStringValue() },
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpTfSvcInfra= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                CdpSquidProxy= new WorkflowDetails { Status = Status.Success.ToStringValue() },
-                
+                CdpTfSvcInfra = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+                CdpSquidProxy = new WorkflowDetails { Status = Status.Success.ToStringValue() },
+
             });
         Assert.Equal(Status.InProgress, result);
     }
@@ -316,7 +316,7 @@ public class StatusHelperTests
             {
                 Kind = CreationType.Repository.ToStringValue(),
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Failure.ToStringValue() },
-                
+
             });
         Assert.Equal(Status.Failure, result);
     }
@@ -329,7 +329,7 @@ public class StatusHelperTests
             {
                 Kind = CreationType.Repository.ToStringValue(),
                 CdpCreateWorkflows = new WorkflowDetails { Status = Status.Requested.ToStringValue() },
-                
+
             });
         Assert.Equal(Status.InProgress, result);
     }

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo "Running dotnet build..."
+dotnet build || exit 1
+
+echo "Running dotnet test..."
+dotnet test || exit 1
+
+echo "Running dotnet format..."
+dotnet format || exit 1
+
+echo "All checks passed."

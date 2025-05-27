@@ -17,7 +17,7 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         var secretsService = new SecretsService(mongoFactory, new LoggerFactory());
         var secretEventHandler = new SecretEventHandler(secretsService, Substitute.For<IPendingSecretsService>(),
             new LoggerFactory().CreateLogger<SecretEventHandler>());
-        
+
         var header = FromJson<MessageHeader>("""
                            {
                              "source": "cdp-secret-manager-lambda",
@@ -48,9 +48,9 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         Assert.Equal("cdp-portal-frontend", result.First().Service);
         Assert.Equal("infra-dev", result.First().Environment);
         Assert.Single(result.First().Keys);
-        
+
         Assert.Equal("TEST_KEY", result.First().Keys.First());
-        
+
         header = FromJson<MessageHeader>("""
                                               {
                                                 "source": "cdp-secret-manager-lambda",
@@ -79,9 +79,9 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         Assert.Equal("cdp-portal-frontend", result.First().Service);
         Assert.Equal("infra-dev", result.First().Environment);
         Assert.Equal(2, result.First().Keys.Count);
-        
+
         Assert.Equal(["TEST_KEY", "TEST_KEY2"], result.First().Keys);
-        
+
         header = FromJson<MessageHeader>("""
                                               {
                                                 "source": "cdp-secret-manager-lambda",
@@ -117,16 +117,16 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         Assert.Equal("cdp-portal-frontend", result.First().Service);
         Assert.Equal("infra-dev", result.First().Environment);
         Assert.Equal(2, result.First().Keys.Count);
-        
+
         Assert.Equal(["TEST_KEY", "TEST_KEY2"], result.First().Keys);
 
         Assert.Equal("cdp-portal-backend", result[1].Service);
         Assert.Equal("infra-dev", result[1].Environment);
         Assert.Equal(2, result[1].Keys.Count);
-        
+
         Assert.Equal(["TEST_KEY", "TEST_KEY4"], result[1].Keys);
-        
-        
+
+
         header = FromJson<MessageHeader>("""
                                               {
                                                 "source": "cdp-secret-manager-lambda",
@@ -155,7 +155,7 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         Assert.Equal("cdp-portal-frontend", result.First().Service);
         Assert.Equal("infra-dev", result.First().Environment);
         Assert.Single(result.First().Keys);
-        
+
         Assert.Equal(["TEST_KEY3"], result.First().Keys);
     }
 }

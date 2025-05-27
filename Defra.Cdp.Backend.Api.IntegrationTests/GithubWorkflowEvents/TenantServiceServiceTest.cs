@@ -21,9 +21,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
             , CancellationToken.None);
 
         // Create existing data
@@ -45,9 +47,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
 
         // Trigger another update
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
             , CancellationToken.None);
 
         var updatedResults =
@@ -68,9 +72,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
             , CancellationToken.None);
 
         var resultFoo =
@@ -96,9 +102,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
             new TenantServicesService(mongoFactory, repositoryService, new NullLoggerFactory());
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
             , CancellationToken.None);
 
         var resultFoo =
@@ -111,11 +119,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.NotNull(resultBar);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services",
-                Timestamp = DateTime.Now,
-                Payload = new() { Environment = "test", Services = [_sampleEvent.Services[0]] }
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = new() { Environment = "test", Services = [_sampleEvent.Services[0]] }
+        }
             , CancellationToken.None);
         resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" },
             CancellationToken.None);
@@ -138,9 +146,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         await repositoryService.Upsert(_fooTestRepository, CancellationToken.None);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
             , CancellationToken.None);
 
 
@@ -187,7 +197,7 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.Equal(3, result.Count);
         Assert.Contains(result, t => t.ServiceName == "foo");
         Assert.Contains(result, t => t.ServiceName == "bar");
-        
+
         // Find services with postgres
         result = await tenantServicesService.Find(new TenantServiceFilter { HasPostgres = true }, CancellationToken.None);
         Assert.Single(result);
@@ -233,7 +243,7 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
                 Redis = false,
                 Postgres = true,
                 ServiceCode = "POS"
-            }            
+            }
         ]
     };
 

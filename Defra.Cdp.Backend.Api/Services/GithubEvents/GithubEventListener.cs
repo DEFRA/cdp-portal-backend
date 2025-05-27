@@ -16,9 +16,9 @@ public class GithubEventListener(
     ILogger<GithubEventListener> logger)
     : SqsListener(sqs, listenerConfig.Value.QueueUrl, logger)
 {
-    
+
     private List<string>? _webhooksToListenTo;
-    
+
     private List<string> WebhooksToProcess()
     {
         if (_webhooksToListenTo == null)
@@ -37,7 +37,7 @@ public class GithubEventListener(
 
         return _webhooksToListenTo;
     }
-    
+
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received message from {QueueUrl}: {Id}", QueueUrl, message.MessageId);
@@ -82,4 +82,3 @@ public class GithubEventListener(
         }
     }
 }
-

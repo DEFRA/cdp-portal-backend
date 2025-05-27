@@ -129,9 +129,10 @@ public enum SubType
 
 public enum Status
 {
-    InProgress,
-    Success,
-    Failed
+    Creating,
+    Created,
+    Failed, // TODO Remove
+    Success // TODO Legacy. Do not use, use Created instead
 }
 
 public static class StatusExtensions
@@ -140,11 +141,11 @@ public static class StatusExtensions
     {
         switch (status)
         {
-            case "in-progress": return Status.InProgress;
-            case "success": return Status.Success;
+            case "in-progress": return Status.Creating;
+            case "success": return Status.Created;
             case "failed": return Status.Failed;
             default: throw new ArgumentOutOfRangeException();
         }
     }
-    
+
 }

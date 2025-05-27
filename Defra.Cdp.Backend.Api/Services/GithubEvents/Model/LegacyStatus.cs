@@ -11,7 +11,7 @@ public record LegacyStatus
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; }
-    
+
     [property: JsonPropertyName("org")] public string Org { get; set; }
 
     [property: JsonPropertyName("repositoryName")]
@@ -35,7 +35,7 @@ public record LegacyStatus
     public Creator Creator { get; set; }
 
     [property: JsonPropertyName("zone")] public string Zone { get; set; }
-    
+
     [property: JsonPropertyName("cdp-create-workflows")]
     [BsonElement("cdp-create-workflows")]
     [BsonIgnoreIfNull]
@@ -59,12 +59,12 @@ public record LegacyStatus
     [property: JsonPropertyName("cdp-nginx-upstreams")]
     [BsonElement("cdp-nginx-upstreams")]
     [BsonIgnoreIfNull]
-    public WorkflowDetails? CdpNginxUpstreams{ get; set; }
+    public WorkflowDetails? CdpNginxUpstreams { get; set; }
 
     [property: JsonPropertyName("cdp-grafana-svc")]
     [BsonElement("cdp-grafana-svc")]
     [BsonIgnoreIfNull]
-    public WorkflowDetails? CdpGrafanaSvc{ get; set; }
+    public WorkflowDetails? CdpGrafanaSvc { get; set; }
 }
 
 
@@ -140,7 +140,7 @@ public class TriggerInputs
 {
     [property: JsonPropertyName("serviceTypeTemplate")]
     public string ServiceTypeTemplate { get; set; }
-    
+
     [property: JsonPropertyName("templateTag")]
     public string TemplateTag { get; set; }
 
@@ -300,17 +300,6 @@ public static class StatusExtensions
             case "skipped": return Status.Skipped;
             case "success": return Status.Success;
             case "failure": return Status.Failure;
-            default: throw new ArgumentOutOfRangeException();
-        }
-    }
-    
-    public static Entities.Model.Status ToEntityStatus(this Status status)
-    {
-        switch (status)
-        {
-            case Status.InProgress: return Entities.Model.Status.InProgress;
-            case Status.Success: return Entities.Model.Status.Success;
-            case Status.Failure: return Entities.Model.Status.Failed;
             default: throw new ArgumentOutOfRangeException();
         }
     }

@@ -31,6 +31,8 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
 
     private readonly IOptions<GithubOptions> _githubOptions = Substitute.For<IOptions<GithubOptions>>();
 
+    private readonly IEntityStatusService _entityStatusService = Substitute.For<IEntityStatusService>();
+
     private readonly GithubOptions _opts = new()
     {
         Organisation = "DEFRA",
@@ -74,7 +76,9 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         var loggerFactory = new LoggerFactory();
         var legacyStatusService = new LegacyStatusService(mongoFactory, _githubOptions, loggerFactory);
         var entitiesService = new EntitiesService(mongoFactory, loggerFactory);
-        var statusUpdateService = new StatusUpdateService(legacyStatusService, entitiesService, _githubOptions);
+        _entityStatusService.UpdateOverallStatus(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var statusUpdateService = new StatusUpdateService(legacyStatusService, _entityStatusService, _githubOptions);
 
         var legacyStatus = new LegacyStatus
         {
@@ -105,7 +109,7 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         var persistedEntity = await entitiesService.GetEntity("example-repo", CancellationToken.None);
         Assert.NotNull(persistedEntity);
         Assert.Equal("example-repo", persistedEntity.Name);
-        Assert.Equal(EntityStatus.InProgress, persistedEntity.Status);
+        Assert.Equal(EntityStatus.Creating, persistedEntity.Status);
         Assert.Equal(Type.Microservice, persistedEntity.Type);
         Assert.Equal(SubType.Backend, persistedEntity.SubType);
         Assert.Equal("example-team", persistedEntity.Teams[0].Name);
@@ -131,11 +135,15 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             loggerFactory.CreateLogger<GithubEventListener>());
 
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-create-workflows", 
-                "create_microservice.yml" 
-                ), MessageId = "1234" },
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-create-workflows",
+                "create_microservice.yml"
+                ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
 
         var updatedStatus = await legacyStatusService.StatusForRepositoryName("example-repo", CancellationToken.None);
@@ -143,67 +151,87 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.NotNull(updatedStatus);
         Assert.Equal(Status.InProgress.ToStringValue(), updatedStatus.Status);
         Assert.Equal(Status.Requested.ToStringValue(), updatedStatus.CdpCreateWorkflows.Status);
-        
-        var updatedEntity = await entitiesService.GetEntity( "example-repo", CancellationToken.None);
+
+        var updatedEntity = await entitiesService.GetEntity("example-repo", CancellationToken.None);
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.InProgress, updatedEntity.Status);
+        Assert.Equal(EntityStatus.Creating, updatedEntity.Status);
 
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-create-workflows", 
-                "create_microservice.yml" ,
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-create-workflows",
+                "create_microservice.yml",
                 Status.Completed,
                 Status.Success
-                ), MessageId = "1234" },
+                ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
-        
+
         updatedStatus = await legacyStatusService.StatusForRepositoryName("example-repo", CancellationToken.None);
         Assert.NotNull(updatedStatus);
         Assert.Equal(Status.InProgress.ToStringValue(), updatedStatus.Status);
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.CdpCreateWorkflows.Status);
-        
+
         updatedEntity = await entitiesService.GetEntity("example-repo", CancellationToken.None);
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.InProgress, updatedEntity.Status);
-        
+        Assert.Equal(EntityStatus.Creating, updatedEntity.Status);
+
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-nginx-upstreams", 
-                "create-service.yml" ,
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-nginx-upstreams",
+                "create-service.yml",
                 Status.Completed,
                 Status.Success
-            ), MessageId = "1234" },
+            ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
-        
+
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-app-config", 
-                "create-service.yml" ,
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-app-config",
+                "create-service.yml",
                 Status.Completed,
                 Status.Success
-            ), MessageId = "1234" },
+            ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-squid-proxy", 
-                "create-service.yml" ,
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-squid-proxy",
+                "create-service.yml",
                 Status.Completed,
                 Status.Success
-            ), MessageId = "1234" },
+            ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
-        
+
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-grafana-svc", 
-                "create-service.yml" ,
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-grafana-svc",
+                "create-service.yml",
                 Status.Completed,
                 Status.Success
-            ), MessageId = "1234" },
+            ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
 
 
@@ -228,18 +256,22 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             },
             Timestamp = DateTime.Now
         }, CancellationToken.None);
-        
+
         await githubEventListener.Handle(
-            new Message { Body = GetBody(
-                "example-repo", 
-                "cdp-tf-svc-infra", 
-                "notify-portal.yml" ,
+            new Message
+            {
+                Body = GetBody(
+                "example-repo",
+                "cdp-tf-svc-infra",
+                "notify-portal.yml",
                 Status.Completed,
                 Status.Success
-            ), MessageId = "1234" },
+            ),
+                MessageId = "1234"
+            },
             CancellationToken.None);
 
-        
+
         updatedStatus = await legacyStatusService.StatusForRepositoryName("example-repo", CancellationToken.None);
         Assert.NotNull(updatedStatus);
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.CdpCreateWorkflows.Status);
@@ -249,15 +281,11 @@ public class LegacyStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.CdpTfSvcInfra?.Status);
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.CdpSquidProxy?.Status);
         Assert.Equal(Status.Success.ToStringValue(), updatedStatus.Status);
-        
-        updatedEntity = await entitiesService.GetEntity( "example-repo", CancellationToken.None);
-        Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.Success, updatedEntity.Status);
     }
 
 
     private static string GetBody(
-        string serviceRepo, 
+        string serviceRepo,
         string workflowRepo = "cdp-tf-svc-infra",
         string workflowFile = "create-service.yml",
         Status action = Status.Requested,

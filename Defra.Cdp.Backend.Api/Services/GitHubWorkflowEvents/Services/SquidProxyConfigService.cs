@@ -9,11 +9,11 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface ISquidProxyConfigService : IEventsPersistenceService<SquidProxyConfigPayload>
+public interface ISquidProxyConfigService : IEventsPersistenceService<SquidProxyConfigPayload>, IResourceService
 {
     public Task<SquidProxyConfigRecord?> FindSquidProxyConfig(string service, string environment,
         CancellationToken cancellationToken);
-    
+
     public Task<List<SquidProxyConfigRecord>> FindSquidProxyConfig(string service, CancellationToken cancellationToken);
 }
 
@@ -31,17 +31,18 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<List<SquidProxyConfigRecord>> FindSquidProxyConfig(string service, CancellationToken cancellationToken)
+    public async Task<List<SquidProxyConfigRecord>> FindSquidProxyConfig(string service,
+        CancellationToken cancellationToken)
     {
         return await Collection.Find(s => s.ServiceName == service).ToListAsync(cancellationToken);
     }
 
-    public async Task PersistEvent(CommonEvent<SquidProxyConfigPayload> workflowEvent, CancellationToken cancellationToken)
+    public async Task PersistEvent(CommonEvent<SquidProxyConfigPayload> workflowEvent,
+        CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;
         _logger.LogInformation("Persisting squid proxy config for environment: {Environment}", payload.Environment);
-        
-        
+
 
         var squidProxyConfigs = payload.Services.Select(s => new SquidProxyConfigRecord(payload.Environment, s.Name,
                 payload.DefaultDomains, s.AllowedDomains))
@@ -65,7 +66,7 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
                 (squidProxyConfigsInDbDict.TryGetValue(v.ServiceName, out var squidProxyConfig) &&
                  squidProxyConfig.DefaultDomains != v.DefaultDomains &&
                  squidProxyConfig.AllowedDomains != v.AllowedDomains)
-                )
+            )
             .ToList();
 
         if (toUpdate.Count != 0)
@@ -77,12 +78,16 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
     protected override List<CreateIndexModel<SquidProxyConfigRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<SquidProxyConfigRecord> builder)
     {
+        var repoNameOnly = new CreateIndexModel<SquidProxyConfigRecord>(
+            builder.Descending(v => v.ServiceName)
+        );
+
         var envServiceName = new CreateIndexModel<SquidProxyConfigRecord>(builder.Combine(
             builder.Descending(v => v.Environment),
             builder.Descending(v => v.ServiceName)
         ));
 
-        return [envServiceName];
+        return [repoNameOnly, envServiceName];
     }
 
     private async Task<List<SquidProxyConfigRecord>> FindAllSquidProxyConfigs(string environment,
@@ -92,7 +97,8 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
             .ToListAsync(cancellationToken);
     }
 
-    private async Task DeleteSquidProxyConfigs(List<SquidProxyConfigRecord> squidProxyConfigRecords, CancellationToken cancellationToken)
+    private async Task DeleteSquidProxyConfigs(List<SquidProxyConfigRecord> squidProxyConfigRecords,
+        CancellationToken cancellationToken)
     {
         var filter = Builders<SquidProxyConfigRecord>.Filter.In("_id", squidProxyConfigRecords.Select(v => v.Id));
         await Collection.DeleteManyAsync(filter, cancellationToken);
@@ -113,10 +119,24 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
 
         await Collection.BulkWriteAsync(updateSquidProxyConfigsModels, new BulkWriteOptions(), cancellationToken);
     }
+
+    public string ResourceName()
+    {
+        return "SquidProxy";
+    }
+
+    public async Task<bool> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(s => s.ServiceName == repositoryName).AnyAsync(cancellationToken);
+    }
 }
 
 [BsonIgnoreExtraElements]
-public record SquidProxyConfigRecord(string Environment, string ServiceName, List<string> DefaultDomains, List<string> AllowedDomains)
+public record SquidProxyConfigRecord(
+    string Environment,
+    string ServiceName,
+    List<string> DefaultDomains,
+    List<string> AllowedDomains)
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]

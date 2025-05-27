@@ -31,9 +31,9 @@ public static class TestSuiteEndpoint
 
     private static async Task<IResult> FindTestRunsForSuite([FromServices] ITestRunService testRunService,
         string name,
-        [FromQuery(Name = "offset")] int ? offset,
-        [FromQuery(Name = "page")] int ? page,
-        [FromQuery(Name = "size")] int ? size,
+        [FromQuery(Name = "offset")] int? offset,
+        [FromQuery(Name = "page")] int? page,
+        [FromQuery(Name = "size")] int? size,
         CancellationToken cancellationToken)
     {
         var result = await testRunService.FindTestRunsForTestSuite(name, offset ?? 0,

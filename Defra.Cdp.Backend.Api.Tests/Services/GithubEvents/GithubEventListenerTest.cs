@@ -54,7 +54,7 @@ public class GithubEventListenerTest
         _githubOptions.Value.Returns(_opts);
         var listener = CreateListener();
         var body = GetBody();
-        
+
         await listener.Handle(new Message { Body = body, MessageId = "1234" }, CancellationToken.None);
 
         await _githubEventHandler.Received(1).Handle(Arg.Is<GithubEventMessage>(x => x.GithubEvent == "workflow_run"),

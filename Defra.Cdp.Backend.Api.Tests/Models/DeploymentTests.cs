@@ -13,20 +13,20 @@ public class DeploymentTests
         {
             InstanceCount = 1
         };
-        
+
         for (var i = 1; i < 21; i++)
         {
             deployment.Instances["id-" + i] = new DeploymentInstanceStatus(Stopped, new DateTime().AddMinutes(i));
         }
         deployment.Instances["id-0"] = new DeploymentInstanceStatus(Running, new DateTime());
-        
+
         Assert.Equal(21, deployment.Instances.Count);
         deployment.TrimInstance(20);
         Assert.Equal(20, deployment.Instances.Count);
         Assert.True(deployment.Instances.ContainsKey("id-0"));
         Assert.False(deployment.Instances.ContainsKey("id-1"));
     }
-    
+
     [Fact]
     public void TestTrimInstancesWhenNoneShouldBeRemoved()
     {
@@ -34,13 +34,13 @@ public class DeploymentTests
         {
             InstanceCount = 1
         };
-        
+
         for (var i = 1; i < 21; i++)
         {
             deployment.Instances["id-" + i] = new DeploymentInstanceStatus(Stopped, new DateTime().AddMinutes(i));
         }
         deployment.Instances["id-0"] = new DeploymentInstanceStatus(Running, new DateTime());
-        
+
         Assert.Equal(21, deployment.Instances.Count);
         deployment.TrimInstance(200);
         Assert.Equal(21, deployment.Instances.Count);
@@ -52,17 +52,17 @@ public class DeploymentTests
         var input =
             "arn:aws:s3:::cdp-management-service-configs/e695d47d5d5a9bd9519b0b4c412c79f052d2c35a/global/global_fixed.env";
         var result = Deployment.ExtractCommitSha(input);
-        
+
         Assert.Equal("e695d47d5d5a9bd9519b0b4c412c79f052d2c35a", result);
     }
-    
+
     [Fact]
     public void TestExtractCommitShaWhenDataIsInvalid()
     {
         var input =
             "arn:aws:s3:::cdp-management-service-configs/global/global_fixed.env";
         var result = Deployment.ExtractCommitSha(input);
-        
+
         Assert.Null(result);
     }
 

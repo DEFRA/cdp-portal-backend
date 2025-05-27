@@ -14,7 +14,7 @@ public class EnvironmentComparerTests
         "perf-test",
         "prod"
     ];
-    
+
     [Fact]
     public void SameValuesReturnZero()
     {
