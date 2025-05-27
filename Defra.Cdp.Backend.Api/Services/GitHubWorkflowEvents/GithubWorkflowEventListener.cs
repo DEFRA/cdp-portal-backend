@@ -25,18 +25,23 @@ public class GithubWorkflowEventListener(
 
         try
         {
-            var eventType = TryParseMessageBody(message.Body);
-            if (eventType != null)
-
-                await eventHandler.Handle(eventType, message.Body, cancellationToken);
-            else
-                logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl,
-                    message.MessageId, message.Body);
+            await Handle(message, cancellationToken);
         }
         catch (Exception e)
         {
             logger.LogError("Failed to process message {Id} {Exception}", message.MessageId, e.Message);
         }
+    }
+
+    public async Task Handle(Message message, CancellationToken cancellationToken)
+    {
+        var eventWrapper = TryParseMessageBody(message.Body);
+        if (eventWrapper != null)
+
+            await eventHandler.Handle(eventWrapper, message.Body, cancellationToken);
+        else
+            logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl,
+                message.MessageId, message.Body);
     }
 
     private static CommonEventWrapper? TryParseMessageBody(string body)

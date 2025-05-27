@@ -7,7 +7,7 @@ public class Lock
     public string Id { get; set; }
     public DateTime ExpiresAt { get; set; }
 
-    public Lock(string id, DateTime expiresAt )
+    public Lock(string id, DateTime expiresAt)
     {
         Id = id;
         ExpiresAt = expiresAt;
@@ -32,7 +32,7 @@ public class MongoLock : MongoService<Lock>
         _logger = loggerFactory.CreateLogger<MongoLock>();
     }
 
-    public async Task<bool> Lock(string lockId, TimeSpan duration, CancellationToken ct = new ())
+    public async Task<bool> Lock(string lockId, TimeSpan duration, CancellationToken ct = new())
     {
         try
         {
@@ -40,15 +40,15 @@ public class MongoLock : MongoService<Lock>
             _logger.LogInformation("Claimed lock {lockId}", lockId);
             return true;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             _logger.LogWarning("Failed to lock {lockId}", lockId);
             _logger.LogTrace("Failed to lock {e}", e.Message);
             return false;
-        } 
+        }
     }
 
-    public async Task Unlock(string lockId, CancellationToken ct = new ())
+    public async Task Unlock(string lockId, CancellationToken ct = new())
     {
         try
         {
@@ -60,6 +60,6 @@ public class MongoLock : MongoService<Lock>
         {
             _logger.LogError("Failed to release lock {lockId}, {e}", lockId, e);
             throw;
-        } 
+        }
     }
 }

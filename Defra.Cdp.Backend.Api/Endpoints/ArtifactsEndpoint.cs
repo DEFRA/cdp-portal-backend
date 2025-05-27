@@ -56,14 +56,14 @@ public static class ArtifactsEndpoint
         }
         else
         {
-            image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);    
+            image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
         }
         return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
     }
-    
+
     // POST /artifacts/{repo}/{tag}/annotations
     private static async Task<IResult> AddAnnotation(IDeployableArtifactsService deployableArtifactsService, string repo,
-        string tag, 
+        string tag,
         IValidator<RequestedAnnotation> validator,
         RequestedAnnotation requestedAnnotation,
         CancellationToken cancellationToken)
@@ -86,13 +86,13 @@ public static class ArtifactsEndpoint
     {
         if (string.IsNullOrWhiteSpace(title))
         {
-            await deployableArtifactsService.RemoveAnnotations(repo, tag, cancellationToken);    
+            await deployableArtifactsService.RemoveAnnotations(repo, tag, cancellationToken);
         }
         else
         {
             await deployableArtifactsService.RemoveAnnotation(repo, tag, title.ToLower(), cancellationToken);
         }
-        
+
         var image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
         return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
     }
@@ -107,14 +107,14 @@ public static class ArtifactsEndpoint
             : Results.Ok(image.Content);
     }
 
-    
+
     // GET /deployables
     private static async Task<IResult> ListDeployables(
         IDeployableArtifactsService deployableArtifactsService,
-        IConfiguration configuration, 
+        IConfiguration configuration,
         HttpContext httpContext,
-        ILoggerFactory loggerFactory, 
-        [FromQuery] string? runMode, 
+        ILoggerFactory loggerFactory,
+        [FromQuery] string? runMode,
         CancellationToken cancellationToken)
     {
         List<string> groups = httpContext.Request.Query["groups"].Where(g => g != null).ToList()!;
@@ -151,7 +151,7 @@ public static class ArtifactsEndpoint
         var services =
             await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, teamId, service,
                 cancellationToken);
-        
+
         return Results.Ok(services);
     }
 
@@ -173,7 +173,7 @@ public static class ArtifactsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
             allServicesFilters.Teams =
-                teamRecord.teams.Select(t => new RepositoryTeam(t.github,  t.teamId, t.name)).ToList();
+                teamRecord.teams.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
         return Results.Ok(new { Filters = allServicesFilters });
     }
 

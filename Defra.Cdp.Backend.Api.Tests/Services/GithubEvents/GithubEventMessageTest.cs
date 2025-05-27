@@ -409,6 +409,6 @@ public class GithubEventMessageTest
                    """;
         var trigger = JsonSerializer.Deserialize<GithubEventMessage>(json);
     }
-    
-    
+
+
 }

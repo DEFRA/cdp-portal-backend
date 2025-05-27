@@ -23,7 +23,7 @@ public class SplitImageTests
         Assert.Equal("cdp-portal-deployables-backend", resp.Item1);
         Assert.Equal("latest", resp.Item2);
     }
-    
+
     [Fact]
     public void TestSplitSha()
     {

@@ -29,9 +29,9 @@ public sealed record EcsContainer(
     string LastStatus,
     [property: JsonPropertyName("desiredStatus")]
     string DesiredStatus,
-    [property: JsonPropertyName("exitCode")]       
+    [property: JsonPropertyName("exitCode")]
     int? ExitCode = null,
-    [property: JsonPropertyName("reason")]       
+    [property: JsonPropertyName("reason")]
     string? Reason = null
 );
 

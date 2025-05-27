@@ -53,7 +53,7 @@ public class SelfServiceOpsClient
         const string defaultCpu = "1024"; // 1 vCPU
         const string defaultMemory = "2048"; // 2 GB
         const int defaultInstanceCount = 1;
-        
+
         var body = new
         {
             imageName,

@@ -29,26 +29,26 @@ public class EcsEventListener(
             var milliseconds = Convert.ToDouble(sentTimestamp);
             return DateTime.UnixEpoch.AddMilliseconds(milliseconds);
         }
-        
+
         logger.LogError("'Timestamp' attribute missing: {MessageMessageId}", message.MessageId);
         return DateTime.Now;
     }
-    
-    
+
+
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
         logger.LogDebug("Receive: {MessageMessageId}", message.MessageId);
-        
+
         // keep a backup copy of the event (currently for debug/testing/replaying)
         var timestamp = GetTimeStamp(message, logger);
         await ecsEventsService.SaveMessage(message.MessageId, message.Body, timestamp, cancellationToken);
         await ProcessMessageAsync(message.MessageId, message.Body, cancellationToken);
     }
-    
+
     private async Task ProcessMessageAsync(string id, string messageBody, CancellationToken cancellationToken)
     {
         var unknownEvent = JsonSerializer.Deserialize<EcsEventHeader>(messageBody);
-        
+
         logger.LogInformation(unknownEvent?.DetailType);
         switch (unknownEvent?.DetailType)
         {
@@ -58,7 +58,7 @@ public class EcsEventListener(
                 {
                     throw new Exception($"Unable to parse ECS Task State Change message {unknownEvent.Id}");
                 }
-                
+
                 await taskStateChangeEventHandler.Handle(id, ecsTaskEvent, cancellationToken);
                 break;
             case "ECS Lambda Deployment Updated":
@@ -69,7 +69,7 @@ public class EcsEventListener(
                 {
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
                 }
-                
+
                 await lambdaMessageHandler.Handle(id, ecsLambdaEvent, cancellationToken);
                 break;
             case "ECS Deployment State Change":
@@ -78,11 +78,11 @@ public class EcsEventListener(
                 {
                     throw new Exception($"Unable to parse Deployment Lambda message {unknownEvent.Id}");
                 }
-                
+
                 await deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 await autoTestRunTriggerEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
-            
+
             case "CodeBuild Lambda Created":
                 var codebuildLambdaCreated = JsonSerializer.Deserialize<CodeBuildLambdaEvent>(messageBody);
                 if (codebuildLambdaCreated == null)
@@ -99,14 +99,14 @@ public class EcsEventListener(
                 }
                 await codeBuildStateChangeHandler.Handle(id, codebuildStateChange, cancellationToken);
                 break;
-            
+
             default:
                 logger.LogInformation("Not processing {Id}, no handler for {messageType}. message was {MessageBody}",
                     id, unknownEvent?.DetailType, messageBody);
                 break;
         }
     }
-    
+
     public async Task BackFill(CancellationToken cancellationToken)
     {
         logger.LogInformation("Starting back-fill");

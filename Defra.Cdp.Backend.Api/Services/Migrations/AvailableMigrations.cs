@@ -11,7 +11,7 @@ public record MigrationVersion
 
     [property: JsonPropertyName("version")]
     public required string Version { get; init; }
-    
+
     [property: JsonPropertyName("path")]
     public required string Path { get; init; }
 
@@ -30,14 +30,14 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
     private readonly string? _bucketName = configuration.GetValue<string>("MigrationsBucket");
 
     private const string MigrationFileName = "migrations.tgz";
-    
+
     public async Task<List<MigrationVersion>> FindMigrationsForService(string service, CancellationToken ct)
     {
         if (_bucketName == null)
         {
             throw new Exception("Config error: MigrationsBucket has not been set");
         }
-        
+
         var prefix = service + "/";
         var request = new ListObjectsV2Request
         {
@@ -45,15 +45,15 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
             Prefix = prefix
         };
 
-        List<MigrationVersion> migrations = []; 
+        List<MigrationVersion> migrations = [];
         ListObjectsV2Response response;
         do
         {
             response = await client.ListObjectsV2Async(request, ct);
-            
+
             foreach (var s3Object in response.S3Objects)
             {
-                var version = ExtractVersion(s3Object.Key); 
+                var version = ExtractVersion(s3Object.Key);
                 if (s3Object.Key.EndsWith(MigrationFileName) && version != null)
                 {
                     migrations.Add(new MigrationVersion
@@ -64,11 +64,11 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
                     });
                 }
             }
-            
+
             request.ContinuationToken = response.NextContinuationToken;
         }
         while (response.IsTruncated);
-        
+
         return migrations.OrderByDescending(d => d.Created).ToList();
     }
 
@@ -78,18 +78,18 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
         {
             throw new Exception("Config error: MigrationsBucket has not been set");
         }
-        
+
         var request = new ListObjectsV2Request
         {
             BucketName = _bucketName,
             Delimiter = "/"
         };
 
-        List<string> services = []; 
+        List<string> services = [];
         ListObjectsV2Response response;
         do
         {
-            
+
             response = await client.ListObjectsV2Async(request, ct);
 
             services.AddRange(response.CommonPrefixes);
@@ -107,4 +107,3 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
         return parts.Length > 2 ? parts[1] : null;
     }
 }
-

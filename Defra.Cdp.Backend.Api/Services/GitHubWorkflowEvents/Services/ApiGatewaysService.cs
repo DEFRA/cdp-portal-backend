@@ -18,7 +18,7 @@ public interface IApiGatewaysService
  */
 public class ApiGatewaysService(IMongoDbClientFactory connectionFactory) : IApiGatewaysService
 {
-    
+
     public async Task<List<ApiGatewayRecord>> FindService(string service, CancellationToken cancellationToken)
     {
         var matchStage = new BsonDocument("$match", new BsonDocument("service", service));
@@ -38,8 +38,8 @@ public class ApiGatewaysService(IMongoDbClientFactory connectionFactory) : IApiG
         var collection = connectionFactory.GetCollection<EnabledApiRecord>(EnabledApisService.CollectionName);
         return await collection.Aggregate<ApiGatewayRecord>(pipeline.Prepend(matchStage).ToArray()).ToListAsync(cancellationToken);
     }
-    
-    
+
+
     private readonly BsonDocument[] pipeline =
     [
         new("$lookup",

@@ -12,11 +12,11 @@ public class EnvironmentComparer : IComparer<string>
         "perf-test",
         "prod"
     ];
-    
+
     public int Compare(string? x, string? y)
     {
-        var xValue  = Array.FindIndex(_envs, e => e.Equals(x ?? "", StringComparison.CurrentCultureIgnoreCase));
-        var yValue  = Array.FindIndex(_envs, e => e.Equals(y ?? "", StringComparison.CurrentCultureIgnoreCase));
+        var xValue = Array.FindIndex(_envs, e => e.Equals(x ?? "", StringComparison.CurrentCultureIgnoreCase));
+        var yValue = Array.FindIndex(_envs, e => e.Equals(y ?? "", StringComparison.CurrentCultureIgnoreCase));
         return xValue - yValue;
     }
 }

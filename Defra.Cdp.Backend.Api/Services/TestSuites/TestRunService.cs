@@ -31,8 +31,8 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
     private readonly TimeSpan _ecsLinkTimeWindow = TimeSpan.FromSeconds(120); // how many seconds between requesting the test run and the first ECS event
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
-    
-    public TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory) {}
+
+    public TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory) { }
 
     protected override List<CreateIndexModel<TestRun>> DefineIndexes(IndexKeysDefinitionBuilder<TestRun> builder)
     {
@@ -78,14 +78,14 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
     }
 
     public async Task<Dictionary<string, TestRun>> FindLatestTestRuns(CancellationToken ct)
-   {
-       var pipeline = new EmptyPipelineDefinition<TestRun>()
-           .Sort(new SortDefinitionBuilder<TestRun>().Descending(d => d.Created)).Group(t => t.TestSuite,
-               grp => new { Root = grp.First() }).Project(grp => grp.Root);
+    {
+        var pipeline = new EmptyPipelineDefinition<TestRun>()
+            .Sort(new SortDefinitionBuilder<TestRun>().Descending(d => d.Created)).Group(t => t.TestSuite,
+                grp => new { Root = grp.First() }).Project(grp => grp.Root);
 
-       var runs = await Collection.AggregateAsync(pipeline, cancellationToken: ct);
-       return runs.ToEnumerable(ct).ToDictionary(d => d.TestSuite, d => d);
-   }
+        var runs = await Collection.AggregateAsync(pipeline, cancellationToken: ct);
+        return runs.ToEnumerable(ct).ToDictionary(d => d.TestSuite, d => d);
+    }
 
     public async Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct)
     {
@@ -96,7 +96,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
     {
         testRun.TaskStatus = "starting";
         await Collection.InsertOneAsync(testRun, new InsertOneOptions(), ct);
-   }
+    }
 
     public async Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken ct)
     {
@@ -106,7 +106,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
             fb.Eq(t => t.TestSuite, ids.TestSuite),
             fb.Eq(t => t.Environment, ids.Environment),
             fb.Lte(t => t.Created, ids.EventTime),
-            fb.Gte(t => t.Created,  ids.EventTime.Subtract(_ecsLinkTimeWindow)),
+            fb.Gte(t => t.Created, ids.EventTime.Subtract(_ecsLinkTimeWindow)),
             fb.Eq(t => t.TaskArn, null)
         );
 
@@ -114,7 +114,7 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
             .Update
             .Set(d => d.TaskArn, taskArn);
 
-        return await Collection.FindOneAndUpdateAsync(  filter, update, cancellationToken: ct);
+        return await Collection.FindOneAndUpdateAsync(filter, update, cancellationToken: ct);
     }
 
     public async Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
@@ -122,22 +122,22 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
     {
         var update = Builders<TestRun>
             .Update
-            .Set(t => t.TaskStatus, taskStatus).Set(  t => t.TaskLastUpdate, ecsEventTimestamp).Set(
+            .Set(t => t.TaskStatus, taskStatus).Set(t => t.TaskLastUpdate, ecsEventTimestamp).Set(
                 t => t.FailureReasons,
                 failureReasons);
 
         if (testStatus != null)
         {
-            update = update.Set(  t => t.TestStatus, testStatus);
+            update = update.Set(t => t.TestStatus, testStatus);
         }
 
-        await Collection.UpdateOneAsync(  t => t.TaskArn == taskArn, update,
+        await Collection.UpdateOneAsync(t => t.TaskArn == taskArn, update,
             cancellationToken: ct);
     }
 
     public async Task Decommission(string serviceName, CancellationToken ct)
     {
-        await Collection.DeleteManyAsync(  t => t.TestSuite == serviceName, ct);
+        await Collection.DeleteManyAsync(t => t.TestSuite == serviceName, ct);
     }
 
     public async Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct)

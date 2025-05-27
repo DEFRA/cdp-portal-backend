@@ -185,6 +185,11 @@ you'll get 1 event per instance rather than the whole deployment
 
 ## Local Development
 
+### Set up pre-commit script:
+```bash
+git config core.hooksPath .githooks
+```
+
 ### Install MongoDB
 
 - Install [MongoDB](https://www.mongodb.com/docs/manual/tutorial/#installation) on your local machine

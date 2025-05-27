@@ -55,7 +55,7 @@ public class AutoTestRunTriggerService(
         var triggerInDb = await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
 
         _logger.LogInformation("DB trigger is: {TriggerInDb}", triggerInDb);
-        
+
         if (triggerInDb != null)
         {
             // Update existing trigger

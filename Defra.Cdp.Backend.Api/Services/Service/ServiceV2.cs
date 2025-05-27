@@ -15,7 +15,7 @@ public class ServiceV2
     public List<Deployment> Deployments { get; set; } = [];
     public List<TenantServiceRecord>? TenantService { get; set; }
     public List<ServiceUrl> Metrics { get; set; } = [];
-    public List<ServiceUrl> Logs { get; set; }  = [];
+    public List<ServiceUrl> Logs { get; set; } = [];
     public List<ServiceUrl> InternalUrls { get; set; } = [];
     public ServiceUrl? DockerHub { get; set; }
     public CreationStatus? CreationStatus { get; set; }
@@ -35,7 +35,8 @@ public class ServiceV2
     }
 }
 
-public class ServiceUrl {
+public class ServiceUrl
+{
     public required string Name { get; init; }
     public required string Url { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

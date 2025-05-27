@@ -156,8 +156,8 @@ public class TaskStateChangeEventHandler(
             {
                 logger.LogInformation("trying to link {Id} in environment:{Env}", artifact.ServiceName, env);
                 testRun = await testRunService.Link(
-                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp), 
-                    taskArn, 
+                    new TestRunMatchIds(artifact.ServiceName!, env!, ecsTaskStateChangeEvent.Timestamp),
+                    taskArn,
                     cancellationToken);
             }
 
@@ -278,7 +278,7 @@ public class TaskStateChangeEventHandler(
         return (null, null);
     }
 
- 
+
     public static List<FailureReason> ExtractFailureReasons(EcsTaskStateChangeEvent ecsEvent)
     {
         var failureReasons = ecsEvent.Detail.Containers

@@ -17,7 +17,7 @@ public class ExtractFailureReasonTests
         Assert.Single(result);
         Assert.Equivalent(new FailureReason("forms-perf-test", "OutOfMemoryError: Container killed due to memory usage"), result.First());
     }
-    
+
     [Fact]
     public void TestExtractTaskLevelFailureReason()
     {
@@ -29,7 +29,7 @@ public class ExtractFailureReasonTests
         Assert.Single(result);
         Assert.Equivalent(new FailureReason("ECS Task", "ResourceInitializationError: unable to pull secrets or registry auth: execution resource retrieval failed: unable to retrieve secret from asm: service call has been retried 1 time(s): retrieved secret from Secrets Manager did not contain json key MY_SECRET"), result.First());
     }
-    
+
     [Fact]
     public void TestExtractTimeOutReason()
     {
@@ -41,7 +41,7 @@ public class ExtractFailureReasonTests
         Assert.Single(result);
         Assert.Equivalent(new FailureReason("forms-perf-test-timeout", "Test suite exceeded maximum run time"), result.First());
     }
-    
+
     [Fact]
     public void TestExtractNoReasonWhenTestsPass()
     {
@@ -49,10 +49,10 @@ public class ExtractFailureReasonTests
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var result = TaskStateChangeEventHandler.ExtractFailureReasons(ecsEvent);
-        
+
         Assert.Empty(result);
     }
-    
+
     [Fact]
     public void TestExtractNoReasonWhenTestsFail()
     {
@@ -60,7 +60,7 @@ public class ExtractFailureReasonTests
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var result = TaskStateChangeEventHandler.ExtractFailureReasons(ecsEvent);
-        
+
         Assert.Empty(result);
     }
 }

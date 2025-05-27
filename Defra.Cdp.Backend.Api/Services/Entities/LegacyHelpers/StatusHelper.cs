@@ -24,7 +24,7 @@ public static class StatusHelper
             // Get the statuses that come after the matched index and return them as a flat list.
             s_statusPrecedence.Skip(idx + 1).SelectMany(x => x).ToList();
     }
-    
+
     public static List<string> GetStatusKeys(GithubReposOptions githubReposOptions, CreationType creationType)
     {
         var cdpTfSvcInfra = githubReposOptions.CdpTfSvcInfra;
@@ -39,15 +39,24 @@ public static class StatusHelper
             CreationType.Repository => [cdpCreateWorkflows],
             CreationType.JourneyTestsuite or CreationType.PerfTestsuite =>
             [
-                cdpCreateWorkflows, cdpTfSvcInfra, cdpSquidProxy, cdpAppConfig
+                cdpCreateWorkflows,
+                cdpTfSvcInfra,
+                cdpSquidProxy,
+                cdpAppConfig
             ],
             CreationType.Microservice =>
             [
-                cdpCreateWorkflows, cdpNginxUpstreams, cdpAppConfig, cdpTfSvcInfra, cdpSquidProxy, cdpGrafanaSvc
+                cdpCreateWorkflows,
+                cdpNginxUpstreams,
+                cdpAppConfig,
+                cdpTfSvcInfra,
+                cdpSquidProxy,
+                cdpGrafanaSvc
             ],
             _ => []
         };
     }
+
 
     public static Status NormaliseStatus(Status action, Status? conclusion)
     {
@@ -59,7 +68,7 @@ public static class StatusHelper
                     case Status.Success:
                     case Status.Skipped:
                         return Status.Success;
-                    case  Status.Cancelled:
+                    case Status.Cancelled:
                         return Status.InProgress;
                     default:
                         return Status.Failure;
@@ -77,7 +86,7 @@ public static class StatusHelper
 
     public static Status CalculateOverallStatus(GithubReposOptions reposOptions, LegacyStatus statusRecord)
     {
-        var statusKeys = StatusHelper.GetStatusKeys(reposOptions, statusRecord.Kind.ToType());
+        var statusKeys = GetStatusKeys(reposOptions, statusRecord.Kind.ToType());
 
         var allSuccess = CheckAllKeysWithGivenStatus(statusRecord, statusKeys, Status.Success);
 
@@ -117,4 +126,3 @@ public static class StatusHelper
         });
     }
 }
-

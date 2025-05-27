@@ -29,9 +29,9 @@ public interface IDeployableArtifactsService
         CancellationToken ct);
 
     Task<UpdateResult> RemoveAnnotation(string repo, string tag, string title, CancellationToken ct);
-    
+
     Task<UpdateResult> RemoveAnnotations(string repo, string tag, CancellationToken ct);
-    
+
     Task<DeployableArtifact?> FindBySha256(string sha256, CancellationToken cancellationToken);
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
 
@@ -167,7 +167,7 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         if (!string.IsNullOrWhiteSpace(service))
         {
             var partialServiceFilter =
-                builder.Regex(d => d.ServiceName,  new BsonRegularExpression(service, "i"));
+                builder.Regex(d => d.ServiceName, new BsonRegularExpression(service, "i"));
             filter &= partialServiceFilter;
         }
 
@@ -239,19 +239,19 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
 
         return new ServiceFilters { Services = serviceNames };
     }
-    
+
     public async Task<UpdateResult> AddAnnotation(string repo, string tag,
         string title, string description, CancellationToken ct)
     {
         var filter = Builders<DeployableArtifact>.Filter.Where(d =>
             d.Repo == repo && d.Tag == tag);
-        
+
         var update = new BsonDocumentUpdateDefinition<DeployableArtifact>(new BsonDocument("$set",
             new BsonDocument("annotations." + title, description)));
-        
-        
+
+
         var options = new UpdateOptions { IsUpsert = true };
-        
+
 
         return await Collection.UpdateOneAsync(filter, update, options, ct);
     }
@@ -260,27 +260,27 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     {
         var filter = Builders<DeployableArtifact>.Filter.Where(d =>
             d.Repo == repo && d.Tag == tag);
-        
+
         var update = new BsonDocumentUpdateDefinition<DeployableArtifact>(new BsonDocument("$unset",
             new BsonDocument("annotations." + title, "")));
-        
-        
-        var options = new UpdateOptions { IsUpsert = false };
-        
 
-        return await Collection.UpdateOneAsync(filter, update, options, ct);    
+
+        var options = new UpdateOptions { IsUpsert = false };
+
+
+        return await Collection.UpdateOneAsync(filter, update, options, ct);
     }
-    
+
     public async Task<UpdateResult> RemoveAnnotations(string repo, string tag, CancellationToken ct)
     {
         var filter = Builders<DeployableArtifact>.Filter.Where(d =>
             d.Repo == repo && d.Tag == tag);
-        
-        var update = Builders<DeployableArtifact>.Update.Unset(d=> d.Annotations);
-        
-        var options = new UpdateOptions { IsUpsert = false };
-        
 
-        return await Collection.UpdateOneAsync(filter, update, options, ct);    
+        var update = Builders<DeployableArtifact>.Update.Unset(d => d.Annotations);
+
+        var options = new UpdateOptions { IsUpsert = false };
+
+
+        return await Collection.UpdateOneAsync(filter, update, options, ct);
     }
 }

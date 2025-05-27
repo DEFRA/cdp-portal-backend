@@ -14,7 +14,7 @@ public class TenantSecrets
 
     [property: JsonPropertyName("service")]
     public string Service { get; init; } = default!;
-    
+
     [property: JsonPropertyName("environment")]
     public string Environment { get; init; } = default!;
 

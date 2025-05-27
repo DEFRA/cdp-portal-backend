@@ -8,7 +8,7 @@ using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws;
 
-public class EcrEventListenerTest 
+public class EcrEventListenerTest
 {
     private readonly IArtifactScanner _docker = Substitute.For<IArtifactScanner>();
     private readonly IDeployableArtifactsService _artifacts = Substitute.For<IDeployableArtifactsService>();

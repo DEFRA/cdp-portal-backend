@@ -46,7 +46,8 @@ public class DockerClient : IDockerClient
     {
         var req = new HttpRequestMessage
         {
-            Method = HttpMethod.Get, RequestUri = new Uri($"{_baseUrl}/v2/{repo}/tags/list")
+            Method = HttpMethod.Get,
+            RequestUri = new Uri($"{_baseUrl}/v2/{repo}/tags/list")
         };
         req = await AddEcrAuthHeader(req);
 
@@ -80,7 +81,7 @@ public class DockerClient : IDockerClient
 
         var content = await response.Content.ReadAsByteArrayAsync();
         var manifest = JsonSerializer.Deserialize<Manifest>(content);
-        if(manifest != null)
+        if (manifest != null)
             manifest.digest = "sha256:" + Convert.ToHexString(SHA256.Create().ComputeHash(content));
         return manifest;
     }

@@ -21,9 +21,9 @@ public static class TenantSecretsEndpoint
     {
         var secrets = await secretsService.FindServiceSecretsForEnvironment(environment, service, cancellationToken);
         var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
-        
+
         if (secrets == null && pendingSecrets == null) return Results.NotFound(new ApiError("No secrets found"));
-        
+
         var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? new List<string>();
 
         var exceptionMessage =
@@ -32,12 +32,12 @@ public static class TenantSecretsEndpoint
         pendingSecretKeys.Sort();
         secrets?.Keys.Sort();
 
-        return Results.Ok( new TenantSecretsResponse(
+        return Results.Ok(new TenantSecretsResponse(
             secrets?.Service ?? pendingSecrets.Service,
             secrets?.Environment ?? pendingSecrets.Environment,
             secrets?.Keys ?? pendingSecretKeys,
             secrets?.LastChangedDate ?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
-            secrets?.CreatedDate?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
+            secrets?.CreatedDate ?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
             pendingSecretKeys,
             exceptionMessage)
         );
@@ -47,7 +47,7 @@ public static class TenantSecretsEndpoint
         [FromServices] ISecretsService secretsService, string service, CancellationToken cancellationToken)
     {
         var allSecrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
-        return !allSecrets.Any() ?  Results.NotFound(new ApiError("No secrets found")) : Results.Ok(allSecrets);
+        return !allSecrets.Any() ? Results.NotFound(new ApiError("No secrets found")) : Results.Ok(allSecrets);
     }
 
     private static async Task<IResult> RegisterPendingSecret(

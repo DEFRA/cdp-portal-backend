@@ -34,7 +34,7 @@ public class AppConfigVersionsServiceTest(MongoIntegrationTest fixture) : Servic
         Assert.Equal("abc123", result.CommitSha);
         Assert.Equal("test", result.Environment);
         Assert.Equal(new DateTime(2025, 1, 23, 15, 10, 10, 123), result.CommitTimestamp);
-        
+
         var olderEvent = EventFromJson<AppConfigVersionPayload>("""
                                                                  {
                                                                    "eventType": "app-config-version",
@@ -54,7 +54,7 @@ public class AppConfigVersionsServiceTest(MongoIntegrationTest fixture) : Servic
         Assert.Equal("abc123", result.CommitSha);
         Assert.Equal("test", result.Environment);
         Assert.Equal(new DateTime(2025, 1, 23, 15, 10, 10, 123), result.CommitTimestamp);
-        
+
         var newerEvent = EventFromJson<AppConfigVersionPayload>("""
                                                                  {
                                                                    "eventType": "app-config-version",

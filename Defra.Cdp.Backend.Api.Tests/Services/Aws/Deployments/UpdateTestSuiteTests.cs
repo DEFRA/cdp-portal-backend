@@ -19,8 +19,8 @@ public class UpdateTestSuiteTests
     private readonly IDeployableArtifactsService _artifactsService = Substitute.For<IDeployableArtifactsService>();
     private readonly IDeploymentsService _deploymentsService = Substitute.For<IDeploymentsService>();
     private readonly ITestRunService _testRunService = Substitute.For<ITestRunService>();
-    
-    [Fact] 
+
+    [Fact]
     public async Task TestEventNotLinkable()
     {
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
@@ -28,22 +28,22 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
 
         await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
-        
+
         await _testRunService.DidNotReceive().UpdateStatus(
             Arg.Any<string>(),
             Arg.Any<string>(),
@@ -61,15 +61,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -83,9 +83,9 @@ public class UpdateTestSuiteTests
             RunId = "1234",
             TestSuite = "forms-perf-test"
         });
-            
-        await handler.UpdateTestSuite(ecsEvent, artifact,  CancellationToken.None);
-        
+
+        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "starting",
@@ -103,15 +103,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -121,9 +121,9 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
-        await handler.UpdateTestSuite(ecsEvent, artifact,  CancellationToken.None);
-        
+
+        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "starting",
@@ -132,7 +132,7 @@ public class UpdateTestSuiteTests
             Arg.Is<List<FailureReason>>(l => l.Count == 0),
             Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
     public async Task TestEventRunning()
     {
@@ -141,15 +141,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -159,9 +159,9 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
-        await handler.UpdateTestSuite(ecsEvent, artifact,  CancellationToken.None);
-        
+
+        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "in-progress",
@@ -179,15 +179,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -197,9 +197,9 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
-        await handler.UpdateTestSuite(ecsEvent, artifact,  CancellationToken.None);
-        
+
+        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "finished",
@@ -217,15 +217,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -235,9 +235,9 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
-        await handler.UpdateTestSuite(ecsEvent, artifact,  CancellationToken.None);
-        
+
+        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "finished",
@@ -246,7 +246,7 @@ public class UpdateTestSuiteTests
             Arg.Is<List<FailureReason>>(l => l.Count == 0),
             Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
     public async Task TestEventUpdateFailsWithOomError()
     {
@@ -255,15 +255,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -273,17 +273,17 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
+
         await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
-        
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "failed",
             "failed",
             Arg.Any<DateTime>(),
-            Arg.Is<List<FailureReason>>(l => 
-                l.Count == 1 && 
-                l[0].ContainerName == "forms-perf-test" && 
+            Arg.Is<List<FailureReason>>(l =>
+                l.Count == 1 &&
+                l[0].ContainerName == "forms-perf-test" &&
                 l[0].Reason == "OutOfMemoryError: Container killed due to memory usage"),
             Arg.Any<CancellationToken>());
     }
@@ -296,15 +296,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -314,7 +314,7 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
+
         await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
@@ -325,7 +325,7 @@ public class UpdateTestSuiteTests
             Arg.Is<List<FailureReason>>(l => l.Count == 1 && l.Contains(new FailureReason("forms-perf-test-timeout", "Test suite exceeded maximum run time"))),
             Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
     public async Task TestEventUpdateFailsWithEcsTaskError()
     {
@@ -334,15 +334,15 @@ public class UpdateTestSuiteTests
         Assert.NotNull(ecsEvent);
         var artifact = new DeployableArtifact
         {
-            Repo =  "forms-perf-test",
+            Repo = "forms-perf-test",
             ServiceName = "forms-perf-test"
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
-            _config, 
+            _config,
             new MockEnvironmentLookup(),
-            _deploymentsService, 
-            _artifactsService, 
+            _deploymentsService,
+            _artifactsService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -352,9 +352,9 @@ public class UpdateTestSuiteTests
                 RunId = "1234",
                 TestSuite = "forms-perf-test"
             });
-            
+
         await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
-        
+
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
             "failed",

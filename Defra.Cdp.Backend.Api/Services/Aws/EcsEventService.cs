@@ -16,7 +16,7 @@ public class EcsEventsService(IMongoDbClientFactory connectionFactory, ILoggerFa
         CollectionName, loggerFactory), IEcsEventsService
 {
     private const string CollectionName = "ecsevents";
-    
+
     public async Task SaveMessage(string id, string body, DateTime messageTimestamp, CancellationToken cancellationToken)
     {
         await Collection.InsertOneAsync(new EcsEventCopy(id, messageTimestamp, body),
