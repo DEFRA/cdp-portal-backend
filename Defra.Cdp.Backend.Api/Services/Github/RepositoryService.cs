@@ -34,13 +34,11 @@ public interface IRepositoryService : IResourceService
     Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken);
 }
 
-public class RepositoryService : MongoService<Repository>, IRepositoryService
+public class RepositoryService(
+    IMongoDbClientFactory connectionFactory,
+    ILoggerFactory loggerFactory)
+    : MongoService<Repository>(connectionFactory, "repositories", loggerFactory), IRepositoryService
 {
-    public RepositoryService(IMongoDbClientFactory connectionFactory,
-        ILoggerFactory loggerFactory) : base(connectionFactory, "repositories", loggerFactory)
-    {
-    }
-
     public async Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken)
     {
         // because we constantly refresh the database, we are looking to upsert the record here
