@@ -59,7 +59,7 @@ public class GithubEventListener(
             await eventHandler.Handle(eventWrapper, cancellationToken);
         else
             logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl,
-                message.MessageId, message.Body);
+                message.MessageId, message.Body.Substring(0, 500));
     }
 
     private bool ShouldHandleMessage(GithubEventMessage githubEventMessage)
@@ -70,14 +70,13 @@ public class GithubEventListener(
 
     private GithubEventMessage? TryParseMessageBody(string body)
     {
-        Console.WriteLine(body);
         try
         {
             return JsonSerializer.Deserialize<GithubEventMessage>(body);
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Failed to parse message body: {Exception} \n {body}", e.Message, body);
+            logger.LogError(e, "Failed to parse message body: {Exception} \n {body}", e.Message, body.Substring(0, 500));
             return null;
         }
     }
