@@ -54,7 +54,7 @@ public sealed class PopulateGithubRepositories(
             }
             catch (Exception e)
             {
-                // _logger.LogError("RepopulateGithub scheduled job failed: {e}", e);
+                _logger.LogError("RepopulateGithub scheduled job failed: {e}", e);
             }
             finally
             {
