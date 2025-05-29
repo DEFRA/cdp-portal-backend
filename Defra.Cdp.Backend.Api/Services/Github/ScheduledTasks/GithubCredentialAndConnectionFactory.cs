@@ -7,7 +7,6 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 public interface IGithubCredentialAndConnectionFactory
 {
-    Task<string> GetCredentials(CancellationToken cancellationToken = new());
     Task<string?> GetToken(CancellationToken cancellationToken = new());
 }
 
@@ -40,7 +39,6 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
         );
     }
 
-
     public Task<string> GetCredentials(CancellationToken cancellationToken = new())
     {
         if (DateTimeOffset.Now - _lastTokenGeneratedTime < TimeSpan.FromMinutes(10)) return Task.FromResult(_latestJwt);
@@ -62,9 +60,7 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
         // libraries, I'm choosing to call this URL directly. You can see the equivalent curl command in the comment
         // above the method
         var uri = $"{_githubApiUrl}/app/installations/{_appInstallationId}/access_tokens";
-        var result =
-            await _client.PostAsync(uri,
-                null, cancellationToken);
+        var result = await _client.PostAsync(uri, null, cancellationToken);
 
         result.EnsureSuccessStatusCode();
         var responseBodyStream = await result.Content.ReadAsStreamAsync(cancellationToken);
