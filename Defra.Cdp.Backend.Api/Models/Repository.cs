@@ -25,7 +25,7 @@ public sealed class Repository : IEquatable<Repository>
 
     public DateTimeOffset CreatedAt { get; init; }
 
-    public IEnumerable<RepositoryTeam> Teams { get; init; } = null!;
+    public List<RepositoryTeam> Teams { get; init; } = null!;
 
     public IEnumerable<string> Topics { get; init; } = null!;
 

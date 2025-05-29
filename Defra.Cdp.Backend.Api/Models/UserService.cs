@@ -4,7 +4,7 @@ namespace Defra.Cdp.Backend.Api.Models;
 
 public record UserServiceTeamResponse(
     string message,
-    List<UserServiceTeams> teams
+    List<UserServiceTeam> teams
 )
 {
     public Dictionary<string, string> GithubToTeamIdMap { get; } =
@@ -20,22 +20,22 @@ public record UserServiceTeamResponse(
             .ToDictionary(t => t.github, t => t.name);
 }
 
-public record UserServiceTeams(
+public record UserServiceTeam(
     [property: JsonPropertyName("name")] string name,
     [property: JsonPropertyName("description")] string description,
-    [property: JsonPropertyName("github")] string github,
+    [property: JsonPropertyName("github")] string? github,
     [property: JsonPropertyName("createdAt")] string createdAt,
     [property: JsonPropertyName("updatedAt")] string updatedAt,
     [property: JsonPropertyName("teamId")] string teamId,
-    [property: JsonPropertyName("users")] List<UserIds> users
+    [property: JsonPropertyName("users")] List<UserId> users
 );
 
-public record UserIds(
+public record UserId(
     [property: JsonPropertyName("userId")] string userId,
     [property: JsonPropertyName("name")] string name
 );
 
-public record TeamIds(
+public record TeamId(
     [property: JsonPropertyName("teamId")] string teamId,
     [property: JsonPropertyName("name")] string name
 );
@@ -49,5 +49,5 @@ public record UserServiceUser(
     [property: JsonPropertyName("name")] string name,
     [property: JsonPropertyName("email")] string email,
     [property: JsonPropertyName("userId")] string userId,
-    [property: JsonPropertyName("teams")] List<TeamIds> teams
+    [property: JsonPropertyName("teams")] List<TeamId> teams
 );

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Microsoft.AspNetCore.HeaderPropagation;
@@ -45,6 +46,7 @@ public sealed class PopulateGithubRepositories(
     public async Task Execute(IJobExecutionContext context)
     {
         if (await mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))
+        {
             try
             {
                 // Workaround mentioned in https://github.com/alefranz/HeaderPropagation/issues/5
@@ -60,6 +62,7 @@ public sealed class PopulateGithubRepositories(
             {
                 await mongoLock.Unlock(LockName);
             }
+        }
     }
 
     private async Task RepopulateGithubRepos(IJobExecutionContext context)
@@ -67,108 +70,199 @@ public sealed class PopulateGithubRepositories(
         _logger.LogInformation("Repopulating Github repositories");
         var cancellationToken = context.CancellationToken;
 
-        var userServiceRecords = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
-        var githubToTeamIdMap = userServiceRecords?.GithubToTeamIdMap ?? new Dictionary<string, string>();
-        var githubToTeamNameMap = userServiceRecords?.GithubToTeamNameMap ?? new Dictionary<string, string>();
+        var cdpTeams = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
 
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
+        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cancellationToken, cdpTeams.teams);
 
-        List<Repository> repositories = new();
-
-        // paginate
-        var hasNext = true;
-        string? nextCursor = null;
-        while (hasNext)
-        {
-            _logger.LogInformation("Retrieving paginated GitHub team data.");
-            var query = BuildTeamsQuery(_githubOrgName, nextCursor);
-            var jsonResponse = await _client.PostAsync(
-                _githubApiUrl,
-                new StringContent(query, Encoding.UTF8, "application/json"),
-                cancellationToken
-            );
-            jsonResponse.EnsureSuccessStatusCode();
-
-            var result = await jsonResponse.Content.ReadFromJsonAsync<QueryResponse>(cancellationToken);
-            if (result is null)
-            {
-                var jsonString = jsonResponse.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
-                throw new ApplicationException("response must be parsed correct");
-            }
-
-            var repos = QueryResultToRepositories(result, githubToTeamIdMap, githubToTeamNameMap).ToList();
-            repositories.AddRange(repos);
-            _logger.LogInformation("Added {repos} repos, total {total}", repos.Count, repositories.Count);
-            hasNext = result.data.organization.teams.pageInfo.hasNextPage;
-            nextCursor = result.data.organization.teams.pageInfo.endCursor;
-        }
+        var repositories =
+            GroupRepositoriesByTeam(repositoryNodesByTeam, _logger);
 
         await repositoryService.UpsertMany(repositories, cancellationToken);
         await repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
         _logger.LogInformation("Successfully repopulated repositories and team information");
     }
 
-    public static IEnumerable<Repository> QueryResultToRepositories(QueryResponse result,
-        Dictionary<string, string> githubToTeamIdMap, Dictionary<string, string> githubToTeamNameMap)
+    public static List<Repository> GroupRepositoriesByTeam(
+        Dictionary<UserServiceTeam, List<RepositoryNode>> repositoryNodesByTeam, ILogger<PopulateGithubRepositories> logger)
     {
-        var teamsAndReposPair =
-            result.data.organization.teams.nodes
-                .SelectMany(t =>
-                    t.repositories.nodes
-                        .Select(r => new { Team = t.slug, Repo = r.name })).Distinct();
-        var repoOwnerPair = teamsAndReposPair.GroupBy(
-                pair => pair.Repo,
-                pair => pair.Team,
-                (repo, teams) => new { repo, teams })
-            .ToDictionary(pair => pair.repo, pair => pair.teams);
+        var repoMap = new Dictionary<string, Repository>();
 
-        var repositories =
-            result
-                .data
-                .organization
-                .teams
-                .nodes
-                .SelectMany(t => t.repositories.nodes)
-                .DistinctBy(r => r.name)
-                .Select(r =>
+        foreach (var (userServiceTeam, repos) in repositoryNodesByTeam)
+        {
+            if (userServiceTeam.github is null)
+            {
+                logger.LogWarning("Skipping team with no GitHub slug: {@UserServiceTeam}", userServiceTeam);
+                continue;
+            }
+            
+            var team = new RepositoryTeam
+            (
+                userServiceTeam.github, 
+                userServiceTeam.teamId,
+                userServiceTeam.name
+            );
+            
+            foreach (var repo in repos)
+            {
+                if (!repoMap.TryGetValue(repo.name, out var existingRepo))
                 {
-                    var primaryLanguage = r.primaryLanguage?.name ?? "none";
-                    return new Repository
+                    existingRepo = new Repository
                     {
-                        Id = r.name,
-                        CreatedAt = r.createdAt,
-                        Description = r.description,
-                        IsArchived = r.isArchived,
-                        IsPrivate = r.isPrivate,
-                        IsTemplate = r.isTemplate,
-                        Url = r.url,
-                        PrimaryLanguage = primaryLanguage,
-                        Teams = (repoOwnerPair.GetValueOrDefault(r.name) ?? Array.Empty<string>()).AsEnumerable()
-                            .Select(t => new RepositoryTeam(t, githubToTeamIdMap.GetValueOrDefault(t),
-                                githubToTeamNameMap.GetValueOrDefault(t)))
-                            .Where(t => !string.IsNullOrEmpty(t.TeamId)),
-                        Topics = r.repositoryTopics.nodes.Select(t => t.topic.name)
+                        Id = repo.name,
+                        CreatedAt = repo.createdAt,
+                        Description = repo.description,
+                        IsArchived = repo.isArchived,
+                        IsPrivate = repo.isPrivate,
+                        IsTemplate = repo.isTemplate,
+                        Url = repo.url,
+                        PrimaryLanguage = repo.primaryLanguage?.name ?? "Unknown",
+                        Teams = [],
+                        Topics = repo.repositoryTopics.nodes.Select(t => t.topic.name)
                     };
-                });
-        return repositories;
+                    ;
+                    repoMap[repo.name] = existingRepo;
+                }
+
+                if (!existingRepo.Teams.Contains(team))
+                {
+                    existingRepo.Teams.Add(team);
+                }
+            }
+        }
+
+        return repoMap.Values.ToList();
     }
 
-    // Request based on this GraphQL query.
-    // To test it, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
-    // 'query { organization(login: "Defra") { id teams(first: 100) { pageInfo { hasNextPage endCursor } nodes { slug repositories { nodes { name repositoryTopics(first: 30) { nodes { topic { name }}} description primaryLanguage { name } url isArchived isTemplate isPrivate createdAt } } } } }}'
-    private static string BuildTeamsQuery(string githubOrgName, string? cursor)
+    private async Task<Dictionary<UserServiceTeam, List<RepositoryNode>>> GetReposFromGithubByTeam(
+        CancellationToken cancellationToken,
+        List<UserServiceTeam> cdpTeams)
     {
-        var afterCursor = "null";
-        if (cursor != null) afterCursor = "\\\"" + cursor + "\\\"";
+        var repositoriesByTeam = new Dictionary<UserServiceTeam, List<RepositoryNode>>();
 
-        return $@"
-            {{
-              ""query"": 
-                 ""query {{ organization(login: \""{githubOrgName}\"") {{ id teams(first: 100, after: {afterCursor}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ slug repositories {{ nodes {{ name repositoryTopics(first: 30) {{ nodes {{ topic {{ name }} }} }} description primaryLanguage {{ name }} url isArchived isTemplate isPrivate createdAt }} }} }} }} }}}}""
-            }}";
+        foreach (var team in cdpTeams)
+        {
+            var teamSlug = team.github;
+            if (string.IsNullOrEmpty(teamSlug)) continue;
+
+            _logger.LogInformation("Processing team: {TeamSlug}", teamSlug);
+
+            string? repoCursor = null;
+            var hasMoreRepos = true;
+            while (hasMoreRepos)
+            {
+                var reposQuery = BuildReposQuery(_githubOrgName, teamSlug, repoCursor);
+                var jsonResponseRepos = await _client.PostAsync(
+                    _githubApiUrl,
+                    reposQuery,
+                    cancellationToken
+                );
+                jsonResponseRepos.EnsureSuccessStatusCode();
+
+                var result = await jsonResponseRepos.Content.ReadFromJsonAsync<RepoQueryResponse>(cancellationToken);
+                if (result is null)
+                {
+                    var jsonString = jsonResponseRepos.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
+                    throw new ApplicationException("response must be parsed correct");
+                }
+
+                if (result.data == null)
+                {
+                    continue;
+                }
+
+                var repos = (result
+                    .data
+                    .organization
+                    .team
+                    ?.repositories.nodes ?? []
+                    ).ToList() ;
+
+                if (!repositoriesByTeam.TryAdd(team, repos))
+                {
+                    repositoriesByTeam[team].AddRange(repos);
+                }
+
+                _logger.LogInformation("Added {repos} repos, total {total}", repos.Count,
+                    repositoriesByTeam[team].Count);
+
+                hasMoreRepos = result.data.organization.team?.repositories.pageInfo.hasNextPage ?? false;
+                repoCursor = result.data.organization.team?.repositories.pageInfo.endCursor ?? null;
+            }
+        }
+
+        return repositoriesByTeam;
+    }
+
+    // To test queries, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
+    private static StringContent BuildReposQuery(string githubOrgName, string teamSlug, string? repoCursor)
+    {
+        var reposQuery = new
+        {
+            query = @"
+                        query ($githubOrgName: String!, $teamSlug: String!, $repoCursor: String) {
+                          organization(login: $githubOrgName) {
+                            team(slug: $teamSlug) {
+                              repositories(first: 100, after: $repoCursor) {
+                                pageInfo {
+                                  hasNextPage
+                                  endCursor
+                                }
+                                nodes {
+                                  name,
+                                  repositoryTopics(first: 30) {
+                                    nodes {
+                                      topic {
+                                        name
+                                      }
+                                    }
+                                  },
+                                  description,
+                                  primaryLanguage {
+                                    name
+                                  },
+                                  url,
+                                  isArchived,
+                                  isTemplate,
+                                  isPrivate,
+                                  createdAt
+                                }
+                              }
+                            }
+                          }
+                        }
+                    ",
+            variables = new { githubOrgName, teamSlug, repoCursor }
+        };
+
+        return new StringContent(JsonSerializer.Serialize(reposQuery), Encoding.UTF8, "application/json");
+    }
+
+    private static StringContent BuildTeamsOnlyQuery(string githubOrgName, string? teamCursor)
+    {
+        var queryTeams = new
+        {
+            query = @"
+                query ($githubOrgName: String!, $teamCursor: String) {
+                  organization(login: $githubOrgName) {
+                    teams(first: 100, after: $teamCursor) {
+                      pageInfo {
+                        hasNextPage
+                        endCursor
+                      }
+                      nodes {
+                        slug
+                      }
+                    }
+                  }
+                }
+            ",
+            variables = new { githubOrgName, teamCursor }
+        };
+        return new StringContent(JsonSerializer.Serialize(queryTeams), Encoding.UTF8, "application/json");
     }
 }
