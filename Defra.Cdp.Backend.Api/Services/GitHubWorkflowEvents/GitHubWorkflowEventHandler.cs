@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
@@ -16,6 +17,7 @@ public interface IGithubWorkflowEventHandler
  */
 public class GithubWorkflowEventHandler(
     IAppConfigVersionsService appConfigVersionsService,
+    IAppConfigsService appConfigsService,
     INginxVanityUrlsService nginxVanityUrlsService,
     ISquidProxyConfigService squidProxyConfigService,
     ITenantBucketsService tenantBucketsService,
@@ -24,6 +26,9 @@ public class GithubWorkflowEventHandler(
     IEnabledVanityUrlsService enabledVanityUrlsService,
     IEnabledApisService enabledApisService,
     ITfVanityUrlsService tfVanityUrlsService,
+    IGrafanaDashboardsService grafanaDashboardsService,
+    INginxUpstreamsService nginxUpstreamsService,
+    IEntityStatusService entityStatusService,
     ILogger<GithubWorkflowEventHandler> logger)
     : IGithubWorkflowEventHandler
 {
@@ -33,6 +38,9 @@ public class GithubWorkflowEventHandler(
         {
             case "app-config-version":
                 await HandleEvent(eventWrapper, messageBody, appConfigVersionsService, cancellationToken);
+                break;
+            case "app-config":
+                await HandleEvent(eventWrapper, messageBody, appConfigsService, cancellationToken);
                 break;
             case "nginx-vanity-urls":
                 await HandleEvent(eventWrapper, messageBody, nginxVanityUrlsService, cancellationToken);
@@ -58,10 +66,17 @@ public class GithubWorkflowEventHandler(
             case "tf-vanity-urls":
                 await HandleEvent(eventWrapper, messageBody, tfVanityUrlsService, cancellationToken);
                 break;
+            case "grafana-dashboard":
+                await HandleEvent(eventWrapper, messageBody, grafanaDashboardsService, cancellationToken);
+                break;
+            case "nginx-upstreams":
+                await HandleEvent(eventWrapper, messageBody, nginxUpstreamsService, cancellationToken);
+                break;
             default:
-                 logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
-                 break;
+                logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
+                break;
         }
+        await entityStatusService.UpdatePendingEntityStatuses(cancellationToken);
     }
 
     private async Task HandleEvent<T>(CommonEventWrapper eventWrapper, string messageBody, IEventsPersistenceService<T> service,

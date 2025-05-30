@@ -33,7 +33,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
-        Assert.Equal(1, triggerFromDb.TestSuites.Count);
+        Assert.Single(triggerFromDb.TestSuites);
         Assert.Equal(new List<string> { "cdp-env-test-suite" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["infra-dev", "dev"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
 
@@ -80,7 +80,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-user-service-backend", triggerFromDb.ServiceName);
-        Assert.Equal(1, triggerFromDb.TestSuites.Count);
+        Assert.Single(triggerFromDb.TestSuites);
         Assert.Equal(new List<string> { "cdp-portal-journey-tests" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["infra-dev", "dev", "test"], triggerFromDb.TestSuites["cdp-portal-journey-tests"]);
 
@@ -98,7 +98,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-user-service-backend", triggerFromDb.ServiceName);
-        Assert.Equal(1, triggerFromDb.TestSuites.Count);
+        Assert.Single(triggerFromDb.TestSuites);
         Assert.Equal(new List<string> { "cdp-portal-journey-tests" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["dev"], triggerFromDb.TestSuites["cdp-portal-journey-tests"]);
     }
@@ -127,7 +127,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
-        Assert.Equal(1, triggerFromDb.TestSuites.Count);
+        Assert.Single(triggerFromDb.TestSuites);
         Assert.Equal(new List<string> { "cdp-env-test-suite" }, triggerFromDb.TestSuites.Keys);
         Assert.Equal(["perf-test", "dev"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
 

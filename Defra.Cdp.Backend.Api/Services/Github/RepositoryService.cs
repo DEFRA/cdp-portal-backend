@@ -1,4 +1,3 @@
-using System.Dynamic;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
@@ -6,7 +5,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
 
-public interface IRepositoryService
+public interface IRepositoryService : IResourceService
 {
     Task Upsert(Repository repository, CancellationToken cancellationToken);
 
@@ -34,13 +33,11 @@ public interface IRepositoryService
     Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken);
 }
 
-public class RepositoryService : MongoService<Repository>, IRepositoryService
+public class RepositoryService(
+    IMongoDbClientFactory connectionFactory,
+    ILoggerFactory loggerFactory)
+    : MongoService<Repository>(connectionFactory, "repositories", loggerFactory), IRepositoryService
 {
-    public RepositoryService(IMongoDbClientFactory connectionFactory,
-        ILoggerFactory loggerFactory) : base(connectionFactory, "repositories", loggerFactory)
-    {
-    }
-
     public async Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken)
     {
         // because we constantly refresh the database, we are looking to upsert the record here
@@ -206,5 +203,15 @@ public class RepositoryService : MongoService<Repository>, IRepositoryService
             isArchivedIndex,
             teamIdIndex
         ];
+    }
+
+    public string ResourceName()
+    {
+        return "Repository";
+    }
+
+    public async Task<Boolean> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(r => r.Id == repositoryName).AnyAsync(cancellationToken);
     }
 }

@@ -19,10 +19,10 @@ public static class DecommissionEndpoint
         [FromQuery(Name = "id")] string userId,
         [FromQuery(Name = "displayName")] string userDisplayName,
          String serviceName, CancellationToken cancellationToken)
-   {
-      await deployableArtifactsService.Decommission(serviceName, cancellationToken);
-      await testRunService.Decommission(serviceName, cancellationToken);
-      await entitiesService.Decommission(serviceName, userId, userDisplayName, cancellationToken);
-      return Results.Ok();
-   }
+    {
+        await deployableArtifactsService.Decommission(serviceName, cancellationToken);
+        await testRunService.Decommission(serviceName, cancellationToken);
+        await entitiesService.Decommission(serviceName, userId, userDisplayName, cancellationToken);
+        return Results.Ok();
+    }
 }

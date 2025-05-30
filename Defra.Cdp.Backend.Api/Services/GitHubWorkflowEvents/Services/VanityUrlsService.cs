@@ -20,7 +20,7 @@ public interface IVanityUrlsService
  */
 public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanityUrlsService
 {
-    
+
     public async Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken)
     {
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
@@ -52,8 +52,8 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanit
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
         return await collection.Aggregate<VanityUrlRecord>(pipeline.Prepend(matchStage).ToArray()).ToListAsync(cancellationToken);
     }
-    
-    
+
+
     private readonly BsonDocument[] pipeline =
     [
         new("$lookup",

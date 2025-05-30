@@ -49,7 +49,7 @@ public static class DeploymentsEndpoint
         );
         return Results.Ok(deploymentsPage);
     }
-    
+
     private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService,
         [FromQuery(Name = "favourites")] string[]? favourites,
         [FromQuery(Name = "environment")] string? environment,
@@ -89,7 +89,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
         {
-            deploymentFilters.Teams = teamRecord.teams.Select(t => new RepositoryTeam(t.github,  t.teamId, t.name)).ToList();
+            deploymentFilters.Teams = teamRecord.teams.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
         }
         return Results.Ok(new { Filters = deploymentFilters });
     }
@@ -138,7 +138,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
             whatsRunningWhereFilters.Teams =
-                teamRecord.teams.Select(t => new RepositoryTeam(t.github,  t.teamId, t.name)).ToList();
+                teamRecord.teams.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
         return Results.Ok(new { Filters = whatsRunningWhereFilters });
     }
 
@@ -152,19 +152,19 @@ public static class DeploymentsEndpoint
     {
         var validatedResult = await validator.ValidateAsync(requestedDeployment, cancellationToken);
         if (!validatedResult.IsValid) return Results.ValidationProblem(validatedResult.ToDictionary());
-        
+
         var logger = loggerFactory.CreateLogger("RegisterDeployment");
         logger.LogInformation("Registering deployment {DeploymentId}", requestedDeployment.DeploymentId);
 
         var deployment = Deployment.FromRequest(requestedDeployment);
-        
+
         // Record what secrets the service has
         var secrets = await secretsService.FindServiceSecretsForEnvironment(deployment.Environment, deployment.Service, cancellationToken);
         if (secrets != null)
         {
             deployment.Secrets = secrets.AsTenantSecretKeys();
         }
-        
+
         await deploymentsService.RegisterDeployment(deployment, cancellationToken);
         return Results.Ok();
     }

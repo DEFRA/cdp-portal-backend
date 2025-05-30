@@ -53,14 +53,14 @@ public class TenantBucketsService(IMongoDbClientFactory connectionFactory, ILogg
             return bucket.ServicesWithAccess.Select(serviceName =>
                 new TenantBucketRecord(payload.Environment, serviceName, bucket.Name)).ToList();
         }).ToList();
-        
-        
+
+
         var servicesInDb = await FindAllBucketsInEnvironment(payload.Environment, cancellationToken);
-        
+
 
         var servicesToDelete = servicesInDb.ExceptBy(tenantBucketRecords.Select(s => s.ToString()),
             s => s.ToString()).ToList();
-        
+
         if (servicesToDelete.Count != 0)
         {
             await DeleteBuckets(servicesToDelete, cancellationToken);
@@ -139,7 +139,7 @@ public record TenantBucketRecord(
     {
         return Environment == other?.Environment && ServiceName == other.ServiceName && Bucket == other.Bucket;
     }
-    
+
     public override int GetHashCode() => HashCode.Combine(Environment, ServiceName, Bucket);
 
     public override string ToString()

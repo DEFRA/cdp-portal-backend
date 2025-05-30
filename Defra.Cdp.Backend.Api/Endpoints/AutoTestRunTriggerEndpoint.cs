@@ -32,7 +32,7 @@ public static class AutoTestRunTriggerEndpoint
                 });
     }
 
-    private static async Task<IResult> Create( [FromServices] IAutoTestRunTriggerService autoTestRunTriggerService,
+    private static async Task<IResult> Create([FromServices] IAutoTestRunTriggerService autoTestRunTriggerService,
         AutoTestRunTrigger trigger, CancellationToken cancellationToken)
     {
         var createdTrigger = await autoTestRunTriggerService.SaveTrigger(trigger, cancellationToken);

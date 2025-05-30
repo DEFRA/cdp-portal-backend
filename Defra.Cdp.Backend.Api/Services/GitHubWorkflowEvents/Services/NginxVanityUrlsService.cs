@@ -9,7 +9,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface INginxVanityUrlsService : IEventsPersistenceService<NginxVanityUrlsPayload>;
+public interface INginxVanityUrlsService : IEventsPersistenceService<NginxVanityUrlsPayload>, IResourceService;
 
 public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<NginxVanityUrlsRecord>(connectionFactory,
@@ -24,7 +24,7 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
         return await Collection.Find(v => v.ServiceName == service && v.Environment == environment)
             .ToListAsync(cancellationToken);
     }
-    
+
     public async Task<List<NginxVanityUrlsRecord>> FindAllVanityUrls(string service, CancellationToken cancellationToken)
     {
         return await Collection.Find(v => v.ServiceName == service)
@@ -45,7 +45,7 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
         }
 
         var vanityUrlsInDb = await FindAllEnvironmentVanityUrls(payload.Environment, cancellationToken);
-        
+
         var vanityUrlsToDelete = vanityUrlsInDb.ExceptBy(vanityUrls.Select(v => v.Url),
             v => v.Url).ToList();
 
@@ -53,7 +53,7 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
         {
             await DeleteVanityUrls(vanityUrlsToDelete, cancellationToken);
         }
-        
+
         if (vanityUrls.Count != 0)
         {
             await UpdateVanityUrls(vanityUrls, cancellationToken);
@@ -71,7 +71,7 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
         var env = new CreateIndexModel<NginxVanityUrlsRecord>(
             builder.Descending(v => v.Environment)
         );
-        
+
         var service = new CreateIndexModel<NginxVanityUrlsRecord>(
             builder.Descending(v => v.ServiceName)
         );
@@ -104,6 +104,16 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
             }).ToList();
 
         await Collection.BulkWriteAsync(updateVanityUrlsModels, new BulkWriteOptions(), cancellationToken);
+    }
+
+    public string ResourceName()
+    {
+        return "NginxVanityUrls";
+    }
+
+    public async Task<bool> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(v => v.ServiceName == repositoryName).AnyAsync(cancellationToken);
     }
 }
 

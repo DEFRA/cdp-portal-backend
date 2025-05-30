@@ -58,7 +58,7 @@ public class VanityUrlsServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
 
         var shutteredUrlsService = new ShutteredUrlsService(mongoFactory, new LoggerFactory());
         await shutteredUrlsService.PersistEvent(shutteredEvent, CancellationToken.None);
-        
+
         var shutteredResult = await vanityUrlsService.FindService("service-a", CancellationToken.None);
         Assert.NotNull(shutteredResult);
         Assert.Single(shutteredResult);
@@ -84,7 +84,7 @@ public class VanityUrlsServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
 
         var enabledVanityUrlsService = new EnabledVanityUrlsService(mongoFactory, new LoggerFactory());
         await enabledVanityUrlsService.PersistEvent(enabledEvent, CancellationToken.None);
-        
+
         var enabledResult = await vanityUrlsService.FindService("service-a", CancellationToken.None);
         Assert.NotNull(enabledResult);
         Assert.Single(enabledResult);
@@ -94,7 +94,7 @@ public class VanityUrlsServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         Assert.Equal("test", enabledResult.First().Environment);
         Assert.True(enabledResult.First().Shuttered);
         Assert.True(enabledResult.First().Enabled);
-        
+
         var unshutteredEvent = EventFromJson<ShutteredUrlsPayload>("""
                                                                  {
                                                                      "eventType": "shuttered-urls", 
@@ -108,7 +108,7 @@ public class VanityUrlsServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
                                                                  """);
 
         await shutteredUrlsService.PersistEvent(unshutteredEvent, CancellationToken.None);
-        
+
         var unshutteredResult = await vanityUrlsService.FindService("service-a", CancellationToken.None);
         Assert.NotNull(unshutteredResult);
         Assert.Single(unshutteredResult);

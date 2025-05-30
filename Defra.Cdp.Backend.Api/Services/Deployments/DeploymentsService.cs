@@ -12,12 +12,12 @@ namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
 public interface IDeploymentsService
 {
-    Task                RegisterDeployment(Deployment deployment, CancellationToken ct);
-    Task<bool>          LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
-    Task                UpdateDeployment(Deployment deployment, CancellationToken ct);
+    Task RegisterDeployment(Deployment deployment, CancellationToken ct);
+    Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
+    Task UpdateDeployment(Deployment deployment, CancellationToken ct);
     Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
-    Task<bool>          UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
-    
+    Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
+
     Task<Paginated<Deployment>> FindLatest(
         string[]? favourites,
         string? environment,
@@ -30,8 +30,8 @@ public interface IDeploymentsService
         int size = 0,
         CancellationToken ct = new()
     );
-    
-    
+
+
     Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
         string[]? favourites,
         string? environment,
@@ -45,7 +45,7 @@ public interface IDeploymentsService
         int size = 0,
         CancellationToken ct = new()
     );
-    
+
     Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct);
     Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
@@ -67,11 +67,11 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
     private readonly IUserServiceFetcher _userServiceFetcher;
     private readonly HashSet<string> _excludedDisplayNames =
         new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "GitHub Workflow" };
-    
+
     public DeploymentsService(
-        IMongoDbClientFactory connectionFactory, 
-        IRepositoryService repositoryService, 
-        IUserServiceFetcher userServiceFetcher, 
+        IMongoDbClientFactory connectionFactory,
+        IRepositoryService repositoryService,
+        IUserServiceFetcher userServiceFetcher,
         ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
     {
         _repositoryService = repositoryService;
@@ -80,16 +80,16 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
     protected override List<CreateIndexModel<Deployment>> DefineIndexes(IndexKeysDefinitionBuilder<Deployment> builder)
     {
-        var created           = new CreateIndexModel<Deployment>(builder.Descending(d => d.Created));
-        var updated           = new CreateIndexModel<Deployment>(builder.Descending(d => d.Updated));
-        var lambdaId          = new CreateIndexModel<Deployment>(builder.Descending(d => d.LambdaId));
-        var cdpDeploymentId   = new CreateIndexModel<Deployment>(builder.Descending(d => d.CdpDeploymentId));
+        var created = new CreateIndexModel<Deployment>(builder.Descending(d => d.Created));
+        var updated = new CreateIndexModel<Deployment>(builder.Descending(d => d.Updated));
+        var lambdaId = new CreateIndexModel<Deployment>(builder.Descending(d => d.LambdaId));
+        var cdpDeploymentId = new CreateIndexModel<Deployment>(builder.Descending(d => d.CdpDeploymentId));
         var envServiceVersion = new CreateIndexModel<Deployment>(builder.Combine(
             builder.Descending(d => d.Environment),
             builder.Descending(d => d.Service),
             builder.Descending(d => d.Version)
         ));
-        
+
         return [created, updated, lambdaId, cdpDeploymentId, envServiceVersion];
     }
 
@@ -112,9 +112,9 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         {
             Logger.LogError("Failed to lookup teams for {services}, {ex}", deployment.Service, ex);
         }
-        
+
         // Record which teams the user belonged to at that point in time unless its an auto-deployment
-        if (deployment.User?.Id != null && 
+        if (deployment.User?.Id != null &&
             deployment.User.Id != AutoDeploymentConstants.AutoDeploymentId)
         {
             try
@@ -129,7 +129,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         }
         return deployment;
     }
-    
+
     public async Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct)
     {
         // Before we can start recording events, we need to match the CDP Id (which is generated in the portal)
@@ -139,7 +139,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         var result = await Collection.UpdateOneAsync(d => d.CdpDeploymentId == cdpId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
     }
-    
+
     public async Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct)
     {
         return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
@@ -152,18 +152,18 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         var update = new UpdateDefinitionBuilder<Deployment>()
             .Set(d => d.LastDeploymentStatus, eventName)
             .Set(d => d.LastDeploymentMessage, reason);
-        
+
         if (deployment != null)
         {
             deployment.LastDeploymentStatus = eventName;
             update = update.Set(d => d.Status, CalculateOverallStatus(deployment));
         }
-            
+
         var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
     }
 
-    public async Task<Deployment?>  FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
+    public async Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.Eq(d => d.TaskDefinitionArn, taskArn);
@@ -211,17 +211,17 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         if (!string.IsNullOrWhiteSpace(service))
         {
             var partialServiceFilter =
-                Builders<Deployment>.Filter.Regex(d => d.Service,  new BsonRegularExpression(service, "i"));
+                Builders<Deployment>.Filter.Regex(d => d.Service, new BsonRegularExpression(service, "i"));
             filter &= partialServiceFilter;
         }
-        
+
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.Updated))
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
-            
-        
+
+
         return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
     }
 
@@ -283,7 +283,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
                 || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
             filter &= userFilter;
         }
-        
+
         if (!string.IsNullOrWhiteSpace(status))
         {
             var statusLower = status.ToLower();
@@ -393,9 +393,10 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         var migrationPipeline = new EmptyPipelineDefinition<DatabaseMigration>()
             .Match(migrationFilter)
             .Project(m => new DeploymentOrMigration
-        {
-            Migration = m, Created = m.Created
-        });
+            {
+                Migration = m,
+                Created = m.Created
+            });
 
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
@@ -404,7 +405,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .Sort(new SortDefinitionBuilder<DeploymentOrMigration>().Descending(d => d.Created))
             .Skip(offset + size * (page - DefaultPage))
             .Limit(size);
-        
+
         var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
 
         // TODO favourites should be on the entire result - "bring all favourite things to the front", not just on the current page
@@ -464,7 +465,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .ToListAsync(ct);
 
         users.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
-        
+
         return users;
     }
 
@@ -484,7 +485,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
             .ToListAsync(ct);
 
         await Task.WhenAll(deploymentStatusesTask, migrationStatusesTask);
-        
+
         var allStatuses = new HashSet<string>(
             deploymentStatusesTask.Result
                 .Concat(migrationStatusesTask.Result)

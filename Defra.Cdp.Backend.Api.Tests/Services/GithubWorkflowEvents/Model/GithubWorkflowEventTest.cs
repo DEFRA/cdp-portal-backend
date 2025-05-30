@@ -29,7 +29,7 @@ public class GithubWorkflowEventTest
         Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123), workflowEvent?.Payload.CommitTimestamp);
         Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
     }
-    
+
     [Fact]
     public void WillDeserializeVanityUrlEvent()
     {
@@ -51,7 +51,7 @@ public class GithubWorkflowEventTest
         Assert.Equal("nginx-vanity-urls", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
 
-        Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123,123), workflowEvent?.Timestamp);
+        Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
 
         Assert.Equal("service-a", workflowEvent?.Payload.Services[0].Name);
         Assert.Equal("service.gov.uk", workflowEvent?.Payload.Services[0].Urls[0].Domain);
@@ -83,7 +83,7 @@ public class GithubWorkflowEventTest
 
         Assert.Equal("squid-proxy-config", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
-        
+
         Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
 
         Assert.Equal(4, workflowEvent?.Payload.DefaultDomains.Count);
@@ -91,11 +91,11 @@ public class GithubWorkflowEventTest
         Assert.Equal(".amazonaws.com", workflowEvent?.Payload.DefaultDomains[1]);
         Assert.Equal("login.microsoftonline.com", workflowEvent?.Payload.DefaultDomains[2]);
         Assert.Equal("www.gov.uk", workflowEvent?.Payload.DefaultDomains[3]);
-        
+
         Assert.Equal(2, workflowEvent?.Payload.Services.Count);
         Assert.Equal("cdp-dotnet-tracing", workflowEvent?.Payload.Services[0].Name);
         Assert.Equal(0, workflowEvent?.Payload.Services[0].AllowedDomains.Count);
-        
+
         Assert.Equal("phi-frontend", workflowEvent?.Payload.Services[1].Name);
         Assert.Equal(1, workflowEvent?.Payload.Services[1].AllowedDomains.Count);
         Assert.Equal("gd.eppo.int", workflowEvent?.Payload.Services[1].AllowedDomains[0]);
@@ -131,26 +131,26 @@ public class GithubWorkflowEventTest
                                    }
 
                                    """;
-        
+
         var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TenantBucketsPayload>>(messageBody);
 
         Assert.Equal("tenant-buckets", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
-        
+
         Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
 
         Assert.Equal("frontend-service-bucket", workflowEvent?.Payload.Buckets[0].Name);
         Assert.True(workflowEvent?.Payload.Buckets[0].Exists);
         Assert.Equal("frontend-service", workflowEvent?.Payload.Buckets[0].ServicesWithAccess[0]);
         Assert.Equal("backend-service", workflowEvent?.Payload.Buckets[0].ServicesWithAccess[1]);
-        
+
         Assert.Equal("backend-service-bucket", workflowEvent?.Payload.Buckets[1].Name);
         Assert.False(workflowEvent?.Payload.Buckets[1].Exists);
         Assert.Equal("backend-service", workflowEvent?.Payload.Buckets[1].ServicesWithAccess[0]);
 
     }
-    
-        [Fact]
+
+    [Fact]
     public void WillDeserializeTenantServicesEvent()
     {
         const string messageBody = """
@@ -185,12 +185,12 @@ public class GithubWorkflowEventTest
                                      }
                                    }
                                    """;
-        
+
         var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TenantServicesPayload>>(messageBody);
 
         Assert.Equal("tenant-services", workflowEvent?.EventType);
         Assert.Equal("test", workflowEvent?.Payload.Environment);
-        
+
         Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
 
         Assert.Equal("frontend-service", workflowEvent?.Payload.Services[0].Name);
@@ -201,7 +201,7 @@ public class GithubWorkflowEventTest
         Assert.Equal("frontend-service-tests", workflowEvent?.Payload.Services[0].TestSuite);
         Assert.Equal("frontend-service-buckets-*", workflowEvent?.Payload.Services[0].Buckets?[0]);
         Assert.Equal("frontend-service-queue", workflowEvent?.Payload.Services[0].Queues?[0]);
-        
+
         Assert.Equal("backend-service", workflowEvent?.Payload.Services[1].Name);
         Assert.Equal("protected", workflowEvent?.Payload.Services[1].Zone);
         Assert.True(workflowEvent?.Payload.Services[1].Mongo);

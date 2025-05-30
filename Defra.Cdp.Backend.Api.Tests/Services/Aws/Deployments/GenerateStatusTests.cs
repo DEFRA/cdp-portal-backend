@@ -9,15 +9,15 @@ public class GenerateStatusTests
     private const string PROVISIONING = "PROVISIONING";
     private const string STOPPED = "STOPPED";
     private const string STOPPING = "STOPPING";
-    
+
     [Fact]
     public void TestValidStatusPairs()
     {
         string[][] data =
         [
             //      desired  last    expected
-            [RUNNING, RUNNING, "in-progress"], 
-            [RUNNING, PENDING, "starting"], 
+            [RUNNING, RUNNING, "in-progress"],
+            [RUNNING, PENDING, "starting"],
             [RUNNING, PROVISIONING, "starting"],
             [RUNNING, STOPPED, "failed"],
             [STOPPED, STOPPING, "stopping"],
@@ -31,7 +31,7 @@ public class GenerateStatusTests
         {
             Assert.Equal(testcase[2], TaskStateChangeEventHandler.GenerateTestSuiteTaskStatus(testcase[0], testcase[1], false));
         }
-        
+
         foreach (var testcase in data)
         {
             Assert.Equal("failed", TaskStateChangeEventHandler.GenerateTestSuiteTaskStatus(testcase[0], testcase[1], true));

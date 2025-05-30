@@ -32,7 +32,7 @@ public static class MigrationEndpoints
         var allMigrations = await availableMigrations.FindServicesWithMigrations(cancellationToken);
         return Results.Ok(allMigrations);
     }
-    
+
     /**
      * List available schema versions for a given service.
      */
@@ -50,8 +50,8 @@ public static class MigrationEndpoints
         var result = await migrationService.FindByCdpMigrationId(id, cancellationToken);
         return Results.Ok(result);
     }
-    
-    
+
+
     /**
      * Returns a specific run by the internal CDP Migration ID.
      */
@@ -60,12 +60,12 @@ public static class MigrationEndpoints
         var result = await migrationService.LatestForService(service, cancellationToken);
         return Results.Ok(result);
     }
-    
+
     /**
      * Returns a specific run by the internal CDP Migration ID.
      */
-    static async Task<IResult> SearchMigrationRuns(IDatabaseMigrationService migrationService, 
-        string? cdpMigrationId, 
+    static async Task<IResult> SearchMigrationRuns(IDatabaseMigrationService migrationService,
+        string? cdpMigrationId,
         string? buildId,
         string? service,
         string? environment,
@@ -90,7 +90,7 @@ public static class MigrationEndpoints
      */
     static async Task<IResult> RunMigration(
         [FromServices] IDatabaseMigrationService migrationService,
-        [FromServices] IRepositoryService repositoryService ,
+        [FromServices] IRepositoryService repositoryService,
         [FromBody] DatabaseMigrationRequest request,
         CancellationToken cancellationToken)
     {

@@ -4,7 +4,7 @@ namespace Defra.Cdp.Backend.Api.Config;
 public class GithubOptions
 {
     public const string Prefix = "Github";
-    
+
     public string Organisation { get; set; }
     public GithubWorkflowsOptions Workflows { get; set; }
     public GithubReposOptions Repos { get; set; }

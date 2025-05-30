@@ -38,7 +38,7 @@ public static class ApiGatewaysEndpoint
         var response = result
             .GroupBy(g => g.Environment)
             .ToDictionary(k => k.Key, v => new ApiGatewaysResponse(v.ToList()));
-        
+
         return Results.Ok(response);
     }
 

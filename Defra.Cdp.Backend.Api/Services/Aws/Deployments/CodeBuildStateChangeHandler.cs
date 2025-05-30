@@ -23,7 +23,7 @@ public class CodeBuildStateChangeHandler(IDatabaseMigrationService databaseMigra
 
     public async Task Handle(string id, CodeBuildLambdaEvent lambdaEvent, CancellationToken cancellationToken)
     {
-        
+
         var result = await databaseMigrationService.Link(lambdaEvent.CdpMigrationId, lambdaEvent.BuildId, cancellationToken);
         switch (result)
         {

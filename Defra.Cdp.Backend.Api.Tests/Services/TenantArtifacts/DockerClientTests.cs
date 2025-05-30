@@ -10,14 +10,6 @@ using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.TenantArtifacts;
 
-class MockClientFactory : IHttpClientFactory
-{
-    public HttpClient CreateClient(string name)
-    {
-        return Substitute.For<HttpClient>();
-    }
-}
-
 public class DockerClientTests
 {
     private readonly ArtifactScanner _artifactScanner;
@@ -86,7 +78,8 @@ public class DockerClientTests
         _dockerClientMock
             .LoadManifest("foo", "1.0.0")!
             .Returns(
-                Task.FromResult(new Manifest {
+                Task.FromResult(new Manifest
+                {
                     name = "foo",
                     tag = "1.0.0",
                     digest = "sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",

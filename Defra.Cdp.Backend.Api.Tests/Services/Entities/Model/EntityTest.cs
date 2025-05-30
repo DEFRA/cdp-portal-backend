@@ -27,7 +27,7 @@ public class EntityTest
         Assert.Equal(Type.TestSuite, result.Type);
         Assert.Equal(SubType.Journey, result.SubType);
         Assert.Equal("test-repo", result.Name);
-        Assert.Equal(Status.InProgress, result.Status);
+        Assert.Equal(Status.Creating, result.Status);
         Assert.NotNull(result.Creator);
         Assert.NotNull(result.Teams);
         Assert.Single(result.Teams);
@@ -52,7 +52,7 @@ public class EntityTest
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Frontend, result.SubType);
         Assert.Equal("microservice-repo", result.Name);
-        Assert.Equal(Status.Success, result.Status);
+        Assert.Equal(Status.Created, result.Status);
         Assert.NotNull(result.Creator);
         Assert.NotNull(result.Teams);
         Assert.Single(result.Teams);
@@ -63,7 +63,9 @@ public class EntityTest
     {
         var legacyStatus = new LegacyStatus
         {
-            Kind = "repository", RepositoryName = "invalid-status-repo", Status = "unknown-status",
+            Kind = "repository",
+            RepositoryName = "invalid-status-repo",
+            Status = "unknown-status",
             Creator = new Creator { Id = "456", DisplayName = "Microservice Creator" },
             Team = new Team { TeamId = "team-2", Name = "Team Two" }
         };
@@ -76,7 +78,9 @@ public class EntityTest
     {
         var legacyStatus = new LegacyStatus
         {
-            Kind = "unknown-kind", RepositoryName = "unknown-kind-repo", Status = "failed",
+            Kind = "unknown-kind",
+            RepositoryName = "unknown-kind-repo",
+            Status = "failed",
             Creator = new Creator { Id = "456", DisplayName = "Microservice Creator" },
             Team = new Team { TeamId = "team-2", Name = "Team Two" }
         };

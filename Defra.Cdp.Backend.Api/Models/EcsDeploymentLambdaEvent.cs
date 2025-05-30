@@ -29,7 +29,7 @@ public sealed record EcsDeploymentLambdaDetail(
 
 public sealed record EcsConfigFile(
     [property: JsonPropertyName("value")]
-    string Value, 
+    string Value,
     [property: JsonPropertyName("type")]
     string Type
     );

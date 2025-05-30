@@ -15,6 +15,14 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/update", UpdateEntity);
         app.MapPost("/entities/{repositoryName}/overall-status", UpdateOverallStatus);
         app.MapGet("/entities/{repositoryName}", GetEntity);
+        app.MapGet("/entities/{repositoryName}/status", GetEntityStatus);
+    }
+
+    private static async Task<IResult> GetEntityStatus(IEntityStatusService entityStatusService, string repositoryName,
+        CancellationToken cancellationToken)
+    {
+        var status = await entityStatusService.GetEntityStatus(repositoryName, cancellationToken);
+        return status != null ? Results.Ok(status) : Results.NotFound();
     }
 
     private static async Task<IResult> GetEntities([FromQuery] Type? type,
@@ -37,8 +45,8 @@ public static class EntitiesEndpoint
     private static async Task<IResult> GetEntity(IEntitiesService entitiesService, string repositoryName,
         CancellationToken cancellationToken)
     {
-        var repositoryStatus = await entitiesService.GetEntity(repositoryName, cancellationToken);
-        return repositoryStatus != null ? Results.Ok(repositoryStatus) : Results.NotFound();
+        var entity = await entitiesService.GetEntity(repositoryName, cancellationToken);
+        return entity != null ? Results.Ok(entity) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateEntity(IEntitiesService entitiesService, Entity entity,

@@ -12,12 +12,13 @@ public interface IStatusUpdateService
 
 public class StatusUpdateService(
     ILegacyStatusService legacyStatusService,
-    IEntitiesService entitiesService,
+    IEntityStatusService entityStatusService,
     IOptions<GithubOptions> githubOptions)
     : IStatusUpdateService
 {
     public async Task UpdateOverallStatus(string repositoryName, CancellationToken cancellationToken)
     {
+        await entityStatusService.UpdateOverallStatus(repositoryName, cancellationToken);
         var currentStatus = await legacyStatusService.StatusForRepositoryName(repositoryName, cancellationToken);
 
         if (currentStatus == null)
@@ -26,7 +27,6 @@ public class StatusUpdateService(
         }
 
         var overallStatus = StatusHelper.CalculateOverallStatus(githubOptions.Value.Repos, currentStatus);
-        await entitiesService.UpdateStatus(overallStatus.ToEntityStatus(), repositoryName, cancellationToken);
         await legacyStatusService.UpdateStatus(overallStatus, repositoryName, cancellationToken);
     }
 }

@@ -30,11 +30,11 @@ public class UserServiceTests
         Assert.NotNull(output.user);
         Assert.Equivalent(
             new UserServiceUser(
-                "User, Test", 
-                "test.user@defra.gov.uk", 
+                "User, Test",
+                "test.user@defra.gov.uk",
                 "b474e8e6-5990-4944-8a03-a3bdb054ea43",
-                [new TeamIds("3b202138-1689-9999-8b55-4227362b249d", "Test")]
-            ), 
+                [new TeamId("3b202138-1689-9999-8b55-4227362b249d", "Test")]
+            ),
             output.user);
     }
 }

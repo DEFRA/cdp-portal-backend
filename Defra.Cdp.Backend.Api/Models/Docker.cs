@@ -11,7 +11,7 @@ public sealed record Blob(string mediaType, int size, string digest);
 
 public sealed record Manifest
 {
-    public string name { get; init; } 
+    public string name { get; init; }
     public string tag { get; init; }
     public Blob config { get; init; }
     public List<Blob> layers { get; init; }

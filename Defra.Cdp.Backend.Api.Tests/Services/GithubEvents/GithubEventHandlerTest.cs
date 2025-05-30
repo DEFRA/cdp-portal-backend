@@ -136,7 +136,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task DontUpdateAnythingForTfSvcInfraIfCreateWorkflowAndItsCompleted()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService,_statusUpdateService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -177,7 +177,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task NotProcessAnythingForUnsupportedRepo()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService,_statusUpdateService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);
@@ -336,7 +336,7 @@ public class GithubEventHandlerTest
     [Fact]
     public async Task UpdatePendingTestSuiteStatusThatHasTenantJsonEntry()
     {
-        var githubEventHandler = new GithubEventHandler(_legacyStatusService,_statusUpdateService, _tenantServicesService,
+        var githubEventHandler = new GithubEventHandler(_legacyStatusService, _statusUpdateService, _tenantServicesService,
             _deployableArtifactsService, _githubOptions, new LoggerFactory().CreateLogger<GithubEventHandler>());
 
         _githubOptions.Value.Returns(_opts);

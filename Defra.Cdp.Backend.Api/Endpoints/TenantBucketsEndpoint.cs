@@ -45,7 +45,7 @@ public static class TenantBucketsEndpoint
             }
 
             return acc;
-        }).ToDictionary(pair =>  pair.Key, pair => new TenantBucketResponse(pair.Value ));
+        }).ToDictionary(pair => pair.Key, pair => new TenantBucketResponse(pair.Value));
 
         return Results.Ok(response);
     }

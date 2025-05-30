@@ -15,7 +15,7 @@ public class Deployment
 
     public string CdpDeploymentId { get; init; } = default!;
     public string? LambdaId { get; init; } // ID of run lambda that maps to ECS startedBy message 
-    
+
     public string Environment { get; init; } = default!;
     public string Service { get; init; } = default!;
     public string Version { get; init; } = default!;
@@ -24,7 +24,7 @@ public class Deployment
     public string? Cpu { get; init; }
     public string? Memory { get; init; }
     public int InstanceCount { get; init; }
-    
+
     public DateTime Created { get; init; }
     public DateTime Updated { get; set; }
 
@@ -34,21 +34,21 @@ public class Deployment
 
     public string? ConfigVersion { get; init; } = default!;
     public TenantSecretKeys Secrets { get; set; } = new();
-    
+
     // From ECS Service Deployment State Change messages 
     public string? LastDeploymentStatus { get; set; }
     public string? LastDeploymentMessage { get; set; }
-    
+
     public List<TestRun> DeploymentTestRuns { get; set; } = [];
 
     public string? TaskDefinitionArn { get; set; }
-    
+
     // Audit data is not returned in the API
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public Audit? Audit { get; set; }
 
     public List<FailureReason> FailureReasons = [];
-    
+
     public static Deployment FromRequest(RequestedDeployment req)
     {
         return new Deployment
@@ -67,7 +67,7 @@ public class Deployment
             ConfigVersion = req.ConfigVersion
         };
     }
-    
+
     public static Deployment? FromLambdaMessage(EcsDeploymentLambdaEvent e)
     {
         var req = e.Request;
@@ -75,9 +75,9 @@ public class Deployment
         {
             return null;
         }
-        
-        var commitSha = req.EnvFiles.Select( env => ExtractCommitSha(env.Value)).Where(sha => sha != null).FirstOrDefault("");
-        
+
+        var commitSha = req.EnvFiles.Select(env => ExtractCommitSha(env.Value)).Where(sha => sha != null).FirstOrDefault("");
+
         return new Deployment
         {
             CdpDeploymentId = e.CdpDeploymentId,
@@ -103,7 +103,8 @@ public class Deployment
     public static string? ExtractCommitSha(string input)
     {
         var parts = input.Split("/");
-        if (parts.Length > 1 && parts[1].Length == 40) { 
+        if (parts.Length > 1 && parts[1].Length == 40)
+        {
             return parts[1];
         }
         return null;
@@ -116,7 +117,7 @@ public class Deployment
 
         DateTime? oldestDate = null;
         string? oldestKey = null;
-        
+
         foreach (var (key, value) in Instances)
         {
             if (value.Status != Stopped) continue;
@@ -125,8 +126,8 @@ public class Deployment
                 oldestDate = value.Updated;
                 oldestKey = key;
             }
-            else if(value.Updated < oldestDate)
-            { 
+            else if (value.Updated < oldestDate)
+            {
                 oldestDate = value.Updated;
                 oldestKey = key;
             }

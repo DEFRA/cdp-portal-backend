@@ -14,22 +14,22 @@ public interface IDatabaseMigrationService
 {
     public Task CreateMigration(DatabaseMigration migration, CancellationToken ct);
     public Task<LinkMigrationOutcome> Link(string cdpMigrationId, string buildId, CancellationToken ct);
-    
+
     public Task<bool> UpdateStatus(string buildId, string status, DateTime timestamp, CancellationToken ct);
 
     public Task<DatabaseMigration?> FindByCdpMigrationId(string cdpMigrationId, CancellationToken ct);
     public Task<DatabaseMigration?> FindByBuildId(string buildId, CancellationToken ct);
-    
+
     public Task<List<DatabaseMigration>> Find(DatabaseMigrationFilter filter, CancellationToken ct);
     public Task<DatabaseMigration?> FindOne(DatabaseMigrationFilter filter, CancellationToken ct);
     public Task<List<DatabaseMigration>> LatestForService(string service, CancellationToken ct);
 }
 
-public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : 
+public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) :
     MongoService<DatabaseMigration>(connectionFactory, CollectionName, loggerFactory), IDatabaseMigrationService
 {
     private const string CollectionName = "migrations";
-    
+
     protected override List<CreateIndexModel<DatabaseMigration>> DefineIndexes(IndexKeysDefinitionBuilder<DatabaseMigration> builder)
     {
         var cdpMigrationId = new CreateIndexModel<DatabaseMigration>(builder.Ascending(m => m.CdpMigrationId));
@@ -38,7 +38,7 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
             builder.Ascending(m => m.Service),
             builder.Ascending(m => m.Environment)
         ));
-        
+
         return
         [
             cdpMigrationId,
@@ -68,7 +68,7 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
         {
             return LinkMigrationOutcome.LinkedOk;
         }
-        
+
         return LinkMigrationOutcome.AlreadyLinked;
 
     }
@@ -102,7 +102,7 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
     {
         return await Collection.Find(filter.Filter()).SortBy(m => m.Updated).FirstOrDefaultAsync(ct);
     }
-    
+
     public async Task<List<DatabaseMigration>> LatestForService(string service, CancellationToken ct)
     {
         var pipeline = new EmptyPipelineDefinition<DatabaseMigration>()
@@ -110,7 +110,7 @@ public class DatabaseMigrationService(IMongoDbClientFactory connectionFactory, I
             .Sort(new SortDefinitionBuilder<DatabaseMigration>().Descending(d => d.Updated))
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
             .Project(grp => grp.Root);
-            
+
         return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
     }
 }
@@ -143,11 +143,11 @@ public record DatabaseMigrationFilter(
         {
             filter &= builder.In(t => t.Service, Services);
         }
-        
+
         if (BuildId != null)
         {
             filter &= builder.Eq(t => t.BuildId, BuildId);
-        } 
+        }
 
         if (CdpMigrationId != null)
         {

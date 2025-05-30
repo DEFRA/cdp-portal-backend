@@ -12,7 +12,7 @@ public class DeploymentStatusTests
     {
         var stable = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new ( Running, DateTime.Now) },
@@ -20,10 +20,10 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
-        
+
         var unstable = new Deployment
         {
-            InstanceCount = 1, 
+            InstanceCount = 1,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(5)) )},
@@ -38,7 +38,7 @@ public class DeploymentStatusTests
 
         var stopped = new Deployment
         {
-            InstanceCount = 4, 
+            InstanceCount = 4,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new ( Stopped, DateTime.Now) },
@@ -49,7 +49,7 @@ public class DeploymentStatusTests
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
 
-        
+
         Assert.False(IsUnstable(stable));
         Assert.True(IsUnstable(unstable));
         Assert.False(IsUnstable(stopped));
@@ -60,12 +60,12 @@ public class DeploymentStatusTests
     {
         var deploymentRequestedBeforeDeploymentStatus = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Status = Requested
         };
         var runningWithoutDeploymentComplete = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Running, DateTime.Now )},
@@ -73,20 +73,20 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
-        
+
         var runningWithoutDeploymentStatus = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Running, DateTime.Now )},
                 {"2", new (Running, DateTime.Now )}
             }
         };
-        
+
         var runningWithDeploymentComplete = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Running, DateTime.Now )},
@@ -94,10 +94,10 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
-        
+
         var pending = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"A", new ( Pending, DateTime.Now )},
@@ -105,10 +105,10 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
-        
+
         var stopping = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Stopping, DateTime.Now)},
@@ -116,10 +116,10 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
-        
+
         var stopped = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Stopped, DateTime.Now)},
@@ -127,10 +127,10 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
-        
+
         var failed = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Stopped, DateTime.Now)},
@@ -138,7 +138,7 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_FAILED
         };
-        
+
         Assert.Equal(Requested, CalculateOverallStatus(deploymentRequestedBeforeDeploymentStatus));
         Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentComplete));
         Assert.Equal(Pending, CalculateOverallStatus(runningWithoutDeploymentStatus));
@@ -148,13 +148,13 @@ public class DeploymentStatusTests
         Assert.Equal(Stopped, CalculateOverallStatus(stopped));
         Assert.Equal(Failed, CalculateOverallStatus(failed));
     }
-    
+
     [Fact]
     public void TestOverallStatusWithFailures()
     {
         var runningWithOldFailure = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Stopped, DateTime.Now.Subtract(TimeSpan.FromDays(2)))},
@@ -163,10 +163,10 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_COMPLETED
         };
-        
+
         var recoveringFromCrash = new Deployment
         {
-            InstanceCount = 1, 
+            InstanceCount = 1,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Stopping, DateTime.Now)},
@@ -174,41 +174,41 @@ public class DeploymentStatusTests
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
-        
+
         var crashLoop = new Deployment
         {
-            InstanceCount = 1, 
+            InstanceCount = 1,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new(Stopping,DateTime.Now) },
                 {"2", new(Running, DateTime.Now) }
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
-        }; 
-        
+        };
+
         for (var i = 0; i < 1000; i++)
         {
             crashLoop.Instances["x" + i] = new DeploymentInstanceStatus(Stopped, DateTime.Now.Subtract(TimeSpan.FromMinutes(i)));
         }
-        
+
         Assert.Equal(Running, CalculateOverallStatus(runningWithOldFailure));
         Assert.Equal(Pending, CalculateOverallStatus(recoveringFromCrash));
         Assert.Equal(Pending, CalculateOverallStatus(crashLoop));
     }
-    
+
     [Fact]
     public void TestOverallStatusWhenInstancesComeUpSlow()
     {
         var running = new Deployment
         {
-            InstanceCount = 2, 
+            InstanceCount = 2,
             Instances = new Dictionary<string, DeploymentInstanceStatus>
             {
                 {"1", new (Running, DateTime.Now )}
             },
             LastDeploymentStatus = SERVICE_DEPLOYMENT_IN_PROGRESS
         };
-        
+
         Assert.Equal(Pending, CalculateOverallStatus(running));
     }
 }

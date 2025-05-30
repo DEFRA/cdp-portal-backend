@@ -10,9 +10,9 @@ public sealed record CodeBuildLambdaEvent(
     string BuildId,
     [property: JsonPropertyName("account")]
     string Account,
-    [property: JsonPropertyName("time")] 
+    [property: JsonPropertyName("time")]
     DateTime Time,
-    [property: JsonPropertyName("request")] 
+    [property: JsonPropertyName("request")]
     DatabaseMigrationRequest? Request = null
 );
 
@@ -34,12 +34,12 @@ public sealed record Detail(
 
     [property: JsonPropertyName("project-name")]
     string ProjectName,
-    
+
     [property: JsonPropertyName("build-id")]
     string BuildId,
-    
+
     [property: JsonPropertyName("phases")] List<Phase> Phases,
-    
+
     [property: JsonPropertyName("current-phase")] string CurrentPhase
 );
 
@@ -54,5 +54,5 @@ public sealed record Phase(
     string PhaseType,
     [property: JsonPropertyName("phase-status")]
     string? PhaseStatus
-    
+
 );

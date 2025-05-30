@@ -7,16 +7,16 @@ namespace Defra.Cdp.Backend.Api.Models;
 
 public record AutoDeploymentTrigger
 {
-   [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
-   [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-   public ObjectId? Id { get; init; }
+    [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+    public ObjectId? Id { get; init; }
 
-   public DateTime Created { get; init; } = DateTime.Now;
+    public DateTime Created { get; init; } = DateTime.Now;
 
-   [property: JsonPropertyName("serviceName")]
-   public string ServiceName { get; init; } = default!;
+    [property: JsonPropertyName("serviceName")]
+    public string ServiceName { get; init; } = default!;
 
-   [property: JsonPropertyName("environments")]
-   public List<string> Environments { get; init; } = new();
+    [property: JsonPropertyName("environments")]
+    public List<string> Environments { get; init; } = new();
 
 }

@@ -25,7 +25,7 @@ public class MongoIntegrationTest : IAsyncDisposable
         connectionString = _mongoDbContainer.GetConnectionString();
     }
 
-    
+
     public async ValueTask DisposeAsync()
     {
         await _mongoDbContainer.StopAsync();

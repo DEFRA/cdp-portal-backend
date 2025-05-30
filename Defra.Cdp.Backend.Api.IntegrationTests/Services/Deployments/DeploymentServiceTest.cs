@@ -16,7 +16,7 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Deployments;
 public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
     readonly IUserServiceFetcher userServiceFetcher = Substitute.For<IUserServiceFetcher>();
-    
+
     [Fact]
     public async Task RegisterDeploymentWithAuditSection()
     {
@@ -37,7 +37,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
             IsTemplate = false,
             Url = "",
         }, new CancellationToken());
-        
+
         var deployment = Deployment.FromRequest(new RequestedDeployment
         {
             Cpu = "1024",
@@ -50,20 +50,20 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
             Version = "1.0.0",
             User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
         });
-        
+
         var fullUserDetails = new UserServiceUser("Test User", "test.user@test.com", "9999-9999-9999",
-            [new TeamIds("3333", "test team"), new TeamIds("9999", "admins")]);
+            [new TeamId("3333", "test team"), new TeamId("9999", "admins")]);
         userServiceFetcher.GetUser(deployment.User!.Id, Arg.Any<CancellationToken>())
             .Returns(new UserServiceUserResponse("success", fullUserDetails));
-        
+
         await service.RegisterDeployment(deployment, new CancellationToken());
-        
+
         var result = await service.FindDeployment(deployment.CdpDeploymentId, new CancellationToken());
         Assert.NotNull(result);
-        Assert.Equal([new RepositoryTeam("test-team", "3333", "test team")], result.Audit?.ServiceOwners );
-        Assert.Equivalent(fullUserDetails, result.Audit?.User );
+        Assert.Equal([new RepositoryTeam("test-team", "3333", "test team")], result.Audit?.ServiceOwners);
+        Assert.Equivalent(fullUserDetails, result.Audit?.User);
     }
-    
+
     [Fact]
     public async Task RegisterDeploymentWhenAuditDataIsUnavailable()
     {
@@ -86,15 +86,15 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
 
         userServiceFetcher.GetUser(deployment.User!.Id, Arg.Any<CancellationToken>())
             .ReturnsNull();
-        
+
         await service.RegisterDeployment(deployment, new CancellationToken());
-        
+
         var result = await service.FindDeployment(deployment.CdpDeploymentId, new CancellationToken());
         Assert.NotNull(result);
-        Assert.Equal([], result.Audit?.ServiceOwners );
-        Assert.Null(result.Audit?.User );
+        Assert.Equal([], result.Audit?.ServiceOwners);
+        Assert.Null(result.Audit?.User);
     }
-    
+
     [Fact]
     public async Task LinkDeployment()
     {
@@ -139,11 +139,11 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
         var result = await service.FindWhatsRunningWhere(null, null, null, null, null, new CancellationToken());
-        
+
         Assert.Empty(result);
     }
 
-    
+
     [Fact]
     public async Task FindWhatsRunningWhereForService()
     {
@@ -182,7 +182,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
 
         await service.RegisterDeployment(deployment1, new CancellationToken());
         await service.RegisterDeployment(deployment2, new CancellationToken());
-        
+
         var result = await service.FindWhatsRunningWhere(deployment1.Service, new CancellationToken());
         // The most recent running service should be shown
         Assert.Single(result);

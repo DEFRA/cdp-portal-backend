@@ -11,9 +11,9 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IEnabledVanityUrlsService : IEventsPersistenceService<EnabledVanityUrlsPayload>;
 
-public class EnabledVanityUrlsService (IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<EnabledVanityUrlRecord>(
+public class EnabledVanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<EnabledVanityUrlRecord>(
     connectionFactory,
-    CollectionName, 
+    CollectionName,
     loggerFactory), IEnabledVanityUrlsService
 {
     public const string CollectionName = "enabledvanityurls";
@@ -29,19 +29,19 @@ public class EnabledVanityUrlsService (IMongoDbClientFactory connectionFactory, 
     {
         var env = workflowEvent.Payload.Environment;
         var urls = workflowEvent.Payload.Urls;
-        
+
         var bulkOps = new List<WriteModel<EnabledVanityUrlRecord>>();
-        
+
         var urlsInDb = await Collection.Find(d => d.Environment == env).ToListAsync(cancellationToken);
         var toDelete = urlsInDb.ExceptBy(urls.Select(u => u.Url), r => r.Url).Select(d => d.Id).ToList();
-        
+
         foreach (var id in toDelete)
         {
             var filter = Builders<EnabledVanityUrlRecord>.Filter.Eq(s => s.Id, id);
             var deleteOne = new DeleteOneModel<EnabledVanityUrlRecord>(filter);
             bulkOps.Add(deleteOne);
         }
-        
+
         foreach (var url in workflowEvent.Payload.Urls)
         {
             var filterBuilder = Builders<EnabledVanityUrlRecord>.Filter;
@@ -49,7 +49,7 @@ public class EnabledVanityUrlsService (IMongoDbClientFactory connectionFactory, 
             var upsertOne = new ReplaceOneModel<EnabledVanityUrlRecord>(filter, new EnabledVanityUrlRecord(url.Url, env, url.Service)) { IsUpsert = true };
             bulkOps.Add(upsertOne);
         }
-        
+
         if (bulkOps.Count > 0)
         {
             await Collection.BulkWriteAsync(bulkOps, cancellationToken: cancellationToken);

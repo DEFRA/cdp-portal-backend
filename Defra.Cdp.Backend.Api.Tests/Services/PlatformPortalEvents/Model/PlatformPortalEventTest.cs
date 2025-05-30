@@ -6,10 +6,10 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.PlatformEvents.Model;
 
 public class PlatformEventTest
 {
-   [Fact]
-   public void WillDeserializeDailyServiceCodeCostsServiceEvent()
-   {
-      const string messageBody = """
+    [Fact]
+    public void WillDeserializeDailyServiceCodeCostsServiceEvent()
+    {
+        const string messageBody = """
             {
                "eventType": "last-calendar-day-costs-by-service-code",
                "timestamp": "2024-11-23T15:10:10.123123+00:00",
@@ -29,18 +29,18 @@ public class PlatformEventTest
             }
             """;
 
-      var workflowEvent = JsonSerializer.Deserialize<CommonEvent<ServiceCodeCostsPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<ServiceCodeCostsPayload>>(messageBody);
 
-      Assert.Equal("last-calendar-day-costs-by-service-code", workflowEvent?.EventType);
-      Assert.Equal("infra-dev", workflowEvent?.Payload.Environment);
-      Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
-      Assert.Equal((decimal)123.45, workflowEvent?.Payload.CostReports[0].Cost);
-   }
+        Assert.Equal("last-calendar-day-costs-by-service-code", workflowEvent?.EventType);
+        Assert.Equal("infra-dev", workflowEvent?.Payload.Environment);
+        Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
+        Assert.Equal((decimal)123.45, workflowEvent?.Payload.CostReports[0].Cost);
+    }
 
-   [Fact]
-   public void WillDeserializeDailyTotalCostsServiceEvent()
-   {
-      const string messageBody = """
+    [Fact]
+    public void WillDeserializeDailyTotalCostsServiceEvent()
+    {
+        const string messageBody = """
             {
                "eventType": "last-calendar-day-total-cost",
                "timestamp": "2024-11-23T15:10:10.123123+00:00",
@@ -57,12 +57,12 @@ public class PlatformEventTest
             }
             """;
 
-      var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TotalCostsPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TotalCostsPayload>>(messageBody);
 
-      Assert.Equal("last-calendar-day-total-cost", workflowEvent?.EventType);
-      Assert.Equal("infra-dev", workflowEvent?.Payload.Environment);
-      Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
-      Assert.Equal((decimal)3123.45, workflowEvent?.Payload.CostReports.Cost);
-   }
+        Assert.Equal("last-calendar-day-total-cost", workflowEvent?.EventType);
+        Assert.Equal("infra-dev", workflowEvent?.Payload.Environment);
+        Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
+        Assert.Equal((decimal)3123.45, workflowEvent?.Payload.CostReports.Cost);
+    }
 
 }

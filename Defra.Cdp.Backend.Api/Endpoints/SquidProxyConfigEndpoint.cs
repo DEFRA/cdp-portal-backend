@@ -10,7 +10,7 @@ public static class SquidProxyConfigEndpoint
     {
         app.MapGet("/squid-proxy-config/{service}/{environment}", ServiceSquidProxyConfig);
     }
-    
+
     private static async Task<IResult> ServiceSquidProxyConfig(
         ISquidProxyConfigService squidProxyConfigService,
         string service,

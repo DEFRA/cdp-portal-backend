@@ -57,7 +57,8 @@ public class AutoDeploymentTriggerExecutor(
 
                 var userDetails = new UserDetails
                 {
-                    Id = AutoDeploymentConstants.AutoDeploymentId, DisplayName = "Auto deployment"
+                    Id = AutoDeploymentConstants.AutoDeploymentId,
+                    DisplayName = "Auto deployment"
                 };
 
                 await selfServiceOpsClient.AutoDeployService(repositoryName, imageTag, environment, userDetails,

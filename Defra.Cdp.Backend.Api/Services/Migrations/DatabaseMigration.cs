@@ -17,33 +17,33 @@ public class DatabaseMigration
 
     [property: JsonPropertyName("cdpMigrationId")]
     public required string CdpMigrationId { get; init; }
-    
+
     [property: JsonPropertyName("buildId")]
     public string? BuildId { get; set; }
-    
+
     [property: JsonPropertyName("service")]
     public required string Service { get; init; }
-    
+
     [property: JsonPropertyName("environment")]
     public required string Environment { get; init; }
-    
+
     [property: JsonPropertyName("version")]
     public required string Version { get; init; }
-    
+
     [property: JsonPropertyName("kind")]
     public string Kind { get; init; } = "liquibase";
-    
+
     [property: JsonPropertyName("user")]
     public required User User { get; init; }
-    
+
     [property: JsonPropertyName("created")]
     public DateTime Created { get; set; } = DateTime.Now;
-    
+
     [property: JsonPropertyName("updated")]
-    public DateTime Updated { get; init; }  = DateTime.Now;
+    public DateTime Updated { get; init; } = DateTime.Now;
 
     [property: JsonPropertyName("status")] public string Status { get; init; } = CodeBuildStatuses.Requested;
-    
+
     public static DatabaseMigration FromRequest(DatabaseMigrationRequest request)
     {
         return new DatabaseMigration
@@ -64,13 +64,13 @@ public class DatabaseMigrationRequest
 
     [property: JsonPropertyName("service")]
     public required string Service { get; init; }
-    
+
     [property: JsonPropertyName("environment")]
     public required string Environment { get; init; }
-    
+
     [property: JsonPropertyName("version")]
     public required string Version { get; init; }
-        
+
     [property: JsonPropertyName("user")]
     public required User User { get; init; }
 }

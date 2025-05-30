@@ -16,6 +16,7 @@ public interface IEntitiesService
     Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken);
     Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken);
     Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken);
+    Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -42,7 +43,7 @@ public class EntitiesService(
         {
             filter = builder.Eq(e => e.Type, type);
         }
-        
+
         if (teamId != null)
         {
             var teamFilter = builder.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
@@ -55,7 +56,7 @@ public class EntitiesService(
                 builder.Regex(e => e.Name, new BsonRegularExpression(partialName, "i"));
             filter &= partialServiceFilter;
         }
-        
+
         if (!includeDecommissioned)
         {
             var decommissionedFilter = builder.Eq(e => e.Decommissioned, null);
@@ -151,6 +152,12 @@ public class EntitiesService(
     {
         return await Collection.Find(e => e.Name == repositoryName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
+    {
+        return await Collection.Find(e => e.Status == Status.Creating)
+            .ToListAsync(cancellationToken: cancellationToken);
     }
 
     public class EntityFilters

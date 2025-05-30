@@ -10,7 +10,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface ITenantServicesService : IEventsPersistenceService<TenantServicesPayload>
+public interface ITenantServicesService : IEventsPersistenceService<TenantServicesPayload>, IResourceService
 {
     public Task<List<TenantServiceRecord>> Find(TenantServiceFilter filter, CancellationToken cancellationToken);
 
@@ -63,7 +63,7 @@ public class TenantServicesService(
             teamsLookup[s.Name].FirstOrDefault([]))
         ).ToList();
 
-        var servicesInDb = await Find(new TenantServiceFilter{ Environment = payload.Environment }, cancellationToken);
+        var servicesInDb = await Find(new TenantServiceFilter { Environment = payload.Environment }, cancellationToken);
 
         var servicesToDelete = servicesInDb.ExceptBy(tenantServices.Select(s => s.ServiceName),
             s => s.ServiceName).ToList();
@@ -113,10 +113,20 @@ public class TenantServicesService(
     {
         return await Collection.Find(filter.Filter()).ToListAsync(cancellationToken);
     }
-    
+
     public async Task<TenantServiceRecord?> FindOne(TenantServiceFilter filter, CancellationToken cancellationToken)
     {
         return await Collection.Find(filter.Filter()).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public string ResourceName()
+    {
+        return "TenantServices";
+    }
+
+    public async Task<Boolean> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(t => t.ServiceName == repositoryName).AnyAsync(cancellationToken);
     }
 }
 
@@ -133,7 +143,7 @@ public record TenantServiceFilter(
     {
         var builder = Builders<TenantServiceRecord>.Filter;
         var filter = builder.Empty;
-        
+
         if (Team != null)
         {
             filter &= builder.ElemMatch(t => t.Teams, t => t.Github == Team);
@@ -157,7 +167,7 @@ public record TenantServiceFilter(
         if (IsService)
         {
             filter &= builder.Eq(t => t.TestSuite, null);
-        } 
+        }
         else if (IsTest)
         {
             filter &= builder.Ne(t => t.TestSuite, null);
@@ -179,7 +189,7 @@ public record TenantServiceRecord(
     string Zone,
     bool Mongo,
     bool Redis,
-    bool Postgres,    
+    bool Postgres,
     string ServiceCode,
     string? TestSuite,
     List<string>? Buckets,
