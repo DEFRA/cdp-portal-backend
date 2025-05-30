@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Services.Github;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,10 +20,17 @@ public static class MigrationEndpoints
     /**
      * List services that have database migrations available
     */
-    static async Task<IResult> ListServicesWithMigrations(IAvailableMigrations availableMigrations, CancellationToken cancellationToken)
+    static async Task<IResult> ListServicesWithMigrations(IAvailableMigrations availableMigrations, ITenantServicesService tenantServices, string[]? teamIds, CancellationToken cancellationToken)
     {
-        var result = await availableMigrations.FindServicesWithMigrations(cancellationToken);
-        return Results.Ok(result);
+        if (teamIds != null)
+        {
+            var migrationsByTeam =
+                await availableMigrations.FindServicesWithMigrationsByTeam(teamIds.ToList(), cancellationToken);
+            return Results.Ok(migrationsByTeam);
+        }
+
+        var allMigrations = await availableMigrations.FindServicesWithMigrations(cancellationToken);
+        return Results.Ok(allMigrations);
     }
 
     /**

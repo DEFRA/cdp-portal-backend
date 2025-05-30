@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Services.Migrations;
 
@@ -23,9 +24,10 @@ public interface IAvailableMigrations
 {
     public Task<List<MigrationVersion>> FindMigrationsForService(string service, CancellationToken ct);
     public Task<List<string>> FindServicesWithMigrations(CancellationToken ct);
+    public Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct);
 }
 
-public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration) : IAvailableMigrations
+public class AvailableMigrations(IAmazonS3 client, ITenantServicesService tenantServices, IConfiguration configuration) : IAvailableMigrations
 {
     private readonly string? _bucketName = configuration.GetValue<string>("MigrationsBucket");
 
@@ -96,8 +98,28 @@ public class AvailableMigrations(IAmazonS3 client, IConfiguration configuration)
             request.ContinuationToken = response.NextContinuationToken;
         }
         while (response.IsTruncated);
-
+        
         return services.Distinct().Select(s => s.Replace("/", "")).ToList();
+    }
+    
+    
+    
+    public async Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct)
+    {
+        var migrations = await FindServicesWithMigrations(ct);
+                
+        var servicesForTeams = new HashSet<string>();
+     
+        foreach (var teamsId in teamIds)
+        {
+            var tenants = await tenantServices.Find(new TenantServiceFilter(TeamId: teamsId, HasPostgres: true), ct);
+            foreach (var tenant in tenants)
+            {
+                servicesForTeams.Add(tenant.ServiceName);
+            }
+        }
+
+        return migrations.Where(r => servicesForTeams.Contains(r)).ToList();
     }
 
 
