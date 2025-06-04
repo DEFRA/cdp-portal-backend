@@ -204,6 +204,61 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.Contains(result, t => t.ServiceName == "postgres-service");
     }
 
+    [Fact]
+    public async Task WillRefreshTeams()
+    {
+        var logger = new NullLoggerFactory();
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
+        var repositoryService = new RepositoryService(mongoFactory, logger);
+        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, logger);
+
+        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
+        await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
+            {
+                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
+            }
+            , CancellationToken.None);
+
+        await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
+            {
+                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = new TenantServicesPayload
+                {
+                    Environment = "prod",
+                    Services = _sampleEvent.Services
+                }
+            }
+            , CancellationToken.None);
+
+
+        // Check initial state
+        var tenant = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo" }, CancellationToken.None);
+        Assert.NotNull(tenant);
+        Assert.Equal( "foo-team", tenant.Teams?[0].Github);
+
+        // Update the teams in github
+        List<Repository> repos =
+        [
+            new Repository
+            {
+                Id = "foo",
+                Teams = [new RepositoryTeam("bar-team", "9999", "bar-team")],
+                IsArchived = false,
+                IsTemplate = false,
+                IsPrivate = false
+            }
+        ];
+
+        // Force refresh
+        await tenantServicesService.RefreshTeams(repos, CancellationToken.None);
+
+        var tenantProd = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "prod"}, CancellationToken.None);
+        Assert.NotNull(tenantProd);
+        Assert.Equal( "bar-team", tenantProd.Teams?[0].Github);
+        
+        var tenantTest = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test"}, CancellationToken.None);
+        Assert.NotNull(tenantTest);
+        Assert.Equal( "bar-team", tenantTest.Teams?[0].Github);
+    }
 
     private readonly TenantServicesPayload _sampleEvent = new()
     {
