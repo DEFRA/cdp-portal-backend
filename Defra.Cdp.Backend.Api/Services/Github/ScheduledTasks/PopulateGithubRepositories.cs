@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
 using Quartz;
@@ -24,6 +26,8 @@ public sealed class PopulateGithubRepositories(
     IConfiguration configuration,
     ILoggerFactory loggerFactory,
     IRepositoryService repositoryService,
+    IEntitiesService entitiesService,
+    ITenantServicesService tenantService,
     MongoLock mongoLock,
     IHttpClientFactory clientFactory,
     IUserServiceFetcher userServiceFetcher,
@@ -53,6 +57,10 @@ public sealed class PopulateGithubRepositories(
                 headerPropagationValues.Headers ??=
                     new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
                 await RepopulateGithubRepos(context);
+
+                var repos = await repositoryService.AllRepositories(true, context.CancellationToken);
+                await entitiesService.RefreshTeams(repos, context.CancellationToken);
+                await tenantService.RefreshTeams(repos, context.CancellationToken);
             }
             catch (Exception e)
             {

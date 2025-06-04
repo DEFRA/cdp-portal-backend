@@ -1,7 +1,9 @@
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities;
@@ -17,6 +19,7 @@ public interface IEntitiesService
     Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken);
     Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken);
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
+    Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -160,15 +163,28 @@ public class EntitiesService(
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
-    public class EntityFilters
+    public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
     {
-        public List<string> Entities { get; set; } = new();
-        public List<Team> Teams { get; set; } = new();
+        var updates = repos.Select(r =>
+        {
+            var service = r.Id;
+            var teams = r.Teams.Select(t => new Team { TeamId = t.TeamId, Name = t.Name}).ToList();
+
+            var filterBuilder = Builders<Entity>.Filter;
+            var filter = filterBuilder.Eq(e => e.Name, service);
+
+            var updateBuilder = Builders<Entity>.Update;
+            var update = updateBuilder.Set(e => e.Teams, teams);
+            return new UpdateManyModel<Entity>(filter, update) { IsUpsert = false };
+        }).ToList();
+
+        await Collection.BulkWriteAsync(updates, new BulkWriteOptions(), cancellationToken);
     }
 
-    public class Team
+    public class EntityFilters
     {
-        public string TeamId { get; set; }
-        public string Name { get; set; }
+        public List<string> Entities { get; set; } = [];
+        public List<Team> Teams { get; set; } = [];
     }
+
 }

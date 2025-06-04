@@ -16,6 +16,7 @@ public interface ITenantServicesService : IEventsPersistenceService<TenantServic
 
     public Task<TenantServiceRecord?> FindOne(TenantServiceFilter filter, CancellationToken cancellationToken);
 
+    public Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
 }
 
 public class TenantServicesService(
@@ -127,6 +128,21 @@ public class TenantServicesService(
     public async Task<Boolean> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
     {
         return await Collection.Find(t => t.ServiceName == repositoryName).AnyAsync(cancellationToken);
+    }
+    
+    public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
+    {
+        var updates = repos.Select(repo =>
+        {
+            var filterBuilder = Builders<TenantServiceRecord>.Filter;
+            var filter = filterBuilder.Eq(e => e.ServiceName, repo.Id);
+
+            var updateBuilder = Builders<TenantServiceRecord>.Update;
+            var update = updateBuilder.Set(e => e.Teams, repo.Teams);
+            return new UpdateManyModel<TenantServiceRecord>(filter, update) { IsUpsert = false };
+        }).ToList();
+
+        await Collection.BulkWriteAsync(updates, new BulkWriteOptions(), cancellationToken);
     }
 }
 
