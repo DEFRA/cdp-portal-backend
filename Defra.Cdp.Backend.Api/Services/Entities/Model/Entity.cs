@@ -31,7 +31,7 @@ public record Entity
     [property: JsonPropertyName("creator")]
     public Person? Creator { get; set; }
 
-    [property: JsonPropertyName("teams")] public List<Team> Teams { get; set; }
+    [property: JsonPropertyName("teams")] public List<Team> Teams { get; set; } = [];
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     [property: JsonPropertyName("status")]
@@ -86,7 +86,7 @@ public record Entity
     }
 }
 
-public class Decommission
+public record Decommission
 {
     [property: JsonPropertyName("decommissionedBy")]
     public required Person DecommissionedBy { get; set; }
@@ -95,7 +95,7 @@ public class Decommission
     public required DateTime DecommissionedAt { get; set; }
 }
 
-public class Team
+public record Team
 {
     [property: JsonPropertyName("teamId")]
     [BsonElement("teamId")]
@@ -104,7 +104,7 @@ public class Team
     [property: JsonPropertyName("name")] public string? Name { get; set; }
 }
 
-public class Person
+public record Person
 {
     [property: JsonPropertyName("id")] public string? Id { get; set; }
 

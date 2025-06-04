@@ -37,7 +37,7 @@ public class PopulateGithubRepositoriesTest
                 }
             }, new LoggerFactory().CreateLogger<PopulateGithubRepositories>());
 
-        var topicNames = topics.nodes.Select(t => t.topic.name);
+        var topicNames = topics.nodes.Select(t => t.topic.name).ToList();
         var expected = new List<Repository>
         {
             new()
