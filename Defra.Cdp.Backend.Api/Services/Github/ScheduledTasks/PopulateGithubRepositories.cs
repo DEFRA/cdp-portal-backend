@@ -9,17 +9,6 @@ using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
-public sealed record RepositoryResult(
-    string Name,
-    RepositoryTopics Topics,
-    string Description,
-    string PrimaryLanguage,
-    string Url,
-    bool IsArchived,
-    bool IsTemplate,
-    bool IsPrivate,
-    DateTimeOffset CreatedAt);
-
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class PopulateGithubRepositories(
     IConfiguration configuration,
@@ -79,10 +68,9 @@ public sealed class PopulateGithubRepositories(
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cancellationToken, cdpTeams.teams);
+        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cancellationToken, cdpTeams?.teams ?? []);
 
-        var repositories =
-            GroupRepositoriesByTeam(repositoryNodesByTeam, _logger);
+        var repositories = GroupRepositoriesByTeam(repositoryNodesByTeam, _logger);
 
         await repositoryService.UpsertMany(repositories, cancellationToken);
         await repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
@@ -243,29 +231,5 @@ public sealed class PopulateGithubRepositories(
         };
 
         return new StringContent(JsonSerializer.Serialize(reposQuery), Encoding.UTF8, "application/json");
-    }
-
-    private static StringContent BuildTeamsOnlyQuery(string githubOrgName, string? teamCursor)
-    {
-        var queryTeams = new
-        {
-            query = @"
-                query ($githubOrgName: String!, $teamCursor: String) {
-                  organization(login: $githubOrgName) {
-                    teams(first: 100, after: $teamCursor) {
-                      pageInfo {
-                        hasNextPage
-                        endCursor
-                      }
-                      nodes {
-                        slug
-                      }
-                    }
-                  }
-                }
-            ",
-            variables = new { githubOrgName, teamCursor }
-        };
-        return new StringContent(JsonSerializer.Serialize(queryTeams), Encoding.UTF8, "application/json");
     }
 }
