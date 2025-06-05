@@ -21,6 +21,7 @@ using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Service;
+using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
@@ -234,6 +235,9 @@ builder.Services.AddSingleton<PlatformEventListener>();
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
 
+builder.Services.AddSingleton<IShutteringService, ShutteringService>();
+builder.Services.AddSingleton<IShutteringArchiveService, ShutteringArchiveService>();
+
 builder.Services.AddSingleton<IAutoDeploymentTriggerService, AutoDeploymentTriggerService>();
 builder.Services.AddSingleton<IAutoTestRunTriggerService, AutoTestRunTriggerService>();
 
@@ -288,6 +292,7 @@ app.MapHealthChecks("/health");
 app.MapAutoDeploymentTriggerEndpoint();
 app.MapAutoTestRunTriggerEndpoint();
 app.MapMigrationEndpoints();
+app.MapShutteringEndpoint();
 
 // Start the ecs and ecr services
 #pragma warning disable CS4014
@@ -332,5 +337,6 @@ Task.Run(() =>
 BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
 BsonSerializer.RegisterSerializer(typeof(SubType), new EnumSerializer<SubType>(BsonType.String));
 BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(BsonType.String));
+BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<ShutteringStatus>(BsonType.String));
 
 app.Run();

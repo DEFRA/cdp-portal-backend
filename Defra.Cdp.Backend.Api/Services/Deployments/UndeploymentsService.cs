@@ -11,14 +11,11 @@ public interface IUndeploymentsService
     Task<Undeployment?> FindUndeployment(string undeploymentId, CancellationToken ct);
 }
 
-public class UndeploymentsService : MongoService<Undeployment>, IUndeploymentsService
+public class UndeploymentsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<Undeployment>(connectionFactory, "undeployments", loggerFactory), IUndeploymentsService
 {
     public static readonly int DefaultPageSize = 50;
     public static readonly int DefaultPage = 1;
-
-    public UndeploymentsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, "undeployments", loggerFactory)
-    {
-    }
 
     protected override List<CreateIndexModel<Undeployment>> DefineIndexes(IndexKeysDefinitionBuilder<Undeployment> builder)
     {

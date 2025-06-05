@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
@@ -35,10 +36,17 @@ public class GithubWorkflowEventListener(
 
     public async Task Handle(Message message, CancellationToken cancellationToken)
     {
+        var sw = Stopwatch.StartNew();
         var eventWrapper = TryParseMessageBody(message.Body);
+        logger.LogInformation("Message from {QueueUrl}: {Id} took {ElapsedMilliseconds}ms to parse",
+            QueueUrl, message.MessageId, sw.ElapsedMilliseconds);
         if (eventWrapper != null)
-
+        {
             await eventHandler.Handle(eventWrapper, message.Body, cancellationToken);
+            sw.Stop();
+            logger.LogInformation("Message from {QueueUrl}: {Id} took {ElapsedMilliseconds}ms to handle",
+                QueueUrl, message.MessageId, sw.ElapsedMilliseconds);
+        }
         else
             logger.LogInformation("Message from {QueueUrl}: {Id} was not readable: {Body}", QueueUrl,
                 message.MessageId, message.Body);
