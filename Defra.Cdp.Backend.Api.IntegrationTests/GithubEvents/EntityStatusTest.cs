@@ -53,7 +53,8 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             squidProxyService,
             nginxUpstreamsService,
             appConfigService,
-            grafanaDashboardsService);
+            grafanaDashboardsService,
+            loggerFactory.CreateLogger<EntityStatusService>());
 
         var legacyStatus = new LegacyStatus
         {

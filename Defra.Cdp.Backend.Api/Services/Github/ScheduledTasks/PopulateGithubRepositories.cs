@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
 using Quartz;
@@ -28,7 +29,8 @@ public sealed class PopulateGithubRepositories(
     IHttpClientFactory clientFactory,
     IUserServiceFetcher userServiceFetcher,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
-    HeaderPropagationValues headerPropagationValues)
+    HeaderPropagationValues headerPropagationValues,
+    IEntityStatusService entityStatusService)
     : IJob
 {
     private const string LockName = "repopulateGithub";
@@ -61,6 +63,7 @@ public sealed class PopulateGithubRepositories(
             finally
             {
                 await mongoLock.Unlock(LockName);
+                await entityStatusService.UpdatePendingEntityStatuses(context.CancellationToken);
             }
         }
     }

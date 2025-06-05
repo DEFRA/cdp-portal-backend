@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities;
 
@@ -19,7 +20,8 @@ public class EntityStatusService(
     ISquidProxyConfigService squidProxyService,
     INginxUpstreamsService nginxUpstreamsService,
     IAppConfigsService appConfigsService,
-    IGrafanaDashboardsService grafanaDashboardsService
+    IGrafanaDashboardsService grafanaDashboardsService,
+    ILogger<EntityStatusService> logger
 )
     : IEntityStatusService
 {
@@ -31,7 +33,7 @@ public class EntityStatusService(
             return null;
         }
 
-        var resources = await ResourcesForRepositoryName(repositoryName, cancellationToken, entity);
+        var resources = await ResourcesForRepositoryName(repositoryName, entity, cancellationToken);
 
         return new EntityStatus(entity, resources);
     }
@@ -44,23 +46,35 @@ public class EntityStatusService(
             return;
         }
 
-        var allTrue = entityStatus.Resources.Values.All(v => v);
-        var overallStatus = allTrue ? Status.Created : Status.Creating;
+        logger.LogInformation("Current state: {EntityStatus}",
+            string.Join(", ", entityStatus.Resources.Select(kvp => $"{kvp.Key}: {kvp.Value}")));
+        var overallStatus = OverallStatus(entityStatus);
+        logger.LogInformation("Updating overall status for {RepositoryName} to {OverallStatus}", repositoryName,
+            overallStatus);
         await entitiesService.UpdateStatus(overallStatus, repositoryName, cancellationToken);
+    }
+
+    private static Status OverallStatus(EntityStatus entityStatus)
+    {
+        var allTrue = entityStatus.Resources.Values.All(v => v);
+        return allTrue ? Status.Created : Status.Creating;
     }
 
     public async Task UpdatePendingEntityStatuses(CancellationToken cancellationToken)
     {
         var creatingEntities = await entitiesService.GetCreatingEntities(cancellationToken);
+        logger.LogInformation("Updating {CreatingEntitiesCount} pending entity statuses...", creatingEntities.Count);
         foreach (var entity in creatingEntities)
         {
+            logger.LogInformation("Updating status for entity: {EntityName}", entity.Name);
             await UpdateOverallStatus(entity.Name, cancellationToken);
         }
     }
 
-    private async Task<Dictionary<string, bool>> ResourcesForRepositoryName(string repositoryName, CancellationToken cancellationToken, Entity entity)
+    private async Task<Dictionary<string, bool>> ResourcesForRepositoryName(string repositoryName, Entity entity,
+        CancellationToken cancellationToken)
     {
-        List<IResourceService> resourcesList = GetResourceServicesForEntityType(entity.Type);
+        var resourcesList = GetResourceServicesForEntityType(entity.Type);
 
         var tasks = resourcesList.Select(async service =>
         {
@@ -74,19 +88,19 @@ public class EntityStatusService(
     }
 
 
-    private List<IResourceService> GetResourceServicesForEntityType(Model.Type entityType)
+    private List<IResourceService> GetResourceServicesForEntityType(Type entityType)
     {
         return entityType switch
         {
-            Model.Type.Repository => [repositoryService],
-            Model.Type.TestSuite =>
+            Type.Repository => [repositoryService],
+            Type.TestSuite =>
             [
                 repositoryService,
                 tenantServicesService,
                 squidProxyService,
                 appConfigsService
             ],
-            Model.Type.Microservice =>
+            Type.Microservice =>
             [
                 repositoryService,
                 tenantServicesService,
