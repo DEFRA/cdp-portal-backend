@@ -13,6 +13,7 @@ public interface IVanityUrlsService
     Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindEnv(string environment, CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindServiceByEnv(string service, string environment, CancellationToken cancellationToken);
+    Task<VanityUrlRecord?> FindByUrl(string url, CancellationToken cancellationToken);
 }
 
 /**
@@ -45,6 +46,13 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanit
         var matchStage = new BsonDocument("$match",
             new BsonDocument { { "serviceName", service }, { "environment", environment } });
         return await Find(matchStage, cancellationToken);
+    }
+
+    public async Task<VanityUrlRecord?> FindByUrl(string url, CancellationToken cancellationToken)
+    {
+        var matchStage = new BsonDocument("$match", new BsonDocument("url", url));
+        var records = await Find(matchStage, cancellationToken);
+        return records.FirstOrDefault();
     }
 
     private async Task<List<VanityUrlRecord>> Find(BsonDocument matchStage, CancellationToken cancellationToken)
