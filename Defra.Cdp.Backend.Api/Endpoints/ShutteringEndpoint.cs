@@ -8,15 +8,24 @@ public static class ShutteringEndpoint
     public static void MapShutteringEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/shuttering/register", Register);
-        app.MapGet("/shuttering/{serviceName}", ShutteringRecordsForService);
+        app.MapGet("/shuttering/{serviceName}", ShutteringStatesForService);
+        app.MapGet("/shuttering/url/{url}", ShutteringStateForUrl);
     }
 
-    private static async Task<IResult> ShutteringRecordsForService(
+    private static async Task<IResult> ShutteringStatesForService(
         IShutteringService shutteringService, string serviceName,
         CancellationToken cancellationToken)
     {
-        var shutteringRecords = await shutteringService.ShutteringRecordsForService(serviceName, cancellationToken);
+        var shutteringRecords = await shutteringService.ShutteringStatesForService(serviceName, cancellationToken);
         return Results.Ok(shutteringRecords);
+    }
+
+    private static async Task<IResult> ShutteringStateForUrl(
+        IShutteringService shutteringService, string url,
+        CancellationToken cancellationToken)
+    {
+        var shutteringState = await shutteringService.ShutteringStateForUrl(url, cancellationToken);
+        return shutteringState == null ? Results.NotFound(new ApiError("Shuttering record not found")) : Results.Ok(shutteringState);
     }
 
     private static async Task<IResult> Register(IShutteringService shutteringService, ShutteringRecord shutteringRecord,
