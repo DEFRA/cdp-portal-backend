@@ -21,21 +21,15 @@ public class GithubEventListener(
 
     private List<string> WebhooksToProcess()
     {
-        if (_webhooksToListenTo == null)
-        {
-            _webhooksToListenTo =
-            [
-                githubConfig.Value.Repos.CdpAppDeployments,
-                githubConfig.Value.Repos.CdpTfSvcInfra,
-                githubConfig.Value.Repos.CdpAppConfig,
-                githubConfig.Value.Repos.CdpNginxUpstreams,
-                githubConfig.Value.Repos.CdpCreateWorkflows,
-                githubConfig.Value.Repos.CdpSquidProxy,
-                githubConfig.Value.Repos.CdpGrafanaSvc
-            ];
-        }
-
-        return _webhooksToListenTo;
+        return _webhooksToListenTo ??= [
+            githubConfig.Value.Repos.CdpAppDeployments,
+            githubConfig.Value.Repos.CdpTfSvcInfra,
+            githubConfig.Value.Repos.CdpAppConfig,
+            githubConfig.Value.Repos.CdpNginxUpstreams,
+            githubConfig.Value.Repos.CdpCreateWorkflows,
+            githubConfig.Value.Repos.CdpSquidProxy,
+            githubConfig.Value.Repos.CdpGrafanaSvc
+        ];
     }
 
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)

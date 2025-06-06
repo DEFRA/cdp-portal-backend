@@ -63,7 +63,7 @@ public class Deployment
             InstanceCount = req.InstanceCount,
             Created = DateTime.Now,
             Updated = DateTime.Now,
-            Status = req.InstanceCount > 0 ? Requested : Undeployed,
+            Status = Requested,
             ConfigVersion = req.ConfigVersion
         };
     }

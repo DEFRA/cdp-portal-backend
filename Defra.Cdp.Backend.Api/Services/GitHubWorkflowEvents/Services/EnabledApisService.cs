@@ -11,10 +11,9 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IEnabledApisService : IEventsPersistenceService<EnabledApisPayload>;
 
-public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<EnabledApiRecord>(
-    connectionFactory,
-    CollectionName,
-    loggerFactory), IEnabledApisService
+public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<EnabledApiRecord>(
+        connectionFactory, CollectionName, loggerFactory), IEnabledApisService
 {
     public const string CollectionName = "enabledapis";
 
@@ -30,25 +29,20 @@ public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILogger
         var env = workflowEvent.Payload.Environment;
         var apis = workflowEvent.Payload.Apis;
 
-        var bulkOps = new List<WriteModel<EnabledApiRecord>>();
-
         var apisInDb = await Collection.Find(d => d.Environment == env).ToListAsync(cancellationToken);
         var toDelete = apisInDb.ExceptBy(apis.Select(a => a.Api), r => r.Api).Select(d => d.Id).ToList();
 
-        foreach (var id in toDelete)
-        {
-            var filter = Builders<EnabledApiRecord>.Filter.Eq(s => s.Id, id);
-            var deleteOne = new DeleteOneModel<EnabledApiRecord>(filter);
-            bulkOps.Add(deleteOne);
-        }
+        var bulkOps = toDelete.Select(id => Builders<EnabledApiRecord>.Filter.Eq(s => s.Id, id))
+            .Select(filter => new DeleteOneModel<EnabledApiRecord>(filter)).Cast<WriteModel<EnabledApiRecord>>()
+            .ToList();
 
-        foreach (var api in workflowEvent.Payload.Apis)
-        {
-            var filterBuilder = Builders<EnabledApiRecord>.Filter;
-            var filter = filterBuilder.Eq(f => f.Api, api.Api);
-            var upsertOne = new ReplaceOneModel<EnabledApiRecord>(filter, new EnabledApiRecord(api.Api, env, api.Service)) { IsUpsert = true };
-            bulkOps.Add(upsertOne);
-        }
+        bulkOps.AddRange(from api in workflowEvent.Payload.Apis
+            let filterBuilder = Builders<EnabledApiRecord>.Filter
+            let filter = filterBuilder.Eq(f => f.Api, api.Api)
+            select new ReplaceOneModel<EnabledApiRecord>(filter, new EnabledApiRecord(api.Api, env, api.Service))
+            {
+                IsUpsert = true
+            });
 
         if (bulkOps.Count > 0)
         {
