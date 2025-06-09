@@ -20,6 +20,7 @@ public sealed class PopulateGithubRepositories(
     IUserServiceFetcher userServiceFetcher,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues,
+    IEntitiesService entitiesService,
     IEntityStatusService entityStatusService,
     ITenantServicesService tenantService)
     : IJob
@@ -48,7 +49,7 @@ public sealed class PopulateGithubRepositories(
                 await RepopulateGithubRepos(context);
 
                 var repos = await repositoryService.AllRepositories(true, context.CancellationToken);
-                await entityStatusService.RefreshTeams(repos, context.CancellationToken);
+                await entitiesService.RefreshTeams(repos, context.CancellationToken);
                 await tenantService.RefreshTeams(repos, context.CancellationToken);
             }
             catch (Exception e)
