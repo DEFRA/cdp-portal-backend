@@ -86,9 +86,9 @@ public class ShutteringService(
 
         var waf = subType switch
         {
-            SubType.Frontend when !vanity.Enabled => "external_public",
-            SubType.Frontend when vanity.Enabled => "internal_public",
-            SubType.Backend when vanity.Enabled => "internal_protected",
+            SubType.Frontend when vanity.Enabled => "external_public",
+            SubType.Frontend when !vanity.Enabled => "internal_public",
+            SubType.Backend => "internal_protected",
             _ => throw new ArgumentOutOfRangeException()
         };
 
