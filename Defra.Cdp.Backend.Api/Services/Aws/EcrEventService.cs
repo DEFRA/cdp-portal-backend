@@ -26,6 +26,6 @@ public class EcrEventsService(IMongoDbClientFactory connectionFactory, ILoggerFa
         var createdAtIndex = new CreateIndexModel<EcrEventCopy>(builder.Descending(r => r.CreatedAt),
             new CreateIndexOptions { Sparse = true });
         var bodyIndex = new CreateIndexModel<EcrEventCopy>(builder.Text(r => r.Body));
-        return new List<CreateIndexModel<EcrEventCopy>>();
+        return [createdAtIndex, bodyIndex];
     }
 }

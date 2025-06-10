@@ -17,7 +17,7 @@ public class TfVanityUrlsService(IMongoDbClientFactory connectionFactory, ILogge
         CollectionName,
         loggerFactory), ITfVanityUrlsService
 {
-    public const string CollectionName = "tfvanityurls";
+    private const string CollectionName = "tfvanityurls";
 
     protected override List<CreateIndexModel<TfVanityUrlRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<TfVanityUrlRecord> builder)

@@ -18,19 +18,6 @@ public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILo
     public const string CollectionName = "nginxvanityurls";
     private readonly ILogger<NginxVanityUrlsService> _logger = loggerFactory.CreateLogger<NginxVanityUrlsService>();
 
-    public async Task<List<NginxVanityUrlsRecord>> FindVanityUrls(string service, string environment,
-        CancellationToken cancellationToken)
-    {
-        return await Collection.Find(v => v.ServiceName == service && v.Environment == environment)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<List<NginxVanityUrlsRecord>> FindAllVanityUrls(string service, CancellationToken cancellationToken)
-    {
-        return await Collection.Find(v => v.ServiceName == service)
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task PersistEvent(CommonEvent<NginxVanityUrlsPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var payload = workflowEvent.Payload;

@@ -9,7 +9,11 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface IEnabledApisService : IEventsPersistenceService<EnabledApisPayload>;
+public interface IEnabledApisService : IEventsPersistenceService<EnabledApisPayload>
+{
+    Task<EnabledApiRecord> Find(string serviceName, string environment, string url,
+        CancellationToken cancellationToken);
+}
 
 public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<EnabledApiRecord>(
@@ -20,8 +24,13 @@ public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILogger
     protected override List<CreateIndexModel<EnabledApiRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<EnabledApiRecord> builder)
     {
-        var urlIndex = new CreateIndexModel<EnabledApiRecord>(builder.Descending(v => v.Api));
-        return [urlIndex];
+        var urlIndex = new CreateIndexModel<EnabledApiRecord>(builder.Descending(ear => ear.Api));
+        var envServiceApi = new CreateIndexModel<EnabledApiRecord>(builder.Combine(
+            builder.Descending(ear => ear.Environment),
+            builder.Descending(ear => ear.Api),
+            builder.Descending(v => v.Service)
+        ));
+        return [urlIndex, envServiceApi];
     }
 
     public async Task PersistEvent(CommonEvent<EnabledApisPayload> workflowEvent, CancellationToken cancellationToken)
@@ -48,6 +57,15 @@ public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILogger
         {
             await Collection.BulkWriteAsync(bulkOps, cancellationToken: cancellationToken);
         }
+    }
+
+    public async Task<EnabledApiRecord> Find(string serviceName, string environment, string url,
+        CancellationToken cancellationToken)
+    {
+        return await Collection.Find(
+                ear => ear.Service == serviceName && ear.Environment == environment && ear.Api == url
+            )
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }
 

@@ -1,7 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Entities;
-using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using MongoDB.Driver;
 
@@ -18,7 +16,7 @@ public class ShutteringService(
     IShutteringArchiveService shutteringArchiveService,
     IMongoDbClientFactory connectionFactory,
     IVanityUrlsService vanityUrlsService,
-    IEntitiesService entitiesService,
+    IApiGatewaysService apiGatewaysService,
     ILoggerFactory loggerFactory)
     : MongoService<ShutteringRecord>(connectionFactory,
         CollectionName, loggerFactory), IShutteringService
@@ -46,64 +44,58 @@ public class ShutteringService(
     {
         var vanityUrls = await vanityUrlsService.FindService(serviceName, cancellationToken);
         Logger.LogInformation("Found {Count} vanity URLs for service {ServiceName}", vanityUrls.Count, serviceName);
-        var shutteringRecords = await Collection.Find(s => s.ServiceName == serviceName)
-            .ToListAsync(cancellationToken);
-        Logger.LogInformation("Found {Count} shuttering records for service {ServiceName}", shutteringRecords.Count,
-            serviceName);
 
         var states = new List<ShutteringUrlState>();
 
         foreach (var vanity in vanityUrls)
         {
-            var shutteringRecord = shutteringRecords.FirstOrDefault(s =>
-                s.Environment == vanity.Environment &&
-                s.ServiceName == vanity.ServiceName &&
-                s.Url == vanity.Url);
+            var shutteringRecord = await Collection.Find(s => s.ServiceName == serviceName
+                                                              && s.Environment == vanity.Environment
+                                                              && s.Url == vanity.Url)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            var shutteringStateForVanityUrl =
-                await ShutteringStateForVanityUrl(cancellationToken, shutteringRecord, vanity);
-            if (shutteringStateForVanityUrl != null)
-            {
-                states.Add(shutteringStateForVanityUrl);
-            }
+            var shutteringStateForVanityUrl = ShutteringStateForVanityUrl(vanity.ToShutterableUrl(), shutteringRecord);
+            states.Add(shutteringStateForVanityUrl);
+        }
+
+        var apiGateways = await apiGatewaysService.FindService(serviceName, cancellationToken);
+        Logger.LogInformation("Found {Count} api gateways for service {ServiceName}", apiGateways.Count, serviceName);
+
+        foreach (var apiGateway in apiGateways)
+        {
+            var shutteringRecord = await Collection.Find(s => s.ServiceName == serviceName
+                                                              && s.Environment == apiGateway.Environment
+                                                              && s.Url == apiGateway.Api)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var shutteringStateForVanityUrl = ShutteringStateForVanityUrl(apiGateway.ToShutterableUrl(), shutteringRecord);
+            states.Add(shutteringStateForVanityUrl);
         }
 
         return states;
     }
 
-    private async Task<ShutteringUrlState?> ShutteringStateForVanityUrl(CancellationToken cancellationToken,
-        ShutteringRecord shutteringRecord,
-        VanityUrlRecord vanity)
+    private static ShutteringUrlState ShutteringStateForVanityUrl(ShutterableUrl shutterableUrl,
+        ShutteringRecord? shutteringRecord)
     {
-        var entity = await entitiesService.GetEntity(vanity.ServiceName, cancellationToken);
-        if (entity == null)
-        {
-            Logger.LogWarning("No entity found for service {ServiceName}", vanity.ServiceName);
-            return null;
-        }
+        var status = ShutteringStatus(shutterableUrl.Shuttered, shutteringRecord);
 
-        var subType = entity.SubType;
-
-        var waf = subType switch
+        var waf = shutterableUrl.isVanity switch
         {
-            SubType.Frontend when vanity.Enabled => "external_public",
-            SubType.Frontend when !vanity.Enabled => "internal_public",
-            SubType.Backend => "internal_protected",
-            _ => throw new ArgumentOutOfRangeException()
+            true => shutterableUrl.Enabled ? "external_public" : "internal_public",
+            false => "api_public"
         };
-
-        var status = ShutteringStatus(vanity, shutteringRecord);
 
         var lastActionedBy = shutteringRecord?.ActionedBy;
         var lastActionedAt = shutteringRecord?.ActionedAt;
 
         return new ShutteringUrlState
         {
-            Environment = vanity.Environment,
-            ServiceName = vanity.ServiceName,
-            Url = vanity.Url,
+            Environment = shutterableUrl.Environment,
+            ServiceName = shutterableUrl.ServiceName,
+            Url = shutterableUrl.Url,
             Waf = waf,
-            Internal = vanity.Enabled,
+            Internal = shutterableUrl.Enabled,
             Status = status,
             LastActionedBy = lastActionedBy,
             LastActionedAt = lastActionedAt
@@ -112,26 +104,27 @@ public class ShutteringService(
 
     public async Task<ShutteringUrlState?> ShutteringStateForUrl(string url, CancellationToken cancellationToken)
     {
-        var vanityRecord = await vanityUrlsService.FindByUrl(url, cancellationToken);
-        if (vanityRecord == null)
+        var shutterableUrl = await vanityUrlsService.FindByUrl(url, cancellationToken) ??
+                             await apiGatewaysService.FindByUrl(url, cancellationToken);
+        if (shutterableUrl == null)
         {
-            Logger.LogWarning("No vanity URL found for {Url}", url);
+            Logger.LogWarning("No vanity URL or API Gateway found for {Url}", url);
             return null;
         }
 
         var shutteringRecord = await Collection.Find(s =>
-                s.Environment == vanityRecord.Environment &&
-                s.ServiceName == vanityRecord.ServiceName &&
-                s.Url == vanityRecord.Url)
+                s.Environment == shutterableUrl.Environment &&
+                s.ServiceName == shutterableUrl.ServiceName &&
+                s.Url == shutterableUrl.Url)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return await ShutteringStateForVanityUrl(cancellationToken, shutteringRecord, vanityRecord);
+        return ShutteringStateForVanityUrl(shutterableUrl, shutteringRecord);
     }
 
-    public static ShutteringStatus ShutteringStatus(VanityUrlRecord vanity, ShutteringRecord? shutteringRecord)
+    public static ShutteringStatus ShutteringStatus(bool shuttered, ShutteringRecord? shutteringRecord)
     {
         ShutteringStatus status;
-        if (vanity.Shuttered)
+        if (shuttered)
         {
             if (shutteringRecord == null || shutteringRecord.Shuttered)
             {
@@ -160,3 +153,11 @@ public class ShutteringService(
         return [service];
     }
 }
+
+public record ShutterableUrl(
+    string ServiceName,
+    string Environment,
+    string Url,
+    bool Enabled,
+    bool Shuttered,
+    bool isVanity);

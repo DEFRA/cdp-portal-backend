@@ -20,4 +20,4 @@ public record ShutteringRecord(
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
-};
+}
