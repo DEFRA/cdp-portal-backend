@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Shuttering;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -13,7 +14,7 @@ public interface IVanityUrlsService
     Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindEnv(string environment, CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindServiceByEnv(string service, string environment, CancellationToken cancellationToken);
-    Task<VanityUrlRecord?> FindByUrl(string url, CancellationToken cancellationToken);
+    Task<ShutterableUrl?> FindByUrl(string url, CancellationToken cancellationToken);
 }
 
 /**
@@ -48,11 +49,11 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanit
         return await Find(matchStage, cancellationToken);
     }
 
-    public async Task<VanityUrlRecord?> FindByUrl(string url, CancellationToken cancellationToken)
+    public async Task<ShutterableUrl?> FindByUrl(string url, CancellationToken cancellationToken)
     {
         var matchStage = new BsonDocument("$match", new BsonDocument("url", url));
         var records = await Find(matchStage, cancellationToken);
-        return records.FirstOrDefault();
+        return records.FirstOrDefault()?.ToShutterableUrl();
     }
 
     private async Task<List<VanityUrlRecord>> Find(BsonDocument matchStage, CancellationToken cancellationToken)
@@ -125,4 +126,10 @@ public record VanityUrlRecord(string Url, string Environment, string ServiceName
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
+    
+    
+    public ShutterableUrl ToShutterableUrl()
+    {
+        return new ShutterableUrl(Environment, ServiceName, Url, Enabled, Shuttered, true);
+    }
 }

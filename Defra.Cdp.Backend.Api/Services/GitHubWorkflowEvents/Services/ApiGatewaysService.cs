@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Shuttering;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -11,6 +12,7 @@ public interface IApiGatewaysService
 {
     Task<List<ApiGatewayRecord>> FindService(string service, CancellationToken cancellationToken);
     Task<List<ApiGatewayRecord>> FindServiceByEnv(string service, string environment, CancellationToken cancellationToken);
+    Task<ShutterableUrl?> FindByUrl(string url, CancellationToken cancellationToken);
 }
 
 /**
@@ -30,6 +32,13 @@ public class ApiGatewaysService(IMongoDbClientFactory connectionFactory) : IApiG
         var matchStage = new BsonDocument("$match",
             new BsonDocument { { "service", service }, { "environment", environment } });
         return await Find(matchStage, cancellationToken);
+    }
+
+    public async Task<ShutterableUrl?> FindByUrl(string url, CancellationToken cancellationToken)
+    {
+        var matchStage = new BsonDocument("$match", new BsonDocument("url", url));
+        var records = await Find(matchStage, cancellationToken);
+        return records.FirstOrDefault()?.ToShutterableUrl();
     }
 
     private async Task<List<ApiGatewayRecord>> Find(BsonDocument matchStage, CancellationToken cancellationToken)
@@ -80,4 +89,9 @@ public record ApiGatewayRecord(string Api, string Environment, string Service, b
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
+    
+    public ShutterableUrl ToShutterableUrl()
+    {
+        return new ShutterableUrl(Service,  Environment, Api, true, Shuttered, false);
+    }
 }
