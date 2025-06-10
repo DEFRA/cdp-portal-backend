@@ -10,10 +10,11 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IVanityUrlsService
 {
-    Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken);
     Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken);
-    Task<List<VanityUrlRecord>> FindEnv(string environment, CancellationToken cancellationToken);
-    Task<List<VanityUrlRecord>> FindServiceByEnv(string service, string environment, CancellationToken cancellationToken);
+
+    Task<List<VanityUrlRecord>> FindServiceByEnv(string service, string environment,
+        CancellationToken cancellationToken);
+
     Task<ShutterableUrl?> FindByUrl(string url, CancellationToken cancellationToken);
 }
 
@@ -22,7 +23,6 @@ public interface IVanityUrlsService
  */
 public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanityUrlsService
 {
-
     public async Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken)
     {
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
@@ -59,7 +59,8 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanit
     private async Task<List<VanityUrlRecord>> Find(BsonDocument matchStage, CancellationToken cancellationToken)
     {
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
-        return await collection.Aggregate<VanityUrlRecord>(pipeline.Prepend(matchStage).ToArray()).ToListAsync(cancellationToken);
+        return await collection.Aggregate<VanityUrlRecord>(pipeline.Prepend(matchStage).ToArray())
+            .ToListAsync(cancellationToken);
     }
 
 
@@ -126,10 +127,10 @@ public record VanityUrlRecord(string Url, string Environment, string ServiceName
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
-    
-    
+
+
     public ShutterableUrl ToShutterableUrl()
     {
-        return new ShutterableUrl(Environment, ServiceName, Url, Enabled, Shuttered, true);
+        return new ShutterableUrl(ServiceName, Environment, Url, Enabled, Shuttered, true);
     }
 }
