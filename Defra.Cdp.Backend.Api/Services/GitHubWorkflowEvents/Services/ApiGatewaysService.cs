@@ -36,7 +36,7 @@ public class ApiGatewaysService(IMongoDbClientFactory connectionFactory) : IApiG
 
     public async Task<ShutterableUrl?> FindByUrl(string url, CancellationToken cancellationToken)
     {
-        var matchStage = new BsonDocument("$match", new BsonDocument("url", url));
+        var matchStage = new BsonDocument("$match", new BsonDocument("api", url));
         var records = await Find(matchStage, cancellationToken);
         return records.FirstOrDefault()?.ToShutterableUrl();
     }
