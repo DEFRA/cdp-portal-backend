@@ -9,11 +9,9 @@ public static class EntitiesEndpoint
 {
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
+        app.MapPost("/entities", CreateEntity);
         app.MapGet("/entities", GetEntities);
         app.MapGet("/entities/filters", GetFilters);
-        app.MapPost("/entities", CreateEntity);
-        app.MapPost("/entities/update", UpdateEntity);
-        app.MapPost("/entities/{repositoryName}/overall-status", UpdateOverallStatus);
         app.MapGet("/entities/{repositoryName}", GetEntity);
         app.MapGet("/entities/{repositoryName}/status", GetEntityStatus);
     }
@@ -53,22 +51,6 @@ public static class EntitiesEndpoint
         CancellationToken cancellationToken)
     {
         await entitiesService.Create(entity, cancellationToken);
-        return Results.Ok();
-    }
-
-    private static async Task<IResult> UpdateEntity(ILegacyStatusService legacyStatusService,
-        LegacyStatusUpdateRequest updateRequest,
-        CancellationToken cancellationToken)
-    {
-        await legacyStatusService.UpdateField(updateRequest, cancellationToken);
-        return Results.Ok();
-    }
-
-    private static async Task<IResult> UpdateOverallStatus(IStatusUpdateService statusUpdateService,
-        string repositoryName,
-        CancellationToken cancellationToken)
-    {
-        await statusUpdateService.UpdateOverallStatus(repositoryName, cancellationToken);
         return Results.Ok();
     }
 }

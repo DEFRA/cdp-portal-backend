@@ -9,21 +9,15 @@ using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
-using Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using Creator = Defra.Cdp.Backend.Api.Services.GithubEvents.Model.Creator;
-using Status = Defra.Cdp.Backend.Api.Services.GithubEvents.Model.Status;
-using EntityStatus = Defra.Cdp.Backend.Api.Services.Entities.Model.Status;
-using Repository = Defra.Cdp.Backend.Api.Models.Repository;
-using Team = Defra.Cdp.Backend.Api.Services.GithubEvents.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
-namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubEvents;
+namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
 public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
@@ -56,30 +50,30 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             grafanaDashboardsService,
             loggerFactory.CreateLogger<EntityStatusService>());
 
-        var legacyStatus = new LegacyStatus
+        var entity = new Entity
         {
-            RepositoryName = "example-repo",
-            Status = Status.InProgress.ToStringValue(),
-            Team = new Team { TeamId = Guid.NewGuid().ToString(), Name = "example-team" },
-            Kind = CreationType.Microservice.ToStringValue(),
-            ServiceTypeTemplate = "example-template",
-            Zone = "protected",
-            Creator = new Creator { Id = Guid.NewGuid().ToString(), DisplayName = "example-creator" },
+            Name = "example-repo",
+            Status = Status.Creating,
+            Teams = [new Team { TeamId = Guid.NewGuid().ToString(), Name = "example-team" }],
+            Type = Type.Microservice,
+            SubType = SubType.Backend,
+            Creator = new Person { Id = Guid.NewGuid().ToString(), Name = "example-creator" },
+            Created = DateTime.UtcNow
         };
 
-        await entitiesService.Create(Entity.from(legacyStatus), CancellationToken.None);
+        await entitiesService.Create(entity, CancellationToken.None);
 
         var persistedEntityStatus = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
         var persistedEntity = persistedEntityStatus?.Entity;
         Assert.NotNull(persistedEntity);
         Assert.Equal("example-repo", persistedEntity.Name);
-        Assert.Equal(EntityStatus.Creating, persistedEntity.Status);
+        Assert.Equal(Status.Creating, persistedEntity.Status);
         Assert.Equal(Type.Microservice, persistedEntity.Type);
         Assert.Equal(SubType.Backend, persistedEntity.SubType);
         Assert.Equal("example-team", persistedEntity.Teams[0].Name);
         Assert.Equal("example-creator", persistedEntity.Creator!.Name);
         Assert.NotNull(persistedEntity.Created);
-        Assert.Equal(EntityStatus.Creating, persistedEntity.Status);
+        Assert.Equal(Status.Creating, persistedEntity.Status);
 
         Assert.False(persistedEntityStatus.Resources["Repository"]);
         Assert.False(persistedEntityStatus.Resources["TenantServices"]);
@@ -126,7 +120,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         var updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
 
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.Creating, updatedEntity.Entity.Status);
+        Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
         Assert.False(updatedEntity.Resources["TenantServices"]);
         Assert.False(updatedEntity.Resources["SquidProxy"]);
@@ -164,7 +158,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
 
         updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.Creating, updatedEntity.Entity.Status);
+        Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
         Assert.True(updatedEntity.Resources["TenantServices"]);
         Assert.False(updatedEntity.Resources["SquidProxy"]);
@@ -187,7 +181,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
 
         updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.Creating, updatedEntity.Entity.Status);
+        Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
         Assert.True(updatedEntity.Resources["TenantServices"]);
         Assert.False(updatedEntity.Resources["SquidProxy"]);
@@ -212,7 +206,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
 
         updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.Creating, updatedEntity.Entity.Status);
+        Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
         Assert.True(updatedEntity.Resources["TenantServices"]);
         Assert.False(updatedEntity.Resources["SquidProxy"]);
@@ -236,7 +230,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
 
         updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
         Assert.NotNull(updatedEntity);
-        Assert.Equal(EntityStatus.Creating, updatedEntity.Entity.Status);
+        Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
         Assert.True(updatedEntity.Resources["TenantServices"]);
         Assert.True(updatedEntity.Resources["SquidProxy"]);
@@ -264,7 +258,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.True(updatedEntity.Resources["NginxUpstreams"]);
         Assert.True(updatedEntity.Resources["AppConfig"]);
         Assert.True(updatedEntity.Resources["GrafanaDashboard"]);
-        Assert.Equal(EntityStatus.Created, updatedEntity.Entity.Status);
+        Assert.Equal(Status.Created, updatedEntity.Entity.Status);
     }
 
     private static string WrapBodyAsJson<T>(T tenantServicesPayload, string eventType)

@@ -10,7 +10,6 @@ public interface IEntityStatusService
 {
     Task<EntityStatus?> GetEntityStatus(string repositoryName, CancellationToken cancellationToken);
 
-    Task UpdateOverallStatus(string repositoryName, CancellationToken cancellationToken);
     Task UpdatePendingEntityStatuses(CancellationToken cancellationToken);
 }
 
