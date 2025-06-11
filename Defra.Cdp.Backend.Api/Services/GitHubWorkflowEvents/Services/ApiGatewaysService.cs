@@ -47,7 +47,6 @@ public class ApiGatewaysService(IMongoDbClientFactory connectionFactory) : IApiG
         return await collection.Aggregate<ApiGatewayRecord>(_pipeline.Prepend(matchStage).ToArray(), cancellationToken: cancellationToken).ToListAsync(cancellationToken);
     }
 
-
     private readonly BsonDocument[] _pipeline =
     [
         new("$lookup",

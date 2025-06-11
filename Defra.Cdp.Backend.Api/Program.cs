@@ -13,7 +13,6 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.GithubEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Migrations;
@@ -171,8 +170,6 @@ builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsSe
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
 builder.Services.AddSingleton<IEntityStatusService, EntityStatusService>();
-builder.Services.AddSingleton<ILegacyStatusService, LegacyStatusService>();
-builder.Services.AddSingleton<IStatusUpdateService, StatusUpdateService>();
 builder.Services.AddSingleton<IUndeploymentsService, UndeploymentsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
@@ -227,8 +224,6 @@ builder.Services.AddSingleton<IUserServiceFetcher, UserServiceFetcher>();
 // GitHub Workflow Event Handlers
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, GithubWorkflowEventHandler>();
 builder.Services.AddSingleton<GithubWorkflowEventListener>();
-builder.Services.AddSingleton<IGithubEventHandler, GithubEventHandler>();
-builder.Services.AddSingleton<GithubEventListener>();
 builder.Services.AddSingleton<IPlatformEventHandler, PlatformEventHandler>();
 builder.Services.AddSingleton<PlatformEventListener>();
 
@@ -282,7 +277,6 @@ app.MapDeploymentsEndpoint();
 app.MapUndeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapEntitiesEndpoint();
-app.MapLegacyStatusesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
@@ -318,12 +312,6 @@ var gitHubWorkflowEventListener = app.Services.GetService<GithubWorkflowEventLis
 logger.Information("Starting GitHub Workflow Event listener - reading workflow events from SQS");
 Task.Run(() =>
     gitHubWorkflowEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-var gitHubEventListener = app.Services.GetService<GithubEventListener>();
-logger.Information("Starting GitHub Event listener - reading github events from SQS");
-Task.Run(() =>
-    gitHubEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var platformEventListener = app.Services.GetService<PlatformEventListener>();

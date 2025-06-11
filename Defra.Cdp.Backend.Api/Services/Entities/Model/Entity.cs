@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Services.GithubEvents.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -39,51 +38,6 @@ public record Entity
 
     [property: JsonPropertyName("decommissioned")]
     public Decommission Decommissioned { get; set; }
-
-    public static Entity from(LegacyStatus status)
-    {
-        Type? type = null;
-        SubType? subType = null;
-
-        switch (status.Kind)
-        {
-            case "journey-testsuite":
-                type = Type.TestSuite;
-                subType = Model.SubType.Journey;
-                break;
-            case "perf-testsuite":
-                type = Type.TestSuite;
-                subType = Model.SubType.Performance;
-                break;
-            case "repository":
-                type = Type.Repository;
-                break;
-            case "microservice":
-                type = Type.Microservice;
-                switch (status.Zone.ToLower())
-                {
-                    case "public":
-                        subType = Model.SubType.Frontend;
-                        break;
-                    case "protected":
-                        subType = Model.SubType.Backend;
-                        break;
-                }
-
-                break;
-        }
-
-        return new Entity
-        {
-            Name = status.RepositoryName,
-            Type = type ?? throw new ArgumentOutOfRangeException(nameof(status.Kind), status.Kind, null),
-            SubType = subType,
-            Created = status.Started,
-            Creator = status.Creator.toCreator(),
-            Teams = [status.Team.toTeam()],
-            Status = status.Status.ToStatus()
-        };
-    }
 }
 
 public record Decommission
@@ -133,19 +87,4 @@ public enum Status
     Created,
     Failed, // TODO Remove
     Success // TODO Legacy. Do not use, use Created instead
-}
-
-public static class StatusExtensions
-{
-    public static Status ToStatus(this string status)
-    {
-        switch (status)
-        {
-            case "in-progress": return Status.Creating;
-            case "success": return Status.Created;
-            case "failed": return Status.Failed;
-            default: throw new ArgumentOutOfRangeException();
-        }
-    }
-
 }

@@ -26,7 +26,7 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanit
     public async Task<List<VanityUrlRecord>> FindAll(CancellationToken cancellationToken)
     {
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
-        return await collection.Aggregate<VanityUrlRecord>(pipeline).ToListAsync(cancellationToken);
+        return await collection.Aggregate<VanityUrlRecord>(_pipeline).ToListAsync(cancellationToken);
     }
 
     public async Task<List<VanityUrlRecord>> FindService(string service, CancellationToken cancellationToken)
@@ -59,12 +59,12 @@ public class VanityUrlsService(IMongoDbClientFactory connectionFactory) : IVanit
     private async Task<List<VanityUrlRecord>> Find(BsonDocument matchStage, CancellationToken cancellationToken)
     {
         var collection = connectionFactory.GetCollection<NginxVanityUrlsRecord>(NginxVanityUrlsService.CollectionName);
-        return await collection.Aggregate<VanityUrlRecord>(pipeline.Prepend(matchStage).ToArray())
+        return await collection.Aggregate<VanityUrlRecord>(_pipeline.Prepend(matchStage).ToArray())
             .ToListAsync(cancellationToken);
     }
 
 
-    private readonly BsonDocument[] pipeline =
+    private readonly BsonDocument[] _pipeline =
     [
         new("$lookup",
             new BsonDocument
