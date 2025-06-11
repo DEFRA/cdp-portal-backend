@@ -156,10 +156,14 @@ public static class ArtifactsEndpoint
     }
 
     // GET /services/{service}
-    private static async Task<ServiceInfo?> ListService(IDeployableArtifactsService deployableArtifactsService, string service,
+    // NOTE: This endpoint is used by CDP-Notify. If you are making any changes in this area ensure CDP-Notify still works.
+    private static async Task<IResult> ListService(IDeployableArtifactsService deployableArtifactsService, string service,
         CancellationToken cancellationToken)
     {
-        return await deployableArtifactsService.FindServices(service, cancellationToken);
+        var result = await deployableArtifactsService.FindServices(service, cancellationToken);
+        return result == null
+            ? Results.NotFound(new ApiError($"{service} not found"))
+            : Results.Ok(result);
     }
 
     // GET /services/filters
