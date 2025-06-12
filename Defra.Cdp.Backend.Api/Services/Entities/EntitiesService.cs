@@ -19,6 +19,9 @@ public interface IEntitiesService
     Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken);
     Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken);
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
+
+    Task AddTag(string entityName, string tag, CancellationToken cancellationToken);
+    Task RemoveTag(string entityName, string tag, CancellationToken cancellationToken);
     Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
 }
 
@@ -161,6 +164,18 @@ public class EntitiesService(
     {
         return await Collection.Find(e => e.Status == Status.Creating)
             .ToListAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
+    {
+        var update = new UpdateDefinitionBuilder<Entity>().AddToSet(e => e.Tags, tag);
+        await Collection.UpdateOneAsync(e => e.Name == entityName, update, new UpdateOptions(), cancellationToken);
+    }
+
+    public async Task RemoveTag(string entityName, string tag, CancellationToken cancellationToken)
+    {
+        var update = new UpdateDefinitionBuilder<Entity>().Pull(e => e.Tags, tag);
+        await Collection.UpdateOneAsync(e => e.Name == entityName, update, new UpdateOptions(), cancellationToken);
     }
 
     public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
