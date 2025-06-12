@@ -12,7 +12,33 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
 public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
-        [Fact]
+
+    [Fact]
+    public async Task WillAddAndRemoveTags()
+    {
+        var ct = CancellationToken.None;
+        var logger = new NullLoggerFactory();
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
+        var entitiesService = new EntitiesService(mongoFactory, logger);
+        var entity = new Entity
+        {
+            Name = _fooRepository.Id, Teams = [], Status = Status.Created, Type = Type.Microservice,
+        };
+        await entitiesService.Create(entity, ct);
+
+        await entitiesService.AddTag(entity.Name, "tier 1", ct);
+        await entitiesService.AddTag(entity.Name, "PRR", ct);
+        var taggedEntity = await entitiesService.GetEntity(entity.Name, ct);
+        
+        Assert.Equivalent(taggedEntity?.Tags, new List<string> { "tier 1", "PRR" });
+
+        await entitiesService.RemoveTag(entity.Name, "tier 1", ct);
+        var untaggedEntity = await entitiesService.GetEntity(entity.Name, ct);
+        Assert.Equivalent(untaggedEntity?.Tags, new List<string> { "PRR" });
+
+    }
+    
+    [Fact]
     public async Task WillRefreshTeams()
     {
         var logger = new NullLoggerFactory();

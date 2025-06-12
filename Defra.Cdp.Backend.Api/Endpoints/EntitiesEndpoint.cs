@@ -14,6 +14,8 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/filters", GetFilters);
         app.MapGet("/entities/{repositoryName}", GetEntity);
         app.MapGet("/entities/{repositoryName}/status", GetEntityStatus);
+        app.MapPost("/entities/{repositoryName}/tags", TagEntity);
+        app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
     }
 
     private static async Task<IResult> GetEntityStatus(IEntityStatusService entityStatusService, string repositoryName,
@@ -51,6 +53,18 @@ public static class EntitiesEndpoint
         CancellationToken cancellationToken)
     {
         await entitiesService.Create(entity, cancellationToken);
+        return Results.Ok();
+    }
+    
+    private static async Task<IResult> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag, CancellationToken cancellationToken)
+    {
+        await entitiesService.AddTag(repositoryName, tag, cancellationToken);
+        return Results.Ok();
+    }
+    
+    private static async Task<IResult> UntagEntity(IEntitiesService entitiesService, string repositoryName, string tag, CancellationToken cancellationToken)
+    {
+        await entitiesService.RemoveTag(repositoryName, tag, cancellationToken);
         return Results.Ok();
     }
 }
