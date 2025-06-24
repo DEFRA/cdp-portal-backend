@@ -1,19 +1,17 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
-public static class ArtifactsEndpoint
+public static class ArtifactsAndDeployablesEndpoint
 {
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
     private const string FilesBaseRoute = "files";
-    private const string ServicesBaseRoute = "services";
 
-    public static void MapDeployablesEndpoint(this IEndpointRouteBuilder app)
+    public static void MapArtifactsAndDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(ArtifactsBaseRoute, ListRepos);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}", ListImagesForRepo);
@@ -23,9 +21,6 @@ public static class ArtifactsEndpoint
         app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent);
         app.MapGet(DeployablesBaseRoute, ListDeployables);
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
-        app.MapGet(ServicesBaseRoute, ListAllServices);
-        app.MapGet($"{ServicesBaseRoute}/filters", GetAllServicesFilters);
-        app.MapGet($"{ServicesBaseRoute}/{{service}}", ListService);
         app.MapPost($"{ArtifactsBaseRoute}/placeholder", CreatePlaceholder);
     }
 
@@ -141,46 +136,7 @@ public static class ArtifactsEndpoint
         var tags = await deployableArtifactsService.FindAllTagsForRepo(repo, cancellationToken);
         return Results.Ok(tags);
     }
-
-    // GET /services
-    private static async Task<IResult> ListAllServices(IDeployableArtifactsService deployableArtifactsService,
-        [FromQuery(Name = "teamId")] string? teamId,
-        [FromQuery(Name = "service")] string? service,
-        CancellationToken cancellationToken)
-    {
-        var services =
-            await deployableArtifactsService.FindAllServices(ArtifactRunMode.Service, teamId, service,
-                cancellationToken);
-
-        return Results.Ok(services);
-    }
-
-    // GET /services/{service}
-    // NOTE: This endpoint is used by CDP-Notify. If you are making any changes in this area ensure CDP-Notify still works.
-    private static async Task<IResult> ListService(IDeployableArtifactsService deployableArtifactsService, string service,
-        CancellationToken cancellationToken)
-    {
-        var result = await deployableArtifactsService.FindServices(service, cancellationToken);
-        return result == null
-            ? Results.NotFound(new ApiError($"{service} not found"))
-            : Results.Ok(result);
-    }
-
-    // GET /services/filters
-    private static async Task<IResult> GetAllServicesFilters(
-        IDeployableArtifactsService deployableArtifactsService,
-        IUserServiceFetcher userServiceFetcher,
-        CancellationToken cancellationToken)
-    {
-        var allServicesFilters = await deployableArtifactsService.GetAllServicesFilters(cancellationToken);
-
-        var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
-        if (teamRecord != null)
-            allServicesFilters.Teams =
-                teamRecord.teams.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
-        return Results.Ok(new { Filters = allServicesFilters });
-    }
-
+    
     // POST /artifacts/placeholder
     private static async Task<IResult> CreatePlaceholder(IDeployableArtifactsService deployableArtifactsService, string service,
         string githubUrl, string? runMode, CancellationToken cancellationToken)

@@ -36,7 +36,6 @@ public interface IDeployableArtifactsService
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
-    Task<List<TagInfo>> FindLatestTagsForRepo(string repo, int limit, CancellationToken cancellationToken);
 
     Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId, string? service,
         CancellationToken cancellationToken);
