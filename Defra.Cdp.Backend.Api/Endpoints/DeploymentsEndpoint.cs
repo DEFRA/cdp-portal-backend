@@ -15,9 +15,12 @@ public static class DeploymentsEndpoint
         app.MapGet("/deployments-with-migrations", FindLatestDeploymentsWithMigrations);
         app.MapGet("/deployments/{deploymentId}", FindDeployments);
         app.MapGet("/deployments/filters/", GetDeploymentsFilters);
-        app.MapGet("/whats-running-where", WhatsRunningWhere);
-        app.MapGet("/whats-running-where/{service}", WhatsRunningWhereForService);
-        app.MapGet("/whats-running-where/filters", GetWhatsRunningWhereFilters);
+        app.MapGet("/whats-running-where", RunningServices);
+        app.MapGet("/whats-running-where/{service}", RunningServicesForService);
+        app.MapGet("/whats-running-where/filters", RunningServicesFilters);
+        app.MapGet("/running-services", RunningServices);
+        app.MapGet("/running-services/{service}", RunningServicesForService);
+        app.MapGet("/running-services/filters", RunningServicesFilters);
         app.MapPost("/deployments", RegisterDeployment);
         app.MapGet("/deployment-settings/{service}/{environment}", FindDeploymentSettings);
     }
@@ -107,7 +110,8 @@ public static class DeploymentsEndpoint
     }
 
     // GET /whats-running-where or with query params GET /whats-running-where?environments=dev&service=forms-runner&status=running
-    private static async Task<IResult> WhatsRunningWhere(IDeploymentsService deploymentsService,
+    // GET /running-services or with query params GET /running-services?environments=dev&service=forms-runner&status=running
+    private static async Task<IResult> RunningServices(IDeploymentsService deploymentsService,
         [FromQuery(Name = "environments")] string[]? environments,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "team")] string? team,
@@ -121,7 +125,8 @@ public static class DeploymentsEndpoint
     }
 
     // GET /whats-running-where/{service}
-    private static async Task<IResult> WhatsRunningWhereForService(IDeploymentsService deploymentsService,
+    // GET /running-services/{service}
+    private static async Task<IResult> RunningServicesForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
@@ -129,7 +134,8 @@ public static class DeploymentsEndpoint
     }
 
     // GET /whats-running-where/filters
-    private static async Task<IResult> GetWhatsRunningWhereFilters(
+    // GET /running-services/filters
+    private static async Task<IResult> RunningServicesFilters(
         IDeploymentsService deploymentsService,
         IUserServiceFetcher userServiceFetcher,
         CancellationToken cancellationToken)

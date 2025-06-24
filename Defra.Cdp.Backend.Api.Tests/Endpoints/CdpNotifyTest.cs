@@ -4,6 +4,8 @@ using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using FluentValidation;
@@ -13,10 +15,10 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Tests.Endpoints;
-
-
 
 public class CdpNotifyTest
 {
@@ -31,7 +33,8 @@ public class CdpNotifyTest
     public async Task TestCdpNotifyHasntBeenBroken()
     {
         // Run just the Deployables API Endpoints
-        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
+        var entitiesService = Substitute.For<IEntitiesService>();
+        var entityStatusService = Substitute.For<IEntityStatusService>();
         var layerService = Substitute.For<ILayerService>();
         var userServiceFetcher = Substitute.For<IUserServiceFetcher>();
         
@@ -39,7 +42,8 @@ public class CdpNotifyTest
             .ConfigureServices(services =>
             {
                 services.AddRouting();
-                services.AddSingleton(deployableArtifactsService);
+                services.AddSingleton(entitiesService);
+                services.AddSingleton(entityStatusService);
                 services.AddSingleton(layerService);
                 services.AddSingleton(userServiceFetcher);
                 services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
@@ -49,7 +53,7 @@ public class CdpNotifyTest
                 app.UseRouting();
                 app.UseEndpoints(endpoints =>
                 {
-                    endpoints.MapDeployablesEndpoint();
+                    endpoints.MapEntitiesEndpoint();
                 });
             });
 
@@ -58,23 +62,31 @@ public class CdpNotifyTest
         var client = server.CreateClient();
 
         // Setup Mocks.
-        var service = new ServiceInfo("foo", "https://github.com/DEFRA/foo", "foo",
-            new List<RepositoryTeam> { new("teamAGitHub", "teamA1234", "teamA") });
-        deployableArtifactsService.FindServices(Arg.Is("foo"), Arg.Any<CancellationToken>()).Returns( service );
-        deployableArtifactsService.FindServices(Arg.Is("missing-service"), Arg.Any<CancellationToken>()).ReturnsNull();
+        var service = new Entity
+        {
+            Name = "foo",
+            Status = Status.Created,
+            Teams = [new Team { Name = "teamA", TeamId = "team-id-abc-123-456" }],
+            Type = Type.Microservice,
+            SubType = SubType.Backend,
+            Created = DateTime.UtcNow,
+        };
+         
+        entitiesService.GetEntity(Arg.Is("foo"), Arg.Any<CancellationToken>()).Returns( service );
+        entitiesService.GetEntity(Arg.Is("missing-service"), Arg.Any<CancellationToken>()).ReturnsNull();
         
-        var response = await client.GetAsync("services/foo");
+        var response = await client.GetAsync("entities/foo");
 
         Assert.True(response.IsSuccessStatusCode);
         
         var body = await JsonSerializer.DeserializeAsync<CdpNotifyService>(await response.Content.ReadAsStreamAsync());
         Assert.NotNull(body);
         Assert.Single(body.teams);
-        Assert.Equal("teamA1234", body.teams[0].TeamId);
+        Assert.Equal("team-id-abc-123-456", body.teams[0].TeamId);
         Assert.Equal("teamA", body.teams[0].Name);
         
         
-        var missingResponse = await client.GetAsync("services/unknown-service");
+        var missingResponse = await client.GetAsync("entites/unknown-service");
         Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
     }
     
