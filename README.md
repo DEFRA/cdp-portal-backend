@@ -64,36 +64,66 @@ Currently it extracts:
 For the most up-to-date APIs and schema, run `cdp-portal-backend` locally, as instructed below, and navigate to
 [the Swagger page at http://localhost:5094/swagger](http://localhost:5094/swagger).
 
-### Find Services
+### Find Entities
 
 When an image is scanned its 'service name' is extracted from a docker label (`defra.cdp.service.name` see
 ArtifactScanner.cs).
 
-`GET /services`
+`GET /entities`
 
 ```json
 [
     {
-        "serviceName": "cdp-portal-backend",
-        "githubUrl": "https://github.com/DEFRA/cdp-portal-backend",
-        "imageName": "cdp-portal-backend"
+        "name": "cdp-portal-backend",
+        "type": "Microservice",
+        "subType": "Backend",
+        "primaryLanguage": "JavaScript",
+        "created": "2016-12-05T11:21:25Z",
+        "teams": [
+            {
+                "teamId": "aabe63e7-87ef-4beb-a596-c810631fc474",
+                "name": "Platform"
+            }
+        ],
+        "status": "Success",
+        "tags": ["live", "beta"]
     },
     {
-        "serviceName": "cdp-portal-backend",
-        "githubUrl": "https://github.com/DEFRA/cdp-portal-backend",
-        "imageName": "cdp-portal-backend"
+        "name": "cdp-portal-frontend",
+        "type": "Microservice",
+        "subType": "Frontend",
+        "primaryLanguage": "JavaScript",
+        "created": "2016-12-05T11:21:25Z",
+        "teams": [
+            {
+                "teamId": "aabe63e7-87ef-4beb-a596-c810631fc474",
+                "name": "Platform"
+            }
+        ],
+        "status": "Success",
+        "tags": ["live"]
     }
 ]
 
 ```
 
-`GET /services/cdp-portal-backend`
+`GET /entities/cdp-portal-backend`
 
 ```json
 {
-    "serviceName": "cdp-portal-backend",
-    "githubUrl": "https://github.com/DEFRA/cdp-portal-backend",
-    "imageName": "cdp-portal-backend"
+    "name": "cdp-portal-frontend",
+    "type": "Microservice",
+    "subType": "Frontend",
+    "primaryLanguage": "JavaScript",
+    "created": "2016-12-05T11:21:25Z",
+    "teams": [
+        {
+            "teamId": "aabe63e7-87ef-4beb-a596-c810631fc474",
+            "name": "Platform"
+        }
+    ],
+    "status": "Success",
+    "tags": ["live"]
 }
 ```
 
@@ -169,9 +199,9 @@ you'll get 1 event per instance rather than the whole deployment
 
 ### Getting lists of deployments for each environment
 
-`GET /whats-running-where` return the most recent deployment for each service in each environment
+`GET /running-services` return the most recent deployment for each service in each environment
 
-`GET /whats-running-where/:service` return the most recent deployment for a given service in each environment
+`GET /running-services/:service` return the most recent deployment for a given service in each environment
 
 ### Get list of all Github repositories
 
