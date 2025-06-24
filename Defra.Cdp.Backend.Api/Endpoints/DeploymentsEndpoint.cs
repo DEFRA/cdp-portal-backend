@@ -15,9 +15,6 @@ public static class DeploymentsEndpoint
         app.MapGet("/deployments-with-migrations", FindLatestDeploymentsWithMigrations);
         app.MapGet("/deployments/{deploymentId}", FindDeployments);
         app.MapGet("/deployments/filters/", GetDeploymentsFilters);
-        app.MapGet("/whats-running-where", RunningServices);
-        app.MapGet("/whats-running-where/{service}", RunningServicesForService);
-        app.MapGet("/whats-running-where/filters", RunningServicesFilters);
         app.MapGet("/running-services", RunningServices);
         app.MapGet("/running-services/{service}", RunningServicesForService);
         app.MapGet("/running-services/filters", RunningServicesFilters);
@@ -109,7 +106,6 @@ public static class DeploymentsEndpoint
         return Results.Ok(deployment);
     }
 
-    // GET /whats-running-where or with query params GET /whats-running-where?environments=dev&service=forms-runner&status=running
     // GET /running-services or with query params GET /running-services?environments=dev&service=forms-runner&status=running
     private static async Task<IResult> RunningServices(IDeploymentsService deploymentsService,
         [FromQuery(Name = "environments")] string[]? environments,
@@ -124,7 +120,6 @@ public static class DeploymentsEndpoint
         return Results.Ok(deployments);
     }
 
-    // GET /whats-running-where/{service}
     // GET /running-services/{service}
     private static async Task<IResult> RunningServicesForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
@@ -133,7 +128,6 @@ public static class DeploymentsEndpoint
         return Results.Ok(deployments);
     }
 
-    // GET /whats-running-where/filters
     // GET /running-services/filters
     private static async Task<IResult> RunningServicesFilters(
         IDeploymentsService deploymentsService,
