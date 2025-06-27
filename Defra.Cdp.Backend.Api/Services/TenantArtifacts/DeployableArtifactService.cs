@@ -10,9 +10,6 @@ public interface IDeployableArtifactsService
 {
     Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken);
 
-    Task CreatePlaceholderAsync(string serviceName, string githubUrl, ArtifactRunMode runMode,
-        CancellationToken cancellationToken);
-
     Task<bool> RemoveAsync(string service, string tag, CancellationToken cancellationToken);
 
     Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken);
@@ -37,11 +34,8 @@ public interface IDeployableArtifactsService
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
 
-    Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId, string? service,
-        CancellationToken cancellationToken);
     Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
 
-    Task<ServiceFilters> GetAllServicesFilters(CancellationToken ct);
     Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
 
@@ -86,7 +80,7 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     public async Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, CancellationToken cancellationToken)
     {
         return await Collection
-            .Distinct(d => d.Repo, d => d.RunMode == runMode.ToString().ToLower())
+            .Distinct(d => d.Repo, d => d.RunMode == runMode.ToString().ToLower(), cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
     }
 
@@ -95,7 +89,8 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     {
         return await Collection
             .Distinct(d => d.Repo,
-                d => d.RunMode == runMode.ToString().ToLower() && d.Teams.Any(t => groups.Contains(t.TeamId)))
+                d => d.RunMode == runMode.ToString().ToLower() && d.Teams.Any(t => groups.Contains(t.TeamId)),
+                cancellationToken: cancellationToken)
             .ToListAsync(cancellationToken);
     }
 
@@ -149,69 +144,6 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         await Collection.DeleteManyAsync(da => da.ServiceName == serviceName, cancellationToken: cancellationToken);
     }
 
-    public async Task<List<ServiceInfo>> FindAllServices(ArtifactRunMode? runMode, string? teamId, string? service,
-        CancellationToken cancellationToken)
-    {
-        var builder = Builders<DeployableArtifact>.Filter;
-        var filter = builder.Empty;
-
-        if (runMode != null) filter = builder.Eq(d => d.RunMode, runMode.ToString()?.ToLower());
-
-        if (teamId != null)
-        {
-            var teamFilter = builder.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
-            filter &= teamFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(service))
-        {
-            var partialServiceFilter =
-                builder.Regex(d => d.ServiceName, new BsonRegularExpression(service, "i"));
-            filter &= partialServiceFilter;
-        }
-
-        var sort = Builders<ServiceInfo>.Sort.Ascending(d => d.ServiceName);
-        var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(filter)
-            .Group(d => d.ServiceName,
-                grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
-            .Sort(sort);
-
-        var result = await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
-                         .ToListAsync(cancellationToken) ??
-                     new List<ServiceInfo>();
-
-        return result;
-    }
-
-    public async Task CreatePlaceholderAsync(string serviceName, string githubUrl, ArtifactRunMode runMode,
-        CancellationToken cancellationToken)
-    {
-        var artifact = new DeployableArtifact
-        {
-            Created = DateTime.UtcNow,
-            Files = new List<DeployableArtifactFile>(),
-            GithubUrl = githubUrl,
-            Id = null,
-            Repo = serviceName,
-            Sha256 = "",
-            Tag = "0.0.0",
-            ScannerVersion = 1,
-            SemVer = 0,
-            ServiceName = serviceName,
-            Teams = new List<RepositoryTeam>(),
-            RunMode = runMode.ToString().ToLower()
-        };
-
-        await Collection.ReplaceOneAsync(
-            a => a.Repo == artifact.Repo && a.Tag == artifact.Tag,
-            artifact,
-            new ReplaceOptions { IsUpsert = true },
-            cancellationToken
-        );
-    }
-
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(
         IndexKeysDefinitionBuilder<DeployableArtifact> builder)
     {
@@ -223,20 +155,7 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         var teamIdIndex = new CreateIndexModel<DeployableArtifact>(
             builder.Ascending(d => d.Teams.Select(t => t.TeamId)),
             new CreateIndexOptions { Sparse = true });
-        return new List<CreateIndexModel<DeployableArtifact>>
-        {
-            githubUrlIndex, repoAndTagIndex, hashIndex, teamIdIndex
-        };
-    }
-
-    public async Task<ServiceFilters> GetAllServicesFilters(CancellationToken ct)
-    {
-        var serviceNames = await Collection
-            .Distinct(d => d.ServiceName, d => d.RunMode == ArtifactRunMode.Service.ToString().ToLower(),
-                cancellationToken: ct)
-            .ToListAsync(ct);
-
-        return new ServiceFilters { Services = serviceNames };
+        return [githubUrlIndex, repoAndTagIndex, hashIndex, teamIdIndex];
     }
 
     public async Task<UpdateResult> AddAnnotation(string repo, string tag,

@@ -21,7 +21,6 @@ public static class ArtifactsAndDeployablesEndpoint
         app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent);
         app.MapGet(DeployablesBaseRoute, ListDeployables);
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
-        app.MapPost($"{ArtifactsBaseRoute}/placeholder", CreatePlaceholder);
     }
 
     // GET /artifacts
@@ -135,17 +134,5 @@ public static class ArtifactsAndDeployablesEndpoint
     {
         var tags = await deployableArtifactsService.FindAllTagsForRepo(repo, cancellationToken);
         return Results.Ok(tags);
-    }
-    
-    // POST /artifacts/placeholder
-    private static async Task<IResult> CreatePlaceholder(IDeployableArtifactsService deployableArtifactsService, string service,
-        string githubUrl, string? runMode, CancellationToken cancellationToken)
-    {
-        if (!Enum.TryParse(runMode, true, out ArtifactRunMode mode))
-        {
-            mode = ArtifactRunMode.Service;
-        }
-        await deployableArtifactsService.CreatePlaceholderAsync(service, githubUrl, mode, cancellationToken);
-        return Results.Ok();
     }
 }

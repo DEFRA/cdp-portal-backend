@@ -111,9 +111,6 @@ builder.Services.Configure<SecretEventListenerOptions>(
     builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
 builder.Services.Configure<GithubWorkflowEventListenerOptions>(
     builder.Configuration.GetSection(GithubWorkflowEventListenerOptions.Prefix));
-builder.Services.Configure<GithubEventListenerOptions>(
-    builder.Configuration.GetSection(GithubEventListenerOptions.Prefix));
-builder.Services.Configure<GithubOptions>(builder.Configuration.GetSection(GithubOptions.Prefix));
 builder.Services.Configure<PlatformEventListenerOptions>(
     builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
