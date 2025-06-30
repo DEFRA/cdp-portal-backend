@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.Utils.Audit;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Mongo;

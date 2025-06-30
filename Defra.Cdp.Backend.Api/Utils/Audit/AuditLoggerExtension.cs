@@ -35,7 +35,7 @@ public static class AuditLoggingExtension
     
     private static readonly Dictionary<string, object> s_auditLogLevel = new()
     {
-        [AuditPropertyName] = true, ["log.level"] = "AUDIT"
+        [AuditPropertyName] = true
     };
     
     // Microsoft Logger
@@ -69,9 +69,9 @@ public static class AuditLoggingExtension
     {
         var auditLogger = new LoggerConfiguration()
             .MinimumLevel.Information()
+            .Filter.With<OnlyAuditEvents>()
             .Enrich.With<EnrichAuditLog>()
             .WriteTo.Console(new CompactJsonFormatter())
-            .Filter.With<OnlyAuditEvents>()
             .CreateLogger();
         builder.AddSerilog(auditLogger);
         return builder;
@@ -80,9 +80,12 @@ public static class AuditLoggingExtension
 
 public class EnrichAuditLog : ILogEventEnricher
 {
+    private const string LogLevelField = "log.level";
+    private const string AuditLogLevel = "audit";
+    
     public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
     {
-        logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty("log.level", "AUDIT"));
+        logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(LogLevelField, AuditLogLevel));
     }
 }
 
