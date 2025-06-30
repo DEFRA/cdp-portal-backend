@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.Utils.Audit;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Mongo;
@@ -24,6 +25,7 @@ public abstract class MongoService<T>
         var indexes = DefineIndexes(builder);
         if (indexes.Count == 0) return Enumerable.Empty<string?>();
 
+        Logger.Audit("AUDIT TEST");
         Logger.LogInformation(
             "Ensuring index is created if it does not exist for collection {CollectionNamespaceCollectionName} in DB {DatabaseDatabaseNamespace}",
             Collection.CollectionNamespace.CollectionName,
