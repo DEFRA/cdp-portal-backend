@@ -10,7 +10,7 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public interface IEntitiesService
 {
-    Task<List<Entity>> GetEntities(Type? type, string? partialName, string? teamId, bool includeDecommissioned,
+    Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, bool includeDecommissioned,
         CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
@@ -38,7 +38,7 @@ public class EntitiesService(
         return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
     }
 
-    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string? teamId,
+    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds,
         bool includeDecommissioned,
         CancellationToken cancellationToken)
     {
@@ -50,9 +50,9 @@ public class EntitiesService(
             filter = builder.Eq(e => e.Type, type);
         }
 
-        if (teamId != null)
+        if (teamIds.Length > 0)
         {
-            var teamFilter = builder.ElemMatch(d => d.Teams, t => t.TeamId == teamId);
+            var teamFilter = builder.ElemMatch(e => e.Teams, t => t.TeamId != null && teamIds.Contains(t.TeamId));
             filter &= teamFilter;
         }
 

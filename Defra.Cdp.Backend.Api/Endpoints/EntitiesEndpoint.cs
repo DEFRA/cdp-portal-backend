@@ -25,13 +25,14 @@ public static class EntitiesEndpoint
         return status != null ? Results.Ok(status) : Results.NotFound();
     }
 
-    private static async Task<IResult> GetEntities([FromQuery] Type? type,
+    private static async Task<IResult> GetEntities(
+        [FromQuery] string[] teamIds,
+        [FromQuery] Type? type,
         [FromQuery] string? name,
-        [FromQuery] string? teamId,
         IEntitiesService entitiesService, CancellationToken cancellationToken,
         [FromQuery] bool includeDecommissioned = false)
     {
-        var statuses = await entitiesService.GetEntities(type, name, teamId, includeDecommissioned, cancellationToken);
+        var statuses = await entitiesService.GetEntities(type, name, teamIds, includeDecommissioned, cancellationToken);
         return Results.Ok(statuses);
     }
 
