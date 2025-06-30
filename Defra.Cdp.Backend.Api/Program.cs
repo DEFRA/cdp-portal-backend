@@ -24,6 +24,7 @@ using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
+using Defra.Cdp.Backend.Api.Utils.Audit;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,7 +36,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Quartz;
 using Serilog;
-using Environment = System.Environment;
+
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 //-------- Configure the WebApplication builder------------------//
@@ -56,11 +57,11 @@ var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.With<LogLevelMapper>()
     .Enrich.WithRequestHeader(tracingHeader, tracingHeader)
-    .Enrich.WithProperty("service.version", Environment.GetEnvironmentVariable("SERVICE_VERSION"))
+    .Filter.With<ExcludeAuditEvents>()
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
 
-Console.WriteLine("Logger created.");
+builder.Logging.AddCdpAuditLogger();
 
 logger.Information("Starting CDP Portal Backend, bootstrapping the services");
 

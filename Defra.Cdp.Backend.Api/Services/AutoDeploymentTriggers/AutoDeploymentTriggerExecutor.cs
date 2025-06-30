@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Utils.Audit;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
@@ -63,6 +64,8 @@ public class AutoDeploymentTriggerExecutor(
 
                 await selfServiceOpsClient.AutoDeployService(repositoryName, imageTag, environment, userDetails,
                     deploymentSettings, configVersion.CommitSha, cancellationToken);
+                
+                logger.Audit("Auto-deploying {Repo}:{Version} to {Environment}", repositoryName, imageTag, environment);
             }
         }
     }

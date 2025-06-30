@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Utils;
+using Defra.Cdp.Backend.Api.Utils.Audit;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
@@ -149,6 +150,7 @@ public class ArtifactScanner : IArtifactScanner
         await _deployableArtifactsService.CreateAsync(artifact, cancellationToken);
 
         _logger.LogInformation("Artifact {Repo}:{Tag} completed", repo, tag);
+        _logger.Audit("New artifact added to portal {Repo}:{Tag}", repo, tag);
         return new ArtifactScannerResult(artifact);
     }
 
