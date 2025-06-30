@@ -82,7 +82,7 @@ public class EnrichAuditLog : ILogEventEnricher
 {
     public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
     {
-        logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty("log.level", "AUDIT"));
+        logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty("log.level", "audit"));
     }
 }
 
