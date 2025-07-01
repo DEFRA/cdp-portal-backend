@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
@@ -14,10 +15,11 @@ public interface IDeploymentsService
 {
     Task RegisterDeployment(Deployment deployment, CancellationToken ct);
     Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
-    Task UpdateDeployment(Deployment deployment, CancellationToken ct);
+    Task UpdateOverallTaskStatus(Deployment deployment, CancellationToken ct);
     Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
     Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
-
+    Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus, CancellationToken ct);
+    
     Task<Paginated<Deployment>> FindLatest(
         string[]? favourites,
         string? environment,
@@ -134,6 +136,25 @@ public class DeploymentsService(
         return result.ModifiedCount == 1;
     }
 
+    public async Task UpdateDeployment(string cdpId, Func<Deployment, Deployment> update, CancellationToken ct)
+    {
+        using var session = await Collection.Database.Client.StartSessionAsync(cancellationToken: ct);
+        session.StartTransaction();
+        try
+        {
+            var filter = Builders<Deployment>.Filter.Eq(d => d.CdpDeploymentId, cdpId);
+            var deployment = await Collection.Find(filter).FirstOrDefaultAsync(ct);
+            await Collection.ReplaceOneAsync(filter, update(deployment), new ReplaceOptions { IsUpsert = true },
+                cancellationToken: ct);
+            await session.CommitTransactionAsync(ct);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error writing to MongoDB: " + e.Message);
+            await session.AbortTransactionAsync(ct);
+        }
+    }
+
     public async Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct)
     {
         return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
@@ -155,6 +176,34 @@ public class DeploymentsService(
 
         var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
         return result.ModifiedCount == 1;
+    }
+    
+    public async Task<bool> UpdateStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
+    {
+        var deployment = await FindDeployment(lambdaId, ct);
+
+        var update = new UpdateDefinitionBuilder<Deployment>()
+            .Set(d => d.LastDeploymentStatus, eventName)
+            .Set(d => d.LastDeploymentMessage, reason);
+
+        if (deployment != null)
+        {
+            deployment.LastDeploymentStatus = eventName;
+            update = update.Set(d => d.Status, CalculateOverallStatus(deployment));
+        }
+
+        var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
+        return result.ModifiedCount == 1;
+    }
+
+    public async Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus,
+        CancellationToken ct)
+    {
+        var fb = Builders<Deployment>.Filter;
+        var filter = fb.And(
+            fb.Eq(d => d.CdpDeploymentId, cdpDeploymentId));
+        var update = Builders<Deployment>.Update.Set(d => d.Instances[instanceId], instanceStatus);
+        await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
     }
 
     public async Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct)
@@ -442,9 +491,16 @@ public class DeploymentsService(
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task UpdateDeployment(Deployment deployment, CancellationToken ct)
+    public async Task UpdateOverallTaskStatus(Deployment deployment, CancellationToken ct)
     {
-        await Collection.ReplaceOneAsync(d => d.Id == deployment.Id, deployment, cancellationToken: ct);
+        var update = Builders<Deployment>.Update
+            .Set(d => d.Status, deployment.Status)
+            .Set(d => d.Unstable, deployment.Unstable)
+            .Set(d => d.Updated, deployment.Updated)
+            .Set(d => d.TaskDefinitionArn, deployment.TaskDefinitionArn)
+            .Set(d => d.FailureReasons, deployment.FailureReasons);
+
+        await Collection.FindOneAndUpdateAsync(d => d.Id == deployment.Id, update, cancellationToken: ct);
     }
 
     private async Task<List<UserDetails>> UserDetailsList(CancellationToken ct)

@@ -3,20 +3,21 @@ using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws.Deployments;
 
 public class UpdateTestSuiteTests
 {
-
     private readonly OptionsWrapper<EcsEventListenerOptions> _config = new(new EcsEventListenerOptions());
-    private readonly IDeployableArtifactsService _artifactsService = Substitute.For<IDeployableArtifactsService>();
+    private readonly IEntitiesService _entitiesService = Substitute.For<IEntitiesService>();
     private readonly IDeploymentsService _deploymentsService = Substitute.For<IDeploymentsService>();
     private readonly ITestRunService _testRunService = Substitute.For<ITestRunService>();
 
@@ -26,23 +27,22 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
 
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.DidNotReceive().UpdateStatus(
             Arg.Any<string>(),
@@ -59,17 +59,16 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
 
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -84,7 +83,7 @@ public class UpdateTestSuiteTests
             TestSuite = "forms-perf-test"
         });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -101,17 +100,15 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
-
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -122,7 +119,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -139,17 +136,16 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-running.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
-
         var handler = new TaskStateChangeEventHandler(
-            _config,
+
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -160,7 +156,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -177,17 +173,16 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-test-suite-pass.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
-
+        
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -198,7 +193,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -215,17 +210,16 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-test-suite-fail.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
 
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -236,7 +230,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -253,17 +247,15 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-out-of-memory.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
-
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -274,7 +266,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -294,17 +286,16 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-timeout-sidecar.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
 
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -315,7 +306,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
@@ -332,17 +323,16 @@ public class UpdateTestSuiteTests
         var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-missing-secret.json");
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
-        var artifact = new DeployableArtifact
+        var entity = new Entity
         {
-            Repo = "forms-perf-test",
-            ServiceName = "forms-perf-test"
+            Name = "forms-perf-test",
+            Type = Type.TestSuite
         };
-
+        
         var handler = new TaskStateChangeEventHandler(
-            _config,
             new MockEnvironmentLookup(),
             _deploymentsService,
-            _artifactsService,
+            _entitiesService,
             _testRunService,
             new NullLogger<TaskStateChangeEventHandler>());
 
@@ -353,7 +343,7 @@ public class UpdateTestSuiteTests
                 TestSuite = "forms-perf-test"
             });
 
-        await handler.UpdateTestSuite(ecsEvent, artifact, CancellationToken.None);
+        await handler.UpdateTestSuite(ecsEvent, entity, CancellationToken.None);
 
         await _testRunService.Received().UpdateStatus(
             ecsEvent.Detail.TaskArn,
