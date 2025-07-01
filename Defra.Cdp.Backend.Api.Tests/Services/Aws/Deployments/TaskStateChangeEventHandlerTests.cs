@@ -1,12 +1,9 @@
-using System.Text.Json;
-using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
@@ -29,17 +26,20 @@ public class TaskStateChangeEventHandlerTests
         DateTime.Now,
         "eu-west-2",
         new EcsEventDetail(
-            DateTime.Now,
-            "1024",
-            "1024",
-            "RUNNING",
-            "RUNNING",
-            [],
-            "arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47",
-            "task-arn",
-            "reason",
-            "ecs-svc/6276605373259507742",
-            "ecs-svc/6276605373259507742"),
+            CreatedAt: DateTime.Now,
+            Memory: "1024",
+            Cpu: "1024",
+            TaskArn: "arn:aws:ecs:eu-west-2:120185944470:task/perf-test-ecs-public/b3e14b20479b48608694fe4fee50ba77",
+            Group: "family:cdp-example-node-backend",
+            DesiredStatus: "RUNNING",
+            LastStatus: "RUNNING",
+            Containers: [],
+            StartedBy: "ecs-svc/6276605373259507742",
+            TaskDefinitionArn: "arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47",
+            EcsSvcDeploymentId: null,
+            StoppedReason: null,
+            StopCode: null
+        ),
         "ecs-svc/6276605373259507742",
         "ecs-svc/6276605373259507742"
     );
@@ -48,20 +48,17 @@ public class TaskStateChangeEventHandlerTests
     [Fact]
     public async Task TestUpdatesUsingLinkedRecord()
     {
-
-        var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
-
-        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
+        var entitiesService = Substitute.For<IEntitiesService>();
         var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
 
         deploymentsService.FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>())
             .Returns(new Deployment());
 
-        var handler = new TaskStateChangeEventHandler(config,
+        var handler = new TaskStateChangeEventHandler(
             new MockEnvironmentLookup(),
             deploymentsService,
-            deployableArtifactsService,
+            entitiesService,
             testRunService,
             ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
 
@@ -69,16 +66,13 @@ public class TaskStateChangeEventHandlerTests
 
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.DidNotReceiveWithAnyArgs().FindDeploymentByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await deploymentsService.Received().UpdateDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
+        await deploymentsService.Received().UpdateOverallTaskStatus(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestFallbackLinking()
     {
-
-        var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
-
-        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
+        var entitiesService = Substitute.For<IEntitiesService>();
         var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
 
@@ -86,10 +80,10 @@ public class TaskStateChangeEventHandlerTests
         deploymentsService.FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>()).Returns(new Deployment());
 
 
-        var handler = new TaskStateChangeEventHandler(config,
+        var handler = new TaskStateChangeEventHandler(
             new MockEnvironmentLookup(),
             deploymentsService,
-            deployableArtifactsService,
+            entitiesService,
             testRunService,
             ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
 
@@ -97,15 +91,13 @@ public class TaskStateChangeEventHandlerTests
 
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.Received().FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>());
-        await deploymentsService.Received().UpdateDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
+        await deploymentsService.Received().UpdateOverallTaskStatus(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestNotUpdatedWhenNoLinkExists()
     {
-
-        var config = new OptionsWrapper<EcsEventListenerOptions>(new EcsEventListenerOptions());
-        var deployableArtifactsService = Substitute.For<IDeployableArtifactsService>();
+        var entitiesService = Substitute.For<IEntitiesService>();
         var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
 
@@ -115,10 +107,10 @@ public class TaskStateChangeEventHandlerTests
                 Arg.Any<CancellationToken>()).ReturnsNull();
 
 
-        var handler = new TaskStateChangeEventHandler(config,
+        var handler = new TaskStateChangeEventHandler(
             new MockEnvironmentLookup(),
             deploymentsService,
-            deployableArtifactsService,
+            entitiesService,
             testRunService,
             ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
 
@@ -126,7 +118,7 @@ public class TaskStateChangeEventHandlerTests
 
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.Received().FindDeploymentByTaskArn("arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47", Arg.Any<CancellationToken>());
-        await deploymentsService.DidNotReceive().UpdateDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
+        await deploymentsService.DidNotReceive().UpdateOverallTaskStatus(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
 
 }
