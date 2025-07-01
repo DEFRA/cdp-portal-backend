@@ -109,30 +109,40 @@ public class TaskStateChangeEventHandler(
 
             await deploymentsService.UpdateInstance(deployment.CdpDeploymentId, instanceTaskId,
                 new DeploymentInstanceStatus(instanceStatus, ecsTaskStateChangeEvent.Timestamp), cancellationToken);
-            
 
-            // Limit the number of stopped service in the event of a crash-loop
-            deployment.TrimInstance(10);
-
-            // update the overall status
-            deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
-            deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
-            deployment.Updated = ecsTaskStateChangeEvent.Timestamp;
-
-            deployment.TaskDefinitionArn = ecsTaskStateChangeEvent.Detail.TaskArn;
-
-            if (deployment.FailureReasons.Count == 0)
-            {
-                deployment.FailureReasons = ExtractFailureReasons(ecsTaskStateChangeEvent);
-            }
-
-            await deploymentsService.UpdateOverallTaskStatus(deployment, cancellationToken);
-            logger.LogInformation("Updated deployment {Id}, {Status}", deployment.LambdaId, deployment.Status);
+            await UpdateStatus(deployment.CdpDeploymentId, ecsTaskStateChangeEvent, cancellationToken);
         }
         catch (Exception ex)
         {
             logger.LogError("Failed to update deployment: {Message}", ex.Message);
         }
+    }
+
+    async Task UpdateStatus(string cdpDeploymentId, EcsTaskStateChangeEvent ecsTaskStateChangeEvent, CancellationToken cancellationToken)
+    {
+        var deployment = await deploymentsService.FindDeployment(cdpDeploymentId, cancellationToken);
+        if (deployment == null)
+        {
+            throw new Exception("Failed to get updated deployment");
+        }
+            
+        // Limit the number of stopped service in the event of a crash-loop
+        deployment.TrimInstance(10);
+
+        // update the overall status
+        deployment.Status = DeploymentStatus.CalculateOverallStatus(deployment);
+        deployment.Unstable = DeploymentStatus.IsUnstable(deployment);
+        deployment.Updated = ecsTaskStateChangeEvent.Timestamp;
+
+        deployment.TaskDefinitionArn = ecsTaskStateChangeEvent.Detail.TaskArn;
+
+        if (deployment.FailureReasons.Count == 0)
+        {
+            deployment.FailureReasons = ExtractFailureReasons(ecsTaskStateChangeEvent);
+        }
+
+        await deploymentsService.UpdateOverallTaskStatus(deployment, cancellationToken);
+        logger.LogInformation("Updated deployment {Id}, {Status}", deployment.LambdaId, deployment.Status);
     }
 
     /**
