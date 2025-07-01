@@ -130,7 +130,46 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         Assert.NotNull(resultByLambdaId);
         Assert.Equal(deployment.CdpDeploymentId, resultByLambdaId.CdpDeploymentId);
     }
+    
+    [Fact]
+    public async Task UpdateDeploymentInstance()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
+        const string lambdaId = "ecs/12345";
+        var deployment = Deployment.FromRequest(new RequestedDeployment
+        {
+            Cpu = "1024",
+            Memory = "1024",
+            ConfigVersion = "e5fa44f2b31c1fb553b6021e7360d07d5d91ff5e",
+            Environment = "test",
+            DeploymentId = Guid.NewGuid().ToString(),
+            InstanceCount = 2,
+            Service = "link-test-backend",
+            Version = "1.0.0",
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
+        });
+
+        var ct = new CancellationToken();
+        await service.RegisterDeployment(deployment, ct);
+        var linked = await service.LinkDeployment(deployment.CdpDeploymentId, lambdaId, ct);
+        Assert.True(linked);
+
+        var instance1 = new DeploymentInstanceStatus(DeploymentStatus.Running, DateTime.Now);
+        var instance2 = new DeploymentInstanceStatus(DeploymentStatus.Pending, DateTime.Now);
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance1", instance1, ct);
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance2", instance2, ct);
+
+        var result = await service.FindDeployment(deployment.CdpDeploymentId, ct);
+        Assert.NotNull(result);
+        Assert.Equal(lambdaId, result.LambdaId);
+        Assert.Equal(deployment.CdpDeploymentId, result.CdpDeploymentId);
+        Assert.Equivalent(instance1.Status, result.Instances["instance1"].Status);
+        Assert.Equivalent(instance2.Status, result.Instances["instance2"].Status);
+    }
+    
     [Fact]
     public async Task FindWhatsRunningWhereWithNoData()
     {
