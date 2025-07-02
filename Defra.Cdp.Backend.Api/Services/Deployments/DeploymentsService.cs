@@ -49,34 +49,28 @@ public interface IDeploymentsService
     Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct);
     Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
-    Task<List<Deployment>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
+    Task<List<Deployment>> RunningDeploymentsForService(string[]? environments, string? service, string? team,
         string? user, string? status, CancellationToken ct);
-    Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken ct);
+    Task<List<Deployment>> RunningDeploymentsForService(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct);
     Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
     Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct);
 }
 
-public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
+public class DeploymentsService(
+    IMongoDbClientFactory connectionFactory,
+    IRepositoryService repositoryService,
+    IUserServiceFetcher userServiceFetcher,
+    ILoggerFactory loggerFactory)
+    : MongoService<Deployment>(connectionFactory, "deploymentsV2", loggerFactory), IDeploymentsService
 {
-    public static readonly int DefaultPageSize = 50;
-    public static readonly int DefaultPage = 1;
+    public const int DefaultPageSize = 50;
+    public const int DefaultPage = 1;
     private const string Migration = "migration";
     private const string Deployment = "deployment";
-    private readonly IRepositoryService _repositoryService;
-    private readonly IUserServiceFetcher _userServiceFetcher;
+
     private readonly HashSet<string> _excludedDisplayNames =
         new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "GitHub Workflow" };
-
-    public DeploymentsService(
-        IMongoDbClientFactory connectionFactory,
-        IRepositoryService repositoryService,
-        IUserServiceFetcher userServiceFetcher,
-        ILoggerFactory loggerFactory) : base(connectionFactory, "deploymentsV2", loggerFactory)
-    {
-        _repositoryService = repositoryService;
-        _userServiceFetcher = userServiceFetcher;
-    }
 
     protected override List<CreateIndexModel<Deployment>> DefineIndexes(IndexKeysDefinitionBuilder<Deployment> builder)
     {
@@ -104,7 +98,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         // Record who owned the service at that point in time
         try
         {
-            var repo = await _repositoryService.FindRepositoryById(deployment.Service, ct);
+            var repo = await repositoryService.FindRepositoryById(deployment.Service, ct);
             var teams = repo?.Teams ?? [];
             deployment.Audit.ServiceOwners = teams.ToList();
         }
@@ -119,7 +113,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         {
             try
             {
-                var user = await _userServiceFetcher.GetUser(deployment.User.Id, ct);
+                var user = await userServiceFetcher.GetUser(deployment.User.Id, ct);
                 deployment.Audit.User = user?.user;
             }
             catch (Exception ex)
@@ -171,7 +165,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return await Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<Deployment>> FindWhatsRunningWhere(string[]? environments, string? service, string? team,
+    public async Task<List<Deployment>> RunningDeploymentsForService(string[]? environments, string? service, string? team,
         string? user, string? status, CancellationToken ct)
 
     {
@@ -186,7 +180,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         if (!string.IsNullOrWhiteSpace(team))
         {
-            var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
+            var repos = await repositoryService.FindRepositoriesByTeamId(team, true, ct);
             var servicesOwnedByTeam = repos.Select(r => r.Id);
             var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
             filter &= teamFilter;
@@ -225,12 +219,12 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
     }
 
-    public async Task<List<Deployment>> FindWhatsRunningWhere(string serviceName, CancellationToken ct)
+    public async Task<List<Deployment>> RunningDeploymentsForService(string serviceName, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.And(
             fb.Eq(d => d.Service, serviceName),
-            fb.In(d => d.Status, new[] { Running, Pending, Undeployed })
+            fb.In(d => d.Status, [Running, Pending, Undeployed])
         );
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
@@ -263,7 +257,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         if (!string.IsNullOrWhiteSpace(team))
         {
-            var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
+            var repos = await repositoryService.FindRepositoriesByTeamId(team, true, ct);
             var servicesOwnedByTeam = repos.Select(r => r.Id);
             var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
             filter &= teamFilter;
@@ -302,7 +296,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         if (favourites?.Length > 0)
         {
             var repos = (await Task.WhenAll(favourites.Select(teamId =>
-                    _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
+                    repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
                 .ToList();
 
@@ -345,7 +339,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
 
         if (!string.IsNullOrWhiteSpace(team))
         {
-            var repos = await _repositoryService.FindRepositoriesByTeamId(team, true, ct);
+            var repos = await repositoryService.FindRepositoriesByTeamId(team, true, ct);
             var servicesOwnedByTeam = repos.Select(r => r.Id).ToList();
             filter &= builder.In(d => d.Service, servicesOwnedByTeam);
             migrationFilter &= builderMigration.In(m => m.Service, servicesOwnedByTeam);
@@ -413,7 +407,7 @@ public class DeploymentsService : MongoService<Deployment>, IDeploymentsService
         if (favourites?.Length > 0)
         {
             var repos = (await Task.WhenAll(favourites.Select(teamId =>
-                    _repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
+                    repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
                 .ToList();
 
