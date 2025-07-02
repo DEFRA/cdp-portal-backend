@@ -138,7 +138,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
-        var result = await service.FindWhatsRunningWhere(null, null, null, null, null, new CancellationToken());
+        var result = await service.RunningDeploymentsForService(null, null, null, null, null, new CancellationToken());
 
         Assert.Empty(result);
     }
@@ -183,7 +183,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         await service.RegisterDeployment(deployment1, new CancellationToken());
         await service.RegisterDeployment(deployment2, new CancellationToken());
 
-        var result = await service.FindWhatsRunningWhere(deployment1.Service, new CancellationToken());
+        var result = await service.RunningDeploymentsForService(deployment1.Service, new CancellationToken());
         // The most recent running service should be shown
         Assert.Single(result);
         Assert.Equal(deployment2.CdpDeploymentId, result[0].CdpDeploymentId);

@@ -45,6 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Services\Decommissioning\" />
     <Folder Include="Services\GithubWorkflowEvents\events\" />
   </ItemGroup>
 

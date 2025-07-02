@@ -115,7 +115,7 @@ public static class DeploymentsEndpoint
         [FromQuery(Name = "status")] string? status,
         CancellationToken cancellationToken)
     {
-        var deployments = await deploymentsService.FindWhatsRunningWhere(environments, service,
+        var deployments = await deploymentsService.RunningDeploymentsForService(environments, service,
             team, user, status, cancellationToken);
         return Results.Ok(deployments);
     }
@@ -124,7 +124,7 @@ public static class DeploymentsEndpoint
     private static async Task<IResult> RunningServicesForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
     {
-        var deployments = await deploymentsService.FindWhatsRunningWhere(service, cancellationToken);
+        var deployments = await deploymentsService.RunningDeploymentsForService(service, cancellationToken);
         return Results.Ok(deployments);
     }
 

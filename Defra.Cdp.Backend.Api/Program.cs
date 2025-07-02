@@ -117,7 +117,6 @@ builder.Services.Configure<PlatformEventListenerOptions>(
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
-builder.Services.AddScoped<IValidator<RequestedUndeployment>, RequestedUndeploymentValidator>();
 builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
 
 // SQS provider
@@ -167,7 +166,6 @@ builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsSe
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
 builder.Services.AddSingleton<IEntityStatusService, EntityStatusService>();
-builder.Services.AddSingleton<IUndeploymentsService, UndeploymentsService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
@@ -270,7 +268,6 @@ app.MapApiGatewaysEndpoint();
 app.MapArtifactsAndDeployablesEndpoint();
 app.MapDecommissionEndpoint();
 app.MapDeploymentsEndpoint();
-app.MapUndeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapEntitiesEndpoint();
 app.MapTestSuiteEndpoint();
