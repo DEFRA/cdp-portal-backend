@@ -1,6 +1,6 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 
@@ -10,6 +10,7 @@ public class SelfServiceOpsClient
 {
     private readonly string _baseUrl;
     private readonly HttpClient _client;
+    private readonly string? _selfServiceOpsSecret;
 
     public SelfServiceOpsClient(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
@@ -17,6 +18,7 @@ public class SelfServiceOpsClient
         if (string.IsNullOrWhiteSpace(_baseUrl))
             throw new Exception("Self service ops backend url cannot be null");
         _client = httpClientFactory.CreateClient("ServiceClient");
+        _selfServiceOpsSecret = configuration.GetValue<string>("SelfServiceOpsSecret");
     }
 
     public async Task TriggerTestSuite(string imageName, UserDetails user, Deployment deployment,
@@ -39,9 +41,7 @@ public class SelfServiceOpsClient
                 Version = deployment.Version
             }
         };
-        var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-        var result = await _client.PostAsync(_baseUrl + "/trigger-test-suite", payload, cancellationToken);
-        result.EnsureSuccessStatusCode();
+        await SendAsyncWithSignature("/trigger-test-suite", JsonSerializer.Serialize(body), HttpMethod.Post, cancellationToken);
     }
 
     public async Task AutoDeployService(string imageName, string version, string environment,
@@ -65,59 +65,42 @@ public class SelfServiceOpsClient
             instanceCount = deploymentSettings.InstanceCount ?? defaultInstanceCount,
             configVersion
         };
-        var payload = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-        var result = await _client.PostAsync(_baseUrl + "/auto-deploy-service", payload, cancellationToken);
-        result.EnsureSuccessStatusCode();
+        await SendAsyncWithSignature("/auto-deploy-service", JsonSerializer.Serialize(body), HttpMethod.Post, cancellationToken);
     }
 
-    public async Task<CreationStatus?> FindStatus(string service)
+    public async Task TriggerDecommissionWorkflows(string entityName, CancellationToken cancellationToken)
     {
-        var response = await _client.GetAsync($"{_baseUrl}/status/{service}");
-        if (!response.IsSuccessStatusCode) return null;
-        var stream = await response.Content.ReadAsStreamAsync();
-        var json = await JsonSerializer.DeserializeAsync<JsonObject>(stream);
-        var status = json.Deserialize<SelfServiceOpsStatus>();
-        if (status?.RepositoryStatus == null)
+        var httpMethod = HttpMethod.Delete;
+        var path = $"/decommission/{entityName}";
+        var body = "";
+
+        await SendAsyncWithSignature(path, body, httpMethod, cancellationToken);
+    }
+
+    private async Task SendAsyncWithSignature(string path, string body, HttpMethod httpMethod, CancellationToken cancellationToken)
+    {
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var method = httpMethod.ToString().ToUpper();
+        var message = $"{method}\n{path}\n{timestamp}\n{body}";
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_selfServiceOpsSecret ??
+                                                               throw new InvalidOperationException(
+                                                                   "SelfServiceOpsSecret is not configured.")));
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+        var signature = Convert.ToHexString(hash);
+
+
+        var request = new HttpRequestMessage(httpMethod, _baseUrl + path);
+        if (body != "")
         {
-            return null;
+            request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         }
 
-        return new CreationStatus
-        {
-            Status = status.RepositoryStatus.Status,
-            Content = json,
-            Creator = status.RepositoryStatus.Creator,
-            Kind = status.RepositoryStatus.Kind,
-            Started = status.RepositoryStatus.Started
-        };
-    }
-}
+        request.Headers.Add("X-Signature", signature);
+        request.Headers.Add("X-Timestamp", timestamp);
+        request.Headers.Add("X-Signature-Version", "v1");
 
-public class CreationStatus
-{
-    public required string Status { get; init; }
-    public string? Kind { get; init; }
-    public DateTime? Started { get; init; }
-    public User? Creator { get; init; }
-    public JsonObject? Content { get; set; }
-}
-
-public class SelfServiceOpsStatus
-{
-    [property: JsonPropertyName("repositoryStatus")]
-    public RepoStatus? RepositoryStatus { get; set; }
-
-    public class RepoStatus
-    {
-        [property: JsonPropertyName("status")] public required string Status { get; init; }
-
-        [property: JsonPropertyName("kind")] public required string Kind { get; init; }
-
-        [property: JsonPropertyName("started")]
-        public DateTime? Started { get; init; }
-
-        [property: JsonPropertyName("creator")]
-        public User? Creator { get; init; }
+        var response = await _client.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }
 
