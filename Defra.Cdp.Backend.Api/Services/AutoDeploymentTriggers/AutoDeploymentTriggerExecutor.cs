@@ -28,45 +28,48 @@ public class AutoDeploymentTriggerExecutor(
     {
         var trigger = await autoDeploymentTriggerService.FindForService(repositoryName, cancellationToken);
 
-        if (trigger != null)
+        if (trigger == null)
         {
-            logger.LogInformation("Auto-deployment trigger found for {RepositoryName} to {Environments}",
-                repositoryName, trigger.Environments);
+            logger.LogInformation("No auto-deployment trigger found for {RepositoryName}", repositoryName);
+            return;
+        }
 
-            foreach (var environment in trigger.Environments)
+        logger.LogInformation("Auto-deployment trigger found for {RepositoryName} to {Environments}",
+            repositoryName, trigger.Environments);
+
+        foreach (var environment in trigger.Environments)
+        {
+            var deploymentSettings =
+                await deploymentsService.FindDeploymentSettings(repositoryName, environment, cancellationToken);
+            if (deploymentSettings == null)
             {
-                var deploymentSettings =
-                    await deploymentsService.FindDeploymentSettings(repositoryName, environment, cancellationToken);
-                if (deploymentSettings == null)
-                {
-                    logger.LogError(
-                        "Could not find deployment settings for repository {RepositoryName} in environment {Environment}",
-                        repositoryName, environment);
-                    continue;
-                }
-
-                var configVersion = await appConfigVersionsService.FindLatestAppConfigVersion(environment, cancellationToken);
-                if (configVersion == null)
-                {
-                    logger.LogError("Could not find latest config version for environment: {Environment}", environment);
-                    continue;
-                }
-
-                logger.LogInformation(
-                    "Auto-deploying {RepositoryName} version {ImageTag} to {Environment}",
-                    repositoryName, imageTag, environment);
-
-                var userDetails = new UserDetails
-                {
-                    Id = AutoDeploymentConstants.AutoDeploymentId,
-                    DisplayName = "Auto deployment"
-                };
-
-                await selfServiceOpsClient.AutoDeployService(repositoryName, imageTag, environment, userDetails,
-                    deploymentSettings, configVersion.CommitSha, cancellationToken);
-                
-                logger.Audit("Auto-deploying {Repo}:{Version} to {Environment}", repositoryName, imageTag, environment);
+                logger.LogError(
+                    "Could not find deployment settings for repository {RepositoryName} in environment {Environment}",
+                    repositoryName, environment);
+                continue;
             }
+
+            var configVersion =
+                await appConfigVersionsService.FindLatestAppConfigVersion(environment, cancellationToken);
+            if (configVersion == null)
+            {
+                logger.LogError("Could not find latest config version for environment: {Environment}", environment);
+                continue;
+            }
+
+            logger.LogInformation(
+                "Auto-deploying {RepositoryName} version {ImageTag} to {Environment}",
+                repositoryName, imageTag, environment);
+
+            var userDetails = new UserDetails
+            {
+                Id = AutoDeploymentConstants.AutoDeploymentId, DisplayName = "Auto deployment"
+            };
+
+            await selfServiceOpsClient.AutoDeployService(repositoryName, imageTag, environment, userDetails,
+                deploymentSettings, configVersion.CommitSha, cancellationToken);
+
+            logger.Audit("Auto-deploying {Repo}:{Version} to {Environment}", repositoryName, imageTag, environment);
         }
     }
 }
