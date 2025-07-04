@@ -42,6 +42,10 @@ public class AutoTestRunTriggerEventHandler(
                 .Select(kvp => kvp.Key)
                 .ToList() ?? [];
 
+            logger.LogInformation("{Id} Deployment {DeploymentId} found {Count} triggers for {Service} & {Environment}",
+                id, ecsEvent.Detail.DeploymentId, environmentTestSuites.Count, deployment.Service,
+                deployment.Environment);
+
             foreach (var testSuite in environmentTestSuites)
             {
                 logger.LogInformation("{Id} Triggering test run for {DeploymentId} {TestSuite} in {Environment}",
@@ -53,8 +57,7 @@ public class AutoTestRunTriggerEventHandler(
 
                 var userDetails = new UserDetails
                 {
-                    Id = AutoTestRunConstants.AutoTestRunId,
-                    DisplayName = "Auto test runner"
+                    Id = AutoTestRunConstants.AutoTestRunId, DisplayName = "Auto test runner"
                 };
 
                 await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,
