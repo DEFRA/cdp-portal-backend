@@ -77,11 +77,11 @@ public class SelfServiceOpsClient
         await SendAsyncWithSignature(path, body, httpMethod, cancellationToken);
     }
 
-    private async Task SendAsyncWithSignature(string path, string body, HttpMethod httpMethod, CancellationToken cancellationToken)
+    private async Task SendAsyncWithSignature(string path, string serializedBody, HttpMethod httpMethod, CancellationToken cancellationToken)
     {
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         var method = httpMethod.ToString().ToUpper();
-        var message = $"{method}\n{path}\n{timestamp}\n{body}";
+        var message = $"{method}\n{path}\n{timestamp}\n{serializedBody}";
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_selfServiceOpsSecret ??
                                                                throw new InvalidOperationException(
                                                                    "SelfServiceOpsSecret is not configured.")));
@@ -90,9 +90,9 @@ public class SelfServiceOpsClient
 
 
         var request = new HttpRequestMessage(httpMethod, _baseUrl + path);
-        if (body != "")
+        if (serializedBody != "")
         {
-            request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+            request.Content = new StringContent(serializedBody, Encoding.UTF8, "application/json");
         }
 
         request.Headers.Add("X-Signature", signature);
