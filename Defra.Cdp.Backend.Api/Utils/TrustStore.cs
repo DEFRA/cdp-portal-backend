@@ -1,34 +1,34 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Serilog.Core;
 
 namespace Defra.Cdp.Backend.Api.Utils;
 
+[ExcludeFromCodeCoverage]
 public static class TrustStore
 {
-    public static void SetupTrustStore(Logger logger)
+    public static void AddCustomTrustStore(this IServiceCollection _)
     {
-        logger.Information("Loading Certificates into Trust store");
-        var certificates = GetCertificates(logger);
+        var certificates = GetCertificates();
         AddCertificates(certificates);
     }
 
-    private static List<string> GetCertificates(Logger logger)
+    private static List<string> GetCertificates()
     {
         return Environment.GetEnvironmentVariables().Cast<DictionaryEntry>()
-            .Where(entry => entry.Key.ToString()!.StartsWith("TRUSTSTORE") && IsBase64String(entry.Value!.ToString()!))
+            .Where(entry =>
+                entry.Key.ToString()!.StartsWith("TRUSTSTORE") && IsBase64String(entry.Value!.ToString() ?? ""))
             .Select(entry =>
             {
-                var data = Convert.FromBase64String(entry.Value!.ToString()!);
-                logger.Information($"{entry.Key} certificate decoded");
+                var data = Convert.FromBase64String(entry.Value!.ToString() ?? "");
                 return Encoding.UTF8.GetString(data);
             }).ToList();
     }
 
     private static void AddCertificates(IReadOnlyCollection<string> certificates)
     {
-        if (!certificates.Any()) return; // to stop trust store access denied issues on Macs
+        if (certificates.Count == 0) return; // to stop trust store access denied issues on Macs
         var x509Certificate2S = certificates.Select(
             cert => new X509Certificate2(Encoding.ASCII.GetBytes(cert)));
         var certificateCollection = new X509Certificate2Collection();
