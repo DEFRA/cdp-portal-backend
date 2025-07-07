@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Utils;
-using Defra.Cdp.Backend.Api.Utils.Audit;
+using Defra.Cdp.Backend.Api.Utils.Auditing;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 

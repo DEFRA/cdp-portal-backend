@@ -24,19 +24,18 @@ using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
-using Defra.Cdp.Backend.Api.Utils.Audit;
+using Defra.Cdp.Backend.Api.Utils.Auditing;
 using Defra.Cdp.Backend.Api.Utils.Clients;
+using Defra.Cdp.Backend.Api.Utils.Logging;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Quartz;
 using Serilog;
-
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 //-------- Configure the WebApplication builder------------------//
@@ -50,23 +49,12 @@ builder.Configuration.AddEnvironmentVariables("CDP");
 builder.Configuration.AddEnvironmentVariables();
 
 // Serilog
-builder.Services.AddHttpContextAccessor();
 builder.Logging.ClearProviders();
-var tracingHeader = builder.Configuration.GetValue<string>("Tracing:Header");
-var logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.With<LogLevelMapper>()
-    .Enrich.WithRequestHeader(tracingHeader, tracingHeader)
-    .Filter.With<ExcludeAuditEvents>()
-    .CreateLogger();
-builder.Logging.AddSerilog(logger);
+builder.Services.AddHttpContextAccessor();
+builder.Host.UseSerilog(CdpLogging.Configuration);
 
-builder.Logging.AddCdpAuditLogger();
-
-logger.Information("Starting CDP Portal Backend, bootstrapping the services");
-
-// Load certificates into Trust Store - Note must happen before Mongo and Http client connections
-TrustStore.SetupTrustStore(logger);
+// Load certificates into Trust Store - Note must happen before Mongo and Http client connections.
+builder.Services.AddCustomTrustStore();
 
 // Add health checks and http client
 builder.Services.AddHealthChecks();
@@ -82,13 +70,16 @@ builder.Services.AddHttpClient("GitHubClient", HttpClientConfiguration.GitHub)
 builder.Services.AddHttpClient("proxy", HttpClientConfiguration.Proxy)
     .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
 
+
+// Propagate trace header.
 builder.Services.AddHeaderPropagation(options =>
 {
-    var tracingEnabled = builder.Configuration.GetValue<bool>("Tracing:Enabled");
-    if (tracingEnabled && string.IsNullOrEmpty(tracingHeader) == false) options.Headers.Add(tracingHeader);
+    var traceHeader = builder.Configuration.GetValue<string>("TraceHeader");
+    if (!string.IsNullOrWhiteSpace(traceHeader))
+    {
+        options.Headers.Add(traceHeader);
+    }
 });
-
-builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 // Handle requests behind Front Door/Load Balancer etc
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -120,7 +111,8 @@ builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentV
 builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
 
 // SQS provider
-logger.Information("Attempting to add SQS, ECR and Docker Client");
+
+
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 
 // GitHub credential factory for the cron job
@@ -128,14 +120,11 @@ builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCrede
 
 if (builder.IsDevMode())
 {
-    logger.Information("Using mock Docker Credential Provider");
     builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
 }
 else
 {
-    logger.Information("Connecting to Amazon ECR");
     builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
-    logger.Information("Connecting to ECR as a docker registry");
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
 
@@ -147,7 +136,6 @@ builder.Services.AddQuartz(q =>
     q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(jobKey));
 
     var interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
-    logger.Information("Fetching github repositories and teams every {interval} seconds", interval);
     q.AddTrigger(opts => opts
         .ForJob(jobKey)
         .WithIdentity("FetchGithubRepositories-trigger")
@@ -280,38 +268,43 @@ app.MapAutoTestRunTriggerEndpoint();
 app.MapMigrationEndpoints();
 app.MapShutteringEndpoint();
 
+
+var logger = app.Services.GetService<ILogger<Program>>();
+
 // Start the ecs and ecr services
 #pragma warning disable CS4014
 var ecsSqsEventListener = app.Services.GetService<EcsEventListener>();
-logger.Information("Starting ECS listener - reading service events from SQS");
+logger?.LogInformation("Starting ECS listener - reading service events from SQS");
 Task.Run(() =>
     ecsSqsEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var ecrSqsEventListener = app.Services.GetService<EcrEventListener>();
-logger.Information("Starting ECR listener - reading image creation events from SQS");
+logger?.LogInformation("Starting ECR listener - reading image creation events from SQS");
 Task.Run(() =>
     ecrSqsEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var secretEventListener = app.Services.GetService<SecretEventListener>();
-logger.Information("Starting Secret Event listener - reading secret update events from SQS");
+logger?.LogInformation("Starting Secret Event listener - reading secret update events from SQS");
 Task.Run(() =>
     secretEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var gitHubWorkflowEventListener = app.Services.GetService<GithubWorkflowEventListener>();
-logger.Information("Starting GitHub Workflow Event listener - reading workflow events from SQS");
+logger?.LogInformation("Starting GitHub Workflow Event listener - reading workflow events from SQS");
 Task.Run(() =>
     gitHubWorkflowEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 var platformEventListener = app.Services.GetService<PlatformEventListener>();
-logger.Information("Starting Platform Event listener - reading portal events from SQS");
+logger?.LogInformation("Starting Platform Event listener - reading portal events from SQS");
 Task.Run(() =>
     platformEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
+
+logger?.Audit("AUDIT TEST");
 #pragma warning restore CS4014
 
 BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
