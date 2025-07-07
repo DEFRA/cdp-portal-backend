@@ -303,8 +303,6 @@ Task.Run(() =>
     platformEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
-
-logger?.Audit("AUDIT TEST");
 #pragma warning restore CS4014
 
 BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
