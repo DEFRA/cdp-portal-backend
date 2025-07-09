@@ -119,7 +119,7 @@ public class ArtifactScanner : IArtifactScanner
             Enum.TryParse(sRunMode, true, out runMode);
         }
 
-        long semver = 0;
+        long semver;
 
         try
         {

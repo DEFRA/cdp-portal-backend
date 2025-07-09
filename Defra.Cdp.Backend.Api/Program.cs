@@ -8,6 +8,7 @@ using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -132,19 +133,35 @@ else
 builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Github:Scheduler"));
 builder.Services.AddQuartz(q =>
 {
-    var jobKey = new JobKey("FetchGithubRepositories");
-    q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(jobKey));
+    var githubJobKey = new JobKey("FetchGithubRepositories");
+    q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(githubJobKey));
 
-    var interval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
+    var githubInterval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
     q.AddTrigger(opts => opts
-        .ForJob(jobKey)
+        .ForJob(githubJobKey)
         .WithIdentity("FetchGithubRepositories-trigger")
-        .WithSimpleSchedule(d => d.WithIntervalInSeconds(interval).RepeatForever().Build()));
+        .WithSimpleSchedule(d => d.WithIntervalInSeconds(githubInterval).RepeatForever().Build()));
+    
+    var decommissionJobKey = new JobKey("DecommissionEntities");
+    q.AddJob<DecommissioningService>(opts => opts.WithIdentity(decommissionJobKey));
+
+    var decommissionInterval = builder.Configuration.GetValue<int>("Decommission:PollIntervalSecs");
+    q.AddTrigger(opts => opts
+        .ForJob(decommissionJobKey)
+        .WithIdentity("DecommissionEntities-trigger")
+        .WithSimpleSchedule(d => d.WithIntervalInSeconds(decommissionInterval).RepeatForever().Build()));
+    
 });
 builder.Services.AddQuartzHostedService(options =>
 {
     // when shutting down we want jobs to complete gracefully
     options.WaitForJobsToComplete = true;
+});
+
+// Quartz setup for Decommission scheduler
+builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Decommission:Scheduler"));
+builder.Services.AddQuartz(q =>
+{
 });
 
 // Setting up our services

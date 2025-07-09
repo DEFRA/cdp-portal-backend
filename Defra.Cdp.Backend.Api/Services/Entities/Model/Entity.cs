@@ -50,6 +50,9 @@ public record Decommission
 
     [property: JsonPropertyName("decommissionedAt")]
     public required DateTime DecommissionedAt { get; set; }
+
+    [property: JsonPropertyName("workflowsTriggered")]
+    public required bool WorkflowsTriggered { get; set; }
 }
 
 public record Team
@@ -88,6 +91,8 @@ public enum Status
 {
     Creating,
     Created,
+    Decommissioning,
+    Decommissioned,
     Failed, // TODO Remove
     Success // TODO Legacy. Do not use, use Created instead
 }
