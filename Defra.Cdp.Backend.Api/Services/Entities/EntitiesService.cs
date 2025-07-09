@@ -15,14 +15,19 @@ public interface IEntitiesService
 
     Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
     Task Create(Entity entity, CancellationToken cancellationToken);
-    Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken);
-    Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken);
-    Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken);
+    Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
+
+    Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
+        CancellationToken cancellationToken);
+
+    Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
 
     Task AddTag(string entityName, string tag, CancellationToken cancellationToken);
     Task RemoveTag(string entityName, string tag, CancellationToken cancellationToken);
     Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
+    Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
+    Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -132,37 +137,41 @@ public class EntitiesService(
         await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateStatus(Status overallStatus, string repositoryName, CancellationToken cancellationToken)
+    public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
     {
-        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, repositoryName);
+        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
         var update = Builders<Entity>.Update.Set(e => e.Status, overallStatus);
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task Decommission(string repositoryName, string userId, string userDisplayName, CancellationToken cancellationToken)
+    public async Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
+        CancellationToken cancellationToken)
     {
-        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, repositoryName);
-        var update = Builders<Entity>.Update.Set(e => e.Decommissioned, new Decommission
-        {
-            DecommissionedBy = new Person
-            {
-                Id = userId,
-                Name = userDisplayName
-            },
-            DecommissionedAt = DateTime.UtcNow
-        });
+        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
+        var update = Builders<Entity>.Update.Set(e => e.Decommissioned,
+                new Decommission
+                {
+                    DecommissionedBy = new Person { Id = userId, Name = userDisplayName },
+                    DecommissionedAt = DateTime.UtcNow,
+                    WorkflowsTriggered = false
+                });
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task<Entity?> GetEntity(string repositoryName, CancellationToken cancellationToken)
+    public async Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken)
     {
-        return await Collection.Find(e => e.Name == repositoryName)
+        return await Collection.Find(e => e.Name == entityName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await Collection.Find(e => e.Status == Status.Creating)
+        return await EntitiesByStatus(Status.Creating, cancellationToken);
+    }
+
+    private async Task<List<Entity>> EntitiesByStatus(Status status, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(e => e.Status == status)
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
@@ -182,11 +191,11 @@ public class EntitiesService(
     {
         var updates = repos.Select(r =>
         {
-            var service = r.Id;
-            var teams = r.Teams.Select(t => new Team { TeamId = t.TeamId, Name = t.Name}).ToList();
+            var entity = r.Id;
+            var teams = r.Teams.Select(t => new Team { TeamId = t.TeamId, Name = t.Name }).ToList();
 
             var filterBuilder = Builders<Entity>.Filter;
-            var filter = filterBuilder.Eq(e => e.Name, service);
+            var filter = filterBuilder.Eq(e => e.Name, entity);
 
             var updateBuilder = Builders<Entity>.Update;
             var update = updateBuilder.Set(e => e.Teams, teams);
@@ -196,10 +205,21 @@ public class EntitiesService(
         await Collection.BulkWriteAsync(updates, new BulkWriteOptions(), cancellationToken);
     }
 
+    public Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
+    {
+        return EntitiesByStatus(Status.Decommissioning, cancellationToken);
+    }
+
+    public async Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken)
+    {
+        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
+        var update = Builders<Entity>.Update.Set(e => e.Decommissioned.WorkflowsTriggered, true);
+        await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
+
     public class EntityFilters
     {
         public List<string> Entities { get; set; } = [];
         public List<Team> Teams { get; set; } = [];
     }
-
 }

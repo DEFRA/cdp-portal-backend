@@ -70,14 +70,27 @@ public class SelfServiceOpsClient
 
     public async Task TriggerDecommissionWorkflows(string entityName, CancellationToken cancellationToken)
     {
-        var httpMethod = HttpMethod.Delete;
+        var httpMethod = HttpMethod.Post;
         var path = $"/decommission/{entityName}";
-        var body = "";
 
-        await SendAsyncWithSignature(path, body, httpMethod, cancellationToken);
+        await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
     }
 
-    private async Task SendAsyncWithSignature(string path, string serializedBody, HttpMethod httpMethod, CancellationToken cancellationToken)
+    public async Task DeleteDeploymentFilesAndEcsServices(string entityName, CancellationToken cancellationToken)
+    {
+        var httpMethod = HttpMethod.Delete;
+        var path = $"/decommission/{entityName}/delete-deployments-and-ecs";
+        await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
+    }
+
+    public async Task ScaleEcsToZero(string entityName, CancellationToken cancellationToken)
+    {
+        var httpMethod = HttpMethod.Post;
+        var path = $"/scale-to-zero/{entityName}";
+        await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
+    }
+
+    private async Task SendAsyncWithSignature(string path, string? serializedBody, HttpMethod httpMethod, CancellationToken cancellationToken)
     {
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         var method = httpMethod.ToString().ToUpper();
@@ -90,7 +103,7 @@ public class SelfServiceOpsClient
 
 
         var request = new HttpRequestMessage(httpMethod, _baseUrl + path);
-        if (serializedBody != "")
+        if (serializedBody != null)
         {
             request.Content = new StringContent(serializedBody, Encoding.UTF8, "application/json");
         }

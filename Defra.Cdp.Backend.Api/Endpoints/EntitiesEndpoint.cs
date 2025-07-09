@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.AspNetCore.Mvc;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -14,8 +15,22 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/filters", GetFilters);
         app.MapGet("/entities/{repositoryName}", GetEntity);
         app.MapGet("/entities/{repositoryName}/status", GetEntityStatus);
+        app.MapPost("/entities/{repositoryName}/decommission", StartDecommissioning);
         app.MapPost("/entities/{repositoryName}/tags", TagEntity);
         app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
+    }
+
+    private static async Task<IResult> StartDecommissioning(IEntitiesService entitiesService,
+        SelfServiceOpsClient selfServiceOpsClient,
+        string repositoryName,
+        [FromQuery(Name = "id")] string userId,
+        [FromQuery(Name = "displayName")] string userDisplayName,
+        CancellationToken cancellationToken)
+    {
+        await entitiesService.SetDecommissionDetail(repositoryName,  userId, userDisplayName, cancellationToken);
+        await entitiesService.UpdateStatus(Status.Decommissioning, repositoryName, cancellationToken);
+        await selfServiceOpsClient.ScaleEcsToZero(repositoryName, cancellationToken);
+        return Results.Ok();
     }
 
     private static async Task<IResult> GetEntityStatus(IEntityStatusService entityStatusService, string repositoryName,
