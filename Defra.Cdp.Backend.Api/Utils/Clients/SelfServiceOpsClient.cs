@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 
 namespace Defra.Cdp.Backend.Api.Utils.Clients;
@@ -115,12 +114,4 @@ public class SelfServiceOpsClient
         var response = await _client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
-}
-
-public class User
-{
-    [property: JsonPropertyName("id")] public string? Id { get; init; }
-
-    [property: JsonPropertyName("displayName")]
-    public string? DisplayName { get; init; }
 }

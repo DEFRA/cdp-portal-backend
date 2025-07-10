@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Utils.Clients;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -34,7 +33,7 @@ public class DatabaseMigration
     public string Kind { get; init; } = "liquibase";
 
     [property: JsonPropertyName("user")]
-    public required User User { get; init; }
+    public required UserDetails User { get; init; }
 
     [property: JsonPropertyName("created")]
     public DateTime Created { get; set; } = DateTime.Now;
@@ -72,5 +71,5 @@ public class DatabaseMigrationRequest
     public required string Version { get; init; }
 
     [property: JsonPropertyName("user")]
-    public required User User { get; init; }
+    public required UserDetails User { get; init; }
 }

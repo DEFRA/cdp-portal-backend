@@ -57,7 +57,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             Teams = [new Team { TeamId = Guid.NewGuid().ToString(), Name = "example-team" }],
             Type = Type.Microservice,
             SubType = SubType.Backend,
-            Creator = new Person { Id = Guid.NewGuid().ToString(), Name = "example-creator" },
+            Creator = new UserDetails { Id = Guid.NewGuid().ToString(), DisplayName = "example-creator" },
             Created = DateTime.UtcNow
         };
 
@@ -71,7 +71,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.Equal(Type.Microservice, persistedEntity.Type);
         Assert.Equal(SubType.Backend, persistedEntity.SubType);
         Assert.Equal("example-team", persistedEntity.Teams[0].Name);
-        Assert.Equal("example-creator", persistedEntity.Creator!.Name);
+        Assert.Equal("example-creator", persistedEntity.Creator!.DisplayName);
         Assert.NotNull(persistedEntity.Created);
         Assert.Equal(Status.Creating, persistedEntity.Status);
 

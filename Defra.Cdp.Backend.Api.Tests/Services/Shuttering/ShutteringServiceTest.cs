@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
-using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Shuttering;
 
@@ -10,7 +9,7 @@ public class ShutteringServiceTest
     [Fact]
     public void ShutteringStatusIsShutteredWhenVanityUrlIsShutteredAndNoMatchingShutteringRecord()
     {
-        VanityUrlRecord vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
+        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
         var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, null);
         
         Assert.Equal(ShutteringStatus.Shuttered, shutteringStatus);
@@ -19,7 +18,7 @@ public class ShutteringServiceTest
     [Fact]
     public void ShutteringStatusIsActiveWhenVanityUrlIsNotShutteredAndNoMatchingShutteringRecord()
     {
-        VanityUrlRecord vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
+        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
         var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, null);
         
         Assert.Equal(ShutteringStatus.Active, shutteringStatus);
@@ -28,9 +27,9 @@ public class ShutteringServiceTest
     [Fact]
     public void ShutteringStatusIsShutteredWhenVanityUrlIsShutteredAndShutteringRecordIsShuttered()
     {
-        VanityUrlRecord vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
+        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
         var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", true,
-            new User { Id = "9999-9999-9999", DisplayName = "Test User" },
+            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" },
             DateTime.UtcNow));
         
         Assert.Equal(ShutteringStatus.Shuttered, shutteringStatus);
@@ -40,9 +39,9 @@ public class ShutteringServiceTest
     [Fact]
     public void ShutteringStatusIsPendingActiveWhenVanityUrlIsShutteredAndShutteringRecordIsNotShuttered()
     {
-        VanityUrlRecord vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
+        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
         var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", false,
-            new User { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
+            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
         
         Assert.Equal(ShutteringStatus.PendingActive, shutteringStatus);
     }
@@ -50,9 +49,9 @@ public class ShutteringServiceTest
     [Fact]
     public void ShutteringStatusIsActiveWhenVanityUrlIsNotShutteredAndShutteringRecordIsNotShuttered()
     {
-        VanityUrlRecord vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
+        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
         var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", false,
-            new User { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
+            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
         
         Assert.Equal(ShutteringStatus.Active, shutteringStatus);
     }
@@ -60,9 +59,9 @@ public class ShutteringServiceTest
     [Fact]
     public void ShutteringStatusIsPendingShutteredWhenVanityUrlIsNotShutteredAndShutteringRecordIsShuttered()
     {
-        VanityUrlRecord vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
+        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
         var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", true,
-            new User { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
+            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
         
         Assert.Equal(ShutteringStatus.PendingShuttered, shutteringStatus);
     }

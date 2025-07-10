@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -28,7 +29,7 @@ public record Entity
     public DateTime? Created { get; set; }
 
     [property: JsonPropertyName("creator")]
-    public Person? Creator { get; set; }
+    public UserDetails? Creator { get; set; }
 
     [property: JsonPropertyName("teams")] public List<Team> Teams { get; set; } = [];
 
@@ -46,7 +47,7 @@ public record Entity
 public record Decommission
 {
     [property: JsonPropertyName("decommissionedBy")]
-    public required Person DecommissionedBy { get; set; }
+    public required UserDetails DecommissionedBy { get; set; }
 
     [property: JsonPropertyName("decommissionedAt")]
     public required DateTime DecommissionedAt { get; set; }
@@ -62,14 +63,6 @@ public record Team
     public string? TeamId { get; set; }
 
     [property: JsonPropertyName("name")] public string? Name { get; set; }
-}
-
-public record Person
-{
-    [property: JsonPropertyName("id")] public string? Id { get; set; }
-
-    [property: JsonPropertyName("displayName")]
-    public string? Name { get; set; }
 }
 
 public enum Type
