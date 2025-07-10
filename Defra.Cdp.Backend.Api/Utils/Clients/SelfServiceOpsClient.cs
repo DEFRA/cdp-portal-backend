@@ -83,11 +83,11 @@ public class SelfServiceOpsClient
         await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
     }
 
-    public async Task ScaleEcsToZero(string entityName, CancellationToken cancellationToken)
+    public async Task ScaleEcsToZero(string entityName, UserDetails user, CancellationToken cancellationToken)
     {
         var httpMethod = HttpMethod.Post;
         var path = $"/scale-ecs-to-zero/{entityName}";
-        await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
+        await SendAsyncWithSignature(path, JsonSerializer.Serialize(user), httpMethod, cancellationToken);
     }
 
     private async Task SendAsyncWithSignature(string path, string? serializedBody, HttpMethod httpMethod, CancellationToken cancellationToken)
