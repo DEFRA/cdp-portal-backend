@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Utils.Clients;
@@ -27,9 +28,10 @@ public static class EntitiesEndpoint
         [FromQuery(Name = "displayName")] string userDisplayName,
         CancellationToken cancellationToken)
     {
-        await entitiesService.SetDecommissionDetail(repositoryName,  userId, userDisplayName, cancellationToken);
+        await entitiesService.SetDecommissionDetail(repositoryName, userId, userDisplayName, cancellationToken);
         await entitiesService.UpdateStatus(Status.Decommissioning, repositoryName, cancellationToken);
-        await selfServiceOpsClient.ScaleEcsToZero(repositoryName, cancellationToken);
+        await selfServiceOpsClient.ScaleEcsToZero(repositoryName,
+            new UserDetails { Id = userId, DisplayName = userDisplayName }, cancellationToken);
         return Results.Ok();
     }
 
@@ -71,14 +73,16 @@ public static class EntitiesEndpoint
         await entitiesService.Create(entity, cancellationToken);
         return Results.Ok();
     }
-    
-    private static async Task<IResult> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag, CancellationToken cancellationToken)
+
+    private static async Task<IResult> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
+        CancellationToken cancellationToken)
     {
         await entitiesService.AddTag(repositoryName, tag, cancellationToken);
         return Results.Ok();
     }
-    
-    private static async Task<IResult> UntagEntity(IEntitiesService entitiesService, string repositoryName, string tag, CancellationToken cancellationToken)
+
+    private static async Task<IResult> UntagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
+        CancellationToken cancellationToken)
     {
         await entitiesService.RemoveTag(repositoryName, tag, cancellationToken);
         return Results.Ok();
