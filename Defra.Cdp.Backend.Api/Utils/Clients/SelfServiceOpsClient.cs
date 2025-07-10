@@ -86,7 +86,7 @@ public class SelfServiceOpsClient
     public async Task ScaleEcsToZero(string entityName, CancellationToken cancellationToken)
     {
         var httpMethod = HttpMethod.Post;
-        var path = $"/scale-to-zero/{entityName}";
+        var path = $"/scale-ecs-to-zero/{entityName}";
         await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
     }
 
