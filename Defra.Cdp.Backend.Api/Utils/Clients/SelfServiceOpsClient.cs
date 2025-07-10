@@ -71,7 +71,7 @@ public class SelfServiceOpsClient
     public async Task TriggerDecommissionWorkflows(string entityName, CancellationToken cancellationToken)
     {
         var httpMethod = HttpMethod.Post;
-        var path = $"/decommission/{entityName}";
+        var path = $"/decommission/{entityName}/trigger-workflows";
 
         await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
     }
