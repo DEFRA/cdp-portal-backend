@@ -50,7 +50,6 @@ public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, IL
 
         var squidProxyConfigsInDb = await FindAllSquidProxyConfigs(payload.Environment, cancellationToken);
 
-
         var squidProxyConfigsToDelete = squidProxyConfigsInDb.ExceptBy(squidProxyConfigs.Select(v => v.ServiceName),
             v => v.ServiceName).ToList();
 
