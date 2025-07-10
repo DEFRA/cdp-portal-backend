@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Utils.Clients;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -12,7 +11,7 @@ public record ShutteringRecord(
     string Url,
     string Waf,
     bool Shuttered,
-    User ActionedBy,
+    UserDetails ActionedBy,
     DateTime ActionedAt)
 {
     

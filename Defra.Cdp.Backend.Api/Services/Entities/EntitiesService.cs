@@ -117,7 +117,6 @@ public class EntitiesService(
                 })
         };
 
-
         var result = await Collection.Aggregate<BsonDocument>(pipeline, cancellationToken: cancellationToken)
             .FirstAsync(cancellationToken);
 
@@ -151,7 +150,7 @@ public class EntitiesService(
         var update = Builders<Entity>.Update.Set(e => e.Decommissioned,
                 new Decommission
                 {
-                    DecommissionedBy = new Person { Id = userId, Name = userDisplayName },
+                    DecommissionedBy = new UserDetails { Id = userId, DisplayName = userDisplayName },
                     DecommissionedAt = DateTime.UtcNow,
                     WorkflowsTriggered = false
                 });

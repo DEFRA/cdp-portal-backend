@@ -7,7 +7,6 @@ using Defra.Cdp.Backend.Api.Services.Migrations;
 using Microsoft.Extensions.Logging.Abstractions;
 using File = System.IO.File;
 using JsonSerializer = System.Text.Json.JsonSerializer;
-using User = Defra.Cdp.Backend.Api.Utils.Clients.User;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Aws.Deployments;
 
@@ -30,7 +29,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
             Environment = "test",
             CdpMigrationId = cdpMigrationId,
             Service = "test-backend",
-            User = new User(),
+            User = new UserDetails(),
             Version = "0.1.0",
         }, CancellationToken.None);
 
@@ -71,7 +70,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
                 Environment = "test",
                 CdpMigrationId = cdpMigrationId,
                 Service = "foo",
-                User = new User
+                User = new UserDetails
                 {
                     Id = "1234",
                     DisplayName = "test user"
@@ -111,7 +110,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
             Environment = "test",
             CdpMigrationId = cdpMigrationId,
             Service = "test-backend",
-            User = new User(),
+            User = new UserDetails(),
             Version = "0.1.0",
         }, CancellationToken.None);
 
@@ -143,7 +142,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
                 Environment = "test",
                 CdpMigrationId = "1",
                 Service = "test-backend",
-                User = new User(),
+                User = new UserDetails(),
                 Version = "0.4.0",
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now.AddDays(-5)
@@ -154,7 +153,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
                 Environment = "test",
                 CdpMigrationId = "1",
                 Service = "test-backend",
-                User = new User(),
+                User = new UserDetails(),
                 Version = "0.5.0",
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now
@@ -164,7 +163,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
                 Environment = "dev",
                 CdpMigrationId = "1",
                 Service = "test-backend",
-                User = new User(),
+                User = new UserDetails(),
                 Version = "0.4.0",
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now.AddDays(-4)
@@ -174,7 +173,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
                 Environment = "dev",
                 CdpMigrationId = "1",
                 Service = "test-backend",
-                User = new User(),
+                User = new UserDetails(),
                 Version = "0.5.0",
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now.AddDays(-1)
@@ -184,7 +183,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
                 Environment = "test",
                 CdpMigrationId = "1",
                 Service = "another-backend",
-                User = new User(),
+                User = new UserDetails(),
                 Version = "0.4.0",
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now

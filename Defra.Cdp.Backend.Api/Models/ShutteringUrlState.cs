@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
@@ -14,7 +13,7 @@ public record ShutteringUrlState
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ShutteringStatus Status { get; set; }
 
-    public User? LastActionedBy { get; set; }
+    public UserDetails? LastActionedBy { get; set; }
     public DateTime? LastActionedAt { get; set; }
 }
 public enum ShutteringStatus
