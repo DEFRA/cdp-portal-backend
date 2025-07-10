@@ -77,7 +77,7 @@ public class SelfServiceOpsClient
 
     public async Task DeleteDeploymentFilesAndEcsServices(string entityName, CancellationToken cancellationToken)
     {
-        var httpMethod = HttpMethod.Delete;
+        var httpMethod = HttpMethod.Post;
         var path = $"/decommission/{entityName}/delete-deployments-and-ecs";
         await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
     }
