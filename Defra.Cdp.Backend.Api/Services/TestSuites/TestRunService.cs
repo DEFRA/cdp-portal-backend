@@ -21,8 +21,6 @@ public interface ITestRunService
         List<FailureReason> failureReasons, CancellationToken ct);
 
     public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
-
-    Task Decommission(string serviceName, CancellationToken ct);
 }
 
 public class TestRunService : MongoService<TestRun>, ITestRunService
@@ -133,11 +131,6 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
 
         await Collection.UpdateOneAsync(t => t.TaskArn == taskArn, update,
             cancellationToken: ct);
-    }
-
-    public async Task Decommission(string serviceName, CancellationToken ct)
-    {
-        await Collection.DeleteManyAsync(t => t.TestSuite == serviceName, ct);
     }
 
     public async Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct)

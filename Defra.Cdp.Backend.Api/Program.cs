@@ -271,7 +271,6 @@ app.MapCostsEndpoint();
 app.MapVanityUrlsEndpoint();
 app.MapApiGatewaysEndpoint();
 app.MapArtifactsAndDeployablesEndpoint();
-app.MapDecommissionEndpoint();
 app.MapDeploymentsEndpoint();
 app.MapRepositoriesEndpoint();
 app.MapEntitiesEndpoint();
