@@ -12,6 +12,8 @@ public interface IEntitiesService
 {
     Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, bool includeDecommissioned,
         CancellationToken cancellationToken);
+    Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, Status[] statuses,
+        CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
     Task Create(Entity entity, CancellationToken cancellationToken);
@@ -43,9 +45,15 @@ public class EntitiesService(
         return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
     }
 
-    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds,
-        bool includeDecommissioned,
-        CancellationToken cancellationToken)
+    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, bool includeDecommissioned, CancellationToken cancellationToken)
+    {
+        Status[] statuses = includeDecommissioned
+            ? [Status.Creating, Status.Created, Status.Decommissioning, Status.Decommissioned]
+            : [Status.Creating, Status.Created];
+        return await GetEntities(type,  partialName, teamIds, statuses, cancellationToken);
+    }
+
+    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, Status[] statuses, CancellationToken cancellationToken)
     {
         var builder = Builders<Entity>.Filter;
         var filter = builder.Empty;
@@ -68,12 +76,12 @@ public class EntitiesService(
             filter &= partialServiceFilter;
         }
 
-        if (!includeDecommissioned)
+        if (statuses.Length > 0)
         {
-            var decommissionedFilter = builder.Eq(e => e.Decommissioned, null);
-            filter &= decommissionedFilter;
+            var statusFilter = builder.In(e => e.Status, statuses);
+            filter &= statusFilter;
         }
-
+        
         return await Collection.Find(filter).ToListAsync(cancellationToken);
     }
 
@@ -165,13 +173,7 @@ public class EntitiesService(
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await EntitiesByStatus(Status.Creating, cancellationToken);
-    }
-
-    private async Task<List<Entity>> EntitiesByStatus(Status status, CancellationToken cancellationToken)
-    {
-        return await Collection.Find(e => e.Status == status)
-            .ToListAsync(cancellationToken: cancellationToken);
+        return await GetEntities(null, null, [], [Status.Creating], cancellationToken);
     }
 
     public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
@@ -204,9 +206,9 @@ public class EntitiesService(
         await Collection.BulkWriteAsync(updates, new BulkWriteOptions(), cancellationToken);
     }
 
-    public Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
+    public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
     {
-        return EntitiesByStatus(Status.Decommissioning, cancellationToken);
+        return await GetEntities(null, null, [], [Status.Decommissioning], cancellationToken);
     }
 
     public async Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken)
