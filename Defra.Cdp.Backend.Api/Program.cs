@@ -12,6 +12,7 @@ using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.FeatureToggles;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
@@ -242,6 +243,9 @@ builder.Services.AddSingleton<IAvailableMigrations, AvailableMigrations>();
 builder.Services.AddSingleton<IDatabaseMigrationService, DatabaseMigrationService>();
 
 
+builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
+
+
 // Validators
 // Add every validator we can find in the assembly that contains this Program
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -282,6 +286,7 @@ app.MapHealthChecks("/health");
 app.MapAutoDeploymentTriggerEndpoint();
 app.MapAutoTestRunTriggerEndpoint();
 app.MapMigrationEndpoints();
+app.MapFeatureTogglesEndpoint();
 app.MapShutteringEndpoint();
 
 
