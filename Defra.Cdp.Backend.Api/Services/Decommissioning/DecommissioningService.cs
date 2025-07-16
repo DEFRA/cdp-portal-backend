@@ -49,7 +49,7 @@ public sealed class DecommissioningService(
                     )
             {
                 await selfServiceOpsClient.DeleteDeploymentFilesAndEcsServices(entity.Name, context.CancellationToken);
-                await entitiesService.UpdateStatus(Status.Decommissioned, entity.Name, context.CancellationToken);
+                await entitiesService.DecommissionFinished(entity.Name, context.CancellationToken);
             }
             else
             {
