@@ -49,8 +49,11 @@ public record Decommission
     [property: JsonPropertyName("decommissionedBy")]
     public required UserDetails DecommissionedBy { get; set; }
 
-    [property: JsonPropertyName("decommissionedAt")]
-    public required DateTime DecommissionedAt { get; set; }
+    [property: JsonPropertyName("started")]
+    public required DateTime Started { get; set; }
+
+    [property: JsonPropertyName("finished")]
+    public required DateTime? Finished { get; set; }
 
     [property: JsonPropertyName("workflowsTriggered")]
     public required bool WorkflowsTriggered { get; set; }

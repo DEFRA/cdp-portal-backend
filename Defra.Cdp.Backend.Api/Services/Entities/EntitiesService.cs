@@ -30,6 +30,7 @@ public interface IEntitiesService
     Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
     Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken);
+    Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
 }
 
 public class EntitiesService(
@@ -159,7 +160,8 @@ public class EntitiesService(
                 new Decommission
                 {
                     DecommissionedBy = new UserDetails { Id = userId, DisplayName = userDisplayName },
-                    DecommissionedAt = DateTime.UtcNow,
+                    Started = DateTime.UtcNow,
+                    Finished = null,
                     WorkflowsTriggered = false
                 });
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
@@ -215,6 +217,15 @@ public class EntitiesService(
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
         var update = Builders<Entity>.Update.Set(e => e.Decommissioned.WorkflowsTriggered, true);
+        await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
+
+    public async Task DecommissionFinished(string entityName, CancellationToken cancellationToken)
+    {
+        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
+        var update = Builders<Entity>.Update.Combine(
+        Builders<Entity>.Update.Set(e => e.Decommissioned.Finished, DateTime.UtcNow),
+            Builders<Entity>.Update.Set(e => e.Status, Status.Decommissioned));
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
