@@ -70,8 +70,8 @@ public static class EntitiesEndpoint
     private static async Task<IResult> CreateEntity(IEntitiesService entitiesService, Entity entity,
         CancellationToken cancellationToken)
     {
-        await entitiesService.Create(entity, cancellationToken);
-        return Results.Ok();
+        var inserted = await entitiesService.Create(entity, cancellationToken);
+        return inserted ? Results.Ok() : Results.Conflict();
     }
 
     private static async Task<IResult> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag,

@@ -16,7 +16,7 @@ public interface IEntitiesService
         CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
-    Task Create(Entity entity, CancellationToken cancellationToken);
+    Task<bool> Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
 
     Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
@@ -140,9 +140,23 @@ public class EntitiesService(
         };
     }
 
-    public async Task Create(Entity entity, CancellationToken cancellationToken)
+    public async Task<bool> Create(Entity entity, CancellationToken cancellationToken)
     {
-        await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
+        try
+        {
+            await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
+            return true;
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            Logger.LogError("Duplicate key error: " + ex.Message);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("General insert error: " + ex.Message);
+            throw;
+        }
     }
 
     public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
