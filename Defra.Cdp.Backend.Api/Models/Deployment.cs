@@ -61,8 +61,8 @@ public class Deployment
             Cpu = req.Cpu,
             Memory = req.Memory,
             InstanceCount = req.InstanceCount,
-            Created = DateTime.Now,
-            Updated = DateTime.Now,
+            Created = DateTime.UtcNow,
+            Updated = DateTime.UtcNow,
             Status = Requested,
             ConfigVersion = req.ConfigVersion
         };
@@ -92,8 +92,8 @@ public class Deployment
             Cpu = req.TaskCpu.ToString(),
             Memory = req.TaskMemory.ToString(),
             InstanceCount = req.DesiredCount,
-            Created = DateTime.Now,
-            Updated = DateTime.Now,
+            Created = DateTime.UtcNow,
+            Updated = DateTime.UtcNow,
             Status = req.DesiredCount > 0 ? Requested : Undeployed,
             ConfigVersion = commitSha,
             LambdaId = e.Detail.EcsDeploymentId
