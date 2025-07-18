@@ -64,12 +64,15 @@ public class DeploymentsService(
     IRepositoryService repositoryService,
     IUserServiceFetcher userServiceFetcher,
     ILoggerFactory loggerFactory)
-    : MongoService<Deployment>(connectionFactory, "deploymentsV2", loggerFactory), IDeploymentsService
+    : MongoService<Deployment>(connectionFactory, CollectionName, loggerFactory), IDeploymentsService
 {
+    public const string CollectionName = "deploymentsV2";
     public const int DefaultPageSize = 50;
     public const int DefaultPage = 1;
     private const string Migration = "migration";
     private const string Deployment = "deployment";
+    
+    private readonly TimeSpan _requestTimeout = TimeSpan.FromMinutes(20);
 
     private readonly HashSet<string> _excludedDisplayNames =
         new(StringComparer.CurrentCultureIgnoreCase) { "n/a", "admin", "GitHub Workflow" };
@@ -91,7 +94,43 @@ public class DeploymentsService(
 
     public async Task RegisterDeployment(Deployment deployment, CancellationToken ct)
     {
+        if (deployment.Status == Requested)
+        {
+            await CleanupRequestedDeployments(deployment.Service, deployment.Environment, ct);
+        }
+        
         await Collection.InsertOneAsync(await WithAuditData(deployment, ct), null, ct);
+    }
+
+    /**
+     * Updates any previous deployments for this service, in this environment that are still in requested after 20 mins.
+     * These records exist because either:
+     * - The lambda never actioned the request
+     * - The control plane attempted several deployments of the same service at once.
+     */
+    private async Task CleanupRequestedDeployments(string service, string environment, CancellationToken ct)
+    {
+        var fb = new FilterDefinitionBuilder<Deployment>();
+        var filter = fb.And(
+            fb.Eq(d => d.Service, service), 
+            fb.Eq(d => d.Environment, environment),
+            fb.Eq(d => d.Status, Requested),
+            fb.Lt(d => d.Created, DateTime.UtcNow.Subtract(_requestTimeout))
+        );
+
+        var update = new UpdateDefinitionBuilder<Deployment>()
+            .Set(d => d.Status, Failed)
+            .Set(d => d.LastDeploymentStatus, SERVICE_DEPLOYMENT_FAILED)
+            .Set(d => d.LastDeploymentMessage, "Deployment timed out.");
+
+        var options = new UpdateOptions { IsUpsert = false, };
+
+        var result = await Collection.UpdateManyAsync(filter, update, options, ct);
+        if (result.ModifiedCount > 0)
+        {
+            Logger.LogInformation("Removed {Count} stuck deployments for {Service} in {Environment}",
+                result.ModifiedCount, service, environment);
+        }
     }
 
     private async Task<Deployment> WithAuditData(Deployment deployment, CancellationToken ct)
