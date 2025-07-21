@@ -10,10 +10,10 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public interface IEntitiesService
 {
-    Task<List<Entity>> GetEntities(Type[] type, string? partialName, string[] teamIds, Status[] statuses,
+    Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
         CancellationToken cancellationToken);
 
-    Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
+    Task<EntitiesService.EntityFilters> GetFilters(Type[] types, CancellationToken cancellationToken);
     Task Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
 
@@ -44,14 +44,14 @@ public class EntitiesService(
         return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
     }
 
-    public async Task<List<Entity>> GetEntities(Type[] type, string? partialName, string[] teamIds, Status[] statuses, CancellationToken cancellationToken)
+    public async Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses, CancellationToken cancellationToken)
     {
         var builder = Builders<Entity>.Filter;
         var filter = builder.Empty;
 
-        if (type.Length > 0)
+        if (types.Length > 0)
         {
-            filter = builder.In(e => e.Type, type);
+            filter = builder.In(e => e.Type, types);
         }
 
         if (teamIds.Length > 0)
@@ -76,11 +76,13 @@ public class EntitiesService(
         return await Collection.Find(filter).ToListAsync(cancellationToken);
     }
 
-    public async Task<EntityFilters> GetFilters(Type type, CancellationToken cancellationToken)
+    public async Task<EntityFilters> GetFilters(Type[] types, CancellationToken cancellationToken)
     {
+        var typeValues = new BsonArray(types.Select(t => t.ToString())); 
         var pipeline = new[]
         {
-            new BsonDocument("$match", new BsonDocument("type", type.ToString())), new BsonDocument("$facet",
+            new BsonDocument("$match", new BsonDocument("type", new BsonDocument("$in", typeValues))),
+            new BsonDocument("$facet",
                 new BsonDocument
                 {
                     {
