@@ -44,12 +44,13 @@ public static class EntitiesEndpoint
 
     private static async Task<IResult> GetEntities(
         [FromQuery] string[] teamIds,
-        [FromQuery] Type? type,
+        [FromQuery] Type[] type,
+        [FromQuery] Status[] status,
         [FromQuery] string? name,
         IEntitiesService entitiesService, CancellationToken cancellationToken,
         [FromQuery] bool includeDecommissioned = false)
     {
-        var statuses = await entitiesService.GetEntities(type, name, teamIds, includeDecommissioned, cancellationToken);
+        var statuses = await entitiesService.GetEntities(type, name, teamIds, status, cancellationToken);
         return Results.Ok(statuses);
     }
 
@@ -70,8 +71,8 @@ public static class EntitiesEndpoint
     private static async Task<IResult> CreateEntity(IEntitiesService entitiesService, Entity entity,
         CancellationToken cancellationToken)
     {
-        var inserted = await entitiesService.Create(entity, cancellationToken);
-        return inserted ? Results.Ok() : Results.Conflict();
+        await entitiesService.Create(entity, cancellationToken);
+        return Results.Ok();
     }
 
     private static async Task<IResult> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag,

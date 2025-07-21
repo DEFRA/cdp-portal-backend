@@ -77,7 +77,5 @@ public static class TestSuiteEndpoint
     private sealed record TestSuiteWithLatestJobResponse(
         TenantServiceRecord testSuite,
         TestRun? LastRun
-    )
-    {
-    }
+    );
 }
