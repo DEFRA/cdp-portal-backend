@@ -38,7 +38,7 @@ public class EntityStatusService(
         return new EntityStatus(entity, resources);
     }
 
-    public async Task UpdateOverallStatus(string repositoryName, CancellationToken cancellationToken)
+    private async Task UpdateOverallStatus(string repositoryName, CancellationToken cancellationToken)
     {
         var entityStatus = await GetEntityStatus(repositoryName, cancellationToken);
         if (entityStatus == null)

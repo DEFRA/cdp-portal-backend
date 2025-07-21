@@ -10,13 +10,11 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public interface IEntitiesService
 {
-    Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, bool includeDecommissioned,
-        CancellationToken cancellationToken);
-    Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, Status[] statuses,
+    Task<List<Entity>> GetEntities(Type[] type, string? partialName, string[] teamIds, Status[] statuses,
         CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters> GetFilters(Type type, CancellationToken cancellationToken);
-    Task<bool> Create(Entity entity, CancellationToken cancellationToken);
+    Task Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
 
     Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
@@ -46,22 +44,14 @@ public class EntitiesService(
         return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
     }
 
-    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, bool includeDecommissioned, CancellationToken cancellationToken)
-    {
-        Status[] statuses = includeDecommissioned
-            ? [Status.Creating, Status.Created, Status.Decommissioning, Status.Decommissioned]
-            : [Status.Creating, Status.Created];
-        return await GetEntities(type,  partialName, teamIds, statuses, cancellationToken);
-    }
-
-    public async Task<List<Entity>> GetEntities(Type? type, string? partialName, string[] teamIds, Status[] statuses, CancellationToken cancellationToken)
+    public async Task<List<Entity>> GetEntities(Type[] type, string? partialName, string[] teamIds, Status[] statuses, CancellationToken cancellationToken)
     {
         var builder = Builders<Entity>.Filter;
         var filter = builder.Empty;
 
-        if (type != null)
+        if (type.Length > 0)
         {
-            filter = builder.Eq(e => e.Type, type);
+            filter = builder.In(e => e.Type, type);
         }
 
         if (teamIds.Length > 0)
@@ -140,23 +130,10 @@ public class EntitiesService(
         };
     }
 
-    public async Task<bool> Create(Entity entity, CancellationToken cancellationToken)
+    public async Task Create(Entity entity, CancellationToken cancellationToken)
     {
-        try
-        {
             await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
-            return true;
-        }
-        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
-        {
-            Logger.LogError("Duplicate key error: " + ex.Message);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError("General insert error: " + ex.Message);
-            throw;
-        }
+            
     }
 
     public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
@@ -189,7 +166,7 @@ public class EntitiesService(
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await GetEntities(null, null, [], [Status.Creating], cancellationToken);
+        return await GetEntities([], null, [], [Status.Creating], cancellationToken);
     }
 
     public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
@@ -224,7 +201,7 @@ public class EntitiesService(
 
     public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
     {
-        return await GetEntities(null, null, [], [Status.Decommissioning], cancellationToken);
+        return await GetEntities([], null, [], [Status.Decommissioning], cancellationToken);
     }
 
     public async Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken)

@@ -72,7 +72,8 @@ public enum Type
 {
     Repository,
     TestSuite,
-    Microservice
+    Microservice,
+    Prototype
 }
 
 public enum SubType
@@ -88,7 +89,5 @@ public enum Status
     Creating,
     Created,
     Decommissioning,
-    Decommissioned,
-    Failed, // TODO Remove
-    Success // TODO Legacy. Do not use, use Created instead
+    Decommissioned
 }
