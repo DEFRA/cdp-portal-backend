@@ -44,20 +44,20 @@ public static class EntitiesEndpoint
 
     private static async Task<IResult> GetEntities(
         [FromQuery] string[] teamIds,
-        [FromQuery] Type[] type,
-        [FromQuery] Status[] status,
+        [FromQuery(Name = "type")] Type[] types,
+        [FromQuery(Name = "status")] Status[] statuses,
         [FromQuery] string? name,
         IEntitiesService entitiesService, CancellationToken cancellationToken,
         [FromQuery] bool includeDecommissioned = false)
     {
-        var statuses = await entitiesService.GetEntities(type, name, teamIds, status, cancellationToken);
-        return Results.Ok(statuses);
+        var entities = await entitiesService.GetEntities(types, name, teamIds, statuses, cancellationToken);
+        return Results.Ok(entities);
     }
 
-    private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type type,
+    private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type[] types,
         IEntitiesService entitiesService, CancellationToken cancellationToken)
     {
-        var filters = await entitiesService.GetFilters(type, cancellationToken);
+        var filters = await entitiesService.GetFilters(types, cancellationToken);
         return Results.Ok(filters);
     }
 
