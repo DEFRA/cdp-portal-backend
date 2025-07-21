@@ -100,7 +100,7 @@ public class EntityStatusService(
                 squidProxyService,
                 appConfigsService
             ],
-            Type.Microservice =>
+            Type.Prototype or Type.Microservice =>
             [
                 repositoryService,
                 tenantServicesService,
@@ -108,8 +108,7 @@ public class EntityStatusService(
                 nginxUpstreamsService,
                 appConfigsService,
                 grafanaDashboardsService
-            ],
-            _ => []
+            ]
         };
     }
 }
