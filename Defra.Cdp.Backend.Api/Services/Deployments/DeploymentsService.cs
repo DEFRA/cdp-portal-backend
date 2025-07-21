@@ -175,25 +175,6 @@ public class DeploymentsService(
         return result.ModifiedCount == 1;
     }
 
-    public async Task UpdateDeployment(string cdpId, Func<Deployment, Deployment> update, CancellationToken ct)
-    {
-        using var session = await Collection.Database.Client.StartSessionAsync(cancellationToken: ct);
-        session.StartTransaction();
-        try
-        {
-            var filter = Builders<Deployment>.Filter.Eq(d => d.CdpDeploymentId, cdpId);
-            var deployment = await Collection.Find(filter).FirstOrDefaultAsync(ct);
-            await Collection.ReplaceOneAsync(filter, update(deployment), new ReplaceOptions { IsUpsert = true },
-                cancellationToken: ct);
-            await session.CommitTransactionAsync(ct);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Error writing to MongoDB: " + e.Message);
-            await session.AbortTransactionAsync(ct);
-        }
-    }
-
     public async Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct)
     {
         return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
@@ -202,24 +183,6 @@ public class DeploymentsService(
     public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
     {
         var deployment = await FindDeploymentByLambdaId(lambdaId, ct);
-
-        var update = new UpdateDefinitionBuilder<Deployment>()
-            .Set(d => d.LastDeploymentStatus, eventName)
-            .Set(d => d.LastDeploymentMessage, reason);
-
-        if (deployment != null)
-        {
-            deployment.LastDeploymentStatus = eventName;
-            update = update.Set(d => d.Status, CalculateOverallStatus(deployment));
-        }
-
-        var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
-        return result.ModifiedCount == 1;
-    }
-    
-    public async Task<bool> UpdateStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
-    {
-        var deployment = await FindDeployment(lambdaId, ct);
 
         var update = new UpdateDefinitionBuilder<Deployment>()
             .Set(d => d.LastDeploymentStatus, eventName)
