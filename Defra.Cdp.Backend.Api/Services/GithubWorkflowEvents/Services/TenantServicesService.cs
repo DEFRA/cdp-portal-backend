@@ -127,7 +127,7 @@ public class TenantServicesService(
 
     public async Task<Boolean> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
     {
-        return await Collection.Find(t => t.ServiceName == repositoryName).AnyAsync(cancellationToken);
+        return await Collection.Find(t => t.ServiceName == repositoryName && t.Environment == "management").AnyAsync(cancellationToken);
     }
     
     public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
