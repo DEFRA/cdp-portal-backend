@@ -13,7 +13,9 @@ public interface IEntitiesService
     Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
         CancellationToken cancellationToken);
 
-    Task<EntitiesService.EntityFilters> GetFilters(Type[] types, CancellationToken cancellationToken);
+    Task<EntitiesService.EntityFilters>
+        GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
+
     Task Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
 
@@ -44,7 +46,8 @@ public class EntitiesService(
         return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
     }
 
-    public async Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses, CancellationToken cancellationToken)
+    public async Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
+        CancellationToken cancellationToken)
     {
         var builder = Builders<Entity>.Filter;
         var filter = builder.Empty;
@@ -72,16 +75,33 @@ public class EntitiesService(
             var statusFilter = builder.In(e => e.Status, statuses);
             filter &= statusFilter;
         }
-        
+
         return await Collection.Find(filter).ToListAsync(cancellationToken);
     }
 
-    public async Task<EntityFilters> GetFilters(Type[] types, CancellationToken cancellationToken)
+    public async Task<EntityFilters> GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken)
     {
-        var typeValues = new BsonArray(types.Select(t => t.ToString())); 
+        var filters = new Dictionary<string, BsonDocument>();
+
+        if (types.Length > 0)
+        {
+            var typeValues = new BsonArray(types.Select(t => t.ToString()));
+            filters["type"] = new BsonDocument("$in", typeValues);
+        }
+
+        if (statuses.Length > 0)
+        {
+            var statusValues = new BsonArray(statuses.Select(s => s.ToString()));
+            filters["status"] = new BsonDocument("$in", statusValues);
+        }
+        
         var pipeline = new[]
         {
-            new BsonDocument("$match", new BsonDocument("type", new BsonDocument("$in", typeValues))),
+            new BsonDocument("$match",
+                new BsonDocument
+                {
+                    filters
+                }),
             new BsonDocument("$facet",
                 new BsonDocument
                 {
@@ -134,8 +154,7 @@ public class EntitiesService(
 
     public async Task Create(Entity entity, CancellationToken cancellationToken)
     {
-            await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
-            
+        await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
     }
 
     public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
@@ -150,13 +169,13 @@ public class EntitiesService(
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
         var update = Builders<Entity>.Update.Set(e => e.Decommissioned,
-                new Decommission
-                {
-                    DecommissionedBy = new UserDetails { Id = userId, DisplayName = userDisplayName },
-                    Started = DateTime.UtcNow,
-                    Finished = null,
-                    WorkflowsTriggered = false
-                });
+            new Decommission
+            {
+                DecommissionedBy = new UserDetails { Id = userId, DisplayName = userDisplayName },
+                Started = DateTime.UtcNow,
+                Finished = null,
+                WorkflowsTriggered = false
+            });
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
@@ -217,7 +236,7 @@ public class EntitiesService(
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
         var update = Builders<Entity>.Update.Combine(
-        Builders<Entity>.Update.Set(e => e.Decommissioned.Finished, DateTime.UtcNow),
+            Builders<Entity>.Update.Set(e => e.Decommissioned.Finished, DateTime.UtcNow),
             Builders<Entity>.Update.Set(e => e.Status, Status.Decommissioned));
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
