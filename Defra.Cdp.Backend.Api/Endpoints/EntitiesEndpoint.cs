@@ -54,10 +54,11 @@ public static class EntitiesEndpoint
         return Results.Ok(entities);
     }
 
-    private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type[] types,
+    private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type[] types, 
+        [FromQuery(Name = "status")] Status[] statuses,
         IEntitiesService entitiesService, CancellationToken cancellationToken)
     {
-        var filters = await entitiesService.GetFilters(types, cancellationToken);
+        var filters = await entitiesService.GetFilters(types, statuses, cancellationToken);
         return Results.Ok(filters);
     }
 
