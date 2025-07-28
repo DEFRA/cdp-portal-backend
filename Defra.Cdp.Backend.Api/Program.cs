@@ -24,6 +24,7 @@ using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.TenantStatus;
+using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
 using Defra.Cdp.Backend.Api.Utils.Auditing;
@@ -242,6 +243,8 @@ builder.Services.AddSingleton<MongoLock>();
 builder.Services.AddSingleton<IAvailableMigrations, AvailableMigrations>();
 builder.Services.AddSingleton<IDatabaseMigrationService, DatabaseMigrationService>();
 
+// Terminal Auditing
+builder.Services.AddSingleton<ITerminalService, TerminalService>();
 
 builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
 
@@ -288,7 +291,7 @@ app.MapAutoTestRunTriggerEndpoint();
 app.MapMigrationEndpoints();
 app.MapFeatureTogglesEndpoint();
 app.MapShutteringEndpoint();
-
+app.MapTerminalEndpoint();
 
 var logger = app.Services.GetService<ILogger<Program>>();
 
