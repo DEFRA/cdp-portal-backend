@@ -9,7 +9,7 @@ public static class TerminalEndpoint
 
     public static void MapTerminalEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost("terminal", RecordTerminalSession);
+        app.MapPost("terminals", RecordTerminalSession);
     }
 
     static async Task<IResult> RecordTerminalSession([FromServices] ITerminalService terminalService, TerminalSession session,

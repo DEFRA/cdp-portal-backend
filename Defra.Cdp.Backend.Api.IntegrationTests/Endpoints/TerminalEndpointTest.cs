@@ -45,7 +45,7 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         var client = server.CreateClient();
 
         var session = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails{ DisplayName = "user1", Id = "1"}};
-        var response = await client.PostAsJsonAsync("/terminal", session);
+        var response = await client.PostAsJsonAsync("/terminals", session);
         
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
