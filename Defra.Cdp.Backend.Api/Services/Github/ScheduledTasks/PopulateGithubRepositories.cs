@@ -36,7 +36,6 @@ public sealed class PopulateGithubRepositories(
     private readonly ILogger<PopulateGithubRepositories> _logger =
         loggerFactory.CreateLogger<PopulateGithubRepositories>();
 
-
     public async Task Execute(IJobExecutionContext context)
     {
         if (await mongoLock.Lock(LockName, TimeSpan.FromSeconds(60)))

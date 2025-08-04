@@ -27,7 +27,6 @@ using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
-using Defra.Cdp.Backend.Api.Utils.Auditing;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Defra.Cdp.Backend.Api.Utils.Logging;
 using FluentValidation;
@@ -133,6 +132,7 @@ else
 
 // Quartz setup for Github scheduler
 builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Github:Scheduler"));
+builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Decommission:Scheduler"));
 builder.Services.AddQuartz(q =>
 {
     var githubJobKey = new JobKey("FetchGithubRepositories");
@@ -160,11 +160,6 @@ builder.Services.AddQuartzHostedService(options =>
     options.WaitForJobsToComplete = true;
 });
 
-// Quartz setup for Decommission scheduler
-builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Decommission:Scheduler"));
-builder.Services.AddQuartz(q =>
-{
-});
 
 // Setting up our services
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
@@ -174,7 +169,7 @@ builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
 builder.Services.AddSingleton<IEntityStatusService, EntityStatusService>();
 builder.Services.AddSingleton<ILayerService, LayerService>();
-builder.Services.AddSingleton<IArtifactScanner, ArtifactScanner>();
+builder.Services.AddSingleton<IArtifactScanner, ArtifactScanAndStore>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
 builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
 builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();

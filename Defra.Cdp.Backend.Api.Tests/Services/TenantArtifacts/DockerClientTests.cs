@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
@@ -7,12 +8,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using static System.Text.Json.JsonSerializer;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.TenantArtifacts;
 
 public class DockerClientTests
 {
-    private readonly ArtifactScanner _artifactScanner;
+    private readonly ArtifactScanAndStore _artifactScanAndStore;
     private readonly IDeployableArtifactsService _deployableServiceMock = Substitute.For<IDeployableArtifactsService>();
     private readonly IDockerClient _dockerClientMock = Substitute.For<IDockerClient>();
 
@@ -21,8 +23,8 @@ public class DockerClientTests
 
     public DockerClientTests()
     {
-        _artifactScanner = new ArtifactScanner(_deployableServiceMock, _layerServiceMock, _dockerClientMock,
-            _repositoryService, ConsoleLogger.CreateLogger<ArtifactScanner>());
+        _artifactScanAndStore = new ArtifactScanAndStore(_deployableServiceMock, _layerServiceMock, _dockerClientMock,
+            _repositoryService, ConsoleLogger.CreateLogger<ArtifactScanAndStore>());
     }
 
     [Fact]
@@ -61,7 +63,7 @@ public class DockerClientTests
             new("bbb", new List<LayerFile> { new("foo", "222") })
         };
 
-        var results = ArtifactScanner.FlattenFiles(layers);
+        var results = ArtifactScanAndStore.FlattenFiles(layers);
 
         Assert.Single(results);
         Assert.Equal("bbb", results["foo"].LayerSha256);
@@ -72,8 +74,8 @@ public class DockerClientTests
     public async Task ScanImageShouldSaveAnArtifact()
     {
         // mock manifest
-        var cfg = new Blob("", 0, "digest-cfg");
-        var files = new Blob("", 0, "digest-files");
+        var cfg = new Blob("", "digest-cfg");
+        var files = new Blob("", "digest-files");
 
         _dockerClientMock
             .LoadManifest("foo", "1.0.0")!
@@ -90,26 +92,26 @@ public class DockerClientTests
 
         // mock reading cfg layer
         _dockerClientMock.SearchLayer("foo", cfg, Arg.Any<List<Regex>>(), Arg.Any<List<Regex>>())
-            .Returns(Task.FromResult(new Layer(cfg.digest, new List<LayerFile>())));
+            .Returns(Task.FromResult(new Layer(cfg.digest, [])));
 
-        // mock file file layer
+        // mock file layer
         _dockerClientMock.SearchLayer("foo", files, Arg.Any<List<Regex>>(), Arg.Any<List<Regex>>())
             .Returns(Task.FromResult(new Layer(files.digest,
-                new List<LayerFile> { new("package-lock.json", "{\"name\": \"foo\"}") })));
+                [new LayerFile("package-lock.json", "{\"name\": \"foo\"}")])));
 
-        var labels = new Dictionary<string, string>();
-        labels["defra.cdp.git.repo.url"] = "https://github.com/foo/foo";
-        labels["defra.cdp.service.name"] = "foo";
+        var labels = new Dictionary<string, string>
+        {
+            ["defra.cdp.git.repo.url"] = "https://github.com/foo/foo", ["defra.cdp.service.name"] = "foo"
+        };
 
         _dockerClientMock
             .LoadManifestImage("foo", cfg)!
             .Returns(
-                Task.FromResult(new ManifestImage(new ManifestImageConfig(labels, ""),
-                    new DateTime().ToLongDateString(), ""))
+                Task.FromResult(new ManifestImage(new ManifestImageConfig(labels, ""), new DateTime()))
             );
 
 
-        var res = await _artifactScanner.ScanImage("foo", "1.0.0", CancellationToken.None);
+        var res = await _artifactScanAndStore.ScanImage("foo", "1.0.0", CancellationToken.None);
         Assert.True(res.Success);
         Assert.NotNull(res.Artifact);
         var artifact = res.Artifact;
@@ -122,5 +124,87 @@ public class DockerClientTests
         Assert.Equal("foo", artifact?.ServiceName);
         Assert.Single(artifact!.Files);
         Assert.Equal("sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c", artifact.Sha256);
+    }
+
+    [Fact]
+    public Task TestParsingCreatedDateTimeForManifestImage()
+    {
+        const string imageAsJson = """
+                                   {
+                                     "architecture": "amd64",
+                                     "config": {
+                                       "Hostname": "",
+                                       "Domainname": "",
+                                       "User": "",
+                                       "AttachStdin": false,
+                                       "AttachStdout": false,
+                                       "AttachStderr": false,
+                                       "ExposedPorts": {
+                                         "443/tcp": {},
+                                         "80/tcp": {}
+                                       },
+                                       "Tty": false,
+                                       "OpenStdin": false,
+                                       "StdinOnce": false,
+                                       "Env": [],
+                                       "Cmd": null,
+                                       "Image": "sha256:2a3b4d813d03ff4c6333f44e431469235ac3372b5923600438514e7c55ffcd99",
+                                       "Volumes": null,
+                                       "WorkingDir": "/app",
+                                       "Entrypoint": ["dotnet", "Defra.Cdp.Deployments.dll"],
+                                       "OnBuild": null,
+                                       "Labels": {
+                                         "defra.cdp.git.repo.url": "https://github.com/${org}/${service}",
+                                         "defra.cdp.service.name": "${service}",
+                                         "defra.cdp.run_mode": "${runMode}"
+                                       }
+                                     },
+                                     "container": "d8ceb8cc445b3e9292a17b41693b14c7c7e8a9b7dbfe12b7661f63b772539c6f",
+                                     "container_config": {
+                                       "Hostname": "d8ceb8cc445b",
+                                       "Domainname": "",
+                                       "User": "",
+                                       "AttachStdin": false,
+                                       "AttachStdout": false,
+                                       "AttachStderr": false,
+                                       "ExposedPorts": {
+                                         "443/tcp": {},
+                                         "80/tcp": {}
+                                       },
+                                       "Tty": false,
+                                       "OpenStdin": false,
+                                       "StdinOnce": false,
+                                       "Env": [],
+                                       "Cmd": [
+                                         "/bin/sh",
+                                         "-c",
+                                         "#(nop) ",
+                                         "LABEL defra.cdp.service.name=cdp-deployments"
+                                       ],
+                                       "Image": "sha256:2a3b4d813d03ff4c6333f44e431469235ac3372b5923600438514e7c55ffcd99",
+                                       "Volumes": null,
+                                       "WorkingDir": "/app",
+                                       "Entrypoint": ["dotnet", "Defra.Cdp.Deployments.dll"],
+                                       "OnBuild": null,
+                                       "Labels": {
+                                         "defra.cdp.git.repo.url": "https://github.com/${org}/${service}",
+                                         "defra.cdp.service.name": "${service}",
+                                         "defra.cdp.run_mode": "${runMode}"
+                                       }
+                                     },
+                                     "created": "2023-04-11T13:32:11.321678253Z",
+                                     "docker_version": "20.10.23",
+                                     "history": [],
+                                     "os": "linux",
+                                     "rootfs": {
+                                       "type": "layers",
+                                       "diff_ids": []
+                                     }
+                                   }
+                                   """;
+        var manifestImage = Deserialize<ManifestImage>(imageAsJson);
+        Assert.NotNull(manifestImage);
+        Assert.True((new DateTime(2023, 4, 11, 13, 32, 11, 321) - manifestImage.created).Duration() <= TimeSpan.FromMilliseconds(1));
+        return Task.CompletedTask;
     }
 }
