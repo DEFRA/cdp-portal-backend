@@ -38,57 +38,40 @@ public class ArtifactScannerResult
     }
 }
 
-public class ArtifactScanner : IArtifactScanner
+public class ArtifactScanAndStore(
+    IDeployableArtifactsService deployableArtifactsService,
+    ILayerService layerService,
+    IDockerClient dockerClient,
+    IRepositoryService repositoryService,
+    ILogger<ArtifactScanAndStore> logger)
+    : IArtifactScanner
 {
     // Used to determine what would have been extracted. we might want to use this for rescans etc.
     private const int DockerScannerVersion = 1;
 
-    private readonly IDeployableArtifactsService _deployableArtifactsService;
-    private readonly IDockerClient _dockerClient;
-
-
     // TOOD: refine the list of files we're interested in keeping.
     // I think the path may be important so we dont capture node modules etc
-    private readonly List<Regex> _filesToExtract = new()
-    {
+    private readonly List<Regex> _filesToExtract = [
         // TODO: Uncomment this once we're ready to do something with this data!
         //new Regex(".+/.+\\.deps\\.json$"),
         //new Regex("home/node.*/package-lock\\.json$"),
         //new Regex(".*/pom\\.xml$")
-    };
+    ];
 
-    private readonly ILayerService _layerService;
-
-    private readonly ILogger _logger;
+    private readonly ILogger _logger = logger;
 
     // A list of paths we dont want to scan (stuff in the base image basically, avoids false positives
-    private readonly List<Regex> _pathsToIgnore = new() { new Regex("^/?usr/.*") };
-
-    private readonly IRepositoryService _repositoryService;
-
-    public ArtifactScanner(
-        IDeployableArtifactsService deployableArtifactsService,
-        ILayerService layerService,
-        IDockerClient dockerClient,
-        IRepositoryService repositoryService,
-        ILogger<ArtifactScanner> logger)
-    {
-        _deployableArtifactsService = deployableArtifactsService;
-        _layerService = layerService;
-        _dockerClient = dockerClient;
-        _repositoryService = repositoryService;
-        _logger = logger;
-    }
+    private readonly List<Regex> _pathsToIgnore = [new("^/?usr/.*")];
 
     public async Task<ArtifactScannerResult> ScanImage(string repo, string tag, CancellationToken cancellationToken)
     {
-        var manifest = await _dockerClient.LoadManifest(repo, tag);
+        var manifest = await dockerClient.LoadManifest(repo, tag);
         if (manifest == null) throw new Exception($"Failed to load manifest for {repo}:{tag}");
 
         _logger.LogInformation("Downloading manifest for {Repo}:{Tag}...", repo, tag);
 
         // Extract the labels.
-        var image = await _dockerClient.LoadManifestImage(repo, manifest.config);
+        var image = await dockerClient.LoadManifestImage(repo, manifest.config);
         var labels = new Dictionary<string, string>();
         if (image != null) labels = image.config.Labels;
 
@@ -112,7 +95,6 @@ public class ArtifactScanner : IArtifactScanner
 
         labels.TryGetValue("defra.cdp.git.repo.url", out var githubUrl);
 
-
         var runMode = ArtifactRunMode.Service;
         if (labels.TryGetValue("defra.cdp.run_mode", out var sRunMode))
         {
@@ -129,12 +111,13 @@ public class ArtifactScanner : IArtifactScanner
         {
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
-
-        var repository = await _repositoryService.FindRepositoryById(repo, cancellationToken);
+        
+        var repository = await repositoryService.FindRepositoryById(repo, cancellationToken);
         // Persist the results.
         var artifact = new DeployableArtifact
         {
             ScannerVersion = DockerScannerVersion,
+            Created =  image?.created ?? DateTime.Now,
             Repo = repo,
             Tag = tag,
             Sha256 = manifest.digest!,
@@ -142,12 +125,12 @@ public class ArtifactScanner : IArtifactScanner
             ServiceName = serviceName ?? testName,
             Files = mergedFiles.Values.ToList(),
             SemVer = semver,
-            Teams = repository?.Teams ?? new List<RepositoryTeam>(),
+            Teams = repository?.Teams ?? [],
             RunMode = runMode.ToString().ToLower()
         };
 
         _logger.LogInformation("Saving artifact {Repo}:{Tag}...", repo, tag);
-        await _deployableArtifactsService.CreateAsync(artifact, cancellationToken);
+        await deployableArtifactsService.CreateAsync(artifact, cancellationToken);
 
         _logger.LogInformation("Artifact {Repo}:{Tag} completed", repo, tag);
         _logger.Audit("New artifact added to portal {Repo}:{Tag}", repo, tag);
@@ -159,16 +142,16 @@ public class ArtifactScanner : IArtifactScanner
     {
         _logger.LogInformation("Generating backfill script");
 
-        var catalog = await _dockerClient.LoadCatalog(cancellationToken);
+        var catalog = await dockerClient.LoadCatalog(cancellationToken);
 
-        _logger.LogInformation("Backfill found {RepositoriesCount} repos to backfill", catalog.repositories.Count);
+        _logger.LogInformation("Backfill found {RepositoriesCount} repos to backfill", catalog.Repositories.Count);
 
         // get ALL the tags for all the repos
         var rescanRequests = new List<RescanRequest>();
-        foreach (var catalogRepository in catalog.repositories)
+        foreach (var catalogRepository in catalog.Repositories)
         {
-            var tags = await _dockerClient.FindTags(catalogRepository);
-            foreach (var tag in tags.tags)
+            var tags = await dockerClient.FindTags(catalogRepository);
+            foreach (var tag in tags.Tags)
             {
                 _logger.LogInformation("Backfilling {CatalogRepository}:{Tag}", catalogRepository, tag);
                 rescanRequests.Add(new RescanRequest(catalogRepository, tag));
@@ -182,12 +165,12 @@ public class ArtifactScanner : IArtifactScanner
 
     private async Task<Layer> SearchLayerUsingCache(string repo, Blob blob, CancellationToken cancellationToken)
     {
-        var layer = await _layerService.Find(blob.digest, cancellationToken);
+        var layer = await layerService.Find(blob.digest, cancellationToken);
         if (layer == null)
         {
             _logger.LogDebug("Layer {BlobDigest} not in cache, scanning...", blob.digest);
-            layer = await _dockerClient.SearchLayer(repo, blob, _filesToExtract, _pathsToIgnore);
-            await _layerService.CreateAsync(layer, cancellationToken);
+            layer = await dockerClient.SearchLayer(repo, blob, _filesToExtract, _pathsToIgnore);
+            await layerService.CreateAsync(layer, cancellationToken);
         }
 
         _logger.LogDebug("Layer {BlobDigest} loaded from cache", blob.digest);

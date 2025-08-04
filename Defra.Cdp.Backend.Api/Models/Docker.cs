@@ -5,9 +5,9 @@ public sealed record ManifestImageConfig(
     string Image
 );
 
-public sealed record ManifestImage(ManifestImageConfig config, string created, string architecture);
+public sealed record ManifestImage(ManifestImageConfig config, DateTime created);
 
-public sealed record Blob(string mediaType, int size, string digest);
+public sealed record Blob(string mediaType, string digest);
 
 public sealed record Manifest
 {
@@ -18,6 +18,6 @@ public sealed record Manifest
     public string? digest { get; set; }
 }
 
-public sealed record Catalog(List<string> repositories);
+public sealed record Catalog(List<string> Repositories);
 
-public sealed record ImageTagList(string name, List<string> tags);
+public sealed record ImageTagList(string Name, List<string> Tags);

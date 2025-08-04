@@ -325,7 +325,7 @@ public class DeploymentsService(
         {
             var userFilter = builder.Where(d =>
                 (d.User != null && d.User.Id == user)
-                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
+                || (d.User != null && d.User.DisplayName.Contains(user, StringComparison.CurrentCultureIgnoreCase)));
             filter &= userFilter;
         }
 

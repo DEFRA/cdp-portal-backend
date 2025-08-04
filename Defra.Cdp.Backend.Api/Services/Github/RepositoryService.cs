@@ -169,8 +169,6 @@ public class RepositoryService(
             .ToListAsync(cancellationToken);
     }
 
-    private record ServiceAndTeams(string Service, IEnumerable<RepositoryTeam> Teams);
-
     public async Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken)
     {
         var filter = Builders<Repository>.Filter.Empty;
