@@ -12,11 +12,12 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
     : ISqsListener, IDisposable
 {
     protected readonly string QueueUrl = queueUrl;
+    private bool _enabled = enabled;
     private const int WaitTimeoutSeconds = 15;
 
     public void Dispose()
     {
-        enabled = false;
+        _enabled = false;
         sqs.Dispose();
     }
 
@@ -34,7 +35,8 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
         logger.LogInformation("Listening for events on {queue}", QueueUrl);
 
         var falloff = 1;
-        while (enabled)
+
+        while (_enabled)
             try
             {
                 var receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
@@ -51,12 +53,12 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
                     {
                         logger.LogError("Message: {Id} - Exception: {Message}", message.MessageId, exception.Message);
                     }
-
                     var deleteRequest = new DeleteMessageRequest
                     {
-                        QueueUrl = QueueUrl,
-                        ReceiptHandle = message.ReceiptHandle
+                        QueueUrl = QueueUrl
                     };
+
+                    deleteRequest.ReceiptHandle = message.ReceiptHandle;
 
                     await sqs.DeleteMessageAsync(deleteRequest, cancellationToken);
                     falloff = 1;
@@ -64,7 +66,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             }
             catch (Exception exception)
             {
-                logger.LogError(exception.Message);
+                logger.LogError("{Message}", exception.Message);
                 await Task.Delay(1000 * Math.Min(60, falloff), cancellationToken);
                 falloff++;
                 // TODO: decide how to handle failures here. what kind of failures are they? AWS connection stuff?

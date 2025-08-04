@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -21,7 +21,7 @@ public static class TenantServicesEndpoint
         var result = await tenantServicesService.FindOne(new TenantServiceFilter { Name = service, Environment = environment }, cancellationToken);
         return result == null
             ? Results.NotFound(new ApiError("Not found"))
-            : Results.Ok(new TenantServicesResponse(result));
+            : Results.Ok(result);
     }
 
     private static async Task<IResult> TenantService(

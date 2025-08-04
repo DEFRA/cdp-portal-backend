@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using MongoDB.Bson;
@@ -59,10 +60,7 @@ public class TenantServicesService(
         _logger.LogInformation("Persisting tenant services for environment: {Environment}", payload.Environment);
 
         var teamsLookup = await repositoryService.TeamsLookup(cancellationToken);
-        var tenantServices = payload.Services.Select(s => new TenantServiceRecord(payload.Environment, s.Name, s.Zone,
-            s.Mongo, s.Redis, s.Postgres, s.ServiceCode, s.TestSuite, s.Buckets, s.Queues, s.ApiEnabled, s.ApiType,
-            teamsLookup[s.Name].FirstOrDefault([]))
-        ).ToList();
+        var tenantServices = payload.Services.Select(s => TenantServiceRecord.FromPayload(s, payload.Environment, teamsLookup)).ToList();
 
         var servicesInDb = await Find(new TenantServiceFilter { Environment = payload.Environment }, cancellationToken);
 
@@ -199,6 +197,75 @@ public record TenantServiceFilter(
 }
 
 [BsonIgnoreExtraElements]
+public record SqsSubscription(
+    bool? FilterEnabled,
+    string? FilterPolicy,
+    List<string>? Topics
+)
+{
+    public static SqsSubscription FromPayload(Service.SqsSubscription sub)
+    {
+        return new SqsSubscription(
+            FilterEnabled: sub.FilterEnabled,
+            FilterPolicy: sub.FilterPolicy,
+            Topics: sub.Topics
+        );
+    }
+}
+
+[BsonIgnoreExtraElements]
+public record SqsQueue(
+    string Name,
+    List<string>? CrossAccountAllowList,
+    int? DlqMaxReceiveCount,
+    bool? ContentBasedDeduplication,
+    int? VisibilityTimeoutSeconds,
+    List<SqsSubscription> Subscriptions,
+    string? Arn = null
+)
+{
+    public static SqsQueue FromPayload(Service.SqsQueue q)
+    {
+        return new SqsQueue(
+            Name: q.Name,
+            CrossAccountAllowList: q.CrossAccountAllowList,
+            DlqMaxReceiveCount: q.DlqMaxReceiveCount,
+            ContentBasedDeduplication: q.ContentBasedDeduplication,
+            VisibilityTimeoutSeconds: q.VisibilityTimeoutSeconds,
+            Subscriptions: q.Subscriptions.Select(SqsSubscription.FromPayload).ToList()
+        );
+    }
+}
+
+[BsonIgnoreExtraElements]
+public record SnsTopic(
+    string Name,
+    List<string>? CrossAccountAllowList,
+    bool? ContentBasedDeduplication,
+    string? Arn = null
+)
+{
+    public static SnsTopic FromPayload(Service.SnsTopic topic)
+    {
+        return new SnsTopic(
+            Name: topic.Name,
+            CrossAccountAllowList: topic.CrossAccountAllowList,
+            ContentBasedDeduplication: topic.ContentBasedDeduplication
+        );
+    }
+}
+
+[BsonIgnoreExtraElements]
+public record S3Bucket(string Name, string? Versioning, string? Url = null)
+{
+    public static S3Bucket FromPayload(Service.S3Bucket bucket)
+    {
+        return new S3Bucket(bucket.Name, bucket.Versioning);
+    }
+}
+
+
+[BsonIgnoreExtraElements]
 public record TenantServiceRecord(
     string Environment,
     string ServiceName,
@@ -208,8 +275,16 @@ public record TenantServiceRecord(
     bool Postgres,
     string ServiceCode,
     string? TestSuite,
+    
+    // Legacy data
     List<string>? Buckets,
     List<string>? Queues,
+    
+    // New format
+    List<S3Bucket>? S3Buckets,
+    List<SqsQueue>? SqsQueues,
+    List<SnsTopic>? SnsTopics,
+    
     bool? ApiEnabled,
     string? ApiType,
     List<RepositoryTeam>? Teams
@@ -255,4 +330,34 @@ public record TenantServiceRecord(
         hashCode.Add(Teams);
         return hashCode.ToHashCode();
     }
+
+    public static TenantServiceRecord FromPayload(Service service,  string environment, ILookup<string,List<RepositoryTeam>>? teamsLookup)
+    {
+        var record = new TenantServiceRecord
+        (
+            environment,
+            service.Name,
+            Zone: service.Zone,
+            Mongo: service.Mongo,
+            Redis: service.Redis,
+            Postgres: service.Postgres,
+            ServiceCode: service.ServiceCode,
+            TestSuite: service.TestSuite,
+    
+            Buckets:  service.Buckets,
+            Queues: service.Queues,
+    
+            // New format
+            S3Buckets: service.S3Buckets?.Select(S3Bucket.FromPayload).ToList(),
+            SqsQueues: service.SqsQueues?.Select(SqsQueue.FromPayload).ToList(),
+            SnsTopics: service.SnsTopics?.Select(SnsTopic.FromPayload).ToList(),
+    
+            ApiEnabled: service.ApiEnabled,
+            ApiType: service.ApiType,
+            Teams: teamsLookup?[service.Name].FirstOrDefault([])
+        );
+
+        return record;
+    }
 }
+
