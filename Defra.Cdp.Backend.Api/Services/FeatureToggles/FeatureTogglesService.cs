@@ -10,6 +10,7 @@ public interface IFeatureTogglesService
 {
     Task CreateToggle(FeatureToggle featureToggle, CancellationToken cancellationToken);
     Task<List<FeatureToggle>> GetAllToggles(CancellationToken cancellationToken);
+    Task<FeatureToggle?> GetToggle(string toggleId, CancellationToken cancellationToken);
     Task<bool> IsAnyToggleActiveForPath(string requestPath, CancellationToken cancellationToken);
     Task UpdateToggle(string featureToggleId, bool isActive, CancellationToken cancellationToken);
 }
@@ -45,6 +46,11 @@ public class FeatureTogglesService(
     {
         return await Collection.Find(_ => true)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<FeatureToggle?> GetToggle(string toggleId, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(toggle => toggle.Id == toggleId).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<bool> IsAnyToggleActiveForPath(string requestPath, CancellationToken cancellationToken)
