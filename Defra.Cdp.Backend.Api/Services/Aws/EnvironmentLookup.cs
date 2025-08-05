@@ -23,15 +23,15 @@ public class EnvironmentLookup : IEnvironmentLookup
         foreach (var env in section.GetChildren())
         {
             if (env.Value == null) continue;
-            _envs.Add(env.Key, env.Value);
-            _accounts.Add(env.Value, env.Key);
+            _envs[env.Key] = env.Value;
+            _accounts[env.Value] = env.Key;
         }
         
         var s3Section = cfg.GetSection("BucketSuffixes");
         foreach (var s3 in s3Section.GetChildren())
         {
             if (s3.Value == null) continue;
-            _bucketSuffixes.Add(s3.Key, s3.Value);
+            _bucketSuffixes[s3.Key] = s3.Value;
         }
     }
 
