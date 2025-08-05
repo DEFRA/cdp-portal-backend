@@ -33,9 +33,10 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "EntityStatusTest");
 
         var loggerFactory = new LoggerFactory();
+        var envLookup = new MockEnvironmentLookup();
         var entitiesService = new EntitiesService(mongoFactory, loggerFactory);
         var repositoryService = new RepositoryService(mongoFactory, loggerFactory);
-        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, loggerFactory);
+        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, envLookup, loggerFactory);
         var squidProxyService = new SquidProxyConfigService(mongoFactory, loggerFactory);
         var nginxUpstreamsService = new NginxUpstreamsService(mongoFactory, loggerFactory);
         var appConfigService = new AppConfigsService(mongoFactory, loggerFactory);

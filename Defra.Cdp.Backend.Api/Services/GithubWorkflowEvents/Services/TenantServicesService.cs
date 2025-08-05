@@ -23,6 +23,7 @@ public interface ITenantServicesService : IEventsPersistenceService<TenantServic
 public class TenantServicesService(
     IMongoDbClientFactory connectionFactory,
     IRepositoryService repositoryService,
+    IEnvironmentLookup environmentLookup,
     ILoggerFactory loggerFactory)
     : MongoService<TenantServiceRecord>(connectionFactory,
         CollectionName, loggerFactory), ITenantServicesService
@@ -60,7 +61,7 @@ public class TenantServicesService(
         _logger.LogInformation("Persisting tenant services for environment: {Environment}", payload.Environment);
 
         var teamsLookup = await repositoryService.TeamsLookup(cancellationToken);
-        var tenantServices = payload.Services.Select(s => TenantServiceRecord.FromPayload(s, payload.Environment, teamsLookup)).ToList();
+        var tenantServices = payload.Services.Select(s => TenantServiceRecord.FromPayload(s, payload.Environment, teamsLookup, environmentLookup)).ToList();
 
         var servicesInDb = await Find(new TenantServiceFilter { Environment = payload.Environment }, cancellationToken);
 
@@ -218,21 +219,30 @@ public record SqsQueue(
     string Name,
     List<string>? CrossAccountAllowList,
     int? DlqMaxReceiveCount,
+    bool? FifoQueue,
     bool? ContentBasedDeduplication,
     int? VisibilityTimeoutSeconds,
     List<SqsSubscription> Subscriptions,
-    string? Arn = null
+    string? Arn = null,
+    string? Url = null
 )
 {
-    public static SqsQueue FromPayload(Service.SqsQueue q)
+    public static SqsQueue FromPayload(Service.SqsQueue queue, string? account)
     {
+        var fifo = queue.FifoQueue ? ".fifo" : "";
+        var arn = $"arn:aws:sqs:eu-west-2:{account}:{queue.Name}{fifo}";
+        var url = $"https://sqs.eu-west-2.amazonaws.com/{account}/{queue.Name}{fifo}";
+            
         return new SqsQueue(
-            Name: q.Name,
-            CrossAccountAllowList: q.CrossAccountAllowList,
-            DlqMaxReceiveCount: q.DlqMaxReceiveCount,
-            ContentBasedDeduplication: q.ContentBasedDeduplication,
-            VisibilityTimeoutSeconds: q.VisibilityTimeoutSeconds,
-            Subscriptions: q.Subscriptions.Select(SqsSubscription.FromPayload).ToList()
+            Name: queue.Name,
+            CrossAccountAllowList: queue.CrossAccountAllowList,
+            DlqMaxReceiveCount: queue.DlqMaxReceiveCount,
+            FifoQueue: queue.FifoQueue,
+            ContentBasedDeduplication: queue.ContentBasedDeduplication,
+            VisibilityTimeoutSeconds: queue.VisibilityTimeoutSeconds,
+            Subscriptions: queue.Subscriptions.Select(SqsSubscription.FromPayload).ToList(),
+            Arn: arn,
+            Url: url
         );
     }
 }
@@ -240,17 +250,23 @@ public record SqsQueue(
 [BsonIgnoreExtraElements]
 public record SnsTopic(
     string Name,
+    bool? FifoTopic,
     List<string>? CrossAccountAllowList,
     bool? ContentBasedDeduplication,
     string? Arn = null
 )
 {
-    public static SnsTopic FromPayload(Service.SnsTopic topic)
+    public static SnsTopic FromPayload(Service.SnsTopic topic, string? account)
     {
+        var fifo = topic.FifoTopic == true ? ".fifo" : "";
+        var arn = $"arn:aws:sns:eu-west-2:{account}:{topic.Name}{fifo}";
+        
         return new SnsTopic(
             Name: topic.Name,
+            FifoTopic: topic.FifoTopic,
             CrossAccountAllowList: topic.CrossAccountAllowList,
-            ContentBasedDeduplication: topic.ContentBasedDeduplication
+            ContentBasedDeduplication: topic.ContentBasedDeduplication,
+            Arn: arn
         );
     }
 }
@@ -258,9 +274,11 @@ public record SnsTopic(
 [BsonIgnoreExtraElements]
 public record S3Bucket(string Name, string? Versioning, string? Url = null)
 {
-    public static S3Bucket FromPayload(Service.S3Bucket bucket)
+    public static S3Bucket FromPayload(Service.S3Bucket bucket, string? hash)
     {
-        return new S3Bucket(bucket.Name, bucket.Versioning);
+        var suffix = hash != null ? $"-{hash}" : "";
+        var url = $"s3://{bucket.Name}{suffix}";
+        return new S3Bucket(bucket.Name, bucket.Versioning, url);
     }
 }
 
@@ -331,8 +349,14 @@ public record TenantServiceRecord(
         return hashCode.ToHashCode();
     }
 
-    public static TenantServiceRecord FromPayload(Service service,  string environment, ILookup<string,List<RepositoryTeam>>? teamsLookup)
+    public static TenantServiceRecord FromPayload(Service service, 
+        string environment, 
+        ILookup<string,List<RepositoryTeam>>? teamsLookup,
+        IEnvironmentLookup environmentLookup)
     {
+
+        var awsAccount = environmentLookup.FindAccount(environment);
+        var s3Suffix = environmentLookup.FindS3BucketSuffix(environment);
         var record = new TenantServiceRecord
         (
             environment,
@@ -348,9 +372,9 @@ public record TenantServiceRecord(
             Queues: service.Queues,
     
             // New format
-            S3Buckets: service.S3Buckets?.Select(S3Bucket.FromPayload).ToList(),
-            SqsQueues: service.SqsQueues?.Select(SqsQueue.FromPayload).ToList(),
-            SnsTopics: service.SnsTopics?.Select(SnsTopic.FromPayload).ToList(),
+            S3Buckets: service.S3Buckets?.Select(b => S3Bucket.FromPayload(b, s3Suffix)).ToList(),
+            SqsQueues: service.SqsQueues?.Select(q => SqsQueue.FromPayload(q, awsAccount)).ToList(),
+            SnsTopics: service.SnsTopics?.Select(t => SnsTopic.FromPayload(t, awsAccount)).ToList(),
     
             ApiEnabled: service.ApiEnabled,
             ApiType: service.ApiType,

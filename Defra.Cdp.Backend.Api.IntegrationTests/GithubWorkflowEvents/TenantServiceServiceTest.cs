@@ -16,7 +16,8 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
-        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, new NullLoggerFactory());
+        var envLookup = new MockEnvironmentLookup();
+        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
 
@@ -66,8 +67,9 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var envLookup = new MockEnvironmentLookup();
         var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, new NullLoggerFactory());
+            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
 
@@ -98,8 +100,9 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var envLookup = new MockEnvironmentLookup();
         var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, new NullLoggerFactory());
+            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
@@ -139,9 +142,9 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var envLookup = new MockEnvironmentLookup();
         var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, new NullLoggerFactory());
-
+            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
         await repositoryService.Upsert(_fooTestRepository, CancellationToken.None);
 
@@ -203,14 +206,16 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "postgres-service");
     }
-
+  
     [Fact]
     public async Task WillRefreshTeams()
     {
         var logger = new NullLoggerFactory();
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
         var repositoryService = new RepositoryService(mongoFactory, logger);
-        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, logger);
+        var envLookup = new MockEnvironmentLookup();
+        var tenantServicesService =
+            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>

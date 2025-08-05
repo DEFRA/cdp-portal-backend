@@ -359,6 +359,34 @@ public class GithubWorkflowEventHandlerTest
                                            ],
                                            "queues": [
                                              "frontend-service-queue"
+                                           ],
+                                           "sqs_queues": [
+                                             {
+                                               "name": "forms_audit_events",
+                                               "cross_account_allow_list": [],
+                                               "fifo_queue": "false",
+                                               "content_based_deduplication": false,
+                                               "dlq_max_receive_count": 3,
+                                               "visibility_timeout_seconds": 60,
+                                               "subscriptions": [
+                                                 {
+                                                   "queue_name": "frontend-service-queue",
+                                                   "topics": [
+                                                     "forms_manager_events"
+                                                   ],
+                                                   "filter_enabled": false,
+                                                   "filter_policy": ""
+                                                 }
+                                               ]
+                                             }
+                                           ],
+                                           "sns_topics": [
+                                             {
+                                               "name": "forms_manager_events",
+                                               "cross_account_allow_list": [],
+                                               "fifo_topic": "false",
+                                               "content_based_deduplication": false
+                                             }
                                            ]
                                          },
                                          {
@@ -372,6 +400,7 @@ public class GithubWorkflowEventHandlerTest
                                        ]
                                      }
                                    }
+                                   
                                    """;
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
