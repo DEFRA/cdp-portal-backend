@@ -179,7 +179,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
 
-        var result = await service.RunningDeploymentsForService(null, null, null, null, null, new CancellationToken());
+        var result = await service.RunningDeploymentsForService(new DeploymentMatchers(), new CancellationToken());
 
         Assert.Empty(result);
     }
@@ -289,5 +289,82 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         // Check its removed the old requested deployment
         var stuck = await service.FindDeployment(stuckDeployment.CdpDeploymentId, new CancellationToken());
         Assert.Equal(DeploymentStatus.Failed, stuck?.Status);
+    }
+
+    [Fact]
+    public async Task FindDeployments()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var ct = new CancellationToken();
+        await DeploymentsTestHelpers.PopulateWithTestData(service, ct);
+
+        // partial service match
+        var results = await service.FindLatest(new DeploymentMatchers(Service: "foo"), ct: ct);
+        Assert.True(results.Data.All(d => d.Service.Contains("foo")));
+        
+        // exact user name match
+        results = await service.FindLatest(new DeploymentMatchers(User: "user-1"), ct: ct);
+        Assert.True(results.Data.All(d => d.User.DisplayName == "user-1"));
+        
+        // exact user id match
+        results = await service.FindLatest(new DeploymentMatchers(User: "1"), ct: ct);
+        Assert.True(results.Data.All(d => d.User.Id == "1"));
+        
+        // single environment match
+        results = await service.FindLatest(new DeploymentMatchers(Environment: "test"), ct: ct);
+        Assert.True(results.Data.All(d => d.Environment == "test"));
+        
+        // Multi environment match
+        results = await service.FindLatest(new DeploymentMatchers(Environments: ["test", "dev"]), ct: ct);
+        Assert.True(results.Data.All(d => d.Environment is "test" or "dev"));
+        
+        // mutli-service match
+        results = await service.FindLatest(new DeploymentMatchers(Services: ["foo-backend", "foo-frontend"]), ct: ct);
+        Assert.True(results.Data.All(d => d.Service is "foo-backend" or "foo-frontend"));
+        
+        // status
+        results = await service.FindLatest(new DeploymentMatchers(Status: DeploymentStatus.Pending), ct: ct);
+        Assert.True(results.Data.All(d => d.Status is DeploymentStatus.Pending));
+    }
+
+
+    [Fact]
+    public async Task GetDeploymentsFilters()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var service =
+            new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var ct = new CancellationToken();
+        var deployments = await DeploymentsTestHelpers.PopulateWithTestData(service, ct);
+
+        var services = deployments.Select(d => d.Service).Distinct();
+        var users = deployments.Select(d => d.User).Distinct();
+
+        var filters = await service.GetDeploymentsFilters(ct);
+        
+        Assert.Equivalent(services, filters.Services);
+        Assert.Equivalent(users, filters.Users);
+    }
+    
+    [Fact]
+    public async Task GetWhatsRunningWhereFilters()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var service =
+            new DeploymentsService(mongoFactory, repositoryService, userServiceFetcher, new NullLoggerFactory());
+        var ct = new CancellationToken();
+        var deployments = await DeploymentsTestHelpers.PopulateWithTestData(service, ct);
+
+        var services = deployments.Select(d => d.Service).Distinct();
+        var users = deployments.Select(d => d.User).Distinct();
+
+        var filters = await service.GetWhatsRunningWhereFilters(ct);
+        
+        Assert.Equivalent(services, filters.Services);
+        Assert.Equivalent(users, filters.Users);
     }
 }

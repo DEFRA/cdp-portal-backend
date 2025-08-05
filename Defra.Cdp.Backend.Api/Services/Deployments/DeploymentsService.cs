@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
-using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
@@ -20,13 +19,7 @@ public interface IDeploymentsService
     Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
     Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus, CancellationToken ct);
     
-    Task<Paginated<Deployment>> FindLatest(
-        string[]? favourites,
-        string? environment,
-        string? service,
-        string? user,
-        string? status,
-        string? team,
+    Task<Paginated<Deployment>> FindLatest(DeploymentMatchers query,
         int offset = 0,
         int page = 0,
         int size = 0,
@@ -35,13 +28,7 @@ public interface IDeploymentsService
 
 
     Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
-        string[]? favourites,
-        string? environment,
-        string? service,
-        string? user,
-        string? status,
-        string? team,
-        string? kind,
+        DeploymentMatchers query,
         int offset = 0,
         int page = 0,
         int size = 0,
@@ -51,8 +38,7 @@ public interface IDeploymentsService
     Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct);
     Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct);
 
-    Task<List<Deployment>> RunningDeploymentsForService(string[]? environments, string? service, string? team,
-        string? user, string? status, CancellationToken ct);
+    Task<List<Deployment>> RunningDeploymentsForService(DeploymentMatchers query, CancellationToken ct);
     Task<List<Deployment>> RunningDeploymentsForService(string serviceName, CancellationToken ct);
     Task<DeploymentFilters> GetWhatsRunningWhereFilters(CancellationToken ct);
     Task<DeploymentFilters> GetDeploymentsFilters(CancellationToken ct);
@@ -216,49 +202,13 @@ public class DeploymentsService(
         return await Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<Deployment>> RunningDeploymentsForService(string[]? environments, string? service, string? team,
-        string? user, string? status, CancellationToken ct)
+    public async Task<List<Deployment>> RunningDeploymentsForService(DeploymentMatchers query, CancellationToken ct)
 
     {
         var builder = Builders<Deployment>.Filter;
         var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);
 
-        if (environments?.Length > 0)
-        {
-            var envFilter = builder.In(d => d.Environment, environments);
-            filter &= envFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(team))
-        {
-            var repos = await repositoryService.FindRepositoriesByTeamId(team, true, ct);
-            var servicesOwnedByTeam = repos.Select(r => r.Id);
-            var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
-            filter &= teamFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(user))
-        {
-            var userFilter = builder.Where(d =>
-                (d.User != null && d.User.Id == user)
-                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
-            filter &= userFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var statusLower = status.ToLower();
-            var statusFilter = builder.Where(d =>
-                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-            filter &= statusFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(service))
-        {
-            var partialServiceFilter =
-                Builders<Deployment>.Filter.Regex(d => d.Service, new BsonRegularExpression(service, "i"));
-            filter &= partialServiceFilter;
-        }
+        filter &= query.Filter();
 
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
@@ -287,55 +237,14 @@ public class DeploymentsService(
             .ToListAsync(ct);
     }
 
-    public async Task<Paginated<Deployment>> FindLatest(string[]? favourites, string? environment,
-        string? service, string? user,
-        string? status,
-        string? team,
+    public async Task<Paginated<Deployment>> FindLatest(DeploymentMatchers query,
         int offset = 0,
         int page = 0,
         int size = 0,
         CancellationToken ct = new()
     )
     {
-        var builder = Builders<Deployment>.Filter;
-        var filter = builder.Empty;
-
-        if (!string.IsNullOrWhiteSpace(environment))
-        {
-            var environmentFilter = builder.Eq(d => d.Environment, environment);
-            filter &= environmentFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(team))
-        {
-            var repos = await repositoryService.FindRepositoriesByTeamId(team, true, ct);
-            var servicesOwnedByTeam = repos.Select(r => r.Id);
-            var teamFilter = builder.In(d => d.Service, servicesOwnedByTeam);
-            filter &= teamFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(service))
-        {
-            var serviceFilter = builder.Regex(d => d.Service,
-                new BsonRegularExpression(service, "i"));
-            filter &= serviceFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(user))
-        {
-            var userFilter = builder.Where(d =>
-                (d.User != null && d.User.Id == user)
-                || (d.User != null && d.User.DisplayName.Contains(user, StringComparison.CurrentCultureIgnoreCase)));
-            filter &= userFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var statusLower = status.ToLower();
-            var statusFilter = builder.Where(d =>
-                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-            filter &= statusFilter;
-        }
+        var filter = query.Filter();
 
         var deployments = await Collection
             .Find(filter)
@@ -344,9 +253,9 @@ public class DeploymentsService(
             .SortByDescending(d => d.Created)
             .ToListAsync(ct);
 
-        if (favourites?.Length > 0)
+        if (query.Favourites?.Length > 0)
         {
-            var repos = (await Task.WhenAll(favourites.Select(teamId =>
+            var repos = (await Task.WhenAll(query.Favourites.Select(teamId =>
                     repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
                 .ToList();
@@ -364,13 +273,7 @@ public class DeploymentsService(
     }
 
     public async Task<Paginated<DeploymentOrMigration>> FindLatestWithMigrations(
-        string[]? favourites,
-        string? environment,
-        string? service,
-        string? user,
-        string? status,
-        string? team,
-        string? kind,
+        DeploymentMatchers query,
         int offset = 0,
         int page = 1,
         int size = 50,
@@ -379,52 +282,10 @@ public class DeploymentsService(
     {
         var builder = Builders<Deployment>.Filter;
         var builderMigration = Builders<DatabaseMigration>.Filter;
-        var filter = builder.Empty;
-        var migrationFilter = builderMigration.Empty;
+        var filter = query.Filter();
+        var migrationFilter = query.FilterMigration();
 
-        if (!string.IsNullOrWhiteSpace(environment))
-        {
-            filter &= builder.Eq(d => d.Environment, environment);
-            migrationFilter &= builderMigration.Eq(m => m.Environment, environment);
-        }
-
-        if (!string.IsNullOrWhiteSpace(team))
-        {
-            var repos = await repositoryService.FindRepositoriesByTeamId(team, true, ct);
-            var servicesOwnedByTeam = repos.Select(r => r.Id).ToList();
-            filter &= builder.In(d => d.Service, servicesOwnedByTeam);
-            migrationFilter &= builderMigration.In(m => m.Service, servicesOwnedByTeam);
-        }
-
-        if (!string.IsNullOrWhiteSpace(service))
-        {
-            var regex = new BsonRegularExpression(service, "i");
-            filter &= builder.Regex(d => d.Service, regex);
-            migrationFilter &= builderMigration.Regex(m => m.Service, regex);
-        }
-
-        if (!string.IsNullOrWhiteSpace(user))
-        {
-            filter &= builder.Where(d =>
-                (d.User != null && d.User.Id == user)
-                || (d.User != null && d.User.DisplayName.ToLower().Contains(user.ToLower())));
-
-            migrationFilter &= builderMigration.Where(m =>
-                m.User.Id == user
-                || (m.User.DisplayName != null && m.User.DisplayName.ToLower().Contains(user.ToLower())));
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var statusLower = status.ToLower();
-            filter &= builder.Where(d =>
-                d.Status.ToLower() == statusLower || d.Status.ToLower().Contains(statusLower));
-
-            migrationFilter &= builderMigration.Where(m =>
-                m.Status.ToLower() == statusLower || m.Status.ToLower().Contains(statusLower));
-        }
-
-        switch (kind)
+        switch (query.Kind)
         {
             case Migration:
                 filter = builder.Eq(m => m.CdpDeploymentId, null);
@@ -451,13 +312,13 @@ public class DeploymentsService(
             .Skip(offset + size * (page - DefaultPage))
             .Limit(size);
 
-        var deployments = await Collection.Aggregate(pipeline).ToListAsync(ct);
+        var deployments = await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
 
         // TODO favourites should be on the entire result - "bring all favourite things to the front", not just on the current page
         //  we may be able to do this in an easier way in the UI
-        if (favourites?.Length > 0)
+        if (query.Favourites?.Length > 0)
         {
-            var repos = (await Task.WhenAll(favourites.Select(teamId =>
+            var repos = (await Task.WhenAll(query.Favourites.Select(teamId =>
                     repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
                 .SelectMany(r => r)
                 .ToList();
@@ -575,5 +436,97 @@ public class DeploymentsService(
         statuses.Sort();
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
+    }
+}
+
+public record DeploymentMatchers(
+    string? Service = null,
+    string? Environment = null,
+    string[]? Environments = null,
+    string? Status = null,
+    string[]? Services = null,
+    string? User = null,
+    string[]? Favourites = null, // Handled outside of mongo
+    string? Kind = null // handled outside of mongo
+)
+{
+    public FilterDefinition<Deployment> Filter()
+    {
+        var builder = Builders<Deployment>.Filter;
+        var filter = builder.Empty;
+        
+        if (!string.IsNullOrWhiteSpace(Service))
+        {
+            filter &= builder.Regex(d => d.Service, new BsonRegularExpression(Service, "i"));
+        }
+        
+        if (!string.IsNullOrWhiteSpace(Environment))
+        {
+            filter &= builder.Eq(d => d.Environment, Environment);
+        }
+        
+        if (Environments is { Length: > 0 })
+        {
+            filter &= builder.In(d => d.Environment, Environments);
+        }
+         
+        if (!string.IsNullOrWhiteSpace(Status))
+        {
+            filter &= builder.Eq(d => d.Status, Status.ToLower());
+        }
+        
+        if (!string.IsNullOrWhiteSpace(User))
+        {
+            filter &= builder.Or(
+                builder.Eq(d => d.User!.Id, User),
+                builder.Eq(d => d.User!.DisplayName, User));
+        }
+
+        if (Services is {Length: > 0 })
+        {
+            filter &= builder.In(d => d.Service, Services);
+        }
+
+        return filter;
+    }
+    
+    public FilterDefinition<DatabaseMigration> FilterMigration()
+    {
+        var builder = Builders<DatabaseMigration>.Filter;
+        var filter = builder.Empty;
+        
+        if (!string.IsNullOrWhiteSpace(Service))
+        {
+            filter &= builder.Regex(d => d.Service, new BsonRegularExpression(Service, "i"));
+        }
+        
+        if (!string.IsNullOrWhiteSpace(Environment))
+        {
+            filter &= builder.Eq(d => d.Environment, Environment);
+        }
+        
+        if (Environments is { Length: > 0 })
+        {
+            filter &= builder.In(d => d.Environment, Environments);
+        }
+         
+        if (!string.IsNullOrWhiteSpace(Status))
+        {
+            filter &= builder.Eq(d => d.Status, Status.ToLower());
+        }
+        
+        if (!string.IsNullOrWhiteSpace(User))
+        {
+            filter &= builder.Or(
+                builder.Eq(d => d.User.Id, User),
+                builder.Eq(d => d.User.DisplayName, User));
+        }
+
+        if (Services is {Length: > 0 })
+        {
+            filter &= builder.In(d => d.Service, Services);
+        }
+
+        return filter;
     }
 }

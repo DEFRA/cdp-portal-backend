@@ -44,8 +44,4 @@
     </AssemblyAttribute>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Services\GithubWorkflowEvents\events\" />
-  </ItemGroup>
-
 </Project>
