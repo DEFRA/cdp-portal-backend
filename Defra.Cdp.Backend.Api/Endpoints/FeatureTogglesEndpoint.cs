@@ -1,5 +1,6 @@
 using System.Net;
 using Defra.Cdp.Backend.Api.Services.FeatureToggles;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -9,7 +10,7 @@ public static class FeatureTogglesEndpoint
     {
         app.MapPost("/feature-toggles", CreateFeatureToggle);
         app.MapPut("/feature-toggles/{featureToggleId}/{isActive:bool}", UpdateFeatureToggle);
-        app.MapGet("/feature-toggles", AllFeatureToggles);
+        app.MapGet("/feature-toggles", GetFeatureToggles);
         app.MapGet("/feature-toggles/{requestPath}", AnyToggleActiveForPath);
     }
 
@@ -17,16 +18,22 @@ public static class FeatureTogglesEndpoint
         string requestPath,
         CancellationToken cancellationToken)
     {
-        var isActive = await featureTogglesService.IsAnyToggleActiveForPath(WebUtility.UrlDecode(requestPath), cancellationToken);
+        var isActive =
+            await featureTogglesService.IsAnyToggleActiveForPath(WebUtility.UrlDecode(requestPath), cancellationToken);
         return Results.Ok(isActive);
     }
 
-    private static async Task<IResult> AllFeatureToggles(IFeatureTogglesService featureTogglesService,
+    private static async Task<IResult> GetFeatureToggles(IFeatureTogglesService featureTogglesService,
+        [FromQuery(Name = "id")] string? toggleId,
         CancellationToken cancellationToken)
     {
+        if (toggleId != null)
+        {
+            var toggle = await featureTogglesService.GetToggle(toggleId, cancellationToken);
+            return toggle != null ? Results.Ok(toggle) : Results.NotFound(); 
+        }
         var toggles = await featureTogglesService.GetAllToggles(cancellationToken);
         return Results.Ok(toggles);
-        
     }
 
     private static async Task<IResult> CreateFeatureToggle(
