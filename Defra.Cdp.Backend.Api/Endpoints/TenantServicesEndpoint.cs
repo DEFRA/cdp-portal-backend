@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
-Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -37,16 +37,8 @@ public static class TenantServicesEndpoint
         }
 
         var response = result.ToDictionary(s => s.Environment,
-            s => new TenantServicesResponse(s));
+            s => s);
         return Results.Ok(response);
     }
 
-    private class TenantServicesResponse(TenantServiceRecord record)
-    {
-        [JsonPropertyName("serviceCode")] public string ServiceCode { get; } = record.ServiceCode;
-        [JsonPropertyName("zone")] public string Zone { get; } = record.Zone;
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("testSuite")] public string? TestSuite { get; } = record.TestSuite;
-        [JsonPropertyName("postgres")] public bool Postgres { get; } = record.Postgres;
-    }
 }

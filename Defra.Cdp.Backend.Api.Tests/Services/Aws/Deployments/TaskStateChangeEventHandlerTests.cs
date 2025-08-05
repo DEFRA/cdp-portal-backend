@@ -15,6 +15,16 @@ class MockEnvironmentLookup : IEnvironmentLookup
     {
         return "test";
     }
+
+    public string? FindAccount(string env)
+    {
+        return "2222222222222";
+    }
+
+    public string? FindS3BucketSuffix(string env)
+    {
+        return "22222";
+    }
 }
 
 public class TaskStateChangeEventHandlerTests

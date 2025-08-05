@@ -6,12 +6,16 @@ namespace Defra.Cdp.Backend.Api.Services.Aws;
 public interface IEnvironmentLookup
 {
     string? FindEnv(string account);
+    string? FindAccount(string env);
+    string? FindS3BucketSuffix(string env);
+
 }
 
 public class EnvironmentLookup : IEnvironmentLookup
 {
     private readonly Dictionary<string, string> _envs = new();
     private readonly Dictionary<string, string> _accounts = new();
+    private readonly Dictionary<string, string> _bucketSuffixes = new();
 
     public EnvironmentLookup(IConfiguration cfg)
     {
@@ -21,6 +25,13 @@ public class EnvironmentLookup : IEnvironmentLookup
             if (env.Value == null) continue;
             _envs.Add(env.Key, env.Value);
             _accounts.Add(env.Value, env.Key);
+        }
+        
+        var s3Section = cfg.GetSection("BucketSuffixes");
+        foreach (var s3 in s3Section.GetChildren())
+        {
+            if (s3.Value == null) continue;
+            _bucketSuffixes.Add(s3.Key, s3.Value);
         }
     }
 
@@ -32,5 +43,10 @@ public class EnvironmentLookup : IEnvironmentLookup
     public string? FindAccount(string env)
     {
         return _accounts.TryGetValue(env, out var account) ? account : null;
+    }
+
+    public string? FindS3BucketSuffix(string env)
+    {
+        return _bucketSuffixes.TryGetValue(env, out var suffix) ? suffix : null;
     }
 }
