@@ -287,6 +287,7 @@ app.MapMigrationEndpoints();
 app.MapFeatureTogglesEndpoint();
 app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
+app.MapDebugEndpoint();
 
 var logger = app.Services.GetService<ILogger<Program>>();
 
