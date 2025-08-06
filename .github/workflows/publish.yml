@@ -23,6 +23,12 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+      - run: dotnet restore
+      - run: dotnet build
+      - run: dotnet test
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@main
         with:

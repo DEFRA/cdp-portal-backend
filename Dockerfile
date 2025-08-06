@@ -18,11 +18,6 @@ WORKDIR "/src/Defra.Cdp.Backend.Api"
 FROM build AS publish
 RUN dotnet publish "Defra.Cdp.Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# unit test and code coverage
-# use the label to identity this layer later
-LABEL test=true
-RUN dotnet test
-
 ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 
 FROM base AS final
