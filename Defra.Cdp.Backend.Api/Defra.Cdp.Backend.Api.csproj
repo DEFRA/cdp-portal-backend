@@ -25,6 +25,7 @@
     <PackageReference Include="LocalStack.Client.Extensions" Version="1.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
     <PackageReference Include="Microsoft.Identity.Web" Version="3.0.1" />
     <PackageReference Include="MongoDB.Driver" Version="2.28.0" />
     <PackageReference Include="Quartz" Version="3.13.0" />
