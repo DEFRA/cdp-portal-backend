@@ -9,7 +9,6 @@ public static class ArtifactsAndDeployablesEndpoint
 {
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
-    private const string FilesBaseRoute = "files";
 
     public static void MapArtifactsAndDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
@@ -18,7 +17,6 @@ public static class ArtifactsAndDeployablesEndpoint
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage);
         app.MapPost($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}/annotations", AddAnnotation);
         app.MapDelete($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}/annotations", DeleteAnnotations);
-        app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent);
         app.MapGet(DeployablesBaseRoute, ListDeployables);
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
     }
@@ -90,17 +88,6 @@ public static class ArtifactsAndDeployablesEndpoint
         var image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
         return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
     }
-
-    // GET /files/{layer}
-    private static async Task<IResult> GetFileContent(ILayerService layerService, string layer, string path,
-        CancellationToken cancellationToken)
-    {
-        var image = await layerService.FindFileAsync(layer, path, cancellationToken);
-        return image?.Content == null
-            ? Results.NotFound(new ApiError($"{layer}/{path} was not found"))
-            : Results.Ok(image.Content);
-    }
-
 
     // GET /deployables
     private static async Task<IResult> ListDeployables(
