@@ -9,7 +9,6 @@ public static class ArtifactsAndDeployablesEndpoint
 {
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
-    private const string FilesBaseRoute = "files";
 
     public static void MapArtifactsAndDeployablesEndpoint(this IEndpointRouteBuilder app)
     {

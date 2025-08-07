@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Utils;

@@ -1,12 +1,6 @@
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using static System.Text.Json.JsonSerializer;
 
