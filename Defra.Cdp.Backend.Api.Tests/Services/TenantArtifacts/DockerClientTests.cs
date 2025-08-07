@@ -18,57 +18,13 @@ public class DockerClientTests
     private readonly IDeployableArtifactsService _deployableServiceMock = Substitute.For<IDeployableArtifactsService>();
     private readonly IDockerClient _dockerClientMock = Substitute.For<IDockerClient>();
 
-    private readonly ILayerService _layerServiceMock = Substitute.For<ILayerService>();
     private readonly IRepositoryService _repositoryService = Substitute.For<IRepositoryService>();
 
     public DockerClientTests()
     {
-        _artifactScanAndStore = new ArtifactScanAndStore(_deployableServiceMock, _layerServiceMock, _dockerClientMock,
+        _artifactScanAndStore = new ArtifactScanAndStore(_deployableServiceMock, _dockerClientMock,
             _repositoryService, ConsoleLogger.CreateLogger<ArtifactScanAndStore>());
     }
-
-    [Fact]
-    public void DockerServiceShouldExtractFilesFromTgzStream()
-    {
-        var filesToExtract = new List<Regex>
-        {
-            new(".+/.+\\.deps\\.json$"), // TODO: find out what the WORKSPACE is in the c# base image
-            new("home/node.*/package-lock\\.json$"), // TODO: exclude anything in node_modules etc
-            new(".*/pom\\.xml$") // TODO: find out what our jvm image is going to look like and what the build system of choice is
-        };
-
-        // A list of paths we dont want to scan (stuff in the base image basically, avoids false positives
-        var pathsToIgnore = new List<Regex> { new("^/?usr/.*") };
-        var mockHttp = Substitute.For<HttpClient>();
-        var opts = new DockerServiceOptions();
-        var client = new DockerClient(mockHttp, Options.Create(opts), new EmptyDockerCredentialProvider(),
-            NullLoggerFactory.Instance.CreateLogger<DockerClient>());
-
-        using (var fs = File.OpenRead("Resources/testlayer.tgz"))
-        {
-            var files = client.ExtractFilesFromStream(fs, "test:1.0.0", filesToExtract, pathsToIgnore);
-            Assert.Single(files);
-            Assert.Equal("home/node/package-lock.json", files[0].FileName);
-            Assert.Equal("{\n\t\"should_be_found\": true\n}\n", files[0].Content);
-        }
-    }
-
-
-    [Fact]
-    public void FlattenFilesShouldHandleDupes()
-    {
-        var layers = new Layer[]
-        {
-            new("aaa", new List<LayerFile> { new("foo", "111") }),
-            new("bbb", new List<LayerFile> { new("foo", "222") })
-        };
-
-        var results = ArtifactScanAndStore.FlattenFiles(layers);
-
-        Assert.Single(results);
-        Assert.Equal("bbb", results["foo"].LayerSha256);
-    }
-
 
     [Fact]
     public async Task ScanImageShouldSaveAnArtifact()
@@ -86,18 +42,9 @@ public class DockerClientTests
                     tag = "1.0.0",
                     digest = "sha256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
                     config = cfg,
-                    layers = new List<Blob> { files }
+                    layers = [files]
                 })
             );
-
-        // mock reading cfg layer
-        _dockerClientMock.SearchLayer("foo", cfg, Arg.Any<List<Regex>>(), Arg.Any<List<Regex>>())
-            .Returns(Task.FromResult(new Layer(cfg.digest, [])));
-
-        // mock file layer
-        _dockerClientMock.SearchLayer("foo", files, Arg.Any<List<Regex>>(), Arg.Any<List<Regex>>())
-            .Returns(Task.FromResult(new Layer(files.digest,
-                [new LayerFile("package-lock.json", "{\"name\": \"foo\"}")])));
 
         var labels = new Dictionary<string, string>
         {

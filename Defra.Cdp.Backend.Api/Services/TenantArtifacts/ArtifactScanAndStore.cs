@@ -40,7 +40,6 @@ public class ArtifactScannerResult
 
 public class ArtifactScanAndStore(
     IDeployableArtifactsService deployableArtifactsService,
-    ILayerService layerService,
     IDockerClient dockerClient,
     IRepositoryService repositoryService,
     ILogger<ArtifactScanAndStore> logger)
@@ -49,19 +48,7 @@ public class ArtifactScanAndStore(
     // Used to determine what would have been extracted. we might want to use this for rescans etc.
     private const int DockerScannerVersion = 1;
 
-    // TOOD: refine the list of files we're interested in keeping.
-    // I think the path may be important so we dont capture node modules etc
-    private readonly List<Regex> _filesToExtract = [
-        // TODO: Uncomment this once we're ready to do something with this data!
-        //new Regex(".+/.+\\.deps\\.json$"),
-        //new Regex("home/node.*/package-lock\\.json$"),
-        //new Regex(".*/pom\\.xml$")
-    ];
-
     private readonly ILogger _logger = logger;
-
-    // A list of paths we dont want to scan (stuff in the base image basically, avoids false positives
-    private readonly List<Regex> _pathsToIgnore = [new("^/?usr/.*")];
 
     public async Task<ArtifactScannerResult> ScanImage(string repo, string tag, CancellationToken cancellationToken)
     {
@@ -82,17 +69,6 @@ public class ArtifactScanAndStore(
         if (!isService && !isTestSuite)
             return ArtifactScannerResult.Failure($"Not an CDP service or test suite, image {repo}:{tag} is missing label defra.cdp.service.name or defra.cdp.testsuite.name");
 
-        _logger.LogInformation("Scanning layers in {Repo}:{Tag} for package.json...", repo, tag);
-
-        // Search all the layers for files of interest.
-        var searchLayerTasks = manifest.layers.Select(blob => SearchLayerUsingCache(repo, blob, cancellationToken));
-        var searchLayerResults = await Task.WhenAll(searchLayerTasks);
-
-
-        // Flatten file list. Files in higher layers should overwrite ones in lower layers.
-        // TODO: handle docker whiteout files.
-        var mergedFiles = FlattenFiles(searchLayerResults);
-
         labels.TryGetValue("defra.cdp.git.repo.url", out var githubUrl);
 
         var runMode = ArtifactRunMode.Service;
@@ -103,6 +79,8 @@ public class ArtifactScanAndStore(
 
         long semver;
 
+        // We expect tags to be a valid semantic version.
+        // This use to be more important, but now it largely exists to support sorting by version cleanly.
         try
         {
             semver = SemVer.SemVerAsLong(tag);
@@ -113,7 +91,7 @@ public class ArtifactScanAndStore(
         }
         
         var repository = await repositoryService.FindRepositoryById(repo, cancellationToken);
-        // Persist the results.
+
         var artifact = new DeployableArtifact
         {
             ScannerVersion = DockerScannerVersion,
@@ -123,7 +101,7 @@ public class ArtifactScanAndStore(
             Sha256 = manifest.digest!,
             GithubUrl = githubUrl,
             ServiceName = serviceName ?? testName,
-            Files = mergedFiles.Values.ToList(),
+            Files = [],
             SemVer = semver,
             Teams = repository?.Teams ?? [],
             RunMode = runMode.ToString().ToLower()
@@ -160,33 +138,5 @@ public class ArtifactScanAndStore(
 
         _logger.LogInformation("Backfill complete!");
         return rescanRequests;
-    }
-
-
-    private async Task<Layer> SearchLayerUsingCache(string repo, Blob blob, CancellationToken cancellationToken)
-    {
-        var layer = await layerService.Find(blob.digest, cancellationToken);
-        if (layer == null)
-        {
-            _logger.LogDebug("Layer {BlobDigest} not in cache, scanning...", blob.digest);
-            layer = await dockerClient.SearchLayer(repo, blob, _filesToExtract, _pathsToIgnore);
-            await layerService.CreateAsync(layer, cancellationToken);
-        }
-
-        _logger.LogDebug("Layer {BlobDigest} loaded from cache", blob.digest);
-        return layer;
-    }
-
-    public static Dictionary<string, DeployableArtifactFile> FlattenFiles(Layer[] searchLayerResults)
-    {
-        var mergedFiles = new Dictionary<string, DeployableArtifactFile>();
-        searchLayerResults.ToList().ForEach(layer =>
-        {
-            foreach (var file in layer.Files)
-                mergedFiles[file.FileName] =
-                    new DeployableArtifactFile(Path.GetFileName(file.FileName), file.FileName, layer.Digest);
-        });
-
-        return mergedFiles;
     }
 }

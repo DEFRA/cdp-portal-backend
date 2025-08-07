@@ -35,7 +35,6 @@ public class CdpNotifyTest
         // Run just the Deployables API Endpoints
         var entitiesService = Substitute.For<IEntitiesService>();
         var entityStatusService = Substitute.For<IEntityStatusService>();
-        var layerService = Substitute.For<ILayerService>();
         var userServiceFetcher = Substitute.For<IUserServiceFetcher>();
         
         var builder = new WebHostBuilder()
@@ -44,7 +43,6 @@ public class CdpNotifyTest
                 services.AddRouting();
                 services.AddSingleton(entitiesService);
                 services.AddSingleton(entityStatusService);
-                services.AddSingleton(layerService);
                 services.AddSingleton(userServiceFetcher);
                 services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
             })

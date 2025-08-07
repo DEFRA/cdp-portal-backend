@@ -168,7 +168,6 @@ builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsSe
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
 builder.Services.AddSingleton<IEntityStatusService, EntityStatusService>();
-builder.Services.AddSingleton<ILayerService, LayerService>();
 builder.Services.AddSingleton<IArtifactScanner, ArtifactScanAndStore>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
 builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
