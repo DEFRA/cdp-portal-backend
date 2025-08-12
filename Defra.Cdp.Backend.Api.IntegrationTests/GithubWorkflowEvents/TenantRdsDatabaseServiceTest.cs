@@ -85,6 +85,6 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
         sampleEvent.Payload.RdsDatabases.RemoveAt(1);
         await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
         var resultAfterDelete = await databaseService.Find(null, "dev", CancellationToken.None);
-        Assert.Equal(1, resultAfterDelete.Count);
+        Assert.Single(resultAfterDelete);
     }
 }
