@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
@@ -29,6 +28,7 @@ public class GithubWorkflowEventHandler(
     IGrafanaDashboardsService grafanaDashboardsService,
     INginxUpstreamsService nginxUpstreamsService,
     IEntityStatusService entityStatusService,
+    ITenantRdsDatabasesService tenantRdsService,
     ILogger<GithubWorkflowEventHandler> logger)
     : IGithubWorkflowEventHandler
 {
@@ -50,6 +50,9 @@ public class GithubWorkflowEventHandler(
                 break;
             case "tenant-buckets":
                 await HandleEvent(eventWrapper, messageBody, tenantBucketsService, cancellationToken);
+                break;
+            case "tenant-rds":
+                await HandleEvent(eventWrapper, messageBody, tenantRdsService, cancellationToken);
                 break;
             case "tenant-services":
                 await HandleEvent(eventWrapper, messageBody, tenantServicesService, cancellationToken);

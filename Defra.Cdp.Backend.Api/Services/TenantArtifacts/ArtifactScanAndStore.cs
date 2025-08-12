@@ -85,13 +85,14 @@ public class ArtifactScanAndStore(
         _logger.LogInformation("Scanning layers in {Repo}:{Tag} for package.json...", repo, tag);
 
         // Search all the layers for files of interest.
-        var searchLayerTasks = manifest.layers.Select(blob => SearchLayerUsingCache(repo, blob, cancellationToken));
-        var searchLayerResults = await Task.WhenAll(searchLayerTasks);
-
-
-        // Flatten file list. Files in higher layers should overwrite ones in lower layers.
-        // TODO: handle docker whiteout files.
-        var mergedFiles = FlattenFiles(searchLayerResults);
+        List<DeployableArtifactFile> files = [];
+        if (_filesToExtract.Count > 0)
+        {
+            var searchLayerTasks = manifest.layers.Select(blob => SearchLayerUsingCache(repo, blob, cancellationToken));
+            var searchLayerResults = await Task.WhenAll(searchLayerTasks);
+            // Flatten file list. Files in higher layers should overwrite ones in lower layers.
+            files = FlattenFiles(searchLayerResults).Values.ToList();
+        }
 
         labels.TryGetValue("defra.cdp.git.repo.url", out var githubUrl);
 
@@ -123,7 +124,7 @@ public class ArtifactScanAndStore(
             Sha256 = manifest.digest!,
             GithubUrl = githubUrl,
             ServiceName = serviceName ?? testName,
-            Files = mergedFiles.Values.ToList(),
+            Files = files,
             SemVer = semver,
             Teams = repository?.Teams ?? [],
             RunMode = runMode.ToString().ToLower()

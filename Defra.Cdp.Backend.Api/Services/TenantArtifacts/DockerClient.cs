@@ -51,7 +51,7 @@ public class DockerClient : IDockerClient
         };
         req = await AddEcrAuthHeader(req);
 
-        var response = await _client.SendAsync(req);
+        using var response = await _client.SendAsync(req);
         await using var stream = await response.Content.ReadAsStreamAsync();
         var tagList = await JsonSerializer.DeserializeAsync<ImageTagList>(stream);
         if (tagList == null) throw new Exception($"Failed to get tag-list for {repo}.");
@@ -69,7 +69,7 @@ public class DockerClient : IDockerClient
         };
         req = await AddEcrAuthHeader(req);
 
-        var response = await _client.SendAsync(req);
+        using var response = await _client.SendAsync(req);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -82,7 +82,7 @@ public class DockerClient : IDockerClient
         var content = await response.Content.ReadAsByteArrayAsync();
         var manifest = JsonSerializer.Deserialize<Manifest>(content);
         if (manifest != null)
-            manifest.digest = "sha256:" + Convert.ToHexString(SHA256.Create().ComputeHash(content));
+            manifest.digest = "sha256:" + Convert.ToHexString(SHA256.HashData(content));
         return manifest;
     }
 
@@ -96,7 +96,7 @@ public class DockerClient : IDockerClient
         };
         req = await AddEcrAuthHeader(req); // ECR requires an API call to get the creds, hence the await
 
-        var response = await _client.SendAsync(req);
+        using var response = await _client.SendAsync(req);
         await using var stream = await response.Content.ReadAsStreamAsync();
         return await JsonSerializer.DeserializeAsync<ManifestImage>(stream);
     }
@@ -111,7 +111,7 @@ public class DockerClient : IDockerClient
         };
         req = await AddEcrAuthHeader(req);
 
-        var response = await _client.SendAsync(req);
+        using var response = await _client.SendAsync(req);
         if (!response.IsSuccessStatusCode) throw new Exception($"Failed to get layer: {response.StatusCode}");
 
         var layerFiles = await Task.Run(() =>
@@ -164,7 +164,7 @@ public class DockerClient : IDockerClient
                 {
                     _logger.LogInformation("Extracted {EntryKey} from {SourceName} size: {EntrySize}", tar.Entry.Key,
                         sourceName, tar.Entry.Size);
-                    var sr = new StreamReader(tar.OpenEntryStream());
+                    using var sr = new StreamReader(tar.OpenEntryStream());
                     var data = sr.ReadToEnd();
                     files.Add(new LayerFile(tar.Entry.Key, data));
                 }
