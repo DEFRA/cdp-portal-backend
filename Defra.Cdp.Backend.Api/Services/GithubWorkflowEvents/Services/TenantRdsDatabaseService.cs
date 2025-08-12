@@ -18,7 +18,7 @@ public interface ITenantRdsDatabasesService  : IEventsPersistenceService<TenantD
 public class TenantRdsDatabasesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<TenantRdsDatabase>(connectionFactory, CollectionName, loggerFactory), ITenantRdsDatabasesService 
 {
-    public static readonly string CollectionName = "tenant-rds-databases";
+    public static readonly string CollectionName = "tenantrdsdatabases";
 
     public async Task PersistEvent(CommonEvent<TenantDatabasePayload> workflowEvent, CancellationToken cancellationToken)
     {
