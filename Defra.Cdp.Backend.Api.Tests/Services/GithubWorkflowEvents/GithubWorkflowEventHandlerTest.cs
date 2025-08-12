@@ -23,6 +23,7 @@ public class GithubWorkflowEventHandlerTest
     private readonly IAppConfigsService appConfigsService = Substitute.For<IAppConfigsService>();
     private readonly INginxUpstreamsService nginxUpstreamsService = Substitute.For<INginxUpstreamsService>();
     private readonly IEntityStatusService entityStatusService = Substitute.For<IEntityStatusService>();
+    private readonly ITenantRdsDatabasesService _rdsDatabasesService = Substitute.For<ITenantRdsDatabasesService>();
 
     private GithubWorkflowEventHandler createHandler()
     {
@@ -40,6 +41,7 @@ public class GithubWorkflowEventHandlerTest
             grafanaDashboardsService,
             nginxUpstreamsService,
             entityStatusService,
+            _rdsDatabasesService,
             ConsoleLogger.CreateLogger<GithubWorkflowEventHandler>());
     }
 

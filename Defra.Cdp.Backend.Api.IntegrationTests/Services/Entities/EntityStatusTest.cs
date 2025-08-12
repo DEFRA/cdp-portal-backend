@@ -50,6 +50,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             appConfigService,
             grafanaDashboardsService,
             loggerFactory.CreateLogger<EntityStatusService>());
+        var tenantRdsService = new TenantRdsDatabasesService(mongoFactory, loggerFactory);
 
         var entity = new Entity
         {
@@ -99,6 +100,7 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             grafanaDashboardsService,
             nginxUpstreamsService,
             entityStatusService,
+            tenantRdsService,
             loggerFactory.CreateLogger<GithubWorkflowEventHandler>()
         );
 

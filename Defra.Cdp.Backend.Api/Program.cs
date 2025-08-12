@@ -194,6 +194,7 @@ builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
 builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
 builder.Services.AddSingleton<IApiGatewaysService, ApiGatewaysService>();
 builder.Services.AddSingleton<ITenantStatusService, TenantStatusService>();
+builder.Services.AddSingleton<ITenantRdsDatabasesService, TenantRdsDatabasesService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -267,6 +268,7 @@ app.UseAuthorization();
 // Add endpoints
 app.MapTenantServicesEndpoint();
 app.MapTenantBucketsEndpoint();
+app.MapTenantDatabasesEndpoint();
 app.MapConfigEndpoint();
 app.MapSquidProxyConfigEndpoint();
 app.MapCostsEndpoint();
