@@ -55,6 +55,7 @@ public record Service
     {
         [JsonPropertyName("name")] public required string Name { get; init; }
         [JsonPropertyName("versioning")] public string? Versioning { get; init; }
+        [JsonPropertyName("bucket_url")] public string? Url { get; init; }
     }
 
     [JsonPropertyName("name")] public required string Name { get; init; }
