@@ -13,7 +13,6 @@ public class GithubWorkflowEventHandlerTest
     private readonly IAppConfigVersionsService appConfigVersionsService = Substitute.For<IAppConfigVersionsService>();
     private readonly INginxVanityUrlsService vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
     private readonly ISquidProxyConfigService squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-    private readonly ITenantBucketsService tenantBucketsService = Substitute.For<ITenantBucketsService>();
     private readonly ITenantServicesService tenantServicesService = Substitute.For<ITenantServicesService>();
     private readonly IShutteredUrlsService shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
     private readonly IEnabledVanityUrlsService enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
@@ -32,7 +31,6 @@ public class GithubWorkflowEventHandlerTest
             appConfigsService,
             vanityUrlsService,
             squidProxyConfigService,
-            tenantBucketsService,
             tenantServicesService,
             shutteredUrlsService,
             enabledUrlsService,
@@ -76,8 +74,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
         await shutteredUrlsService.DidNotReceive()
@@ -128,8 +124,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
         await shutteredUrlsService.DidNotReceive()
@@ -256,8 +250,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
         await shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
         await tfVanityUrlsService.DidNotReceive()
@@ -310,10 +302,6 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await tenantBucketsService.Received(1).PersistEvent(
-            Arg.Is<CommonEvent<TenantBucketsPayload>>(e =>
-                e.EventType == "tenant-buckets" && e.Payload.Environment == "test" && e.Payload.Buckets.Count == 2),
-            Arg.Any<CancellationToken>());
         await appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
         await vanityUrlsService.DidNotReceive()
@@ -418,8 +406,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await enabledApisService.DidNotReceive()
@@ -480,8 +466,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
         await appConfigsService.DidNotReceive()
@@ -532,8 +516,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await appConfigsService.DidNotReceive()
@@ -580,8 +562,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await enabledApisService.DidNotReceive()
@@ -618,8 +598,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
         await squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantBucketsService.DidNotReceive()
-            .PersistEvent(Arg.Any<CommonEvent<TenantBucketsPayload>>(), Arg.Any<CancellationToken>());
         await tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
         await shutteredUrlsService.DidNotReceive()

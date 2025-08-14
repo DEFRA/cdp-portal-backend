@@ -91,7 +91,6 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             appConfigService,
             new NginxVanityUrlsService(mongoFactory, loggerFactory),
             squidProxyService,
-            new TenantBucketsService(mongoFactory, loggerFactory),
             tenantServicesService,
             new ShutteredUrlsService(mongoFactory, loggerFactory),
             new EnabledVanityUrlsService(mongoFactory, loggerFactory),

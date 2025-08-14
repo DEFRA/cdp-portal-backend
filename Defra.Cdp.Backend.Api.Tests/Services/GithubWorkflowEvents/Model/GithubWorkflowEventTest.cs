@@ -102,55 +102,6 @@ public class GithubWorkflowEventTest
     }
 
     [Fact]
-    public void WillDeserializeTenantBucketEvent()
-    {
-        const string messageBody = """
-                                   {
-                                     "eventType": "tenant-buckets",
-                                     "timestamp": "2024-11-23T15:10:10.123123+00:00",
-                                     "payload": {
-                                       "environment": "test",
-                                       "buckets": [
-                                         {
-                                           "name": "frontend-service-bucket",
-                                           "exists": true,
-                                           "services_with_access": [
-                                             "frontend-service",
-                                             "backend-service"
-                                           ]
-                                         },
-                                         {
-                                           "name": "backend-service-bucket",
-                                           "exists": false,
-                                           "services_with_access": [
-                                             "backend-service"
-                                           ]
-                                         }
-                                       ]
-                                     }
-                                   }
-
-                                   """;
-
-        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TenantBucketsPayload>>(messageBody);
-
-        Assert.Equal("tenant-buckets", workflowEvent?.EventType);
-        Assert.Equal("test", workflowEvent?.Payload.Environment);
-
-        Assert.Equal(new DateTime(2024, 11, 23, 15, 10, 10, 123, 123), workflowEvent?.Timestamp);
-
-        Assert.Equal("frontend-service-bucket", workflowEvent?.Payload.Buckets[0].Name);
-        Assert.True(workflowEvent?.Payload.Buckets[0].Exists);
-        Assert.Equal("frontend-service", workflowEvent?.Payload.Buckets[0].ServicesWithAccess[0]);
-        Assert.Equal("backend-service", workflowEvent?.Payload.Buckets[0].ServicesWithAccess[1]);
-
-        Assert.Equal("backend-service-bucket", workflowEvent?.Payload.Buckets[1].Name);
-        Assert.False(workflowEvent?.Payload.Buckets[1].Exists);
-        Assert.Equal("backend-service", workflowEvent?.Payload.Buckets[1].ServicesWithAccess[0]);
-
-    }
-
-    [Fact]
     public void WillDeserializeTenantServicesEvent()
     {
         const string messageBody = """

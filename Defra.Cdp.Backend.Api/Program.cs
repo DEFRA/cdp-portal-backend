@@ -184,7 +184,6 @@ builder.Services.AddSingleton<INginxVanityUrlsService, NginxVanityUrlsService>()
 builder.Services.AddSingleton<INginxUpstreamsService, NginxUpstreamsService>();
 builder.Services.AddSingleton<IServiceCodeCostsService, ServiceCodeCostsService>();
 builder.Services.AddSingleton<ISquidProxyConfigService, SquidProxyConfigService>();
-builder.Services.AddSingleton<ITenantBucketsService, TenantBucketsService>();
 builder.Services.AddSingleton<ITenantServicesService, TenantServicesService>();
 builder.Services.AddSingleton<IShutteredUrlsService, ShutteredUrlsService>();
 builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsService>();
@@ -267,7 +266,6 @@ app.UseAuthorization();
 
 // Add endpoints
 app.MapTenantServicesEndpoint();
-app.MapTenantBucketsEndpoint();
 app.MapTenantDatabasesEndpoint();
 app.MapConfigEndpoint();
 app.MapSquidProxyConfigEndpoint();
