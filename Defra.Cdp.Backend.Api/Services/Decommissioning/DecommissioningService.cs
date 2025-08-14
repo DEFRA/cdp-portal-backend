@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github;
@@ -29,7 +30,7 @@ public sealed class DecommissioningService(
                 entity.Status);
             var deployments =
                 await deploymentsService.RunningDeploymentsForService(entity.Name, context.CancellationToken);
-            if (deployments.Count > 0)
+            if (deployments.Count > 0 && deployments.Any(d => d.Status != DeploymentStatus.Undeployed))
             {
                 _logger.LogWarning("Entity {EntityName} has running deployments, will try next time...", entity.Name);
                 continue;
