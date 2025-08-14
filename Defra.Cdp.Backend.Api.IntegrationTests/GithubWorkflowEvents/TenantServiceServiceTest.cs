@@ -264,6 +264,32 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.NotNull(tenantTest);
         Assert.Equal( "bar-team", tenantTest.Teams?[0].Github);
     }
+    
+    [Fact]
+    public async Task WillUseS3BucketUrl()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
+        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
+        var envLookup = new MockEnvironmentLookup();
+        var tenantServicesService =
+            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+
+        await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
+            , CancellationToken.None);
+
+
+        // Find By Name
+        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo", Environment = "test"}, CancellationToken.None);
+        Assert.Single(result);
+        Assert.Equal(2, result[0].S3Buckets?.Count);
+        Assert.Equal($"s3://foo-bucket-{envLookup.FindS3BucketSuffix("test")}" , result[0].S3Buckets![0].Url);
+        Assert.Equal("s3://legacy-12345", result[0].S3Buckets![1].Url);
+    }
 
     private readonly TenantServicesPayload _sampleEvent = new()
     {
@@ -276,7 +302,11 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
                 Zone = "public",
                 Mongo = false,
                 Redis = true,
-                ServiceCode = "FOO"
+                ServiceCode = "FOO",
+                S3Buckets = [
+                    new Service.S3Bucket{ Name = "foo-bucket" },
+                    new Service.S3Bucket{ Name = "legacy-bucket", Url = "s3://legacy-12345" }
+                ]
             },
             new Service
             {

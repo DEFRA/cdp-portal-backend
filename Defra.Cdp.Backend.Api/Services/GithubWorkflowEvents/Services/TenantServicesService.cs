@@ -277,7 +277,7 @@ public record S3Bucket(string Name, string? Versioning, string? Url = null)
     public static S3Bucket FromPayload(Service.S3Bucket bucket, string? hash)
     {
         var suffix = hash != null ? $"-{hash}" : "";
-        var url = $"s3://{bucket.Name}{suffix}";
+        var url = bucket.Url ?? $"s3://{bucket.Name}{suffix}";
         return new S3Bucket(bucket.Name, bucket.Versioning, url);
     }
 }
