@@ -294,10 +294,6 @@ public record TenantServiceRecord(
     string ServiceCode,
     string? TestSuite,
     
-    // Legacy data
-    List<string>? Buckets,
-    List<string>? Queues,
-    
     // New format
     List<S3Bucket>? S3Buckets,
     List<SqsQueue>? SqsQueues,
@@ -323,8 +319,9 @@ public record TenantServiceRecord(
                Postgres == other.Postgres &&
                ServiceCode == other.ServiceCode &&
                TestSuite == other.TestSuite &&
-               Buckets == other.Buckets &&
-               Queues == (other.Queues) &&
+               S3Buckets == other.S3Buckets &&
+               SqsQueues == (other.SqsQueues) &&
+               SnsTopics == (other.SnsTopics) &&
                ApiEnabled == other.ApiEnabled &&
                ApiType == other.ApiType &&
                Teams == other.Teams;
@@ -341,8 +338,9 @@ public record TenantServiceRecord(
         hashCode.Add(Postgres);
         hashCode.Add(ServiceCode);
         hashCode.Add(TestSuite);
-        hashCode.Add(Buckets);
-        hashCode.Add(Queues);
+        hashCode.Add(S3Buckets);
+        hashCode.Add(SqsQueues);
+        hashCode.Add(SnsTopics);
         hashCode.Add(ApiEnabled);
         hashCode.Add(ApiType);
         hashCode.Add(Teams);
@@ -367,10 +365,7 @@ public record TenantServiceRecord(
             Postgres: service.Postgres,
             ServiceCode: service.ServiceCode,
             TestSuite: service.TestSuite,
-    
-            Buckets:  service.Buckets,
-            Queues: service.Queues,
-    
+
             // New format
             S3Buckets: service.S3Buckets?.Select(b => S3Bucket.FromPayload(b, s3Suffix)).ToList(),
             SqsQueues: service.SqsQueues?.Select(q => SqsQueue.FromPayload(q, awsAccount)).ToList(),

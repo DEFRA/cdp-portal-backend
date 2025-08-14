@@ -66,10 +66,6 @@ public record Service
     [JsonPropertyName("service_code")] public required string ServiceCode { get; init; }
     [JsonPropertyName("test_suite")] public string? TestSuite { get; init; }
     
-    // Soon to be deprecated bucket/queue data
-    [JsonPropertyName("buckets")] public List<string>? Buckets { get; init; }
-    [JsonPropertyName("queues")] public List<string>? Queues { get; init; }
-    
     // New style infra details
     [JsonPropertyName("s3_buckets")] public List<S3Bucket>? S3Buckets { get; init; }
     [JsonPropertyName("sqs_queues")] public List<SqsQueue>? SqsQueues { get; init; }
