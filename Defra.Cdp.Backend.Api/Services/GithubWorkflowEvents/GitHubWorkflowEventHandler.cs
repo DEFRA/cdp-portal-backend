@@ -19,7 +19,6 @@ public class GithubWorkflowEventHandler(
     IAppConfigsService appConfigsService,
     INginxVanityUrlsService nginxVanityUrlsService,
     ISquidProxyConfigService squidProxyConfigService,
-    ITenantBucketsService tenantBucketsService,
     ITenantServicesService tenantServicesService,
     IShutteredUrlsService shutteredUrlsService,
     IEnabledVanityUrlsService enabledVanityUrlsService,
@@ -47,9 +46,6 @@ public class GithubWorkflowEventHandler(
                 break;
             case "squid-proxy-config":
                 await HandleEvent(eventWrapper, messageBody, squidProxyConfigService, cancellationToken);
-                break;
-            case "tenant-buckets":
-                await HandleEvent(eventWrapper, messageBody, tenantBucketsService, cancellationToken);
                 break;
             case "tenant-rds":
                 await HandleEvent(eventWrapper, messageBody, tenantRdsService, cancellationToken);
