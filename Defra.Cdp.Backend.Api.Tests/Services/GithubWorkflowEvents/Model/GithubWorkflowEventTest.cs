@@ -117,13 +117,7 @@ public class GithubWorkflowEventTest
                                            "redis": true,
                                            "service_code": "CDP",
                                            "test_suite": "frontend-service-tests",
-                                           "name": "frontend-service",
-                                           "buckets": [
-                                             "frontend-service-buckets-*"
-                                           ],
-                                           "queues": [
-                                             "frontend-service-queue"
-                                           ]
+                                           "name": "frontend-service"
                                          },
                                          {
                                            "zone": "protected",
@@ -150,8 +144,6 @@ public class GithubWorkflowEventTest
         Assert.True(workflowEvent?.Payload.Services[0].Redis);
         Assert.Equal("CDP", workflowEvent?.Payload.Services[0].ServiceCode);
         Assert.Equal("frontend-service-tests", workflowEvent?.Payload.Services[0].TestSuite);
-        Assert.Equal("frontend-service-buckets-*", workflowEvent?.Payload.Services[0].Buckets?[0]);
-        Assert.Equal("frontend-service-queue", workflowEvent?.Payload.Services[0].Queues?[0]);
 
         Assert.Equal("backend-service", workflowEvent?.Payload.Services[1].Name);
         Assert.Equal("protected", workflowEvent?.Payload.Services[1].Zone);
