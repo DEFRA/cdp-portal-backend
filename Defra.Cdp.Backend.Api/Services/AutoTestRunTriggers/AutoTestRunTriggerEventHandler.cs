@@ -30,9 +30,11 @@ public class AutoTestRunTriggerEventHandler(
         {
             logger.LogWarning("{Id} Deployment {DeploymentId} not found", id, ecsEvent.Detail.DeploymentId);
         }
-        else if (deployment.Status != DeploymentStatus.Running)
+        else if (deployment.Status is DeploymentStatus.Failed or DeploymentStatus.Undeployed)
         {
-            logger.LogWarning("{Id} Deployment {DeploymentId} not running", id, ecsEvent.Detail.DeploymentId);
+            // SERVICE_DEPLOYMENT_COMPLETED events implicitly mean the deployment is 'running'.
+            // The only exception is if its a undeploy or failed with no rollback.
+            logger.LogWarning("{Id} Deployment {DeploymentId} status is {Status}, not running tests", id, ecsEvent.Detail.DeploymentId, deployment.Status);
         }
         else
         {
