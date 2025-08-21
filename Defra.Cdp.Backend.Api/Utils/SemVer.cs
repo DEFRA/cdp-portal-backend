@@ -2,13 +2,15 @@ using System.Text.RegularExpressions;
 
 namespace Defra.Cdp.Backend.Api.Utils;
 
-public static class SemVer
+public static partial class SemVer
 {
-    public static readonly Regex SemVerRegex = new("^v?\\d+\\.\\d+\\.\\d+$", RegexOptions.Compiled);
+    
+    [GeneratedRegex(@"^v?\d+\.\d+\.\d+$", RegexOptions.Compiled)]
+    private static partial Regex SemVerRegex();
 
     public static bool IsSemVer(string s)
     {
-        return SemVerRegex.IsMatch(s);
+        return SemVerRegex().IsMatch(s);
     }
 
     // Turns a semver string 1.2.3 into a unsigned 64 bit long
@@ -46,4 +48,5 @@ public static class SemVer
 
         return result;
     }
+
 }

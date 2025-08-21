@@ -11,19 +11,22 @@ public class FlexibleBoolConverter : JsonConverter<bool>
 {
     public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.True)
-            return true;
-        if (reader.TokenType == JsonTokenType.False)
-            return false;
-
-        if (reader.TokenType == JsonTokenType.String)
+        switch (reader.TokenType)
         {
-            var stringValue = reader.GetString();
-            if (bool.TryParse(stringValue, out var result))
-                return result;
+            case JsonTokenType.True:
+                return true;
+            case JsonTokenType.False:
+                return false;
+            case JsonTokenType.String:
+            {
+                var stringValue = reader.GetString();
+                if (bool.TryParse(stringValue, out var result))
+                    return result;
+                throw new JsonException($"Failed to parse string {stringValue} as bool.");
+            }
+            default:
+                throw new JsonException($"Unable to convert value to bool. TokenType: {reader.TokenType}");
         }
-
-        throw new JsonException($"Unable to convert value to bool. TokenType: {reader.TokenType}");
     }
 
     public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)

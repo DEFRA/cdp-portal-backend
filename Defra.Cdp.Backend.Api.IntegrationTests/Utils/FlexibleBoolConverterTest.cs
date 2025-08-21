@@ -20,7 +20,7 @@ public class FlexibleBoolConverterTest
     public void FlexibleBoolConverter_ShouldDeserializeVariousFormats(string json, bool expected)
     {
         var obj = JsonSerializer.Deserialize<TestModel>(json);
-        Assert.Equal(expected, obj.Value);
+        Assert.Equal(expected, obj!.Value);
     }
 
     [Fact]
