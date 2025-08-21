@@ -14,12 +14,12 @@ public class Deployment
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; }
 
-    public required string CdpDeploymentId { get; init; }
+    public string CdpDeploymentId { get; init; }
     public string? LambdaId { get; init; } // ID of run lambda that maps to ECS startedBy message 
 
-    public required string Environment { get; init; }
-    public required string Service { get; init; }
-    public required string Version { get; init; }
+    public string Environment { get; init; }
+    public string Service { get; init; }
+    public string Version { get; init; }
 
     public UserDetails? User { get; init; }
     public string? Cpu { get; init; }
