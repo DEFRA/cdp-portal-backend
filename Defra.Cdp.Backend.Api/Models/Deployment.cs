@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -11,14 +12,14 @@ public class Deployment
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-    public ObjectId? Id { get; init; } = default!;
+    public ObjectId? Id { get; init; }
 
-    public string CdpDeploymentId { get; init; } = default!;
+    public required string CdpDeploymentId { get; init; }
     public string? LambdaId { get; init; } // ID of run lambda that maps to ECS startedBy message 
 
-    public string Environment { get; init; } = default!;
-    public string Service { get; init; } = default!;
-    public string Version { get; init; } = default!;
+    public required string Environment { get; init; }
+    public required string Service { get; init; }
+    public required string Version { get; init; }
 
     public UserDetails? User { get; init; }
     public string? Cpu { get; init; }
@@ -30,9 +31,9 @@ public class Deployment
 
     public Dictionary<string, DeploymentInstanceStatus> Instances { get; set; } = new();
     public string Status { get; set; } = "";
-    public bool Unstable { get; set; } = false;
+    public bool Unstable { get; set; }
 
-    public string? ConfigVersion { get; init; } = default!;
+    public string? ConfigVersion { get; init; }
     public TenantSecretKeys Secrets { get; set; } = new();
 
     // From ECS Service Deployment State Change messages 
@@ -143,18 +144,12 @@ public class Deployment
 
 public class Audit
 {
-    public List<RepositoryTeam> ServiceOwners { get; set; } = [];
+    public List<Team> ServiceOwners { get; set; } = [];
     public UserServiceUser? User { get; set; }
 }
 
-public class DeploymentInstanceStatus
+public class DeploymentInstanceStatus(string status, DateTime updated)
 {
-    public string Status { get; init; }
-    public DateTime Updated { get; init; }
-
-    public DeploymentInstanceStatus(string status, DateTime updated)
-    {
-        Status = status;
-        Updated = updated;
-    }
+    public string Status { get; init; } = status;
+    public DateTime Updated { get; init; } = updated;
 }
