@@ -1,6 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.TestSuites;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Terminal;
