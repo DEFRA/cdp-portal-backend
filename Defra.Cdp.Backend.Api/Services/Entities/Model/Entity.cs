@@ -6,6 +6,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities.Model;
 
+[BsonIgnoreExtraElements]
 public record Entity
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
@@ -59,6 +60,7 @@ public record Decommission
     public required bool WorkflowsTriggered { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public record Team
 {
     [property: JsonPropertyName("teamId")]

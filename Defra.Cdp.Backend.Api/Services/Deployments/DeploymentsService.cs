@@ -1,12 +1,14 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
-using Defra.Cdp.Backend.Api.Services.Github;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
@@ -47,7 +49,7 @@ public interface IDeploymentsService
 
 public class DeploymentsService(
     IMongoDbClientFactory connectionFactory,
-    IRepositoryService repositoryService,
+    IEntitiesService entitiesService,
     IUserServiceFetcher userServiceFetcher,
     ILoggerFactory loggerFactory)
     : MongoService<Deployment>(connectionFactory, CollectionName, loggerFactory), IDeploymentsService
@@ -125,9 +127,9 @@ public class DeploymentsService(
         // Record who owned the service at that point in time
         try
         {
-            var repo = await repositoryService.FindRepositoryById(deployment.Service, ct);
-            var teams = repo?.Teams ?? [];
-            deployment.Audit.ServiceOwners = teams.ToList();
+            var entity = await entitiesService.GetEntity(deployment.Service, ct);
+            var teams = entity?.Teams ?? [];
+            deployment.Audit.ServiceOwners = teams;
         }
         catch (Exception ex)
         {
@@ -255,13 +257,8 @@ public class DeploymentsService(
 
         if (query.Favourites?.Length > 0)
         {
-            var repos = (await Task.WhenAll(query.Favourites.Select(teamId =>
-                    repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
-                .SelectMany(r => r)
-                .ToList();
-
-            var servicesOwnedByTeam = repos.Select(r => r.Id);
-
+            var entities = await entitiesService.GetEntities([Type.Microservice, Type.Prototype], null, query.Favourites, [Status.Created], ct);
+            var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.Service)).ToList();
         }
 
@@ -318,12 +315,8 @@ public class DeploymentsService(
         //  we may be able to do this in an easier way in the UI
         if (query.Favourites?.Length > 0)
         {
-            var repos = (await Task.WhenAll(query.Favourites.Select(teamId =>
-                    repositoryService.FindRepositoriesByTeamId(teamId, true, ct))))
-                .SelectMany(r => r)
-                .ToList();
-
-            var servicesOwnedByTeam = repos.Select(r => r.Id);
+            var entities = await entitiesService.GetEntities([Type.Microservice, Type.Prototype], null, query.Favourites, [Status.Created], ct);
+            var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d =>
                 servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service)
             ).ToList();

@@ -77,12 +77,12 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         Assert.NotNull(persistedEntity.Created);
         Assert.Equal(Status.Creating, persistedEntity.Status);
 
-        Assert.False(persistedEntityStatus.Resources["Repository"]);
-        Assert.False(persistedEntityStatus.Resources["TenantServices"]);
-        Assert.False(persistedEntityStatus.Resources["SquidProxy"]);
-        Assert.False(persistedEntityStatus.Resources["NginxUpstreams"]);
-        Assert.False(persistedEntityStatus.Resources["AppConfig"]);
-        Assert.False(persistedEntityStatus.Resources["GrafanaDashboard"]);
+        Assert.False(persistedEntityStatus?.Resources["Repository"]);
+        Assert.False(persistedEntityStatus?.Resources["TenantServices"]);
+        Assert.False(persistedEntityStatus?.Resources["SquidProxy"]);
+        Assert.False(persistedEntityStatus?.Resources["NginxUpstreams"]);
+        Assert.False(persistedEntityStatus?.Resources["AppConfig"]);
+        Assert.False(persistedEntityStatus?.Resources["GrafanaDashboard"]);
 
         var sqs = Substitute.For<IAmazonSQS>();
 
@@ -108,14 +108,14 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
             Id = "example-repo",
             IsTemplate = false,
             Topics = new List<string> { "cdp" },
-            Teams = new List<RepositoryTeam>
-            {
-                new(
+            Teams =
+            [
+                new RepositoryTeam(
                     "example-github-team",
                     Guid.NewGuid().ToString(),
                     "example-team"
                 )
-            },
+            ],
             CreatedAt = DateTime.UtcNow,
         }, CancellationToken.None);
 
