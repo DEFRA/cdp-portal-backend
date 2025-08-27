@@ -107,7 +107,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     public async Task AutoTestRunTriggerDeletesTriggerWithNoEnvironments()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
-        IAutoTestRunTriggerService autoTestRunTriggerService =
+        var autoTestRunTriggerService =
             new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var trigger = await autoTestRunTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
@@ -117,7 +117,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
                                                                         {
                                                                             "serviceName": "cdp-portal-backend",
                                                                             "testSuite": "cdp-env-test-suite",
-                                                                            "environments": ["perf-test", "dev"]
+                                                                            "environments": ["perf-test", "dev", "prod"]
                                                                         }
                                                                         """)!;
 
@@ -129,7 +129,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
         Assert.Single(triggerFromDb.TestSuites);
         Assert.Equal(new List<string> { "cdp-env-test-suite" }, triggerFromDb.TestSuites.Keys);
-        Assert.Equal(["perf-test", "dev"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
+        Assert.Equal(["perf-test", "dev", "prod"], triggerFromDb.TestSuites["cdp-env-test-suite"]);
 
         var updatedTrigger = JsonSerializer.Deserialize<AutoTestRunTrigger>("""
                                                                             {
@@ -145,34 +145,5 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
         Assert.Empty(triggerFromDb.TestSuites);
-    }
-
-    [Fact]
-    public async Task AutoTestRunTriggerDoesntPersistProdEnvironment()
-    {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
-        IAutoTestRunTriggerService autoTestRunTriggerService =
-            new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
-
-        var trigger = await autoTestRunTriggerService.FindForService("cdp-uploader", CancellationToken.None);
-        Assert.Null(trigger);
-
-        var newTrigger = JsonSerializer.Deserialize<AutoTestRunTrigger>("""
-                                                                        {
-                                                                        "serviceName": "cdp-uploader",
-                                                                        "testSuite": "cdp-uploader-smoke-tests",
-                                                                        "environments": ["prod", "management", "dev"]
-                                                                        }
-                                                                        """)!;
-
-        await autoTestRunTriggerService.SaveTrigger(newTrigger, CancellationToken.None);
-        var triggerFromDb =
-            await autoTestRunTriggerService.FindForService("cdp-uploader", CancellationToken.None);
-
-        Assert.NotNull(triggerFromDb);
-        Assert.Equal("cdp-uploader", triggerFromDb.ServiceName);
-        Assert.Single(triggerFromDb.TestSuites);
-        Assert.Equal(new List<string> { "cdp-uploader-smoke-tests" }, triggerFromDb.TestSuites.Keys);
-        Assert.Equal(["management", "dev"], triggerFromDb.TestSuites["cdp-uploader-smoke-tests"]);
     }
 }

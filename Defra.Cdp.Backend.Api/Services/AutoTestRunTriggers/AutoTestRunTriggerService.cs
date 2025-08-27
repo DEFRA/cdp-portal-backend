@@ -49,9 +49,6 @@ public class AutoTestRunTriggerService(
         _logger.LogInformation("Creating auto test-run trigger for service: {Service}",
             autoTestRunTrigger.ServiceName);
 
-        // Do not allow auto-deployment to prod
-        autoTestRunTrigger.Environments.Remove("prod");
-
         var triggerInDb = await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
 
         _logger.LogInformation("DB trigger is: {TriggerInDb}", triggerInDb);
