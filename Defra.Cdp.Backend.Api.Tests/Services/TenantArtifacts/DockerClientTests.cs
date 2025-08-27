@@ -101,7 +101,8 @@ public class DockerClientTests
 
         var labels = new Dictionary<string, string>
         {
-            ["defra.cdp.git.repo.url"] = "https://github.com/foo/foo", ["defra.cdp.service.name"] = "foo"
+            ["defra.cdp.git.repo.url"] = "https://github.com/foo/foo",
+            ["defra.cdp.service.name"] = "foo"
         };
 
         _dockerClientMock

@@ -30,7 +30,7 @@ public static class FeatureTogglesEndpoint
         if (toggleId != null)
         {
             var toggle = await featureTogglesService.GetToggle(toggleId, cancellationToken);
-            return toggle != null ? Results.Ok(toggle) : Results.NotFound(); 
+            return toggle != null ? Results.Ok(toggle) : Results.NotFound();
         }
         var toggles = await featureTogglesService.GetAllToggles(cancellationToken);
         return Results.Ok(toggles);

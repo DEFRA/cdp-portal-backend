@@ -41,13 +41,13 @@ public class ShutteredUrlsService(IMongoDbClientFactory connectionFactory, ILogg
         var bulkOps = toDelete.Select(id => Builders<ShutteredUrlRecord>.Filter.Eq(s => s.Id, id))
             .Select(filter => new DeleteOneModel<ShutteredUrlRecord>(filter)).Cast<WriteModel<ShutteredUrlRecord>>()
             .ToList();
-        
+
         bulkOps.AddRange(from url in workflowEvent.Payload.Urls
-            let filterBuilder = Builders<ShutteredUrlRecord>.Filter
-            let filter = filterBuilder.And(filterBuilder.Eq(s => s.Environment, env),
-                filterBuilder.Eq(s => s.Url, url))
-            let update = Builders<ShutteredUrlRecord>.Update.Set(s => s.Url, url)
-            select new UpdateOneModel<ShutteredUrlRecord>(filter, update) { IsUpsert = true });
+                         let filterBuilder = Builders<ShutteredUrlRecord>.Filter
+                         let filter = filterBuilder.And(filterBuilder.Eq(s => s.Environment, env),
+                             filterBuilder.Eq(s => s.Url, url))
+                         let update = Builders<ShutteredUrlRecord>.Update.Set(s => s.Url, url)
+                         select new UpdateOneModel<ShutteredUrlRecord>(filter, update) { IsUpsert = true });
 
         if (bulkOps.Count > 0)
         {

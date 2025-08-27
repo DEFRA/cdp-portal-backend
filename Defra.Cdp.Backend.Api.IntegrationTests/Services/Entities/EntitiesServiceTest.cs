@@ -22,14 +22,17 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
         var entitiesService = new EntitiesService(mongoFactory, logger);
         var entity = new Entity
         {
-            Name = _fooRepository.Id, Teams = [], Status = Status.Created, Type = Type.Microservice,
+            Name = _fooRepository.Id,
+            Teams = [],
+            Status = Status.Created,
+            Type = Type.Microservice,
         };
         await entitiesService.Create(entity, ct);
 
         await entitiesService.AddTag(entity.Name, "tier 1", ct);
         await entitiesService.AddTag(entity.Name, "PRR", ct);
         var taggedEntity = await entitiesService.GetEntity(entity.Name, ct);
-        
+
         Assert.Equivalent(taggedEntity?.Tags, new List<string> { "tier 1", "PRR" });
 
         await entitiesService.RemoveTag(entity.Name, "tier 1", ct);
@@ -37,7 +40,7 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
         Assert.Equivalent(untaggedEntity?.Tags, new List<string> { "PRR" });
 
     }
-    
+
     [Fact]
     public async Task WillRefreshTeams()
     {
@@ -50,7 +53,10 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
 
         var entityToCreate = new Entity
         {
-            Name = _fooRepository.Id, Teams = [], Status = Status.Created, Type = Type.Microservice,
+            Name = _fooRepository.Id,
+            Teams = [],
+            Status = Status.Created,
+            Type = Type.Microservice,
         };
 
         await entitiesService.Create(entityToCreate, CancellationToken.None);
@@ -59,7 +65,7 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
         var entity = await entitiesService.GetEntity(_fooRepository.Id, CancellationToken.None);
         Assert.NotNull(entity);
         Assert.Empty(entity.Teams);
-            
+
 
         // Update the teams in github
         List<Repository> repos =
@@ -78,13 +84,13 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
         await entitiesService.RefreshTeams(repos, CancellationToken.None);
 
         var updatedEntity = await entitiesService.GetEntity(_fooRepository.Id, CancellationToken.None);
-        
+
         Assert.NotNull(updatedEntity);
         var team = new Team { TeamId = "9999", Name = "bar-team" };
         Assert.Contains(team, updatedEntity.Teams);
         Assert.Single(updatedEntity.Teams);
     }
-    
+
     private readonly Repository _fooRepository = new()
     {
         Id = "foo",

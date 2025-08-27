@@ -9,7 +9,7 @@ public static class CdpLogging
 {
     [ExcludeFromCodeCoverage]
     public static void Configuration(HostBuilderContext ctx, LoggerConfiguration config)
-    { 
+    {
         var httpAccessor = ctx.Configuration.Get<HttpContextAccessor>();
         var traceIdHeader = ctx.Configuration.GetValue<string>("TraceHeader");
 

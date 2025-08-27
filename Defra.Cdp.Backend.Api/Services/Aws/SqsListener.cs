@@ -32,16 +32,16 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             AttributeNames = ["All"]
         };
 #pragma warning restore CS0618 // Type or member is obsolete
-        
+
         var deleteRequest = new DeleteMessageRequest
         {
             QueueUrl = QueueUrl
         };
-        
+
         logger.LogInformation("Listening for events on {queue}", QueueUrl);
 
         var falloff = 1;
-        
+
         while (_enabled)
             try
             {

@@ -88,9 +88,9 @@ public record ApiGatewayRecord(string Api, string Environment, string Service, b
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; } = default!;
-    
+
     public ShutterableUrl ToShutterableUrl()
     {
-        return new ShutterableUrl(Service,  Environment, Api, true, Shuttered, false);
+        return new ShutterableUrl(Service, Environment, Api, true, Shuttered, false);
     }
 }

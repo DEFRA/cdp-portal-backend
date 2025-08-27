@@ -95,14 +95,14 @@ public sealed class PopulateGithubRepositories(
                 logger.LogWarning("Skipping team with no GitHub slug: {@UserServiceTeam}", userServiceTeam);
                 continue;
             }
-            
+
             var team = new RepositoryTeam
             (
-                userServiceTeam.github, 
+                userServiceTeam.github,
                 userServiceTeam.teamId,
                 userServiceTeam.name
             );
-            
+
             foreach (var repo in repos)
             {
                 if (!repoMap.TryGetValue(repo.name, out var existingRepo))
@@ -177,7 +177,7 @@ public sealed class PopulateGithubRepositories(
                     .organization
                     .team
                     ?.repositories.nodes ?? []
-                    ).ToList() ;
+                    ).ToList();
 
                 if (!repositoriesByTeam.TryAdd(team, repos))
                 {

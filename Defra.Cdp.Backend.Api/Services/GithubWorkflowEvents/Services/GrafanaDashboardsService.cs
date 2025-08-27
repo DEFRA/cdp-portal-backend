@@ -29,7 +29,7 @@ public class GrafanaDashboardsService(IMongoDbClientFactory connectionFactory, I
 
         var filter = Builders<GrafanaDashboard>.Filter.Eq(e => e.Environment, environment);
         await Collection.DeleteManyAsync(filter, cancellationToken: cancellationToken);
-        
+
         var grafanaDashboards = entities.Select(repositoryName =>
                 new GrafanaDashboard(environment, repositoryName))
             .ToList();

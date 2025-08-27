@@ -11,7 +11,7 @@ namespace Defra.Cdp.Backend.Api.Utils.Auditing;
 public static class AuditLogger
 {
     public const string AuditPropertyName = "IsAudit";
-    
+
     public static Logger CreateAuditLogger()
     {
         return new LoggerConfiguration()
@@ -21,7 +21,7 @@ public static class AuditLogger
             .WriteTo.Console(new CompactJsonFormatter())
             .CreateLogger();
     }
-    
+
     [ExcludeFromCodeCoverage]
     class EnrichAuditLog : ILogEventEnricher
     {
@@ -52,6 +52,3 @@ public static class AuditLogger
         }
     }
 }
-
-
-

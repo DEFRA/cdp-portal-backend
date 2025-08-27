@@ -26,7 +26,7 @@ public class EnvironmentLookup : IEnvironmentLookup
             _envs[env.Key] = env.Value;
             _accounts[env.Value] = env.Key;
         }
-        
+
         var s3Section = cfg.GetSection("BucketSuffixes");
         foreach (var s3 in s3Section.GetChildren())
         {

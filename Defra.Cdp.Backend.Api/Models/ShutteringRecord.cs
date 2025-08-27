@@ -14,7 +14,7 @@ public record ShutteringRecord(
     UserDetails ActionedBy,
     DateTime ActionedAt)
 {
-    
+
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]

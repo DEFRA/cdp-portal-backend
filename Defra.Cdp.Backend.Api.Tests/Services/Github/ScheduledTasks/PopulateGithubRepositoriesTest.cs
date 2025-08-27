@@ -28,7 +28,7 @@ public class PopulateGithubRepositoriesTest
                 {
                     new UserServiceTeam("Fisheries", "The fisheries team", "fisheries", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "fisheries-team-id", []),
                     [
-                        
+
                         new RepositoryNode("repo2", topics, "desc2", new PrimaryLanguage("C#"),
                             "https://url2", false, true, true, dateTimeNow),
                         new RepositoryNode("repo3", topics, "desc3", new PrimaryLanguage("Java"),

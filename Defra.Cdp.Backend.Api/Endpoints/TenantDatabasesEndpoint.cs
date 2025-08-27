@@ -5,7 +5,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class TenantDatabasesEndpoint
 {
- 
+
     public static void MapTenantDatabasesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/tenant-databases/{service}", FindAllForService);
@@ -20,7 +20,7 @@ public static class TenantDatabasesEndpoint
         var results = await databasesService.Find(service, cancellationToken);
         return Results.Ok(results);
     }
-    
+
     private static async Task<IResult> FindAllForServiceByEnv(
         [FromServices] ITenantRdsDatabasesService databasesService,
         string service,

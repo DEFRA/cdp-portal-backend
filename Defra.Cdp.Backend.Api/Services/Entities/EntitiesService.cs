@@ -94,7 +94,7 @@ public class EntitiesService(
             var statusValues = new BsonArray(statuses.Select(s => s.ToString()));
             filters["status"] = new BsonDocument("$in", statusValues);
         }
-        
+
         var pipeline = new[]
         {
             new BsonDocument("$match",

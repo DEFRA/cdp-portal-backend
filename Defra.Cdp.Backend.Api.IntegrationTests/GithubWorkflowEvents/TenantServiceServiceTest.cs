@@ -206,7 +206,7 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "postgres-service");
     }
-  
+
     [Fact]
     public async Task WillRefreshTeams()
     {
@@ -219,26 +219,30 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
-            {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = _sampleEvent
-            }
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = _sampleEvent
+        }
             , CancellationToken.None);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
+        {
+            EventType = "tenant-services",
+            Timestamp = DateTime.Now,
+            Payload = new TenantServicesPayload
             {
-                EventType = "tenant-services", Timestamp = DateTime.Now, Payload = new TenantServicesPayload
-                {
-                    Environment = "prod",
-                    Services = _sampleEvent.Services
-                }
+                Environment = "prod",
+                Services = _sampleEvent.Services
             }
+        }
             , CancellationToken.None);
 
 
         // Check initial state
         var tenant = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo" }, CancellationToken.None);
         Assert.NotNull(tenant);
-        Assert.Equal( "foo-team", tenant.Teams?[0].Github);
+        Assert.Equal("foo-team", tenant.Teams?[0].Github);
 
         // Update the teams in github
         List<Repository> repos =
@@ -256,15 +260,15 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
         // Force refresh
         await tenantServicesService.RefreshTeams(repos, CancellationToken.None);
 
-        var tenantProd = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "prod"}, CancellationToken.None);
+        var tenantProd = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "prod" }, CancellationToken.None);
         Assert.NotNull(tenantProd);
-        Assert.Equal( "bar-team", tenantProd.Teams?[0].Github);
-        
-        var tenantTest = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test"}, CancellationToken.None);
+        Assert.Equal("bar-team", tenantProd.Teams?[0].Github);
+
+        var tenantTest = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" }, CancellationToken.None);
         Assert.NotNull(tenantTest);
-        Assert.Equal( "bar-team", tenantTest.Teams?[0].Github);
+        Assert.Equal("bar-team", tenantTest.Teams?[0].Github);
     }
-    
+
     [Fact]
     public async Task WillUseS3BucketUrl()
     {
@@ -284,10 +288,10 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
 
 
         // Find By Name
-        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo", Environment = "test"}, CancellationToken.None);
+        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo", Environment = "test" }, CancellationToken.None);
         Assert.Single(result);
         Assert.Equal(2, result[0].S3Buckets?.Count);
-        Assert.Equal($"s3://foo-bucket-{envLookup.FindS3BucketSuffix("test")}" , result[0].S3Buckets![0].Url);
+        Assert.Equal($"s3://foo-bucket-{envLookup.FindS3BucketSuffix("test")}", result[0].S3Buckets![0].Url);
         Assert.Equal("s3://legacy-12345", result[0].S3Buckets![1].Url);
     }
 

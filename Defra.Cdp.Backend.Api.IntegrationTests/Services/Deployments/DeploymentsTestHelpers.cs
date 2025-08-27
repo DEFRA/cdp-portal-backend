@@ -29,7 +29,7 @@ public static class DeploymentsTestHelpers
 
         return deployments;
     }
-    
+
     public static Deployment Generate(DateTime date, string service, string version, string env, string status, UserDetails user)
     {
         return new Deployment

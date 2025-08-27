@@ -9,7 +9,7 @@ public static class AuditLoggingExtension
     {
         [AuditLogger.AuditPropertyName] = true
     };
-    
+
     public static void Audit(this Microsoft.Extensions.Logging.ILogger logger,
         string message,
         params object?[] args)

@@ -23,8 +23,8 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TerminalEndpointTest");
         var loggerFactory = new LoggerFactory();
-        var terminalService = new TerminalService(mongoFactory, loggerFactory); 
-        
+        var terminalService = new TerminalService(mongoFactory, loggerFactory);
+
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
@@ -44,9 +44,9 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         var server = new TestServer(builder);
         var client = server.CreateClient();
 
-        var session = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails{ DisplayName = "user1", Id = "1"}};
+        var session = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
         var response = await client.PostAsJsonAsync("/terminals", session);
-        
+
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         var col = mongoFactory.GetCollection<TerminalSession>(TerminalService.CollectionName);
