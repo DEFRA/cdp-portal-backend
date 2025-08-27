@@ -112,13 +112,13 @@ public class ArtifactScanAndStore(
         {
             return ArtifactScannerResult.Failure($"Invalid semver tag {repo}:{tag} - {ex.Message}");
         }
-        
+
         var repository = await repositoryService.FindRepositoryById(repo, cancellationToken);
         // Persist the results.
         var artifact = new DeployableArtifact
         {
             ScannerVersion = DockerScannerVersion,
-            Created =  image?.created ?? DateTime.Now,
+            Created = image?.created ?? DateTime.Now,
             Repo = repo,
             Tag = tag,
             Sha256 = manifest.digest!,

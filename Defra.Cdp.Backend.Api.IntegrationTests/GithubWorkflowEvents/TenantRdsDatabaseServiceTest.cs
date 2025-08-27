@@ -49,7 +49,7 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
                                                     }
                                                     """);
     }
-    
+
     [Fact]
     public async Task WillUpdateDatabases()
     {
@@ -63,13 +63,13 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
         var resultByName = await databaseService.Find("fcp-mpdp-backend", null, CancellationToken.None);
         Assert.Single(resultByName);
         Assert.Equal("fcp_mpdp_backend", resultByName[0].DatabaseName);
-        
+
         var resultByEnv = await databaseService.Find(null, "dev", CancellationToken.None);
         Assert.Equal(2, resultByEnv.Count);
         Assert.Equal("ai_model_test", resultByEnv[0].DatabaseName);
         Assert.Equal("fcp_mpdp_backend", resultByEnv[1].DatabaseName);
     }
-    
+
     [Fact]
     public async Task WillCleanUpDeletedDatabases()
     {
@@ -81,7 +81,7 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
         await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
         var resultBeforeDelete = await databaseService.Find(null, "dev", CancellationToken.None);
         Assert.Equal(2, resultBeforeDelete.Count);
-        
+
         sampleEvent.Payload.RdsDatabases.RemoveAt(1);
         await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
         var resultAfterDelete = await databaseService.Find(null, "dev", CancellationToken.None);

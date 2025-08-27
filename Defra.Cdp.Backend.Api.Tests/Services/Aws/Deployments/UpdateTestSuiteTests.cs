@@ -178,7 +178,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
             new MockEnvironmentLookup(),
             _deploymentsService,
@@ -328,7 +328,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        
+
         var handler = new TaskStateChangeEventHandler(
             new MockEnvironmentLookup(),
             _deploymentsService,

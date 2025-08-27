@@ -10,13 +10,13 @@ public static class DebugEndpoint
         app.MapGet("/debug/memory", Memory);
         app.MapGet("/debug/threads", Threads);
     }
-    
-    
+
+
     // GET /debug/memory
     private static IResult Memory()
     {
         var process = Process.GetCurrentProcess();
-        
+
         var memoryInfo = new
         {
             WorkingSetBytes = process.WorkingSet64,
@@ -28,11 +28,11 @@ public static class DebugEndpoint
             VirtualMemoryBytes = process.VirtualMemorySize64,
             VirtualMemoryMB = process.VirtualMemorySize64 / (1024 * 1024)
         };
-        
+
         return Results.Ok(memoryInfo);
     }
-    
-   
+
+
     // GET /debug/threads
     private static IResult Threads()
     {
@@ -48,9 +48,9 @@ public static class DebugEndpoint
                 t.IsAlive,
                 t.State,
                 StackTrace = t.EnumerateStackTrace(false, 5).Select(f => $"{f.Method?.Signature}").ToList()
-                
+
             }).ToList();
-        
+
         return Results.Ok(threads);
     }
 

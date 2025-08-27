@@ -37,7 +37,7 @@ public class CdpNotifyTest
         var entityStatusService = Substitute.For<IEntityStatusService>();
         var layerService = Substitute.For<ILayerService>();
         var userServiceFetcher = Substitute.For<IUserServiceFetcher>();
-        
+
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
@@ -71,25 +71,25 @@ public class CdpNotifyTest
             SubType = SubType.Backend,
             Created = DateTime.UtcNow,
         };
-         
-        entitiesService.GetEntity(Arg.Is("foo"), Arg.Any<CancellationToken>()).Returns( service );
+
+        entitiesService.GetEntity(Arg.Is("foo"), Arg.Any<CancellationToken>()).Returns(service);
         entitiesService.GetEntity(Arg.Is("missing-service"), Arg.Any<CancellationToken>()).ReturnsNull();
-        
+
         var response = await client.GetAsync("entities/foo");
 
         Assert.True(response.IsSuccessStatusCode);
-        
+
         var body = await JsonSerializer.DeserializeAsync<CdpNotifyService>(await response.Content.ReadAsStreamAsync());
         Assert.NotNull(body);
         Assert.Single(body.teams);
         Assert.Equal("team-id-abc-123-456", body.teams[0].TeamId);
         Assert.Equal("teamA", body.teams[0].Name);
-        
-        
+
+
         var missingResponse = await client.GetAsync("entites/unknown-service");
         Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
     }
-    
+
     /**
      * Format cdp-notify expects its data
      */
@@ -97,7 +97,7 @@ public class CdpNotifyTest
     {
         [JsonPropertyName("teamId")]
         public string TeamId { get; init; }
-    
+
         [JsonPropertyName("name")]
         public string Name { get; init; }
 

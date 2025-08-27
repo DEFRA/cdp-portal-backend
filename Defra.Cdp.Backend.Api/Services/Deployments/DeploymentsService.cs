@@ -20,7 +20,7 @@ public interface IDeploymentsService
     Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
     Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
     Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus, CancellationToken ct);
-    
+
     Task<Paginated<Deployment>> FindLatest(DeploymentMatchers query,
         int offset = 0,
         int page = 0,
@@ -59,7 +59,7 @@ public class DeploymentsService(
     public const int DefaultPage = 1;
     private const string Migration = "migration";
     private const string Deployment = "deployment";
-    
+
     private readonly TimeSpan _requestTimeout = TimeSpan.FromMinutes(20);
 
     private readonly HashSet<string> _excludedDisplayNames =
@@ -86,7 +86,7 @@ public class DeploymentsService(
         {
             await CleanupRequestedDeployments(deployment.Service, deployment.Environment, ct);
         }
-        
+
         await Collection.InsertOneAsync(await WithAuditData(deployment, ct), null, ct);
     }
 
@@ -100,7 +100,7 @@ public class DeploymentsService(
     {
         var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.And(
-            fb.Eq(d => d.Service, service), 
+            fb.Eq(d => d.Service, service),
             fb.Eq(d => d.Environment, environment),
             fb.Eq(d => d.Status, Requested),
             fb.Lt(d => d.Created, DateTime.UtcNow.Subtract(_requestTimeout))
@@ -447,27 +447,27 @@ public record DeploymentMatchers(
     {
         var builder = Builders<Deployment>.Filter;
         var filter = builder.Empty;
-        
+
         if (!string.IsNullOrWhiteSpace(Service))
         {
             filter &= builder.Regex(d => d.Service, new BsonRegularExpression(Service, "i"));
         }
-        
+
         if (!string.IsNullOrWhiteSpace(Environment))
         {
             filter &= builder.Eq(d => d.Environment, Environment);
         }
-        
+
         if (Environments is { Length: > 0 })
         {
             filter &= builder.In(d => d.Environment, Environments);
         }
-         
+
         if (!string.IsNullOrWhiteSpace(Status))
         {
             filter &= builder.Eq(d => d.Status, Status.ToLower());
         }
-        
+
         if (!string.IsNullOrWhiteSpace(User))
         {
             filter &= builder.Or(
@@ -475,39 +475,39 @@ public record DeploymentMatchers(
                 builder.Eq(d => d.User!.DisplayName, User));
         }
 
-        if (Services is {Length: > 0 })
+        if (Services is { Length: > 0 })
         {
             filter &= builder.In(d => d.Service, Services);
         }
 
         return filter;
     }
-    
+
     public FilterDefinition<DatabaseMigration> FilterMigration()
     {
         var builder = Builders<DatabaseMigration>.Filter;
         var filter = builder.Empty;
-        
+
         if (!string.IsNullOrWhiteSpace(Service))
         {
             filter &= builder.Regex(d => d.Service, new BsonRegularExpression(Service, "i"));
         }
-        
+
         if (!string.IsNullOrWhiteSpace(Environment))
         {
             filter &= builder.Eq(d => d.Environment, Environment);
         }
-        
+
         if (Environments is { Length: > 0 })
         {
             filter &= builder.In(d => d.Environment, Environments);
         }
-         
+
         if (!string.IsNullOrWhiteSpace(Status))
         {
             filter &= builder.Eq(d => d.Status, Status.ToLower());
         }
-        
+
         if (!string.IsNullOrWhiteSpace(User))
         {
             filter &= builder.Or(
@@ -515,7 +515,7 @@ public record DeploymentMatchers(
                 builder.Eq(d => d.User.DisplayName, User));
         }
 
-        if (Services is {Length: > 0 })
+        if (Services is { Length: > 0 })
         {
             filter &= builder.In(d => d.Service, Services);
         }

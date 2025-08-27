@@ -100,10 +100,10 @@ public class TaskStateChangeEventHandler(
             // Update the specific instance status
             logger.LogInformation(
                 "Updating instance status for cdpID: {CdpId}, lambdaId: {LambdaId} instance {InstanceId}, deployment {DeploymentId} {Status}",
-                deployment.CdpDeploymentId, 
-                lambdaId, 
-                instanceTaskId, 
-                ecsTaskStateChangeEvent.DeploymentId, 
+                deployment.CdpDeploymentId,
+                lambdaId,
+                instanceTaskId,
+                ecsTaskStateChangeEvent.DeploymentId,
                 instanceStatus
             );
 
@@ -125,7 +125,7 @@ public class TaskStateChangeEventHandler(
         {
             throw new Exception("Failed to get updated deployment");
         }
-            
+
         // Limit the number of stopped service in the event of a crash-loop
         deployment.TrimInstance(50);
 

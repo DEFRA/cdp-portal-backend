@@ -32,5 +32,5 @@ public class FlexibleBoolConverterTest
             JsonSerializer.Deserialize<TestModel>(json);
         });
     }
-    
+
 }

@@ -14,7 +14,7 @@ public class TerminalService : MongoService<TerminalSession>, ITerminalService
     public const string CollectionName = "terminalsessions";
     public TerminalService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory)
     {
-        
+
     }
 
     protected override List<CreateIndexModel<TerminalSession>> DefineIndexes(IndexKeysDefinitionBuilder<TerminalSession> builder)

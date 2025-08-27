@@ -8,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Models;
 [BsonIgnoreExtraElements]
 public class TerminalSession
 {
-    [property: JsonPropertyName("token")] 
+    [property: JsonPropertyName("token")]
     public required string Token { get; init; }
 
     [property: JsonPropertyName("environment")]

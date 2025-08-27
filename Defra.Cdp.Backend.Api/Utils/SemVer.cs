@@ -4,7 +4,7 @@ namespace Defra.Cdp.Backend.Api.Utils;
 
 public static partial class SemVer
 {
-    
+
     [GeneratedRegex(@"^v?\d+\.\d+\.\d+$", RegexOptions.Compiled)]
     private static partial Regex SemVerRegex();
 

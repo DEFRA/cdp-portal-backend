@@ -46,12 +46,12 @@ public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILogger
             .ToList();
 
         bulkOps.AddRange(from api in workflowEvent.Payload.Apis
-            let filterBuilder = Builders<EnabledApiRecord>.Filter
-            let filter = filterBuilder.Eq(f => f.Api, api.Api)
-            select new ReplaceOneModel<EnabledApiRecord>(filter, new EnabledApiRecord(api.Api, env, api.Service))
-            {
-                IsUpsert = true
-            });
+                         let filterBuilder = Builders<EnabledApiRecord>.Filter
+                         let filter = filterBuilder.Eq(f => f.Api, api.Api)
+                         select new ReplaceOneModel<EnabledApiRecord>(filter, new EnabledApiRecord(api.Api, env, api.Service))
+                         {
+                             IsUpsert = true
+                         });
 
         if (bulkOps.Count > 0)
         {

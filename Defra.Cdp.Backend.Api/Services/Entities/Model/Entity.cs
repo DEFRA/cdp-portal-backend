@@ -40,7 +40,7 @@ public record Entity
 
     [property: JsonPropertyName("decommissioned")]
     public Decommission Decommissioned { get; set; }
-    
+
     [property: JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
 }

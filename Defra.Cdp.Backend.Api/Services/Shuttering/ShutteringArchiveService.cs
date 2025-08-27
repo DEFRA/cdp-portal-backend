@@ -13,7 +13,7 @@ public class ShutteringArchiveService(IMongoDbClientFactory connectionFactory, I
     : MongoService<ShutteringRecord>(connectionFactory,
         CollectionName, loggerFactory), IShutteringArchiveService
 {
-    private const string CollectionName = "shutteringarchive"; 
+    private const string CollectionName = "shutteringarchive";
 
     public async Task Archive(ShutteringRecord shutteringRecord, CancellationToken cancellationToken)
     {
@@ -22,7 +22,7 @@ public class ShutteringArchiveService(IMongoDbClientFactory connectionFactory, I
 
     protected override List<CreateIndexModel<ShutteringRecord>> DefineIndexes(IndexKeysDefinitionBuilder<ShutteringRecord> builder)
     {
-        var entity = new CreateIndexModel<ShutteringRecord>( builder.Ascending(v => v.ServiceName));
+        var entity = new CreateIndexModel<ShutteringRecord>(builder.Ascending(v => v.ServiceName));
         return [entity];
     }
 }

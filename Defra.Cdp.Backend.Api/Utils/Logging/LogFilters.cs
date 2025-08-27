@@ -7,7 +7,8 @@ namespace Defra.Cdp.Backend.Api.Utils.Logging;
 public static class LogFilters
 {
     [ExcludeFromCodeCoverage]
-    public class ExcludeHealthEndpoint : ILogEventFilter {
+    public class ExcludeHealthEndpoint : ILogEventFilter
+    {
         public bool IsEnabled(LogEvent logEvent)
         {
             logEvent.Properties.TryGetValue("RequestPath", out var path);

@@ -98,18 +98,18 @@ public class AvailableMigrations(IAmazonS3 client, ITenantServicesService tenant
             request.ContinuationToken = response.NextContinuationToken;
         }
         while (response.IsTruncated);
-        
+
         return services.Distinct().Select(s => s.Replace("/", "")).ToList();
     }
-    
-    
-    
+
+
+
     public async Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct)
     {
         var migrations = await FindServicesWithMigrations(ct);
-                
+
         var servicesForTeams = new HashSet<string>();
-     
+
         foreach (var teamsId in teamIds)
         {
             var tenants = await tenantServices.Find(new TenantServiceFilter(TeamId: teamsId, HasPostgres: true), ct);

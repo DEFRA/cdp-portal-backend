@@ -45,7 +45,7 @@ public sealed class DecommissioningService(
             else if (entityStatus.Resources.All(r => !r.Value)
                      && (await repositoryService.FindRepositoryById(entity.Name, context.CancellationToken))!.IsArchived
                      && await deployableArtifactsService.FindAllTagsForRepo(entity.Name, context.CancellationToken) is
-                         { Count: 0 }
+                     { Count: 0 }
                     )
             {
                 await selfServiceOpsClient.DeleteDeploymentFilesAndEcsServices(entity.Name, context.CancellationToken);

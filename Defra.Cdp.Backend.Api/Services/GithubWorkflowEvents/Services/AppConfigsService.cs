@@ -32,14 +32,14 @@ public class AppConfigsService(IMongoDbClientFactory connectionFactory, ILoggerF
 
         logger.LogInformation("HandleAppConfig: Persisting message {CommitSha} {CommitTimestamp} {Environment}",
             commitSha, commitTimestamp, environment);
-        
+
         var filter = Builders<AppConfig>.Filter.Eq(e => e.Environment, environment);
         await Collection.DeleteManyAsync(filter, cancellationToken: cancellationToken);
 
         var appConfigs = entities.Select(repositoryName =>
                 new AppConfig(commitSha, commitTimestamp, environment, repositoryName))
             .ToList();
-        
+
         await Collection.InsertManyAsync(appConfigs, cancellationToken: cancellationToken);
     }
 

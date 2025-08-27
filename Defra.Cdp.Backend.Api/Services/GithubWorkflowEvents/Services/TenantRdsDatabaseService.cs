@@ -9,14 +9,14 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface ITenantRdsDatabasesService  : IEventsPersistenceService<TenantDatabasePayload>
+public interface ITenantRdsDatabasesService : IEventsPersistenceService<TenantDatabasePayload>
 {
     public Task<List<TenantRdsDatabase>> Find(string? service, string? environment, CancellationToken cancellationToken);
     public Task<List<TenantRdsDatabase>> Find(string? service, CancellationToken cancellationToken);
 }
 
 public class TenantRdsDatabasesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
-    : MongoService<TenantRdsDatabase>(connectionFactory, CollectionName, loggerFactory), ITenantRdsDatabasesService 
+    : MongoService<TenantRdsDatabase>(connectionFactory, CollectionName, loggerFactory), ITenantRdsDatabasesService
 {
     public static readonly string CollectionName = "tenantrdsdatabases";
 
@@ -36,14 +36,14 @@ public class TenantRdsDatabasesService(IMongoDbClientFactory connectionFactory, 
                 Engine: d.Engine,
                 EngineVersion: d.EngineVersion,
                 Port: d.Port,
-                BackupRetentionPeriod : d.BackupRetentionPeriod,
-                EarliestRestorableTime : d.EarliestRestorableTime,
-                LatestRestorableTime : d.LatestRestorableTime,
+                BackupRetentionPeriod: d.BackupRetentionPeriod,
+                EarliestRestorableTime: d.EarliestRestorableTime,
+                LatestRestorableTime: d.LatestRestorableTime,
                 Updated: now));
-        
+
         await Collection.InsertManyAsync(databases, new InsertManyOptions(), cancellationToken);
-        
-        
+
+
         var fb = new FilterDefinitionBuilder<TenantRdsDatabase>();
         var filter = fb.And(
             fb.Eq(d => d.Environment, environment),
@@ -87,8 +87,8 @@ public record TenantRdsDatabase(
     [property: BsonIgnoreIfDefault]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     ObjectId? Id,
-    string Service, 
-    string Environment, 
+    string Service,
+    string Environment,
     string DatabaseName,
     string Endpoint,
     string ReaderEndpoint,

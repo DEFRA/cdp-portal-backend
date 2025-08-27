@@ -128,7 +128,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         Assert.NotNull(resultByLambdaId);
         Assert.Equal(deployment.CdpDeploymentId, resultByLambdaId.CdpDeploymentId);
     }
-    
+
     [Fact]
     public async Task UpdateDeploymentInstance()
     {
@@ -167,7 +167,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         Assert.Equivalent(instance1.Status, result.Instances["instance1"].Status);
         Assert.Equivalent(instance2.Status, result.Instances["instance2"].Status);
     }
-    
+
     [Fact]
     public async Task FindWhatsRunningWhereWithNoData()
     {
@@ -225,7 +225,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         Assert.Single(result);
         Assert.Equal(deployment2.CdpDeploymentId, result[0].CdpDeploymentId);
     }
-    
+
     [Fact]
     public async Task CleansUpStuckRequestsOnRegister()
     {
@@ -256,9 +256,9 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
                 d.Service == stuckDeployment.Service &&
                 d.Environment == stuckDeployment.Environment &&
                 d.Status == DeploymentStatus.Requested).CountDocumentsAsync(CancellationToken.None);
-        
+
         Assert.Equal(1, totalDeployments);
-        
+
         userServiceFetcher.GetUser(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ReturnsNull();
 
@@ -281,7 +281,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         Assert.NotNull(result);
         Assert.Equal([], result.Audit?.ServiceOwners);
         Assert.Null(result.Audit?.User);
-        
+
         // Check its removed the old requested deployment
         var stuck = await service.FindDeployment(stuckDeployment.CdpDeploymentId, CancellationToken.None);
         Assert.Equal(DeploymentStatus.Failed, stuck?.Status);
@@ -299,27 +299,27 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         // partial service match
         var results = await service.FindLatest(new DeploymentMatchers(Service: "foo"), ct: ct);
         Assert.True(results.Data.All(d => d.Service.Contains("foo")));
-        
+
         // exact username match
         results = await service.FindLatest(new DeploymentMatchers(User: "user-1"), ct: ct);
         Assert.True(results.Data.All(d => d.User?.DisplayName == "user-1"));
-        
+
         // exact user id match
         results = await service.FindLatest(new DeploymentMatchers(User: "1"), ct: ct);
         Assert.True(results.Data.All(d => d.User?.Id == "1"));
-        
+
         // single environment match
         results = await service.FindLatest(new DeploymentMatchers(Environment: "test"), ct: ct);
         Assert.True(results.Data.All(d => d.Environment == "test"));
-        
+
         // Multi environment match
         results = await service.FindLatest(new DeploymentMatchers(Environments: ["test", "dev"]), ct: ct);
         Assert.True(results.Data.All(d => d.Environment is "test" or "dev"));
-        
+
         // multiservice match
         results = await service.FindLatest(new DeploymentMatchers(Services: ["foo-backend", "foo-frontend"]), ct: ct);
         Assert.True(results.Data.All(d => d.Service is "foo-backend" or "foo-frontend"));
-        
+
         // status
         results = await service.FindLatest(new DeploymentMatchers(Status: DeploymentStatus.Pending), ct: ct);
         Assert.True(results.Data.All(d => d.Status is DeploymentStatus.Pending));
@@ -340,11 +340,11 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         var users = deployments.Select(d => d.User).Distinct();
 
         var filters = await service.GetDeploymentsFilters(ct);
-        
+
         Assert.Equivalent(services, filters.Services);
         Assert.Equivalent(users, filters.Users);
     }
-    
+
     [Fact]
     public async Task GetWhatsRunningWhereFilters()
     {
@@ -359,7 +359,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         var users = deployments.Select(d => d.User).Distinct();
 
         var filters = await service.GetWhatsRunningWhereFilters(ct);
-        
+
         Assert.Equivalent(services, filters.Services);
         Assert.Equivalent(users, filters.Users);
     }

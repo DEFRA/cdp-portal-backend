@@ -143,7 +143,7 @@ builder.Services.AddQuartz(q =>
         .ForJob(githubJobKey)
         .WithIdentity("FetchGithubRepositories-trigger")
         .WithSimpleSchedule(d => d.WithIntervalInSeconds(githubInterval).RepeatForever().Build()));
-    
+
     var decommissionJobKey = new JobKey("DecommissionEntities");
     q.AddJob<DecommissioningService>(opts => opts.WithIdentity(decommissionJobKey));
 
@@ -152,7 +152,7 @@ builder.Services.AddQuartz(q =>
         .ForJob(decommissionJobKey)
         .WithIdentity("DecommissionEntities-trigger")
         .WithSimpleSchedule(d => d.WithIntervalInSeconds(decommissionInterval).RepeatForever().Build()));
-    
+
 });
 builder.Services.AddQuartzHostedService(options =>
 {

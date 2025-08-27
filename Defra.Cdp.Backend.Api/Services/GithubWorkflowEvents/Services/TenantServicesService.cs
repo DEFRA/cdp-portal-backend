@@ -128,7 +128,7 @@ public class TenantServicesService(
     {
         return await Collection.Find(t => t.ServiceName == repositoryName && t.Environment == "management").AnyAsync(cancellationToken);
     }
-    
+
     public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
     {
         var updates = repos.Select(repo =>
@@ -232,7 +232,7 @@ public record SqsQueue(
         var fifo = queue.FifoQueue ? ".fifo" : "";
         var arn = $"arn:aws:sqs:eu-west-2:{account}:{queue.Name}{fifo}";
         var url = $"https://sqs.eu-west-2.amazonaws.com/{account}/{queue.Name}{fifo}";
-            
+
         return new SqsQueue(
             Name: queue.Name,
             CrossAccountAllowList: queue.CrossAccountAllowList,
@@ -260,7 +260,7 @@ public record SnsTopic(
     {
         var fifo = topic.FifoTopic == true ? ".fifo" : "";
         var arn = $"arn:aws:sns:eu-west-2:{account}:{topic.Name}{fifo}";
-        
+
         return new SnsTopic(
             Name: topic.Name,
             FifoTopic: topic.FifoTopic,
@@ -293,12 +293,12 @@ public record TenantServiceRecord(
     bool Postgres,
     string ServiceCode,
     string? TestSuite,
-    
+
     // New format
     List<S3Bucket>? S3Buckets,
     List<SqsQueue>? SqsQueues,
     List<SnsTopic>? SnsTopics,
-    
+
     bool? ApiEnabled,
     string? ApiType,
     List<RepositoryTeam>? Teams
@@ -347,9 +347,9 @@ public record TenantServiceRecord(
         return hashCode.ToHashCode();
     }
 
-    public static TenantServiceRecord FromPayload(Service service, 
-        string environment, 
-        ILookup<string,List<RepositoryTeam>>? teamsLookup,
+    public static TenantServiceRecord FromPayload(Service service,
+        string environment,
+        ILookup<string, List<RepositoryTeam>>? teamsLookup,
         IEnvironmentLookup environmentLookup)
     {
 
@@ -370,7 +370,7 @@ public record TenantServiceRecord(
             S3Buckets: service.S3Buckets?.Select(b => S3Bucket.FromPayload(b, s3Suffix)).ToList(),
             SqsQueues: service.SqsQueues?.Select(q => SqsQueue.FromPayload(q, awsAccount)).ToList(),
             SnsTopics: service.SnsTopics?.Select(t => SnsTopic.FromPayload(t, awsAccount)).ToList(),
-    
+
             ApiEnabled: service.ApiEnabled,
             ApiType: service.ApiType,
             Teams: teamsLookup?[service.Name].FirstOrDefault([])
@@ -379,4 +379,3 @@ public record TenantServiceRecord(
         return record;
     }
 }
-

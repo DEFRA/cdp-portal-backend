@@ -51,7 +51,7 @@ public static class DeploymentsEndpoint
             Status = status,
             Services = servicesForTeam,
         };
-        
+
         var deploymentsPage = await deploymentsService.FindLatest(
             query,
             offset ?? 0,
@@ -91,8 +91,8 @@ public static class DeploymentsEndpoint
             Services = servicesForTeam,
             Kind = kind
         };
-        
-        
+
+
         var deploymentsPage = await deploymentsService.FindLatestWithMigrations(
             query,
             offset ?? 0,
@@ -144,11 +144,11 @@ public static class DeploymentsEndpoint
         {
             servicesForTeam = (await repositoryService.FindRepositoriesByTeamId(team, true, cancellationToken)).Select(r => r.Id).ToArray();
         }
-        
+
         var deployments = await deploymentsService.RunningDeploymentsForService(
             new DeploymentMatchers
             {
-                Environments = environments, 
+                Environments = environments,
                 Service = service,
                 User = user,
                 Services = servicesForTeam,

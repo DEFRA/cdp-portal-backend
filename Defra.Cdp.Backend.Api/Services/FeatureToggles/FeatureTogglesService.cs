@@ -25,9 +25,9 @@ public class FeatureTogglesService(
 
     protected override List<CreateIndexModel<FeatureToggle>> DefineIndexes(
         IndexKeysDefinitionBuilder<FeatureToggle> builder)
-    {  
+    {
         var bodyIndex = new CreateIndexModel<FeatureToggle>(builder.Text(r => r.Id));
-        return [ bodyIndex];
+        return [bodyIndex];
     }
 
     public async Task CreateToggle(FeatureToggle featureToggle, CancellationToken cancellationToken)
@@ -69,7 +69,7 @@ public class FeatureTogglesService(
         var filter = Builders<FeatureToggle>.Filter.Eq(e => e.Id, featureToggleId);
 
         var update = Builders<FeatureToggle>.Update.Set(ft => ft.Active, isActive);
-        
+
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 }
@@ -78,13 +78,13 @@ public class FeatureToggle
 {
     [property: JsonPropertyName("id")]
     public string Id { get; init; } = default;
-    
+
     [property: JsonPropertyName("name")]
     public string Name { get; init; } = default!;
-    
+
     [property: JsonPropertyName("url")]
     public string Url { get; init; } = default!;
-    
+
     [property: JsonPropertyName("active")]
     public bool Active { get; init; } = default!;
 }

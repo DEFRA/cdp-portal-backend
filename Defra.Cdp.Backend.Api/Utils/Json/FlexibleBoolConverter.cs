@@ -18,12 +18,12 @@ public class FlexibleBoolConverter : JsonConverter<bool>
             case JsonTokenType.False:
                 return false;
             case JsonTokenType.String:
-            {
-                var stringValue = reader.GetString();
-                if (bool.TryParse(stringValue, out var result))
-                    return result;
-                throw new JsonException($"Failed to parse string {stringValue} as bool.");
-            }
+                {
+                    var stringValue = reader.GetString();
+                    if (bool.TryParse(stringValue, out var result))
+                        return result;
+                    throw new JsonException($"Failed to parse string {stringValue} as bool.");
+                }
             default:
                 throw new JsonException($"Unable to convert value to bool. TokenType: {reader.TokenType}");
         }
