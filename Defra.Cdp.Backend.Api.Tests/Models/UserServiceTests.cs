@@ -11,30 +11,26 @@ public class UserServiceTests
     {
         const string json = """
                             {
-                                "message":"success",
-                                "user":{
-                                    "name":"User, Test",
-                                    "email":"test.user@defra.gov.uk",
-                                    "github":"test",
-                                    "createdAt":"2023-12-13T12:28:09.973Z",
-                                    "updatedAt":"2025-02-13T09:58:33.493Z",
-                                    "userId":"b474e8e6-5990-4944-8a03-a3bdb054ea43",
-                                    "scopes":[],
-                                    "teams":[{"teamId":"3b202138-1689-9999-8b55-4227362b249d","name":"Test"}]
-                                }
+                                "name":"User, Test",
+                                "email":"test.user@defra.gov.uk",
+                                "github":"test",
+                                "createdAt":"2023-12-13T12:28:09.973Z",
+                                "updatedAt":"2025-02-13T09:58:33.493Z",
+                                "userId":"b474e8e6-5990-4944-8a03-a3bdb054ea43",
+                                "scopes":[],
+                                "teams":[{"teamId":"test","name":"Test"}]
                             }
-                            """;
+                        """;
 
-        var output = JsonSerializer.Deserialize<UserServiceUserResponse>(json);
+        var output = JsonSerializer.Deserialize<UserServiceUser>(json);
         Assert.NotNull(output);
-        Assert.NotNull(output.user);
         Assert.Equivalent(
             new UserServiceUser(
                 "User, Test",
                 "test.user@defra.gov.uk",
                 "b474e8e6-5990-4944-8a03-a3bdb054ea43",
-                [new TeamId("3b202138-1689-9999-8b55-4227362b249d", "Test")]
+                [new Team("test", "Test")]
             ),
-            output.user);
+            output);
     }
 }

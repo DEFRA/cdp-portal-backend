@@ -142,8 +142,7 @@ public class DeploymentsService(
         {
             try
             {
-                var user = await userServiceFetcher.GetUser(deployment.User.Id, ct);
-                deployment.Audit.User = user?.user;
+                deployment.Audit.User = await userServiceFetcher.GetUser(deployment.User.Id, ct);
             }
             catch (Exception ex)
             {
