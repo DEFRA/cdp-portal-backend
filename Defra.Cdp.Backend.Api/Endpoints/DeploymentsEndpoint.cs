@@ -14,7 +14,7 @@ public static class DeploymentsEndpoint
     {
         app.MapGet("/deployments", FindLatestDeployments);
         app.MapGet("/deployments-with-migrations", FindLatestDeploymentsWithMigrations);
-        app.MapGet("/deployments/{deploymentId}", FindDeployments);
+        app.MapGet("/deployments/{deploymentId}", FindDeployment);
         app.MapGet("/deployments/filters/", GetDeploymentsFilters);
         app.MapGet("/running-services", RunningServices);
         app.MapGet("/running-services/{service}", RunningServicesForService);
@@ -113,13 +113,13 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
         {
-            deploymentFilters.Teams = teamRecord.teams.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
+            deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
         }
         return Results.Ok(new { Filters = deploymentFilters });
     }
 
     // Get /deployments/{deploymentId}
-    private static async Task<IResult> FindDeployments(IDeploymentsService deploymentsService, string deploymentId,
+    private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
@@ -176,7 +176,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
             whatsRunningWhereFilters.Teams =
-                teamRecord.teams.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
+                teamRecord.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
         return Results.Ok(new { Filters = whatsRunningWhereFilters });
     }
 

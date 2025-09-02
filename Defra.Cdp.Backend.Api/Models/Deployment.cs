@@ -144,7 +144,7 @@ public class Deployment
 
 public class Audit
 {
-    public List<Team> ServiceOwners { get; set; } = [];
+    public List<Services.Entities.Model.Team> ServiceOwners { get; set; } = [];
     public UserServiceUser? User { get; set; }
 }
 

@@ -15,6 +15,7 @@ using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;

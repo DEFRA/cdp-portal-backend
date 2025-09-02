@@ -6,6 +6,7 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Microsoft.Extensions.Logging.Abstractions;
+using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;

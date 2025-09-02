@@ -74,7 +74,7 @@ public sealed class PopulateGithubRepositories(
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cancellationToken, cdpTeams?.teams ?? []);
+        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cancellationToken, cdpTeams ?? []);
 
         var repositories = GroupRepositoriesByTeam(repositoryNodesByTeam, _logger);
 

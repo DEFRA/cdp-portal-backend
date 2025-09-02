@@ -5,8 +5,8 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 public interface IUserServiceFetcher
 {
-    Task<UserServiceTeamResponse?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken);
-    Task<UserServiceUserResponse?> GetUser(string userId, CancellationToken cancellationToken);
+    Task<List<UserServiceTeam>?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken);
+    Task<UserServiceUser?> GetUser(string userId, CancellationToken cancellationToken);
 }
 
 public class UserServiceFetcher : IUserServiceFetcher
@@ -22,19 +22,19 @@ public class UserServiceFetcher : IUserServiceFetcher
         _client = httpClientFactory.CreateClient("ServiceClient");
     }
 
-    public async Task<UserServiceTeamResponse?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken)
+    public async Task<List<UserServiceTeam>?> GetLatestCdpTeamsInformation(CancellationToken cancellationToken)
     {
         var result = await _client.GetAsync(_baseUrl + "/teams", cancellationToken);
         result.EnsureSuccessStatusCode();
         var response = await result.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<UserServiceTeamResponse>(response, cancellationToken: cancellationToken);
+        return await JsonSerializer.DeserializeAsync<List<UserServiceTeam>>(response, cancellationToken: cancellationToken);
     }
 
-    public async Task<UserServiceUserResponse?> GetUser(string userId, CancellationToken cancellationToken)
+    public async Task<UserServiceUser?> GetUser(string userId, CancellationToken cancellationToken)
     {
         var result = await _client.GetAsync(_baseUrl + "/users/" + userId, cancellationToken);
         result.EnsureSuccessStatusCode();
         var response = await result.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<UserServiceUserResponse>(response, cancellationToken: cancellationToken);
+        return await JsonSerializer.DeserializeAsync<UserServiceUser?>(response, cancellationToken: cancellationToken);
     }
 }
