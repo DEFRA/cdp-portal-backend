@@ -9,13 +9,10 @@ public interface ITerminalService
     Task CreateTerminalSession(TerminalSession session, CancellationToken cancellationToken);
 }
 
-public class TerminalService : MongoService<TerminalSession>, ITerminalService
+public class TerminalService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<TerminalSession>(connectionFactory, CollectionName, loggerFactory), ITerminalService
 {
     public const string CollectionName = "terminalsessions";
-    public TerminalService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory)
-    {
-
-    }
 
     protected override List<CreateIndexModel<TerminalSession>> DefineIndexes(IndexKeysDefinitionBuilder<TerminalSession> builder)
     {

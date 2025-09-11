@@ -123,7 +123,7 @@ public class DeploymentsService(
 
     private async Task<Deployment> WithAuditData(Deployment deployment, CancellationToken ct)
     {
-        deployment.Audit = new Audit();
+        deployment.Audit = new Models.Audit();
         // Record who owned the service at that point in time
         try
         {
