@@ -52,7 +52,7 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
         var fullUserDetails = new UserServiceUser("Test User", "test.user@test.com", "9999-9999-9999",
             [new Models.Team("3333", "test team"), new Models.Team("9999", "admins")]);
         _userServiceFetcher.GetUser(deployment.User!.Id, Arg.Any<CancellationToken>())
-            .Returns( fullUserDetails);
+            .Returns(fullUserDetails);
 
         await service.RegisterDeployment(deployment, CancellationToken.None);
 

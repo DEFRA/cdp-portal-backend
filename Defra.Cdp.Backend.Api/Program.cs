@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
@@ -242,6 +243,7 @@ builder.Services.AddSingleton<IDatabaseMigrationService, DatabaseMigrationServic
 builder.Services.AddSingleton<ITerminalService, TerminalService>();
 
 builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
+builder.Services.AddSingleton<IAuditService, AuditService>();
 
 
 // Validators
@@ -288,6 +290,8 @@ app.MapFeatureTogglesEndpoint();
 app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
+app.MapAuditEndpoint();
+
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

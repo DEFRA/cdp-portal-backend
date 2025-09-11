@@ -6,6 +6,7 @@ using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using Audit = Defra.Cdp.Backend.Api.Services.Audit.Audit;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
@@ -24,12 +26,14 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TerminalEndpointTest");
         var loggerFactory = new LoggerFactory();
         var terminalService = new TerminalService(mongoFactory, loggerFactory);
+        var auditService = new AuditService(mongoFactory, loggerFactory);
 
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
                 services.AddRouting();
                 services.AddSingleton<ITerminalService>(terminalService);
+                services.AddSingleton<IAuditService>(auditService);
             })
             .Configure(app =>
             {
@@ -44,23 +48,38 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         var server = new TestServer(builder);
         var client = server.CreateClient();
 
-        var session = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
-        var response = await client.PostAsJsonAsync("/terminals", session);
+        var prodSession = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
+        var prodResponse = await client.PostAsJsonAsync("/terminals", prodSession);
+        Assert.Equal(HttpStatusCode.Created, prodResponse.StatusCode);
+        var testSession = new TerminalSession { Token = "123456", Environment = "test", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
+        var testResponse = await client.PostAsJsonAsync("/terminals", testSession);
+        Assert.Equal(HttpStatusCode.Created, testResponse.StatusCode);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var col = mongoFactory.GetCollection<TerminalSession>(TerminalService.CollectionName);
-        var fromDatabase = await col.Find(t => t.Token == session.Token).ToListAsync(CancellationToken.None);
-        Assert.Single(fromDatabase);
+        var terminalCollections = mongoFactory.GetCollection<TerminalSession>(TerminalService.CollectionName);
+        var fromDatabase = await terminalCollections.Find(t => t.Token == prodSession.Token).ToListAsync(CancellationToken.None);
+        Assert.Equal(2, fromDatabase.Count);
         var saved = fromDatabase.First();
 
-        Assert.Equal(session.Service, saved.Service);
-        Assert.Equal(session.Environment, saved.Environment);
-        Assert.Equal(session.Token, saved.Token);
-        Assert.Equal(session.User.DisplayName, saved.User.DisplayName);
-        Assert.Equal(session.User.Id, saved.User.Id);
+        Assert.Equal(prodSession.Service, saved.Service);
+        Assert.Equal(prodSession.Environment, saved.Environment);
+        Assert.Equal(prodSession.Token, saved.Token);
+        Assert.Equal(prodSession.User.DisplayName, saved.User.DisplayName);
+        Assert.Equal(prodSession.User.Id, saved.User.Id);
         // Mongo doesn't store dates with the precision as datetime.utcnow
-        Assert.InRange(saved.Requested, session.Requested.Subtract(TimeSpan.FromMilliseconds(1)), session.Requested.Add(TimeSpan.FromMilliseconds(1)));
+        Assert.InRange(saved.Requested, prodSession.Requested.Subtract(TimeSpan.FromMilliseconds(1)), prodSession.Requested.Add(TimeSpan.FromMilliseconds(1)));
+
+        var auditCollections = mongoFactory.GetCollection<Audit>(AuditService.CollectionName);
+        var auditsFromDb = await auditCollections.Find(Builders<Audit>.Filter.Empty).ToListAsync(CancellationToken.None);
+        Assert.Single(auditsFromDb);
+        var audit = auditsFromDb.First();
+
+        Assert.Equal("breakGlass", audit.Category);
+        Assert.Equal("TerminalAccess", audit.Action);
+        Assert.Equal(prodSession.User.DisplayName, audit.PerformedBy.DisplayName);
+        Assert.InRange(audit.PerformedAt, DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)), DateTime.UtcNow.Add(TimeSpan.FromMinutes(1)));
+        Assert.Equal(prodSession.Environment, audit.Details["environment"].AsString);
+        Assert.Equal(prodSession.Service, audit.Details["service"].AsString);
 
     }
 }
