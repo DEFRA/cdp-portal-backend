@@ -196,15 +196,16 @@ public class TaskStateChangeEventHandler(
 
     public static List<FailureReason> ExtractFailureReasons(EcsTaskStateChangeEvent ecsEvent)
     {
+        if (ecsEvent.Detail.LastStatus != "STOPPED") return [];
         var failureReasons = ecsEvent.Detail.Containers
             .Where(c => c.Reason != null)
             .Select(c => new FailureReason(c.Name, c.Reason!))
             .ToList();
 
         // Check if it was the timeout container that killed the test run.
-        // In most cases it the exit code will be 143 (force killed by ECS), but when it fires the exit code would be <= 1. (TBC)
+        // In most cases it the exit code will be 143 (force killed by ECS), but when it fires the exit code would be = 1
         var timeoutContainer = ecsEvent.Detail.Containers.FirstOrDefault(c => c.Name.EndsWith("-timeout"));
-        if (timeoutContainer is { LastStatus: "STOPPED", ExitCode: <= 1 })
+        if (timeoutContainer is { LastStatus: "STOPPED", ExitCode: 1 })
         {
             failureReasons.Add(new FailureReason(timeoutContainer.Name, "Test suite exceeded maximum run time"));
         }
@@ -212,7 +213,7 @@ public class TaskStateChangeEventHandler(
         // Find any non-standard task level exit codes filtering out expected codes
         // EssentialContainerExited - i.e. tests have finished
         // UserInitiated - killed via the kill button
-        if (ecsEvent.Detail is { StopCode: not null, StoppedReason: not null, })
+        if (ecsEvent.Detail is { StopCode: not null, StoppedReason: not null })
         {
             if (!s_failureReasonsToIgnore.Contains(ecsEvent.Detail.StopCode))
             {
