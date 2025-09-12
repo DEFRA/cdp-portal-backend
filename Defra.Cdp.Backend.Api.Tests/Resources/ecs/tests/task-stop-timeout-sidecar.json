@@ -52,7 +52,7 @@
     "containers": [
       {
         "containerArn": "arn:aws:ecs:eu-west-2:120185944470:container/perf-test-ecs-public/16a4e00ec95344cc91fdc6e20cb88896/3bc0dcb9-2064-4851-a9b5-a1a9ef64ec94",
-        "exitCode": 0,
+        "exitCode": 1,
         "lastStatus": "STOPPED",
         "name": "forms-perf-test-timeout",
         "image": "094954420758.dkr.ecr.eu-west-2.amazonaws.com/cdp-timeout-docker:latest",
