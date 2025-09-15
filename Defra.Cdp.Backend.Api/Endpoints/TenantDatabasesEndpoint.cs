@@ -17,8 +17,11 @@ public static class TenantDatabasesEndpoint
         string service,
         CancellationToken cancellationToken)
     {
-        var results = await databasesService.Find(service, cancellationToken);
-        return Results.Ok(results);
+        var results = await databasesService.FindAllForService(service, cancellationToken);
+        
+        var response = results.ToDictionary(s => s.Environment,
+            s => s);
+        return Results.Ok(response);
     }
 
     private static async Task<IResult> FindAllForServiceByEnv(
@@ -27,7 +30,7 @@ public static class TenantDatabasesEndpoint
         string environment,
         CancellationToken cancellationToken)
     {
-        var results = await databasesService.Find(service, environment, cancellationToken);
+        var results = await databasesService.FindForServiceByEnv(service, environment, cancellationToken);
         return Results.Ok(results);
     }
 }

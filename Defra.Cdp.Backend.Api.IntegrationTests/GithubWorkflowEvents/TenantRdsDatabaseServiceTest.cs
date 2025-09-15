@@ -60,14 +60,11 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
 
         await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
 
-        var resultByName = await databaseService.Find("fcp-mpdp-backend", null, CancellationToken.None);
-        Assert.Single(resultByName);
-        Assert.Equal("fcp_mpdp_backend", resultByName[0].DatabaseName);
+        var results = await databaseService.FindAllForService("fcp-mpdp-backend", CancellationToken.None);
+        Assert.Equal("fcp_mpdp_backend", results[0].DatabaseName);
 
-        var resultByEnv = await databaseService.Find(null, "dev", CancellationToken.None);
-        Assert.Equal(2, resultByEnv.Count);
-        Assert.Equal("ai_model_test", resultByEnv[0].DatabaseName);
-        Assert.Equal("fcp_mpdp_backend", resultByEnv[1].DatabaseName);
+        var result = await databaseService.FindForServiceByEnv("fcp-mpdp-backend", "dev", CancellationToken.None);
+        Assert.Equal("fcp_mpdp_backend", result.DatabaseName);
     }
 
     [Fact]
@@ -79,12 +76,12 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
         var sampleEvent = TestData();
 
         await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
-        var resultBeforeDelete = await databaseService.Find(null, "dev", CancellationToken.None);
-        Assert.Equal(2, resultBeforeDelete.Count);
+        var resultBeforeDelete = await databaseService.FindAllForService("fcp-mpdp-backend", CancellationToken.None);
+        Assert.Single(resultBeforeDelete);
 
         sampleEvent.Payload.RdsDatabases.RemoveAt(1);
         await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
-        var resultAfterDelete = await databaseService.Find(null, "dev", CancellationToken.None);
-        Assert.Single(resultAfterDelete);
+        var resultAfterDelete = await databaseService.FindAllForService("fcp-mpdp-backend", CancellationToken.None);
+        Assert.Empty(resultAfterDelete);
     }
 }
