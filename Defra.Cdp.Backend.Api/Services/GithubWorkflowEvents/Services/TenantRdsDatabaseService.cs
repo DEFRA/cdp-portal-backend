@@ -11,14 +11,14 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface ITenantRdsDatabasesService : IEventsPersistenceService<TenantDatabasePayload>
 {
-    public Task<List<TenantRdsDatabase>> Find(string? service, string? environment, CancellationToken cancellationToken);
-    public Task<List<TenantRdsDatabase>> Find(string? service, CancellationToken cancellationToken);
+    Task<TenantRdsDatabase> FindForServiceByEnv(string service, string environment, CancellationToken cancellationToken);
+    Task<List<TenantRdsDatabase>> FindAllForService(string service, CancellationToken cancellationToken);
 }
 
 public class TenantRdsDatabasesService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<TenantRdsDatabase>(connectionFactory, CollectionName, loggerFactory), ITenantRdsDatabasesService
 {
-    public static readonly string CollectionName = "tenantrdsdatabases";
+    private const string CollectionName = "tenantrdsdatabases";
 
     public async Task PersistEvent(CommonEvent<TenantDatabasePayload> workflowEvent, CancellationToken cancellationToken)
     {
@@ -51,26 +51,21 @@ public class TenantRdsDatabasesService(IMongoDbClientFactory connectionFactory, 
         await Collection.DeleteManyAsync(filter, cancellationToken);
     }
 
-    public async Task<List<TenantRdsDatabase>> Find(string? service, string? environment, CancellationToken cancellationToken)
+    public async Task<TenantRdsDatabase> FindForServiceByEnv(string service, string environment, CancellationToken cancellationToken)
     {
         var fb = new FilterDefinitionBuilder<TenantRdsDatabase>();
-        var filter = fb.Empty;
-        if (service != null)
-        {
-            filter &= fb.Eq(d => d.Service, service);
-        }
-        if (environment != null)
-        {
-            filter &= fb.Eq(d => d.Environment, environment);
-        }
+        var filter = fb.And(fb.Eq(d => d.Service, service),
+            fb.Eq(d => d.Environment, environment));
 
-        return await Collection.Find(filter).ToListAsync(cancellationToken);
+        return await Collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
 
     }
 
-    public Task<List<TenantRdsDatabase>> Find(string? service, CancellationToken cancellationToken)
+    public async Task<List<TenantRdsDatabase>> FindAllForService(string service, CancellationToken cancellationToken)
     {
-        return Find(service, null, cancellationToken);
+        var fb = new FilterDefinitionBuilder<TenantRdsDatabase>();
+        var filter = fb.Eq(d => d.Service, service);
+        return await Collection.Find(filter).ToListAsync(cancellationToken);
     }
 
     protected override List<CreateIndexModel<TenantRdsDatabase>> DefineIndexes(IndexKeysDefinitionBuilder<TenantRdsDatabase> builder)
