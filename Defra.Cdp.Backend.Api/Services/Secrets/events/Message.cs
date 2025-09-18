@@ -12,7 +12,7 @@ namespace Defra.Cdp.Backend.Api.Services.Secrets.events;
  *   "body": {  depends on 'action' type  }
  *  }'
  */
-public record MessageHeader
+public record SecretMessage
 {
     [JsonPropertyName("statusCode")] public int? StatusCode { get; init; }
     [JsonPropertyName("source")] public string? Source { get; init; }
@@ -27,7 +27,7 @@ public record BodyGetAllSecretKeys
     [JsonPropertyName("environment")] public string Environment { get; init; } = "";
 }
 
-public record BodyAddSecret
+public record BodyAddRemoveSecret
 {
     [JsonPropertyName("secret")] public string SecretName { get; init; } = "";
     [JsonPropertyName("secret_key")] public string SecretKey { get; init; } = "";
