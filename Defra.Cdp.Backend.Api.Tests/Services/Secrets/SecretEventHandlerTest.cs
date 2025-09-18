@@ -17,7 +17,7 @@ public class SecretEventHandlerTest
         var eventHandler = new SecretEventHandler(service, pendingSecretsService,
             ConsoleLogger.CreateLogger<SecretEventHandler>());
 
-        var mockPayload = SecretEventHandler.TryParseMessageHeader(await File.ReadAllTextAsync("Resources/payload-get-all-secrets.json"));
+        var mockPayload = SecretEventHandler.TryParseMessage(await File.ReadAllTextAsync("Resources/payload-get-all-secrets.json"));
 
         Assert.NotNull(mockPayload);
         service
@@ -38,7 +38,7 @@ public class SecretEventHandlerTest
     {
         var body =
             @"{""source"": ""cdp-secret-manager-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"", ""body"": {}}";
-        var res = SecretEventHandler.TryParseMessageHeader(body);
+        var res = SecretEventHandler.TryParseMessage(body);
         Assert.NotNull(res);
     }
 
@@ -47,15 +47,15 @@ public class SecretEventHandlerTest
     {
         var otherLambda =
             @"{""source"": ""cdp-some-other-lambda"", ""statusCode"": 200, ""action"": ""get_all_secret_keys"", ""body"": {}}";
-        var res = SecretEventHandler.TryParseMessageHeader(otherLambda);
+        var res = SecretEventHandler.TryParseMessage(otherLambda);
         Assert.Null(res);
 
         var otherMessage = "{\"foo\": \"bar\"}";
-        res = SecretEventHandler.TryParseMessageHeader(otherMessage);
+        res = SecretEventHandler.TryParseMessage(otherMessage);
         Assert.Null(res);
 
         var invalidJson = "<tag>foo</tag>";
-        res = SecretEventHandler.TryParseMessageHeader(invalidJson);
+        res = SecretEventHandler.TryParseMessage(invalidJson);
         Assert.Null(res);
     }
 
@@ -88,7 +88,7 @@ public class SecretEventHandlerTest
                         }
                     }
             }";
-        var messageHeader = SecretEventHandler.TryParseMessageHeader(message);
+        var messageHeader = SecretEventHandler.TryParseMessage(message);
         Assert.NotNull(messageHeader);
 
         var parsedBody = messageHeader.Body.Deserialize<BodyGetAllSecretKeys>();

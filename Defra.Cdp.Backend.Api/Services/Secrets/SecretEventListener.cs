@@ -24,7 +24,7 @@ public class SecretEventListener(
 
         try
         {
-            var secret = SecretEventHandler.TryParseMessageHeader(message.Body);
+            var secret = SecretEventHandler.TryParseMessage(message.Body);
             if (secret != null)
             {
                 await secretEventHandler.Handle(secret, cancellationToken);

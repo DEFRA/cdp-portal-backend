@@ -18,7 +18,7 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         var secretEventHandler = new SecretEventHandler(secretsService, Substitute.For<IPendingSecretsService>(),
             new LoggerFactory().CreateLogger<SecretEventHandler>());
 
-        var header = FromJson<MessageHeader>("""
+        var header = FromJson<SecretMessage>("""
                            {
                              "source": "cdp-secret-manager-lambda",
                              "statusCode": 200,
@@ -51,7 +51,7 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
 
         Assert.Equal("TEST_KEY", result.First().Keys.First());
 
-        header = FromJson<MessageHeader>("""
+        header = FromJson<SecretMessage>("""
                                               {
                                                 "source": "cdp-secret-manager-lambda",
                                                 "statusCode": 200,
@@ -82,7 +82,7 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
 
         Assert.Equal(["TEST_KEY", "TEST_KEY2"], result.First().Keys);
 
-        header = FromJson<MessageHeader>("""
+        header = FromJson<SecretMessage>("""
                                               {
                                                 "source": "cdp-secret-manager-lambda",
                                                 "statusCode": 200,
@@ -127,7 +127,7 @@ public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(
         Assert.Equal(["TEST_KEY", "TEST_KEY4"], result[1].Keys);
 
 
-        header = FromJson<MessageHeader>("""
+        header = FromJson<SecretMessage>("""
                                               {
                                                 "source": "cdp-secret-manager-lambda",
                                                 "statusCode": 200,

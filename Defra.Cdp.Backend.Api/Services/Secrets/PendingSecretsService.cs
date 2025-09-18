@@ -6,29 +6,25 @@ namespace Defra.Cdp.Backend.Api.Services.Secrets;
 
 public interface IPendingSecretsService
 {
-    public Task RegisterPendingSecret(RegisterPendingSecret registerPendingSecret, CancellationToken cancellationToken);
+    Task RegisterPendingSecret(RegisterPendingSecret registerPendingSecret, CancellationToken cancellationToken);
 
-    public Task<PendingSecret?> ExtractPendingSecret(string environment, string service, string secretKey,
+    Task<PendingSecret?> ExtractPendingSecret(string environment, string service, string secretKey,
         string action, CancellationToken cancellationToken);
 
-    public Task<PendingSecrets?> FindPendingSecrets(string environment, string service,
+    Task<PendingSecrets?> FindPendingSecrets(string environment, string service,
         CancellationToken cancellationToken);
 
-    public Task AddException(string environment, string service, string secretKey,
+    Task AddException(string environment, string service, string secretKey,
         string action, string exceptionMessage, CancellationToken cancellationToken);
 
-    public Task<string?> PullExceptionMessage(string environment, string service, CancellationToken cancellationToken);
+    Task<string?> PullExceptionMessage(string environment, string service, CancellationToken cancellationToken);
 }
 
-public class PendingSecretsService : MongoService<PendingSecrets>, IPendingSecretsService
+public class PendingSecretsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<PendingSecrets>(connectionFactory, CollectionName, loggerFactory), IPendingSecretsService
 {
-    private readonly ILogger<PendingSecretsService> _logger;
-
-    public PendingSecretsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(
-        connectionFactory, "pendingsecrets", loggerFactory)
-    {
-        _logger = loggerFactory.CreateLogger<PendingSecretsService>();
-    }
+    private const string CollectionName = "pendingsecrets";
+    private readonly ILogger<PendingSecretsService> _logger = loggerFactory.CreateLogger<PendingSecretsService>();
 
     protected override List<CreateIndexModel<PendingSecrets>> DefineIndexes(
         IndexKeysDefinitionBuilder<PendingSecrets> builder)
@@ -46,7 +42,7 @@ public class PendingSecretsService : MongoService<PendingSecrets>, IPendingSecre
             }
         );
 
-        return new List<CreateIndexModel<PendingSecrets>> { serviceAndEnv, ttlIndex };
+        return [serviceAndEnv, ttlIndex];
     }
 
     public async Task RegisterPendingSecret(

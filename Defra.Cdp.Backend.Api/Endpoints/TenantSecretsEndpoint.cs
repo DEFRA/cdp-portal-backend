@@ -8,8 +8,7 @@ public static class TenantSecretsEndpoint
 {
     public static void MapTenantSecretsEndpoint(this IEndpointRouteBuilder app)
     {
-        // TODO service and environment should be the other way around
-        app.MapGet("secrets/{environment}/{service}", FindTenantSecrets);
+        app.MapGet("secrets/{service}/{environment}", FindTenantSecrets);
         app.MapGet("secrets/{service}", FindAllTenantSecrets);
         app.MapPost("secrets/register/pending", RegisterPendingSecret);
     }
@@ -17,14 +16,14 @@ public static class TenantSecretsEndpoint
     private static async Task<IResult> FindTenantSecrets(
         [FromServices] ISecretsService secretsService,
         [FromServices] IPendingSecretsService pendingSecretsService,
-        string environment, string service, CancellationToken cancellationToken)
+        string service, string environment, CancellationToken cancellationToken)
     {
         var secrets = await secretsService.FindServiceSecretsForEnvironment(environment, service, cancellationToken);
         var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
 
         if (secrets == null && pendingSecrets == null) return Results.NotFound(new ApiError("No secrets found"));
 
-        var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? new List<string>();
+        var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? [];
 
         var exceptionMessage =
             await pendingSecretsService.PullExceptionMessage(environment, service, cancellationToken);
@@ -32,22 +31,34 @@ public static class TenantSecretsEndpoint
         pendingSecretKeys.Sort();
         secrets?.Keys.Sort();
 
+        if (secrets == null)
+        {
+            return Results.Ok(new TenantSecretsResponse(
+                pendingSecrets!.Service,
+                pendingSecrets.Environment,
+                pendingSecretKeys,
+                pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
+                pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
+                pendingSecretKeys,
+                exceptionMessage)
+            );
+        }
+        
         return Results.Ok(new TenantSecretsResponse(
-            secrets?.Service ?? pendingSecrets.Service,
-            secrets?.Environment ?? pendingSecrets.Environment,
-            secrets?.Keys ?? pendingSecretKeys,
-            secrets?.LastChangedDate ?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
-            secrets?.CreatedDate ?? pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
+            secrets.Service,
+            secrets.Environment,
+            secrets.Keys,
+            secrets.LastChangedDate,
+            secrets.CreatedDate,
             pendingSecretKeys,
-            exceptionMessage)
-        );
+            exceptionMessage));
     }
 
     private static async Task<IResult> FindAllTenantSecrets(
         [FromServices] ISecretsService secretsService, string service, CancellationToken cancellationToken)
     {
         var allSecrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
-        return !allSecrets.Any() ? Results.NotFound(new ApiError("No secrets found")) : Results.Ok(allSecrets);
+        return allSecrets.Count != 0 ? Results.Ok(allSecrets) : Results.NotFound(new ApiError("No secrets found"));
     }
 
     private static async Task<IResult> RegisterPendingSecret(

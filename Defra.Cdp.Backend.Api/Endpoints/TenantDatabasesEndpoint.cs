@@ -18,7 +18,7 @@ public static class TenantDatabasesEndpoint
         CancellationToken cancellationToken)
     {
         var results = await databasesService.FindAllForService(service, cancellationToken);
-        
+
         var response = results.ToDictionary(s => s.Environment,
             s => s);
         return Results.Ok(response);
