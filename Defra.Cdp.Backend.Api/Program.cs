@@ -9,6 +9,7 @@ using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
@@ -28,12 +29,16 @@ using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
+using Defra.Cdp.Backend.Api.Utils.Auth;
+using Defra.Cdp.Backend.Api.Utils.Auth.Policies;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Defra.Cdp.Backend.Api.Utils.Logging;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -245,15 +250,47 @@ builder.Services.AddSingleton<ITerminalService, TerminalService>();
 builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
 builder.Services.AddSingleton<IAuditService, AuditService>();
 
+// Tenant Creation
+builder.Services.AddSingleton<CreateTenantService>();
+
+builder.Services.AddSingleton<UserServiceBackendClient>();
+builder.Services.AddSingleton<IClaimsTransformation, CdpClaimsTransformer>();
+builder.Services.AddSingleton<IAuthorizationHandler, IsAdminAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, OwnerOfServiceAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, OwnerOfEntityAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, MemberOfTeamAuthorizationHandler>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+// --- auth -- //
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "http://localhost:3939/6f504113-6b64-43f2-ade9-242e05780007/v2.0";
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false,
+            //ValidAudiences = new[] { audience1, clientId },
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(2)
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                Console.WriteLine($"JWT failed: {ctx.Exception.Message}");
+                return Task.CompletedTask;
+            }
+        };
+    });
+
 builder.Services.AddAuthorization();
 
 //-------- Build and Setup the WebApplication------------------//
@@ -291,7 +328,9 @@ app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
 app.MapAuditEndpoint();
+app.MapCreateEndpoint();
 
+app.MapAuthTestEndpoint();
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

@@ -16,7 +16,7 @@ public class PopulateGithubRepositoriesTest
             new Dictionary<UserServiceTeam, List<RepositoryNode>>
             {
                 {
-                    new UserServiceTeam("Platform", "PlatformTeam", "cdp-platform", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "platform-team-id", []),
+                    new UserServiceTeam("Platform", "PlatformTeam", "cdp-platform", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "platform-team-id", [], []),
                     [
                         new RepositoryNode("repo1", topics, "desc1", new PrimaryLanguage("Javascript"),
                             "https://url1", false, false, true, dateTimeNow),
@@ -26,7 +26,7 @@ public class PopulateGithubRepositoriesTest
                     ]
                 },
                 {
-                    new UserServiceTeam("Fisheries", "The fisheries team", "fisheries", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "fisheries-team-id", []),
+                    new UserServiceTeam("Fisheries", "The fisheries team", "fisheries", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "fisheries-team-id", [], []),
                     [
 
                         new RepositoryNode("repo2", topics, "desc2", new PrimaryLanguage("C#"),

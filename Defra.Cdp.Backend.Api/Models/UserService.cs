@@ -9,7 +9,8 @@ public record UserServiceTeam(
     [property: JsonPropertyName("createdAt")] string createdAt,
     [property: JsonPropertyName("updatedAt")] string updatedAt,
     [property: JsonPropertyName("teamId")] string teamId,
-    [property: JsonPropertyName("users")] List<UserId> users
+    [property: JsonPropertyName("users")] List<UserId> users,
+    [property: JsonPropertyName("teamId")] List<string> serviceCode
 );
 
 public record UserId(
