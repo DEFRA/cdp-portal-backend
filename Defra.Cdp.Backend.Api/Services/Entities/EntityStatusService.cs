@@ -100,7 +100,7 @@ public class EntityStatusService(
                 squidProxyService,
                 appConfigsService
             ],
-            Type.Prototype or Type.Microservice =>
+            Type.Microservice =>
             [
                 repositoryService,
                 tenantServicesService,

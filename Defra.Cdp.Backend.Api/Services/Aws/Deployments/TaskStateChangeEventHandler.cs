@@ -40,7 +40,7 @@ public class TaskStateChangeEventHandler(
 
         switch (entity.Type)
         {
-            case Type.Microservice or Type.Prototype:
+            case Type.Microservice:
                 await UpdateDeployment(ecsTaskStateChangeEvent, cancellationToken);
                 return;
             case Type.TestSuite:
