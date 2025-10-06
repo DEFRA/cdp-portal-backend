@@ -74,14 +74,14 @@ public enum Type
 {
     Repository,
     TestSuite,
-    Microservice,
-    Prototype
+    Microservice
 }
 
 public enum SubType
 {
     Journey,
     Performance,
+    Prototype,
     Frontend,
     Backend,
 }
