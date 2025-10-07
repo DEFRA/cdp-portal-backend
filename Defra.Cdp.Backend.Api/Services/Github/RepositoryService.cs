@@ -51,7 +51,7 @@ public class RepositoryService(
             }).ToList();
 
         if (replaceOneModels.Any())
-            // BulkWrite fails if its called with a zero length array
+            // BulkWrite fails if it's called with a zero length array
             await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
     }
 
