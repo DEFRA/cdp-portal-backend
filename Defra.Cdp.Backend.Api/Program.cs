@@ -19,11 +19,14 @@ using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Migrations;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Services.Tenants;
+using Defra.Cdp.Backend.Api.Services.Tenants.Handlers;
 using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
@@ -245,6 +248,11 @@ builder.Services.AddSingleton<ITerminalService, TerminalService>();
 builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
 builder.Services.AddSingleton<IAuditService, AuditService>();
 
+// New Tenant state stuff
+builder.Services.Configure<LambdaEventListenerOptions>(builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
+builder.Services.AddSingleton<MonoLambdaEventListener>();
+builder.Services.AddSingleton<TenantService>();
+builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
@@ -325,6 +333,12 @@ var platformEventListener = app.Services.GetService<PlatformEventListener>();
 logger?.LogInformation("Starting Platform Event listener - reading portal events from SQS");
 Task.Run(() =>
     platformEventListener?.ReadAsync(app.Lifetime
+        .ApplicationStopping)); // do not await this, we want it to run in the background
+
+var lambdaEventListener = app.Services.GetService<MonoLambdaEventListener>();
+logger?.LogInformation("Starting Lambda Event listener - reading portal events from SQS");
+Task.Run(() =>
+    lambdaEventListener?.ReadAsync(app.Lifetime
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 #pragma warning restore CS4014
