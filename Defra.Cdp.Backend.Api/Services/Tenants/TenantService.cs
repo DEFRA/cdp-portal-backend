@@ -14,8 +14,10 @@ public class TenantService(IMongoDbClientFactory connectionFactory, ILoggerFacto
     
     protected override List<CreateIndexModel<Tenant>> DefineIndexes(IndexKeysDefinitionBuilder<Tenant> builder)
     {
-        // TODO: add indexes
-        return [];
+        return [
+            new CreateIndexModel<Tenant>(builder.Ascending(t => t.Name)),
+            new CreateIndexModel<Tenant>(builder.Ascending(t => t.Metadata!.Teams))
+        ];
     }
     
     public async Task UpdateState(PlatformStatePayload state, CancellationToken cancellationToken)
@@ -51,44 +53,67 @@ public class TenantService(IMongoDbClientFactory connectionFactory, ILoggerFacto
         }
     }
 
-    public async Task<CdpTenant?> FindEnv(string env, string name)
+    public async Task<Tenant?> FindOneAsync(string name, CancellationToken cancellation)
     {
-        var filter = Builders<Tenant>.Filter.And(Filters.ExistsInEnv(env), Filters.ByName(name));
-        return await Collection.Find(filter).Project(t => t.Envs[env]).FirstOrDefaultAsync();
+        return await Collection.Find(t => t.Name == name).FirstOrDefaultAsync(cancellation);
+    }
+
+    public async Task<Tenant?> FindOneAsync(TenantFilter f, CancellationToken cancellation)
+    {
+        return await Collection.Find(f.Filter()).FirstOrDefaultAsync(cancellation);
+    }
+
+    
+    public async Task<List<Tenant>> FindAsync(TenantFilter f, CancellationToken cancellation)
+    {
+        return await Collection.Find(f.Filter()).ToListAsync(cancellation);
     }
 }
 
-public class Filters
+public record TenantFilter(
+    string? TeamId = null,
+    string? Environment = null,
+    string? Name = null,
+    bool HasPostgres = false,
+    Type? EntityType = null,
+    SubType? EntitySubType = null)
 {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-    public static FilterDefinition<Tenant> ByName(string name)
+    public FilterDefinition<Tenant> Filter()
     {
-        return Builders<Tenant>.Filter.Eq(t => t.Name, name);
+        var builder = Builders<Tenant>.Filter;
+        var filter = builder.Empty;
+
+        if (TeamId != null)
+        {
+            filter &= builder.AnyEq(t => t.Metadata!.Teams, TeamId);
+        }
+
+        if (Environment != null)
+        {
+            // TODO: check we want $exists and not $ne: null
+            filter &= builder.Exists(t => t.Envs[Environment]);
+        }
+
+        if (Name != null)
+        {
+            filter &= builder.Eq(t => t.Name, Name);
+        }
+
+        if (EntityType != null)
+        {
+            filter &= builder.Eq(t => t.Metadata!.Type, EntityType.ToString());
+        }
+        
+        if (EntitySubType != null)
+        {
+            filter &= builder.Eq(t => t.Metadata!.Subtype, EntitySubType.ToString());
+        }
+
+        if (HasPostgres && Environment != null)
+        {
+            filter &= builder.Ne(t => t.Envs[Environment].SqlDatabase, null);
+        }
+
+        return filter;
     }
-    
-    public static FilterDefinition<Tenant> ExistsInEnv(string env)
-    {
-        return Builders<Tenant>.Filter.Exists(t => t.Envs[env]);
-    }
-    
-    public static FilterDefinition<Tenant> ByTeam(string team)
-    {
-        return Builders<Tenant>.Filter.ElemMatch(t => t.Metadata.Teams, team);
-    }
-    
-    public static FilterDefinition<Tenant> ByType(Type entityType)
-    {
-        var typeFilter = Builders<Tenant>.Filter.Eq(t => t.Metadata.Type, entityType.ToString());
-        return typeFilter;
-    }
-    
-    public static FilterDefinition<Tenant> ByType(Type entityType, SubType entitySubType)
-    {
-        var fb = Builders<Tenant>.Filter;
-        var typeFilter = fb.Eq(t => t.Metadata.Type, entityType.ToString());
-        var subtypeFilter = fb.Eq(t => t.Metadata.Subtype, entityType.ToString());
-        return fb.And(typeFilter, subtypeFilter);
-    }
-    
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
 }

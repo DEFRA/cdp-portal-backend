@@ -8,6 +8,7 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities;
 
+[Obsolete("Functionality will be merged into TenantService")]
 public interface IEntitiesService
 {
     Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
@@ -33,6 +34,7 @@ public interface IEntitiesService
     Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
 }
 
+[Obsolete("Functionality will be merged into TenantService")]
 public class EntitiesService(
     IMongoDbClientFactory connectionFactory,
     ILoggerFactory loggerFactory)

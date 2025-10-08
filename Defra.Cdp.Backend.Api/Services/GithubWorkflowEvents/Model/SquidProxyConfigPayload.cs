@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
+[Obsolete("Use Tenant")]
 public record SquidProxyConfigPayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }
@@ -9,6 +10,7 @@ public record SquidProxyConfigPayload
     [JsonPropertyName("services")] public required List<ServiceConfig> Services { get; init; }
 }
 
+[Obsolete("Use Tenant")]
 public record ServiceConfig
 {
     [JsonPropertyName("name")] public required string Name { get; init; }

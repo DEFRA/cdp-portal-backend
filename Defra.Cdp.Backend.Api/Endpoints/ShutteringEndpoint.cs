@@ -12,6 +12,7 @@ public static class ShutteringEndpoint
         app.MapGet("/shuttering/url/{url}", ShutteringStateForUrl);
     }
 
+    [Obsolete("Use TenantService instead")]
     private static async Task<IResult> ShutteringStatesForService(
         IShutteringService shutteringService, string serviceName,
         CancellationToken cancellationToken)
@@ -20,6 +21,7 @@ public static class ShutteringEndpoint
         return Results.Ok(shutteringRecords);
     }
 
+    [Obsolete("Use TenantService instead")]
     private static async Task<IResult> ShutteringStateForUrl(
         IShutteringService shutteringService, string url,
         CancellationToken cancellationToken)

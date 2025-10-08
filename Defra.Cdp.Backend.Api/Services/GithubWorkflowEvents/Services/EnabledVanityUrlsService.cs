@@ -9,8 +9,10 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
+[Obsolete("Use TenantService")]
 public interface IEnabledVanityUrlsService : IEventsPersistenceService<EnabledVanityUrlsPayload>;
 
+[Obsolete("Use TenantService")]
 public class EnabledVanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<EnabledVanityUrlRecord>(
     connectionFactory,
     CollectionName,

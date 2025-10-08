@@ -9,12 +9,14 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
+[Obsolete("Use TenantService")]
 public interface IEnabledApisService : IEventsPersistenceService<EnabledApisPayload>
 {
     Task<EnabledApiRecord> Find(string serviceName, string environment, string url,
         CancellationToken cancellationToken);
 }
 
+[Obsolete("Use TenantService")]
 public class EnabledApisService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<EnabledApiRecord>(
         connectionFactory, CollectionName, loggerFactory), IEnabledApisService
