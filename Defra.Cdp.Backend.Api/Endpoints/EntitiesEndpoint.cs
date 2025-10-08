@@ -9,6 +9,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class EntitiesEndpoint
 {
+    [Obsolete("Use TenantService instead")]
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/entities", CreateEntity);

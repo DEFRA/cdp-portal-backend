@@ -6,6 +6,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class SquidProxyConfigEndpoint
 {
+    [Obsolete("Use TenantService instead")]
     public static void MapSquidProxyConfigEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/squid-proxy-config/{service}/{environment}", ServiceSquidProxyConfig);

@@ -8,6 +8,7 @@ public static class RepositoriesEndpoint
 {
     private const string RepositoriesBaseRoute = "repositories";
 
+    [Obsolete("Use TenantService for team data")]
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet(RepositoriesBaseRoute,

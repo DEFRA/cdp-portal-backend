@@ -15,9 +15,11 @@ public interface IRepositoryService : IResourceService
 
     Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken);
 
+    [Obsolete("Use TenantServer")]
     Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken);
 
+    [Obsolete("Use TenantServer")]
     Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken);
 
@@ -30,6 +32,7 @@ public interface IRepositoryService : IResourceService
 
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
 
+    [Obsolete("Use TenantServer")]
     Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken);
 }
 
@@ -84,6 +87,7 @@ public class RepositoryService(
         return repositories;
     }
 
+    [Obsolete("Use TenantService to lookup team ownership")]
     public async Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken)
     {
@@ -101,6 +105,7 @@ public class RepositoryService(
         return repositories;
     }
 
+    [Obsolete("Use TenantService to lookup team ownership")]
     public async Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken)
     {
@@ -133,7 +138,7 @@ public class RepositoryService(
             .Eq(r => r.Id, repository.Id);
         await Collection.ReplaceOneAsync(filter, repository, new ReplaceOptions { IsUpsert = true }, cancellationToken);
     }
-
+    
     public async Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
         CancellationToken cancellationToken)
     {
