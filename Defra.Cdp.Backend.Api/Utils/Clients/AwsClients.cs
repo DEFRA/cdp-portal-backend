@@ -1,3 +1,4 @@
+using Amazon.CloudWatch;
 using Amazon.S3;
 using Amazon.SQS;
 using LocalStack.Client.Extensions;
@@ -15,13 +16,17 @@ public static class AwsClients
             service.AddDefaultAWSOptions(configuration.GetAWSOptions());
             service.AddAwsService<IAmazonSQS>();
             service.AddAwsService<IAmazonS3>();
+            service.AddAwsService<IAmazonCloudWatch>();
         }
         else
         {
             var sqsClient = new AmazonSQSClient();
             var s3Client = new AmazonS3Client();
+            var cwClient = new AmazonCloudWatchClient();
+
             service.AddSingleton<IAmazonSQS>(sqsClient);
             service.AddSingleton<IAmazonS3>(s3Client);
+            service.AddSingleton<IAmazonCloudWatch>(cwClient);
         }
     }
 }

@@ -114,8 +114,6 @@ builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentV
 builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
 
 // SQS provider
-
-
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 
 // GitHub credential factory for the cron job
@@ -153,7 +151,6 @@ builder.Services.AddQuartz(q =>
         .ForJob(decommissionJobKey)
         .WithIdentity("DecommissionEntities-trigger")
         .WithSimpleSchedule(d => d.WithIntervalInSeconds(decommissionInterval).RepeatForever().Build()));
-
 });
 builder.Services.AddQuartzHostedService(options =>
 {
@@ -244,6 +241,8 @@ builder.Services.AddSingleton<ITerminalService, TerminalService>();
 
 builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
 builder.Services.AddSingleton<IAuditService, AuditService>();
+
+builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsService>();
 
 
 // Validators
