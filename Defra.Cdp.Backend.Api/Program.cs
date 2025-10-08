@@ -298,7 +298,7 @@ app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
 app.MapAuditEndpoint();
-
+app.MapTenantsEndpoint(); // TODO: POC endpoints, subject to change
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

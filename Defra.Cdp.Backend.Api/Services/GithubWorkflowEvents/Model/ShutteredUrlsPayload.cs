@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
+[Obsolete("Use Tenant")]
 public class ShutteredUrlsPayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }

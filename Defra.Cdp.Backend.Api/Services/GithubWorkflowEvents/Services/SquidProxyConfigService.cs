@@ -9,6 +9,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
+[Obsolete("Use TenantService")]
 public interface ISquidProxyConfigService : IEventsPersistenceService<SquidProxyConfigPayload>, IResourceService
 {
     public Task<SquidProxyConfigRecord?> FindSquidProxyConfig(string service, string environment,
@@ -17,6 +18,7 @@ public interface ISquidProxyConfigService : IEventsPersistenceService<SquidProxy
     public Task<List<SquidProxyConfigRecord>> FindSquidProxyConfig(string service, CancellationToken cancellationToken);
 }
 
+[Obsolete("Use TenantService")]
 public class SquidProxyConfigService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<SquidProxyConfigRecord>(connectionFactory,
         CollectionName, loggerFactory), ISquidProxyConfigService
