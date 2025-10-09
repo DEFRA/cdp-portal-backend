@@ -9,6 +9,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
+[Obsolete("Use TenantService")]
 public interface INginxUpstreamsService : IEventsPersistenceService<NginxUpstreamsPayload>, IResourceService;
 
 public class NginxUpstreamsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)

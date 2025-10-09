@@ -6,6 +6,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class VanityUrlsEndpoint
 {
+    [Obsolete("Use TenantService instead")]
     public static void MapVanityUrlsEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/vanity-urls/{service}/{environment}", ServiceVanityUrlsForEnv);

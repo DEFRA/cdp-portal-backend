@@ -42,27 +42,31 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
 
         var falloff = 1;
 
-        while (_enabled)
+        while (!cancellationToken.IsCancellationRequested)
             try
             {
                 var receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
-
                 if (receiveMessageResponse.Messages.Count == 0) continue;
 
                 foreach (var message in receiveMessageResponse.Messages)
                 {
+
+                    var innerCancellationToken = CancellationToken.None;
+                    
                     try
                     {
-                        await HandleMessageAsync(message, cancellationToken);
+                        await HandleMessageAsync(message, innerCancellationToken);
                     }
                     catch (Exception exception)
                     {
+                        
+                        logger.LogError(exception, "Failed to process message");
                         logger.LogError("Message: {Id} - Exception: {Message}", message.MessageId, exception.Message);
                     }
 
                     deleteRequest.ReceiptHandle = message.ReceiptHandle;
 
-                    await sqs.DeleteMessageAsync(deleteRequest, cancellationToken);
+                    await sqs.DeleteMessageAsync(deleteRequest, innerCancellationToken);
                     falloff = 1;
                 }
             }
