@@ -32,14 +32,12 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         var auditService = new AuditService(mongoFactory, cwMock.Object, loggerFactory);
 
         cwMock
-            .Setup(s => s.IncrementAsync(
+            .Setup(s => s.RecordCount(
                 It.IsAny<string>(),
-                It.IsAny<double>(),
                 It.IsAny<Dictionary<string, string>>(),
-                null,
-                It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
+                It.IsAny<double>()))
+            .Verifiable();
+        
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
@@ -50,36 +48,26 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
             .Configure(app =>
             {
                 app.UseRouting();
-                app.UseEndpoints(endpoints => { endpoints.MapTerminalEndpoint(); });
+                app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapTerminalEndpoint();
+                });
             });
 
         // Create Server
         var server = new TestServer(builder);
         var client = server.CreateClient();
 
-        var prodSession = new TerminalSession
-        {
-            Token = "123456",
-            Environment = "prod",
-            Service = "foo-backend",
-            User = new UserDetails { DisplayName = "user1", Id = "1" }
-        };
+        var prodSession = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
         var prodResponse = await client.PostAsJsonAsync("/terminals", prodSession);
         Assert.Equal(HttpStatusCode.Created, prodResponse.StatusCode);
-        var testSession = new TerminalSession
-        {
-            Token = "123456",
-            Environment = "test",
-            Service = "foo-backend",
-            User = new UserDetails { DisplayName = "user1", Id = "1" }
-        };
+        var testSession = new TerminalSession { Token = "123456", Environment = "test", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
         var testResponse = await client.PostAsJsonAsync("/terminals", testSession);
         Assert.Equal(HttpStatusCode.Created, testResponse.StatusCode);
 
 
         var terminalCollections = mongoFactory.GetCollection<TerminalSession>(TerminalService.CollectionName);
-        var fromDatabase = await terminalCollections.Find(t => t.Token == prodSession.Token)
-            .ToListAsync(CancellationToken.None);
+        var fromDatabase = await terminalCollections.Find(t => t.Token == prodSession.Token).ToListAsync(CancellationToken.None);
         Assert.Equal(2, fromDatabase.Count);
         var saved = fromDatabase.First();
 
@@ -89,21 +77,19 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         Assert.Equal(prodSession.User.DisplayName, saved.User.DisplayName);
         Assert.Equal(prodSession.User.Id, saved.User.Id);
         // Mongo doesn't store dates with the precision as datetime.utcnow
-        Assert.InRange(saved.Requested, prodSession.Requested.Subtract(TimeSpan.FromMilliseconds(1)),
-            prodSession.Requested.Add(TimeSpan.FromMilliseconds(1)));
+        Assert.InRange(saved.Requested, prodSession.Requested.Subtract(TimeSpan.FromMilliseconds(1)), prodSession.Requested.Add(TimeSpan.FromMilliseconds(1)));
 
         var auditCollections = mongoFactory.GetCollection<Audit>(AuditService.CollectionName);
-        var auditsFromDb =
-            await auditCollections.Find(Builders<Audit>.Filter.Empty).ToListAsync(CancellationToken.None);
+        var auditsFromDb = await auditCollections.Find(Builders<Audit>.Filter.Empty).ToListAsync(CancellationToken.None);
         Assert.Single(auditsFromDb);
         var audit = auditsFromDb.First();
 
         Assert.Equal("breakGlass", audit.Category);
         Assert.Equal("TerminalAccess", audit.Action);
         Assert.Equal(prodSession.User.DisplayName, audit.PerformedBy.DisplayName);
-        Assert.InRange(audit.PerformedAt, DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)),
-            DateTime.UtcNow.Add(TimeSpan.FromMinutes(1)));
+        Assert.InRange(audit.PerformedAt, DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)), DateTime.UtcNow.Add(TimeSpan.FromMinutes(1)));
         Assert.Equal(prodSession.Environment, audit.Details["environment"].AsString);
         Assert.Equal(prodSession.Service, audit.Details["service"].AsString);
+
     }
 }

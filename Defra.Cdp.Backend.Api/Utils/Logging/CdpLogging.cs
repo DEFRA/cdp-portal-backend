@@ -18,7 +18,6 @@ public static class CdpLogging
             .Enrich.WithEcsHttpContext(httpAccessor!)
             .Enrich.FromLogContext()
             .Filter.With<AuditLogger.Filters.ExcludeAuditEvents>()
-            .Filter.With<LogFilters.ExcludeHealthEndpoint>()
             .CreateLogger();
 
         if (traceIdHeader != null)

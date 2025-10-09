@@ -26,7 +26,6 @@ public class AuditService(
 {
     public const string CollectionName = "audit";
     
-
     protected override List<CreateIndexModel<Audit>> DefineIndexes(IndexKeysDefinitionBuilder<Audit> builder)
     {
         var indexKeys = builder.Descending(a => a.PerformedAt).Ascending(a => a.Category);
@@ -36,13 +35,10 @@ public class AuditService(
 
     public async Task Audit(AuditDto auditDto, CancellationToken cancellationToken)
     {
-        await cloudWatchMetricsService.IncrementAsync(
+        cloudWatchMetricsService.RecordCount(
             metricName: $"{auditDto.Category}Alerts",
-            dimensions: new Dictionary<string, string>
-            {
-                ["Action"] = auditDto.Action
-            },
-            ct: cancellationToken);
+            dimensions: new Dictionary<string, string> { ["Action"] = auditDto.Action }
+        );
 
         var detailsDoc = auditDto.Details.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
             ? new BsonDocument()
@@ -72,6 +68,7 @@ public class AuditService(
             a.PerformedAt,
             ToJsonElement(a.Details))).ToList();
     }
+
     private static JsonElement ToJsonElement(BsonDocument doc)
     {
         var json = doc.ToJson(new MongoDB.Bson.IO.JsonWriterSettings
@@ -79,12 +76,16 @@ public class AuditService(
             OutputMode = MongoDB.Bson.IO.JsonOutputMode.RelaxedExtendedJson
         });
         using var jd = JsonDocument.Parse(json);
-        return jd.RootElement.Clone(); // important: clone before disposing
+        return jd.RootElement.Clone();
     }
 }
 
-
-public record AuditDto(string Category, string Action, UserDetails PerformedBy, DateTime PerformedAt, JsonElement Details);
+public record AuditDto(
+    string Category,
+    string Action,
+    UserDetails PerformedBy,
+    DateTime PerformedAt,
+    JsonElement Details);
 
 public record Audit(string Category, string Action, UserDetails PerformedBy, DateTime PerformedAt, BsonDocument Details)
 {
