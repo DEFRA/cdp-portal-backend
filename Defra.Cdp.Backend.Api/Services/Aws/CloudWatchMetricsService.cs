@@ -1,43 +1,69 @@
-namespace Defra.Cdp.Backend.Api.Services.Aws;
+using Amazon.CloudWatch.EMF.Logger;
+using Amazon.CloudWatch.EMF.Model;
+using Defra.Cdp.Backend.Api.Config;
+using Microsoft.Extensions.Options;
 
-using Amazon.CloudWatch;
-using Amazon.CloudWatch.Model;
+namespace Defra.Cdp.Backend.Api.Services.Aws;
 
 public interface ICloudWatchMetricsService
 {
-    Task IncrementAsync(string metricName, double amount = 1, IDictionary<string, string>? dimensions = null, DateTime? timestamp = null, CancellationToken ct = default);
+    void RecordCount(string metricName, IDictionary<string, string>? dimensions = null, double value = 1);
 }
 
 public class CloudWatchMetricsService(
-    IAmazonCloudWatch cloudWatch,
-    ILogger<CloudWatchMetricsService> logger) : ICloudWatchMetricsService
+    ILogger<CloudWatchMetricsService> logger,
+    IOptions<CloudWatchMetricsOptions> options)
+    : ICloudWatchMetricsService
 {
-    private async Task PutMetricAsync(string metricName, double value, StandardUnit unit,
-        IDictionary<string, string>? dimensions = null, DateTime? timestamp = null, CancellationToken ct = default)
+    private readonly CloudWatchMetricsOptions _options = options.Value;
+
+    public void RecordCount(string metricName, IDictionary<string, string>? dimensions = null, double value = 1)
     {
-        if (string.IsNullOrWhiteSpace(metricName)) return;
+        if (string.IsNullOrWhiteSpace(metricName))
+        {
+            logger.LogWarning("Attempted to record metric with empty name");
+            return;
+        }
 
         try
         {
-            var datum = new MetricDatum
+            using var metricsLogger = new MetricsLogger();
+            metricsLogger.SetNamespace(_options.Namespace);
+
+            if (dimensions is { Count: > 0 })
             {
-                MetricName = metricName,
-                Unit = unit,
-                Value = value,
-                Dimensions = dimensions?.Select(kv => new Dimension { Name = kv.Key, Value = kv.Value }).ToList(),
-                TimestampUtc = timestamp ?? DateTime.UtcNow
-            };
+                var dimensionSet = new DimensionSet();
+                var added = 0;
+                foreach (var kvp in dimensions)
+                {
+                    if (string.IsNullOrWhiteSpace(kvp.Key) || string.IsNullOrWhiteSpace(kvp.Value)) continue;
 
-            var request = new PutMetricDataRequest { MetricData = [datum] };
+                    if (added >= _options.MaxDimensions)
+                    {
+                        logger.LogWarning(
+                            "Truncating dimensions for {MetricName} to {MaxDimensions}",
+                            metricName, _options.MaxDimensions);
+                        break;
+                    }
 
-            await cloudWatch.PutMetricDataAsync(request, ct);
+                    dimensionSet.AddDimension(kvp.Key, kvp.Value);
+                    added++;
+                }
+
+                if (added > 0)
+                {
+                    metricsLogger.SetDimensions(dimensionSet);
+                }
+            }
+
+            metricsLogger.PutMetric(metricName, value, Unit.COUNT);
+            logger.LogInformation(
+                "Recorded metric {MetricName} value {Value} with {DimCount} dimensions",
+                metricName, value, dimensions?.Count ?? 0);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            logger.LogError(e, "Failed to put metric data to CloudWatch for metric {MetricName}", metricName);
+            logger.LogError(ex, "Failed to record metric {MetricName}", metricName);
         }
     }
-
-    public Task IncrementAsync(string metricName, double amount = 1, IDictionary<string, string>? dimensions = null, DateTime? timestamp = null, CancellationToken ct = default)
-        => PutMetricAsync(metricName, amount, StandardUnit.Count, dimensions, timestamp, ct);
 }
