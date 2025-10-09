@@ -23,7 +23,7 @@ public static class AwsClients
             var sqsClient = new AmazonSQSClient();
             var s3Client = new AmazonS3Client();
 
-            var cwConfig = new AmazonCloudWatchConfig { ProxyHost = Environment.GetEnvironmentVariable("CDP_HTTPS_PROXY"), ProxyPort = 80};
+            var cwConfig = new AmazonCloudWatchConfig { Timeout = TimeSpan.FromSeconds(2), ProxyHost = Environment.GetEnvironmentVariable("CDP_HTTPS_PROXY"), ProxyPort = 80};
             var cwClient = new AmazonCloudWatchClient(cwConfig);
 
             service.AddSingleton<IAmazonSQS>(sqsClient);
