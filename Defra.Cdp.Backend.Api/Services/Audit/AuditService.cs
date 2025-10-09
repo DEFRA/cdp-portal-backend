@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -33,6 +34,11 @@ public class AuditService(
 
     public async Task Audit(AuditDto auditDto, CancellationToken cancellationToken)
     {
+        CloudWatchMetricsService.RecordMetric(
+            metricName: $"{auditDto.Category}Alerts",
+            dimensions: new Dictionary<string, string> { ["Action"] = auditDto.Action }
+        );
+
         // Convert inbound JSON details to a Mongo-friendly BsonDocument
         var detailsDoc = auditDto.Details.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
             ? new BsonDocument()
@@ -62,6 +68,7 @@ public class AuditService(
             a.PerformedAt,
             ToJsonElement(a.Details))).ToList();
     }
+
     private static JsonElement ToJsonElement(BsonDocument doc)
     {
         var json = doc.ToJson(new MongoDB.Bson.IO.JsonWriterSettings
@@ -73,8 +80,12 @@ public class AuditService(
     }
 }
 
-
-public record AuditDto(string Category, string Action, UserDetails PerformedBy, DateTime PerformedAt, JsonElement Details);
+public record AuditDto(
+    string Category,
+    string Action,
+    UserDetails PerformedBy,
+    DateTime PerformedAt,
+    JsonElement Details);
 
 public record Audit(string Category, string Action, UserDetails PerformedBy, DateTime PerformedAt, BsonDocument Details)
 {
