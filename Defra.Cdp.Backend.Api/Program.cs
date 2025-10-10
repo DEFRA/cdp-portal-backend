@@ -110,6 +110,7 @@ builder.Services.Configure<PlatformEventListenerOptions>(
     builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
 builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
+builder.Services.Configure<CloudWatchMetricsOptions>(builder.Configuration.GetSection(CloudWatchMetricsOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
 builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
 
@@ -244,6 +245,7 @@ builder.Services.AddSingleton<ITerminalService, TerminalService>();
 
 builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
 builder.Services.AddSingleton<IAuditService, AuditService>();
+builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsService>();
 
 
 // Validators

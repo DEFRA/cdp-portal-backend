@@ -19,14 +19,13 @@ public interface IAuditService
 
 public class AuditService(
     IMongoDbClientFactory connectionFactory,
+    ICloudWatchMetricsService cloudWatchMetricsService,
     ILoggerFactory loggerFactory)
     : MongoService<Audit>(connectionFactory, CollectionName, loggerFactory),
         IAuditService
 {
     public const string CollectionName = "audit";
     
-    private readonly ILogger<AuditService> logger = loggerFactory.CreateLogger<AuditService>();
-
     protected override List<CreateIndexModel<Audit>> DefineIndexes(IndexKeysDefinitionBuilder<Audit> builder)
     {
         var indexKeys = builder.Descending(a => a.PerformedAt).Ascending(a => a.Category);
@@ -36,14 +35,11 @@ public class AuditService(
 
     public async Task Audit(AuditDto auditDto, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Auditing {auditDto}", auditDto);
-        CloudWatchMetricsService.RecordMetric(
+        cloudWatchMetricsService.RecordCount(
             metricName: $"{auditDto.Category}Alerts",
-            dimensions: new Dictionary<string, string> { ["Action"] = auditDto.Action },
-            logger
+            dimensions: new Dictionary<string, string> { ["Action"] = auditDto.Action }
         );
 
-        // Convert inbound JSON details to a Mongo-friendly BsonDocument
         var detailsDoc = auditDto.Details.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
             ? new BsonDocument()
             : BsonDocument.Parse(auditDto.Details.GetRawText());
@@ -80,7 +76,7 @@ public class AuditService(
             OutputMode = MongoDB.Bson.IO.JsonOutputMode.RelaxedExtendedJson
         });
         using var jd = JsonDocument.Parse(json);
-        return jd.RootElement.Clone(); // important: clone before disposing
+        return jd.RootElement.Clone();
     }
 }
 
