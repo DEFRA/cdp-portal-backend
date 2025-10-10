@@ -57,11 +57,11 @@ public class CloudWatchMetricsService(
                 Namespace = "cdp-portal-backend"
             };
 
-            // using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            // timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
 
-            await cloudWatch.PutMetricDataAsync(request, ct);
-            
+            await cloudWatch.PutMetricDataAsync(request, timeoutCts.Token);
+
             var elapsedTotal = (DateTime.UtcNow - started).TotalMilliseconds;
 
             _logger.LogInformation(
