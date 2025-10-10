@@ -14,7 +14,7 @@ public class CloudWatchMetricsService(
     ILoggerFactory loggerFactory) : ICloudWatchMetricsService
 {
     private readonly ILogger<CloudWatchMetricsService> _logger = loggerFactory.CreateLogger<CloudWatchMetricsService>();
-
+    
     private async Task PutMetricAsync(string metricName, double value, StandardUnit unit,
         IDictionary<string, string>? dimensions = null, DateTime? timestamp = null, CancellationToken ct = default)
     {
@@ -27,14 +27,6 @@ public class CloudWatchMetricsService(
 
         var started = DateTime.UtcNow;
         const int timeoutSeconds = 8;
-        
-        _logger.LogDebug(
-            "CloudWatch client config: Region={Region}, ServiceURL={ServiceURL}, Timeout={ClientTimeoutMs}ms, ProxyHost={ProxyHost}, ProxyPort={ProxyPort}",
-            cloudWatch.Config.RegionEndpoint?.SystemName,
-            cloudWatch.Config.ServiceURL,
-            cloudWatch.Config.Timeout?.TotalMilliseconds,
-            cloudWatch.Config.ProxyHost,
-            cloudWatch.Config.ProxyPort);
 
         try
         {
@@ -51,11 +43,7 @@ public class CloudWatchMetricsService(
                 "Sending metric to CloudWatch. MetricName: {MetricName}, Value: {Value}, Unit: {Unit}, Dimensions: {@Dimensions}",
                 metricName, value, unit, dimensions);
 
-            var request = new PutMetricDataRequest
-            {
-                MetricData = [datum],
-                Namespace = "cdp-portal-backend"
-            };
+            var request = new PutMetricDataRequest { MetricData = [datum] };
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
