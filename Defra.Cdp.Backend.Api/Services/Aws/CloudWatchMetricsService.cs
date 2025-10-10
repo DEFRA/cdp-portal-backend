@@ -28,7 +28,7 @@ public class CloudWatchMetricsService(
         var started = DateTime.UtcNow;
         const int timeoutSeconds = 8;
         
-        _logger.LogInformation(
+        _logger.LogDebug(
             "CloudWatch client config: Region={Region}, ServiceURL={ServiceURL}, Timeout={ClientTimeoutMs}ms, ProxyHost={ProxyHost}, ProxyPort={ProxyPort}",
             cloudWatch.Config.RegionEndpoint?.SystemName,
             cloudWatch.Config.ServiceURL,
