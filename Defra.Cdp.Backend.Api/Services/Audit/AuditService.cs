@@ -24,6 +24,8 @@ public class AuditService(
         IAuditService
 {
     public const string CollectionName = "audit";
+    
+    private readonly ILogger<AuditService> logger = loggerFactory.CreateLogger<AuditService>();
 
     protected override List<CreateIndexModel<Audit>> DefineIndexes(IndexKeysDefinitionBuilder<Audit> builder)
     {
@@ -34,9 +36,11 @@ public class AuditService(
 
     public async Task Audit(AuditDto auditDto, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Auditing {auditDto}", auditDto);
         CloudWatchMetricsService.RecordMetric(
             metricName: $"{auditDto.Category}Alerts",
-            dimensions: new Dictionary<string, string> { ["Action"] = auditDto.Action }
+            dimensions: new Dictionary<string, string> { ["Action"] = auditDto.Action },
+            logger
         );
 
         // Convert inbound JSON details to a Mongo-friendly BsonDocument
