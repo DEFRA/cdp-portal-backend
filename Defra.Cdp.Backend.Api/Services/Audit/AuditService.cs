@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Aws;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -19,13 +18,11 @@ public interface IAuditService
 
 public class AuditService(
     IMongoDbClientFactory connectionFactory,
-    ICloudWatchMetricsService cloudWatchMetricsService,
     ILoggerFactory loggerFactory)
     : MongoService<Audit>(connectionFactory, CollectionName, loggerFactory),
         IAuditService
 {
     public const string CollectionName = "audit";
-    
 
     protected override List<CreateIndexModel<Audit>> DefineIndexes(IndexKeysDefinitionBuilder<Audit> builder)
     {
@@ -36,14 +33,7 @@ public class AuditService(
 
     public async Task Audit(AuditDto auditDto, CancellationToken cancellationToken)
     {
-        await cloudWatchMetricsService.IncrementAsync(
-            metricName: $"{auditDto.Category}Alerts",
-            dimensions: new Dictionary<string, string>
-            {
-                ["Action"] = auditDto.Action
-            },
-            ct: cancellationToken);
-
+        // Convert inbound JSON details to a Mongo-friendly BsonDocument
         var detailsDoc = auditDto.Details.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
             ? new BsonDocument()
             : BsonDocument.Parse(auditDto.Details.GetRawText());
