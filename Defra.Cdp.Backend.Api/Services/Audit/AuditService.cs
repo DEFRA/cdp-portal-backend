@@ -25,6 +25,7 @@ public class AuditService(
         IAuditService
 {
     public const string CollectionName = "audit";
+    
 
     protected override List<CreateIndexModel<Audit>> DefineIndexes(IndexKeysDefinitionBuilder<Audit> builder)
     {

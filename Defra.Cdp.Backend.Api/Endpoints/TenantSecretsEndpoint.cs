@@ -43,7 +43,7 @@ public static class TenantSecretsEndpoint
                 exceptionMessage)
             );
         }
-
+        
         return Results.Ok(new TenantSecretsResponse(
             secrets.Service,
             secrets.Environment,
