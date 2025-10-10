@@ -7,6 +7,7 @@ using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Audit;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using Moq;
 using Audit = Defra.Cdp.Backend.Api.Services.Audit.Audit;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
@@ -26,8 +28,16 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TerminalEndpointTest");
         var loggerFactory = new LoggerFactory();
         var terminalService = new TerminalService(mongoFactory, loggerFactory);
-        var auditService = new AuditService(mongoFactory, loggerFactory);
+        var cwMock = new Mock<ICloudWatchMetricsService>();
+        var auditService = new AuditService(mongoFactory, cwMock.Object, loggerFactory);
 
+        cwMock
+            .Setup(s => s.RecordCount(
+                It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(),
+                It.IsAny<double>()))
+            .Verifiable();
+        
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
