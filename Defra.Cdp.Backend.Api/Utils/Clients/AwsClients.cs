@@ -22,9 +22,7 @@ public static class AwsClients
         {
             var sqsClient = new AmazonSQSClient();
             var s3Client = new AmazonS3Client();
-
-            var cwConfig = new AmazonCloudWatchConfig { ProxyHost = Environment.GetEnvironmentVariable("HTTPS_PROXY") };
-            var cwClient = new AmazonCloudWatchClient(cwConfig);
+            var cwClient = new AmazonCloudWatchClient();
 
             service.AddSingleton<IAmazonSQS>(sqsClient);
             service.AddSingleton<IAmazonS3>(s3Client);
