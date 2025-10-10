@@ -36,7 +36,6 @@ public class SecretsService(IMongoDbClientFactory connectionFactory, ILoggerFact
     public async Task<Dictionary<string, TenantSecretKeys>> FindAllServiceSecrets(string service,
         CancellationToken cancellationToken)
     {
-        Logger.LogInformation($"FindAllServiceSecrets for environment {service}");
         var allServiceSecrets = await Collection.Find(t => t.Service == service)
             .ToListAsync(cancellationToken);
 
@@ -54,7 +53,6 @@ public class SecretsService(IMongoDbClientFactory connectionFactory, ILoggerFact
     public async Task<List<TenantSecrets>> FindAllSecretsForEnvironment(string environment,
         CancellationToken cancellationToken)
     {
-        Logger.LogInformation($"FindAllSecretsForEnvironment {environment}");
         return await Collection.Find(t => t.Environment == environment)
             .ToListAsync(cancellationToken);
 
