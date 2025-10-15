@@ -12,7 +12,7 @@ public static class TenantsEndpoint
     }
 
     private static async Task<IResult> SearchTenants(
-        TenantService tenantsService,
+        ITenantService tenantsService,
         string? name,
         string? environment,
         string? team,
@@ -23,7 +23,7 @@ public static class TenantsEndpoint
     }
 
     private static async Task<IResult> FindTenant(
-        TenantService tenantsService,
+        ITenantService tenantsService,
         string name,
         CancellationToken cancellationToken)
     {

@@ -1,11 +1,9 @@
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
-namespace Defra.Cdp.Backend.Api.Services.Tenants;
+namespace Defra.Cdp.Backend.Api.Services.Tenants.Models;
 
 
 [BsonIgnoreExtraElements]
