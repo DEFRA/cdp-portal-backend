@@ -1,12 +1,21 @@
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Tenants.Models;
 using MongoDB.Driver;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Tenants;
 
+public interface ITenantService
+{
+    Task UpdateState(PlatformStatePayload state, CancellationToken cancellationToken);
+    Task<Tenant?> FindOneAsync(string name, CancellationToken cancellation);
+    Task<Tenant?> FindOneAsync(TenantFilter f, CancellationToken cancellation);
+    Task<List<Tenant>> FindAsync(TenantFilter f, CancellationToken cancellation);
+}
+
 public class TenantService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
-    : MongoService<Tenant>(connectionFactory, CollectionName, loggerFactory)
+    : MongoService<Tenant>(connectionFactory, CollectionName, loggerFactory), ITenantService
 {
     private const string CollectionName = "tenants";
 
