@@ -250,7 +250,7 @@ builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsServic
 // New Tenant state stuff
 builder.Services.Configure<LambdaEventListenerOptions>(builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
-builder.Services.AddSingleton<TenantService>();
+builder.Services.AddSingleton<ITenantService, TenantService>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 
 // Validators
