@@ -1,23 +1,21 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using Defra.Cdp.Backend.Api.Services.Tenants;
-using Defra.Cdp.Backend.Api.Services.Tenants.Handlers;
-using Defra.Cdp.Backend.Api.Services.Tenants.Models;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using NSubstitute.ReceivedExtensions;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.Tenants.Handlers;
+namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents.Handlers;
 
 
-public record TestPayload
+internal record TestPayload
 {
     public string Name { get; set; }
 }
 
 public class PlatformStateHandlerTests
 {
-    private ITenantService tenantService = Substitute.For<ITenantService>();
+    private IEntitiesService entitiesService = Substitute.For<IEntitiesService>();
 
     private string minimalPayload = 
         """
@@ -62,19 +60,19 @@ public class PlatformStateHandlerTests
     [Fact]
     public async Task TestUncompressedHandleMessage()
     {
-        var handler = new PlatformStateHandler(tenantService, new NullLoggerFactory());
+        var handler = new PlatformStateHandler(entitiesService, new NullLoggerFactory());
         var payload = JsonSerializer.Deserialize<JsonElement>(minimalPayload);
         await handler.HandleAsync(payload, CancellationToken.None);
-        await tenantService.Received().UpdateState(Arg.Any<PlatformStatePayload>(), Arg.Any<CancellationToken>());
+        await entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(), Arg.Any<CancellationToken>());
     }
     
     
     [Fact]
     public async Task TestCompressedPayload()
     {
-        var handler = new PlatformStateHandler(tenantService, new NullLoggerFactory());
+        var handler = new PlatformStateHandler(entitiesService, new NullLoggerFactory());
         var payload = JsonSerializer.Deserialize<JsonElement>(minimalPayloadCompressed);
         await handler.HandleAsync(payload, CancellationToken.None);
-        await tenantService.Received().UpdateState(Arg.Any<PlatformStatePayload>(), Arg.Any<CancellationToken>());
+        await entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(), Arg.Any<CancellationToken>());
     }
 }

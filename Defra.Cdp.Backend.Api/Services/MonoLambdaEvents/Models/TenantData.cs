@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Defra.Cdp.Backend.Api.Services.Tenants.Models;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 
 [BsonIgnoreExtraElements]
 public class Alert
@@ -402,10 +402,10 @@ public class TenantMetadata
     public string ServiceCode { get; set; }
 
     [property: JsonPropertyName("subtype")]
-    public string Subtype { get; set; }
+    public string? Subtype { get; set; }
 
     [property: JsonPropertyName("type")]
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     [property: JsonPropertyName("teams")]
     public List<string> Teams { get; set; }
