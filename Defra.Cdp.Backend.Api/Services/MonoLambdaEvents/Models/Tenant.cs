@@ -3,7 +3,7 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Defra.Cdp.Backend.Api.Services.Tenants.Models;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 
 
 [BsonIgnoreExtraElements]
