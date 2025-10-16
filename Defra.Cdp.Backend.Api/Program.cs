@@ -20,13 +20,12 @@ using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Defra.Cdp.Backend.Api.Services.Tenants;
-using Defra.Cdp.Backend.Api.Services.Tenants.Handlers;
 using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
@@ -250,7 +249,6 @@ builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsServic
 // New Tenant state stuff
 builder.Services.Configure<LambdaEventListenerOptions>(builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
-builder.Services.AddSingleton<ITenantService, TenantService>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 
 // Validators
@@ -298,7 +296,6 @@ app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
 app.MapAuditEndpoint();
-app.MapTenantsEndpoint(); // TODO: POC endpoints, subject to change
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

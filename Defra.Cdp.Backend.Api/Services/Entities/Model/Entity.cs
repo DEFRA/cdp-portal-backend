@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -13,7 +14,7 @@ public record Entity
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? Id { get; init; }
 
-    [property: JsonPropertyName("name")] public string Name { get; set; }
+    [property: JsonPropertyName("name")] public required string Name { get; set; }
 
     [property: JsonPropertyName("type")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -39,10 +40,16 @@ public record Entity
     public Status Status { get; set; }
 
     [property: JsonPropertyName("decommissioned")]
-    public Decommission Decommissioned { get; set; }
+    public Decommission? Decommissioned { get; set; }
 
     [property: JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
+    
+    [property: JsonPropertyName("envs")]
+    public Dictionary<string, CdpTenant> Envs { get; init; } = new();
+    
+    [property: JsonPropertyName("metadata")]
+    public TenantMetadata? Metadata { get; init; }
 }
 
 public record Decommission

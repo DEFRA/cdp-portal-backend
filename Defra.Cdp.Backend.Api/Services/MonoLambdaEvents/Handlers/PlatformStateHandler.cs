@@ -1,14 +1,13 @@
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
-using Defra.Cdp.Backend.Api.Services.Tenants.Models;
-using ThirdParty.Json.LitJson;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using JsonException = System.Text.Json.JsonException;
 
-namespace Defra.Cdp.Backend.Api.Services.Tenants.Handlers;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
 
-class Header
+internal class Header
 {
     [property: JsonPropertyName("payload_version")]
     public string? PayloadVersion { get; init; }
@@ -16,7 +15,7 @@ class Header
     public string? Compression { get; init; }
 }
 
-public class PlatformStateHandler(ITenantService tenantService, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
+public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
 {
     public string EventType => "platform_state";
 
@@ -61,8 +60,8 @@ public class PlatformStateHandler(ITenantService tenantService, ILoggerFactory l
         _logger.LogInformation("Opensearch serial {Serial}", state.TerraformSerials.Tfopensearch);
         _logger.LogInformation("VanityUrls serial {Serial}", state.TerraformSerials.Tfvanityurl);
         _logger.LogInformation("WAF serial {Serial}", state.TerraformSerials.Tfwaf);
-        
-        await tenantService.UpdateState(state, cancellationToken);
+
+        await entitiesService.UpdateEnvironmentState(state, cancellationToken);
     }
 
     public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData) where T : new()

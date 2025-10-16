@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
@@ -8,12 +9,13 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities;
 
-[Obsolete("Functionality will be merged into TenantService")]
 public interface IEntitiesService
 {
     Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
         CancellationToken cancellationToken);
 
+    Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
+    
     Task<EntitiesService.EntityFilters>
         GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
 
@@ -32,22 +34,32 @@ public interface IEntitiesService
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
     Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken);
     Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
+
+    Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken);
 }
 
-[Obsolete("Functionality will be merged into TenantService")]
 public class EntitiesService(
     IMongoDbClientFactory connectionFactory,
     ILoggerFactory loggerFactory)
     : MongoService<Entity>(connectionFactory, CollectionName, loggerFactory), IEntitiesService
 {
     private const string CollectionName = "entities";
+    private readonly ILogger<EntitiesService> _logger = loggerFactory.CreateLogger<EntitiesService>();
 
     protected override List<CreateIndexModel<Entity>> DefineIndexes(
         IndexKeysDefinitionBuilder<Entity> builder)
     {
-        return [new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })];
+        return [
+            new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })
+        ];
     }
 
+    public async Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken)
+    {
+        return await Collection.Find(matcher.Match()).ToListAsync(cancellationToken);
+    }
+
+    [Obsolete("Use EntityMatcher variant")]
     public async Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
         CancellationToken cancellationToken)
     {
@@ -96,7 +108,7 @@ public class EntitiesService(
             var statusValues = new BsonArray(statuses.Select(s => s.ToString()));
             filters["status"] = new BsonDocument("$in", statusValues);
         }
-
+        
         var pipeline = new[]
         {
             new BsonDocument("$match",
@@ -189,7 +201,7 @@ public class EntitiesService(
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await GetEntities([], null, [], [Status.Creating], cancellationToken);
+        return await GetEntities(new EntityMatcher { Status = Status.Creating } , cancellationToken);
     }
 
     public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
@@ -224,13 +236,13 @@ public class EntitiesService(
 
     public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
     {
-        return await GetEntities([], null, [], [Status.Decommissioning], cancellationToken);
+        return await GetEntities(new EntityMatcher{ Status = Status.Decommissioning}, cancellationToken);
     }
 
     public async Task DecommissioningWorkflowsTriggered(string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
-        var update = Builders<Entity>.Update.Set(e => e.Decommissioned.WorkflowsTriggered, true);
+        var update = Builders<Entity>.Update.Set(e => e.Decommissioned!.WorkflowsTriggered, true);
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
@@ -238,7 +250,7 @@ public class EntitiesService(
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
         var update = Builders<Entity>.Update.Combine(
-            Builders<Entity>.Update.Set(e => e.Decommissioned.Finished, DateTime.UtcNow),
+            Builders<Entity>.Update.Set(e => e.Decommissioned!.Finished, DateTime.UtcNow),
             Builders<Entity>.Update.Set(e => e.Status, Status.Decommissioned));
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
@@ -247,5 +259,53 @@ public class EntitiesService(
     {
         public List<string> Entities { get; set; } = [];
         public List<Team> Teams { get; set; } = [];
+    }
+    
+    public async Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken)
+    {
+        var env = state.Environment;
+        var models = new List<WriteModel<Entity>>();
+        
+        foreach (var kv in state.Tenants)
+        {
+            var filter = Builders<Entity>.Filter.Eq(f => f.Name, kv.Key);
+            var update = Builders<Entity>.Update.Set(e => e.Name, kv.Key)
+                .Set(e => e.Envs[env], kv.Value.Tenant)
+                .Set(e => e.Teams, kv.Value.Metadata?.Teams.Select(t => new Team { Name = t, TeamId = t}) ?? [])
+                .Set(e => e.Metadata, kv.Value.Metadata);
+            
+            // Copy the entity types to the root object
+            if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
+            {
+                update = update.Set(e => e.Type, entityType);
+            }
+            if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype)  && Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
+            {
+                _logger.LogInformation("setting {Name} subtype to {SubType} from value {Orig}", kv.Key, entitySubType, kv.Value.Metadata.Subtype);
+                update = update.Set(e => e.SubType, entitySubType);
+            }
+
+            var m = new UpdateOneModel<Entity>(
+                filter,
+                update
+            ) { IsUpsert = true };
+
+            models.Add(m);
+        }
+        
+        // Remove environment for any service not in the list
+        var removeMissing = new UpdateOneModel<Entity>(
+            Builders<Entity>.Filter.Nin(f => f.Name, state.Tenants.Keys),
+            Builders<Entity>.Update
+                .Unset(e => e.Envs[env])
+        ) { IsUpsert = false };
+        models.Add(removeMissing);
+        
+        if (models.Count > 0)
+        {
+            var result = await Collection.BulkWriteAsync(models, cancellationToken: cancellationToken);
+            _logger.LogInformation("Updated {Updated}, inserted {Inserted}, removed {Removed} tenants in {Env}", 
+                result.ModifiedCount, result.InsertedCount, result.DeletedCount, env);
+        }
     }
 }
