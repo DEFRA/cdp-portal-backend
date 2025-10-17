@@ -227,6 +227,9 @@ public class PlatformStatePayload
 [BsonIgnoreExtraElements]
 public class RequestedConfig
 {
+    [property: JsonPropertyName("zone")]
+    public string? Zone { get; set; }
+
     [property: JsonPropertyName("redis")]
     public bool Redis { get; set; }
 
@@ -402,10 +405,10 @@ public class TenantMetadata
     public string ServiceCode { get; set; }
 
     [property: JsonPropertyName("subtype")]
-    public string? Subtype { get; set; }
+    public string Subtype { get; set; }
 
     [property: JsonPropertyName("type")]
-    public string? Type { get; set; }
+    public string Type { get; set; }
 
     [property: JsonPropertyName("teams")]
     public List<string> Teams { get; set; }
@@ -515,12 +518,7 @@ public class TenantUrl
 
 }
 
-/// <summary>
-/// The TenantDataVersion is a hash of C# classes outputted by the script.
-/// Ideally it will match the hash in the `payload_version` field of the message.
-/// If the hashes don't match, it doesn't always mean the payload is incompatible.
-/// </summary>
 public static class TenantDataVersion
 {
-    public static readonly string Version = "30373081fb1c41bd28d8ad8f22bd26c87bc4714b039361478af40dce08cc6b0d";
+    public static readonly string Version = "d4d8f10a749184a17d57b32e09693b0e381a51ec67744839a7c2a88a39f21bfd";
 }
