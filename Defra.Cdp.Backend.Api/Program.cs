@@ -275,7 +275,7 @@ builder.Services
         options.RequireHttpsMetadata = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false,
+            ValidateAudience = false, // TODO: enable this
             //ValidAudiences = new[] { audience1, clientId },
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(2)
