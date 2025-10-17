@@ -6,6 +6,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class ApiGatewaysEndpoint
 {
+    [Obsolete("Use TenantService instead")]
     public static void MapApiGatewaysEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api-gateways/{service}/{environment}", ServiceApiGatewaysForEnv);
