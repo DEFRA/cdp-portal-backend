@@ -17,7 +17,7 @@ public static class TestSuiteEndpoint
         app.MapGet("test-suites/{name}", FindTestSuites);
     }
 
-    static async Task<IResult> FindTestRun([FromServices] ITestRunService testRunService, string runId,
+    private static async Task<IResult> FindTestRun([FromServices] ITestRunService testRunService, string runId,
         CancellationToken cancellationToken)
     {
         var result = await testRunService.FindTestRun(runId, cancellationToken);
@@ -42,14 +42,14 @@ public static class TestSuiteEndpoint
         return Results.Ok(result);
     }
 
-    static async Task<IResult> CreateTestRun([FromServices] ITestRunService testRunService, TestRun testRun,
+    private static async Task<IResult> CreateTestRun([FromServices] ITestRunService testRunService, TestRun testRun,
         CancellationToken cancellationToken)
     {
         await testRunService.CreateTestRun(testRun, cancellationToken);
         return Results.Created($"test-run/{testRun.RunId}", null);
     }
 
-    static async Task<IResult> FindTestSuites(string name, IDeployableArtifactsService deployableArtifactsService,
+    private static async Task<IResult> FindTestSuites(string name, IDeployableArtifactsService deployableArtifactsService,
         CancellationToken cancellationToken)
     {
         var testSuite = await deployableArtifactsService.FindServices(name, cancellationToken);

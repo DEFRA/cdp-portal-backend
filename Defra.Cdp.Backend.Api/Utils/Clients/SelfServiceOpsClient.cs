@@ -20,7 +20,7 @@ public class SelfServiceOpsClient
         _selfServiceOpsSecret = configuration.GetValue<string>("SelfServiceOpsSecret");
     }
 
-    public async Task TriggerTestSuite(string imageName, UserDetails user, Deployment deployment,
+    public async Task TriggerTestSuite(string testSuite, UserDetails user, Deployment deployment,
         TestRunSettings? testRunSettings, CancellationToken cancellationToken)
     {
         const int defaultTestSuiteCpu = 4096; // 4 vCPU
@@ -28,7 +28,7 @@ public class SelfServiceOpsClient
 
         var body = new
         {
-            imageName,
+            testSuite,
             environment = deployment.Environment,
             cpu = testRunSettings?.Cpu ?? defaultTestSuiteCpu,
             memory = testRunSettings?.Memory ?? defaultTestSuiteMemory,

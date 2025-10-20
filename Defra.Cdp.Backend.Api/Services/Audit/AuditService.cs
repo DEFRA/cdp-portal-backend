@@ -25,7 +25,7 @@ public class AuditService(
         IAuditService
 {
     public const string CollectionName = "audit";
-    
+
     protected override List<CreateIndexModel<Audit>> DefineIndexes(IndexKeysDefinitionBuilder<Audit> builder)
     {
         var indexKeys = builder.Descending(a => a.PerformedAt).Ascending(a => a.Category);
