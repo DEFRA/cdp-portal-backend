@@ -37,7 +37,7 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
                 It.IsAny<Dictionary<string, string>>(),
                 It.IsAny<double>()))
             .Verifiable();
-        
+
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {

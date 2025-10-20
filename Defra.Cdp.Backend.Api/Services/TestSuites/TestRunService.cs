@@ -23,14 +23,13 @@ public interface ITestRunService
     public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
 }
 
-public class TestRunService : MongoService<TestRun>, ITestRunService
+public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<TestRun>(connectionFactory, CollectionName, loggerFactory), ITestRunService
 {
     private const string CollectionName = "testruns";
     private readonly TimeSpan _ecsLinkTimeWindow = TimeSpan.FromSeconds(120); // how many seconds between requesting the test run and the first ECS event
-    public static readonly int DefaultPageSize = 50;
-    public static readonly int DefaultPage = 1;
-
-    public TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, CollectionName, loggerFactory) { }
+    public const int DefaultPageSize = 50;
+    public const int DefaultPage = 1;
 
     protected override List<CreateIndexModel<TestRun>> DefineIndexes(IndexKeysDefinitionBuilder<TestRun> builder)
     {
@@ -129,8 +128,9 @@ public class TestRunService : MongoService<TestRun>, ITestRunService
             update = update.Set(t => t.TestStatus, testStatus);
         }
 
-        await Collection.UpdateOneAsync(t => t.TaskArn == taskArn, update,
-            cancellationToken: ct);
+        var filter = Builders<TestRun>.Filter.Eq(t => t.TaskArn, taskArn);
+
+        await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
     }
 
     public async Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct)

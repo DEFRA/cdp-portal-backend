@@ -33,7 +33,7 @@ public static class AutoTestRunTriggerEndpoint
     }
 
     private static async Task<IResult> Create([FromServices] IAutoTestRunTriggerService autoTestRunTriggerService,
-        AutoTestRunTrigger trigger, CancellationToken cancellationToken)
+        AutoTestRunTriggerDto trigger, CancellationToken cancellationToken)
     {
         var createdTrigger = await autoTestRunTriggerService.SaveTrigger(trigger, cancellationToken);
         return createdTrigger == null
@@ -44,7 +44,7 @@ public static class AutoTestRunTriggerEndpoint
 
     private static async Task<IResult> RemoveTestRun(
         [FromServices] IAutoTestRunTriggerService autoTestRunTriggerService,
-        AutoTestRunTrigger trigger, CancellationToken cancellationToken)
+        AutoTestRunTriggerDto trigger, CancellationToken cancellationToken)
     {
         var updatedTrigger = await autoTestRunTriggerService.RemoveTestRun(trigger, cancellationToken);
         return updatedTrigger == null
@@ -54,7 +54,7 @@ public static class AutoTestRunTriggerEndpoint
 
     private static async Task<IResult> UpdateTestRun(
         [FromServices] IAutoTestRunTriggerService autoTestRunTriggerService,
-        AutoTestRunTrigger trigger, CancellationToken cancellationToken)
+        AutoTestRunTriggerDto trigger, CancellationToken cancellationToken)
     {
         var updatedTrigger = await autoTestRunTriggerService.UpdateTestRun(trigger, cancellationToken);
         return updatedTrigger == null

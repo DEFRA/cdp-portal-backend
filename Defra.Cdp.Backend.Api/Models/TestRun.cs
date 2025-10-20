@@ -80,6 +80,9 @@ public sealed class TestRun
     [property: JsonPropertyName("configVersion")]
     public string? ConfigVersion { get; set; }
 
+    [property: JsonPropertyName("profile")]
+    public string? Profile { get; set; }
+
     public static TestRun FromDeployment(Deployment deployment, string testSuite)
     {
         return new TestRun

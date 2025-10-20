@@ -40,7 +40,7 @@ public class AutoTestRunTriggerEventHandler(
         {
             var trigger = await autoTestRunTriggerService.FindForService(deployment.Service, cancellationToken);
             var environmentTestSuites = trigger?.TestSuites
-                .Where(kvp => kvp.Value.Contains(deployment.Environment))
+                // .Where(kvp => kvp.Value.Contains(deployment.Environment)) //FIXME
                 .Select(kvp => kvp.Key)
                 .ToList() ?? [];
 

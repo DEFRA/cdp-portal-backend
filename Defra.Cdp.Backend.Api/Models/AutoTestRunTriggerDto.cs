@@ -5,7 +5,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public record AutoTestRunTrigger
+public record AutoTestRunTriggerDto
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
@@ -16,12 +16,12 @@ public record AutoTestRunTrigger
     [property: JsonPropertyName("serviceName")]
     public string ServiceName { get; init; } = null!;
 
-    [property: JsonPropertyName("testSuites")]
-    public Dictionary<string, List<TestSuiteRunConfig>> TestSuites { get; init; } = [];
-}
-
-public record TestSuiteRunConfig
-{
+    [property: JsonPropertyName("profile")]
     public string? Profile { get; init; }
+
+    [property: JsonPropertyName("testSuite")]
+    public string TestSuite { get; init; } = null!;
+
+    [property: JsonPropertyName("environments")]
     public List<string> Environments { get; init; } = [];
 }
