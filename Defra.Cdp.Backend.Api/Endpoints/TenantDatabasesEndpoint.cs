@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class TenantDatabasesEndpoint
 {
 
-    [Obsolete("Use TenantService instead")]
+    [Obsolete("Use entities")]
     public static void MapTenantDatabasesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/tenant-databases/{service}", FindAllForService);

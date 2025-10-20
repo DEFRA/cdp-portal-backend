@@ -19,6 +19,8 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
 {
     public string EventType => "platform_state";
 
+    public bool PersistEvents => true;
+
     private readonly ILogger<PlatformStateHandler> _logger = loggerFactory.CreateLogger<PlatformStateHandler>();
     
     public async Task HandleAsync(JsonElement message, CancellationToken cancellationToken)

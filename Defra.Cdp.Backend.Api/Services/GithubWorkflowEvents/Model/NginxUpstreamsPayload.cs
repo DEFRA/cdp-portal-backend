@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record NginxUpstreamsPayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }

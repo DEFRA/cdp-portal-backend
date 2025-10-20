@@ -5,6 +5,6 @@ namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
 public interface IMonoLambdaEventHandler
 {
     string EventType { get; }
-
+    bool PersistEvents { get; }
     Task HandleAsync(JsonElement message, CancellationToken cancellationToken);
 }

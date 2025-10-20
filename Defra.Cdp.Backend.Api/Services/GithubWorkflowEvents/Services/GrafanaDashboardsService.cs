@@ -9,10 +9,10 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-[Obsolete("Use TenantService")]
+[Obsolete("Use EntityService")]
 public interface IGrafanaDashboardsService : IEventsPersistenceService<GrafanaDashboardPayload>, IResourceService;
 
-[Obsolete("Use TenantService")]
+[Obsolete("Use EntityService")]
 public class GrafanaDashboardsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<GrafanaDashboard>(connectionFactory,
         CollectionName, loggerFactory), IGrafanaDashboardsService

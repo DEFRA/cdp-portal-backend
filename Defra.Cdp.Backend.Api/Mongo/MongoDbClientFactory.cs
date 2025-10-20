@@ -30,7 +30,22 @@ public class MongoDbClientFactory : IMongoDbClientFactory
 
     public IMongoCollection<T> GetCollection<T>(string collection)
     {
-        var client = CreateClient();
+        return _mongoDatabase.GetCollection<T>(collection);
+    }
+
+    public IMongoCollection<T> InitCappedCollection<T>(string collection, long? maxDocuments = null, long? maxSize = null)
+    {
+        if (!_mongoDatabase.ListCollectionNames().ToEnumerable().Contains(collection))
+        {
+            _mongoDatabase.CreateCollection(collection, 
+                new CreateCollectionOptions
+                {
+                    Capped = true, 
+                    MaxDocuments = maxDocuments, 
+                    MaxSize = maxSize
+                });
+        }
+        
         return _mongoDatabase.GetCollection<T>(collection);
     }
 }

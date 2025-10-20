@@ -2,14 +2,14 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public class TenantDatabasePayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }
     [JsonPropertyName("rds")] public required List<RdsDatabase> RdsDatabases { get; init; }
 }
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public class RdsDatabase
 {
     [JsonPropertyName("service")] public string? Service { get; init; }

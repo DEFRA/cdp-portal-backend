@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 [BsonIgnoreExtraElements]
 public class Alert
@@ -522,3 +523,6 @@ public static class TenantDataVersion
 {
     public static readonly string Version = "d4d8f10a749184a17d57b32e09693b0e381a51ec67744839a7c2a88a39f21bfd";
 }
+
+
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
