@@ -17,11 +17,11 @@ public record Entity
     [property: JsonPropertyName("name")] public required string Name { get; set; }
 
     [property: JsonPropertyName("type")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<Type>))]
     public Type Type { get; set; }
 
     [property: JsonPropertyName("subType")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<SubType>))]
     public SubType? SubType { get; set; }
 
     [property: JsonPropertyName("primaryLanguage")]
