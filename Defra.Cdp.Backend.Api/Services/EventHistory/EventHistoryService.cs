@@ -5,12 +5,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.EventHistory;
 
-public interface IEventHistoryRepository<T>
-{
-    Task PersistEvent(string messageId, JsonElement message, CancellationToken cancellation);
-}
-
-public class EventHistoryRepository<T> : IEventHistoryRepository<T>
+public class EventHistoryRepository<T>
 {
 
     private readonly IMongoCollection<BsonDocument> _collection;

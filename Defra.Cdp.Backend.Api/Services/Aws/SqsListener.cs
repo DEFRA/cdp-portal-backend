@@ -26,7 +26,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
 
         if (!_enabled)
         {
-            logger.LogInformation("Listener for {} is disabled", QueueUrl);
+            logger.LogInformation("Listener for {QueueUrl} is disabled", QueueUrl);
             return;
         }
         
@@ -45,7 +45,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             QueueUrl = QueueUrl
         };
 
-        logger.LogInformation("Listening for events on {queue}", QueueUrl);
+        logger.LogInformation("Listening for events on {Queue}", QueueUrl);
 
         var falloff = 1;
         ReceiveMessageResponse receiveMessageResponse;
