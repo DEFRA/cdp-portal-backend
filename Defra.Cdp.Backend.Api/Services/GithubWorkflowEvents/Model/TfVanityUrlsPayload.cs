@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record TfVanityUrlsPayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }
@@ -11,7 +11,7 @@ public record TfVanityUrlsPayload
 }
 
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record TfVanityUrl
 {
     [JsonPropertyName("service_name")] public string ServiceName { get; init; }

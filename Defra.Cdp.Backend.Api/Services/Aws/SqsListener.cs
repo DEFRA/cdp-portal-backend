@@ -23,6 +23,13 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
 
     public async Task ReadAsync(CancellationToken cancellationToken)
     {
+
+        if (!_enabled)
+        {
+            logger.LogInformation("Listener for {} is disabled", QueueUrl);
+            return;
+        }
+        
 #pragma warning disable CS0618 // Type or member is obsolete        
         var receiveMessageRequest = new ReceiveMessageRequest
         {
@@ -41,16 +48,18 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
         logger.LogInformation("Listening for events on {queue}", QueueUrl);
 
         var falloff = 1;
+        ReceiveMessageResponse receiveMessageResponse;
 
         while (!cancellationToken.IsCancellationRequested)
             try
             {
-                var receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
+                receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
                 if (receiveMessageResponse.Messages.Count == 0) continue;
 
                 foreach (var message in receiveMessageResponse.Messages)
                 {
-
+                    // Ensure we don't cancel the handler mid-request
+                    if (cancellationToken.IsCancellationRequested) break;
                     var innerCancellationToken = CancellationToken.None;
                     
                     try

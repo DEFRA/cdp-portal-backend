@@ -13,6 +13,7 @@ using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.EventHistory;
 using Defra.Cdp.Backend.Api.Services.FeatureToggles;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
@@ -250,6 +251,8 @@ builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsServic
 builder.Services.Configure<LambdaEventListenerOptions>(builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
+builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();
+
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program

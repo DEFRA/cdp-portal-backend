@@ -11,7 +11,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-[Obsolete("Use TenantService")]
+[Obsolete("Use EntityService")]
 public interface ITenantServicesService : IEventsPersistenceService<TenantServicesPayload>, IResourceService
 {
     public Task<List<TenantServiceRecord>> Find(TenantServiceFilter filter, CancellationToken cancellationToken);
@@ -22,7 +22,7 @@ public interface ITenantServicesService : IEventsPersistenceService<TenantServic
 }
 
 
-[Obsolete("Use TenantService")]
+[Obsolete("Use EntityService")]
 public class TenantServicesService(
     IMongoDbClientFactory connectionFactory,
     IRepositoryService repositoryService,

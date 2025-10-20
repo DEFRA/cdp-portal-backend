@@ -3,14 +3,14 @@ using System.Text.Json.Serialization;
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record EnabledVanityUrlsPayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }
     [JsonPropertyName("urls")] public required List<EnabledVanityUrl> Urls { get; init; }
 }
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record EnabledVanityUrl
 {
     [JsonPropertyName("service")] public required string Service { get; init; }

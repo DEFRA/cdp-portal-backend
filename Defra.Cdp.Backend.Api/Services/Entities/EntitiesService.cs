@@ -281,7 +281,6 @@ public class EntitiesService(
             }
             if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype)  && Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
             {
-                _logger.LogInformation("setting {Name} subtype to {SubType} from value {Orig}", kv.Key, entitySubType, kv.Value.Metadata.Subtype);
                 update = update.Set(e => e.SubType, entitySubType);
             }
 

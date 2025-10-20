@@ -15,24 +15,27 @@ public interface IRepositoryService : IResourceService
 
     Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken);
 
-    [Obsolete("Use TenantServer")]
+    [Obsolete("Use entities")]
     Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken);
 
-    [Obsolete("Use TenantServer")]
+    [Obsolete("Use entities")]
     Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken);
 
+    [Obsolete("Use entities type/subtype")]
     Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
         CancellationToken cancellationToken);
 
+    [Obsolete("Use entities type/subtype")]
     Task<List<Repository>> FindRepositoriesByTopic(CdpTopic topic, CancellationToken cancellationToken);
 
+    [Obsolete("Use entities type/subtype")]
     Task<Repository?> FindRepositoryWithTopicById(CdpTopic topic, string id, CancellationToken cancellationToken);
 
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
 
-    [Obsolete("Use TenantServer")]
+    [Obsolete("Use entities")]
     Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken);
 }
 
@@ -87,7 +90,7 @@ public class RepositoryService(
         return repositories;
     }
 
-    [Obsolete("Use TenantService to lookup team ownership")]
+    [Obsolete("Use entity to lookup team ownership")]
     public async Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
         CancellationToken cancellationToken)
     {
@@ -105,7 +108,7 @@ public class RepositoryService(
         return repositories;
     }
 
-    [Obsolete("Use TenantService to lookup team ownership")]
+    [Obsolete("Use entity to lookup team ownership")]
     public async Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken)
     {

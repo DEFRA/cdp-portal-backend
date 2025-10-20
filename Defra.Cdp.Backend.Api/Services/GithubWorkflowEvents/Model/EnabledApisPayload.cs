@@ -3,14 +3,14 @@ using System.Text.Json.Serialization;
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record EnabledApisPayload
 {
     [JsonPropertyName("environment")] public required string Environment { get; init; }
     [JsonPropertyName("apis")] public required List<EnabledApi> Apis { get; init; }
 }
 
-[Obsolete("Use Tenant")]
+[Obsolete("Use Entity")]
 public record EnabledApi
 {
     [JsonPropertyName("service")] public required string Service { get; init; }

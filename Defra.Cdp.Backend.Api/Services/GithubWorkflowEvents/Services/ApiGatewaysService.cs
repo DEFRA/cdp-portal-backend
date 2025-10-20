@@ -18,7 +18,7 @@ public interface IApiGatewaysService
 /**
  * Combines data from EnabledApis and Shuttering
  */
-[Obsolete("Use TenantService")]
+[Obsolete("Use Entities")]
 public class ApiGatewaysService(IMongoDbClientFactory connectionFactory) : IApiGatewaysService
 {
     public async Task<List<ApiGatewayRecord>> FindService(string service, CancellationToken cancellationToken)
