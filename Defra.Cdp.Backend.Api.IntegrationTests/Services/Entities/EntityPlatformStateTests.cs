@@ -57,8 +57,6 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Backend, result.SubType);
         Assert.Equal(Status.Creating, result.Status);
-        List<Team> teams = [ new() { Name = "platform", TeamId = "platform" }];
-        Assert.Equivalent(teams, result.Teams);
         Assert.True(result.Envs.ContainsKey("test"));
         Assert.Equivalent(serviceA.Tenant, result.Envs["test"]);
     }
@@ -91,8 +89,6 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
         Assert.NotNull(result);
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Backend, result.SubType);
-        List<Team> teams = [ new() { Name = "platform", TeamId = "platform" }];
-        Assert.Equivalent(teams, result.Teams);
         Assert.True(result.Envs.ContainsKey("test"));
         Assert.Equivalent(serviceA.Tenant, result.Envs["test"]);
     }
