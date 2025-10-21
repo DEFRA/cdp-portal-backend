@@ -16,8 +16,7 @@ public class EventHistoryRepository<T>
     {
         connectionFactory.InitCappedCollection<BsonDocument>(collectionName, maxDocuments, maxSize);
         _collection = connectionFactory.GetCollection<BsonDocument>(collectionName);
-        var loggerName = GetType().FullName ?? GetType().Name;
-        _logger = loggerFactory.CreateLogger(loggerName);
+        _logger = loggerFactory.CreateLogger<EventHistoryRepository<T>>();
     }
 
     
