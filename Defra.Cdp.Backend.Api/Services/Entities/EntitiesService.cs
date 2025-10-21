@@ -271,8 +271,10 @@ public class EntitiesService(
             var filter = Builders<Entity>.Filter.Eq(f => f.Name, kv.Key);
             var update = Builders<Entity>.Update.Set(e => e.Name, kv.Key)
                 .Set(e => e.Envs[env], kv.Value.Tenant)
-                .Set(e => e.Teams, kv.Value.Metadata?.Teams.Select(t => new Team { Name = t, TeamId = t}) ?? [])
-                .Set(e => e.Metadata, kv.Value.Metadata);
+                .Set(e => e.Metadata, kv.Value.Metadata);    
+                // .Set(e => e.Teams, kv.Value.Metadata?.Teams.Select(t => new Team { Name = t, TeamId = t}) ?? [])
+                // TODO: lookup the team display name from USB once we've turned off the GitHub -> Entity team updater
+                
             
             // Copy the entity types to the root object
             if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
