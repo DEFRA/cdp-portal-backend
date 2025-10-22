@@ -11,7 +11,7 @@ public class EventHistoryFactory(IMongoDbClientFactory connectionFactory, ILogge
 {
     private const long DefaultMaxDocs = 500;
     private const long DefaultMaxSize = 1024 * 1024 * 200;
-    
+
     public EventHistoryRepository<T> Create<T>(long? maxSize = null, long? maxDocs = null)
     {
         var collection = typeof(T).Name.ToLower() + "_events";

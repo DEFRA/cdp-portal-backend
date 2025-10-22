@@ -22,7 +22,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
     public bool PersistEvents => true;
 
     private readonly ILogger<PlatformStateHandler> _logger = loggerFactory.CreateLogger<PlatformStateHandler>();
-    
+
     public async Task HandleAsync(JsonElement message, CancellationToken cancellationToken)
     {
         var header = message.Deserialize<Header>();
@@ -30,14 +30,14 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         {
             throw new Exception("Failed to parse platform state headers");
         }
-        
+
         // Compare received version vs supported version.
         if (header.PayloadVersion != TenantDataVersion.Version)
         {
             // Mismatch doesn't always mean it won't work, but its worth warning.
             _logger.LogWarning("Platform State payload version mismatch got: {ReceivedVersion} wanted {CurrentVersion}. Consider regenerating the C# classes.", header.PayloadVersion, TenantDataVersion.Version);
         }
-        
+
         if (!message.TryGetProperty("payload", out var payload))
         {
             throw new Exception("Platform state payload is missing a payload or was not a string");
@@ -46,16 +46,16 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         // Check if payload is compressed
         var state = header.Compression switch
         {
-            null   => payload.Deserialize<PlatformStatePayload>(),
+            null => payload.Deserialize<PlatformStatePayload>(),
             "gzip" => await DecompressAndDeserialize<PlatformStatePayload>(payload.GetString() ?? ""),
-            _      => throw new Exception($"Unsupported compression {header.Compression}")
+            _ => throw new Exception($"Unsupported compression {header.Compression}")
         };
 
         if (state == null)
         {
             throw new Exception("Platform State payload was null!");
         }
-        
+
         _logger.LogInformation("Payload model version {Version}", header.PayloadVersion);
         _logger.LogInformation("tf-svc-infra serial {Serial}", state.TerraformSerials.Tfsvcinfra);
         _logger.LogInformation("Grafana serial {Serial}", state.TerraformSerials.Tfgrafana);
@@ -74,7 +74,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         }
 
         var compressedBytes = Convert.FromBase64String(base64CompressedData);
-        
+
         using var compressedStream = new MemoryStream(compressedBytes);
         await using var decompressedStream = new GZipStream(compressedStream, CompressionMode.Decompress);
 

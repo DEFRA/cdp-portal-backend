@@ -37,10 +37,10 @@ public sealed class DecommissioningService(
             }
 
             var entityStatus = await entityStatusService.GetEntityStatus(entity.Name, context.CancellationToken);
-            if (!entityStatus!.Entity.Decommissioned.WorkflowsTriggered)
+            if (entityStatus!.Entity.Decommissioned is not { WorkflowsTriggered: true })
             {
-                await selfServiceOpsClient.TriggerDecommissionWorkflows(entity.Name, context.CancellationToken);
-                await entitiesService.DecommissioningWorkflowsTriggered(entity.Name, context.CancellationToken);
+                await selfServiceOpsClient.TriggerDecommissionWorkflow(entity.Name, context.CancellationToken);
+                await entitiesService.DecommissioningWorkflowTriggered(entity.Name, context.CancellationToken);
             }
             else if (entityStatus.Resources.All(r => !r.Value)
                      && (await repositoryService.FindRepositoryById(entity.Name, context.CancellationToken))!.IsArchived
@@ -48,7 +48,6 @@ public sealed class DecommissioningService(
                      { Count: 0 }
                     )
             {
-                await selfServiceOpsClient.DeleteDeploymentFilesAndEcsServices(entity.Name, context.CancellationToken);
                 await entitiesService.DecommissionFinished(entity.Name, context.CancellationToken);
             }
             else

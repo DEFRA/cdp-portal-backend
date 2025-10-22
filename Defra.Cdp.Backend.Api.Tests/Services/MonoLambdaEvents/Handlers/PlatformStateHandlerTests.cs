@@ -17,7 +17,7 @@ public class PlatformStateHandlerTests
 {
     private IEntitiesService entitiesService = Substitute.For<IEntitiesService>();
 
-    private string minimalPayload = 
+    private string minimalPayload =
         """
         { 
             "payload_version": "11111111111111111",
@@ -37,8 +37,8 @@ public class PlatformStateHandlerTests
             "compression": null
         }
         """;
-    
-    private string minimalPayloadCompressed = 
+
+    private string minimalPayloadCompressed =
         """
         { 
             "payload_version": "11111111111111111",
@@ -48,7 +48,7 @@ public class PlatformStateHandlerTests
         }
         """;
 
-    
+
     [Fact]
     public async Task TestDecompressAndDeserialize()
     {
@@ -65,8 +65,8 @@ public class PlatformStateHandlerTests
         await handler.HandleAsync(payload, CancellationToken.None);
         await entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(), Arg.Any<CancellationToken>());
     }
-    
-    
+
+
     [Fact]
     public async Task TestCompressedPayload()
     {

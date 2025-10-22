@@ -23,19 +23,20 @@ public record EntityMatcher(
     {
         var builder = Builders<Entity>.Filter;
         var filter = builder.Empty;
-        
+
         if (Name != null)
         {
             filter &= builder.Eq(t => t.Name, Name);
-        } else if (PartialName != null)
+        }
+        else if (PartialName != null)
         {
             filter &= builder.Regex(t => t.Name, new BsonRegularExpression(PartialName, "i"));
         }
-        
+
         if (TeamId != null)
         {
             filter &= builder.AnyEq(t => t.Metadata!.Teams, TeamId);
-        } 
+        }
         else if (TeamIds != null)
         {
             filter &= builder.AnyIn(t => t.Metadata!.Teams, TeamIds);
@@ -49,12 +50,12 @@ public record EntityMatcher(
         if (Type != null)
         {
             filter &= builder.Eq(t => t.Type, Type);
-        } 
+        }
         else if (Types != null)
         {
             filter &= builder.In(t => t.Type, Types);
         }
-        
+
         if (SubType != null)
         {
             filter &= builder.Eq(t => t.SubType, SubType);
@@ -68,7 +69,7 @@ public record EntityMatcher(
         if (Status != null)
         {
             filter &= builder.Eq(t => t.Status, Status);
-        } 
+        }
         else if (Statuses != null)
         {
             filter &= builder.In(t => t.Status, Statuses);
