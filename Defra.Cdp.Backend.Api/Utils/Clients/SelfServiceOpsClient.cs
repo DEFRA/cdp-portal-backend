@@ -68,18 +68,11 @@ public class SelfServiceOpsClient
         await SendAsyncWithSignature("/auto-deploy-service", JsonSerializer.Serialize(body), HttpMethod.Post, cancellationToken);
     }
 
-    public async Task TriggerDecommissionWorkflows(string entityName, CancellationToken cancellationToken)
+    public async Task TriggerDecommissionWorkflow(string entityName, CancellationToken cancellationToken)
     {
         var httpMethod = HttpMethod.Post;
-        var path = $"/decommission/{entityName}/trigger-workflows";
+        var path = $"/decommission/{entityName}/trigger-workflow";
 
-        await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
-    }
-
-    public async Task DeleteDeploymentFilesAndEcsServices(string entityName, CancellationToken cancellationToken)
-    {
-        var httpMethod = HttpMethod.Post;
-        var path = $"/decommission/{entityName}/delete-deployments-and-ecs";
         await SendAsyncWithSignature(path, null, httpMethod, cancellationToken);
     }
 

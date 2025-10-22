@@ -13,7 +13,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents;
 
 internal class MockHandler : IMonoLambdaEventHandler
 {
-    public int callCount { get; set;  } 
+    public int callCount { get; set; }
     public string EventType => "mock";
     public bool PersistEvents => false;
     public Task HandleAsync(JsonElement message, CancellationToken cancellationToken)
@@ -27,7 +27,7 @@ internal class MockHandler : IMonoLambdaEventHandler
 public class MonoLambdaEventListenerTest
 {
     private IEventHistoryFactory eventHistoryFactory = Substitute.For<IEventHistoryFactory>();
-    
+
     private IAmazonSQS sqs = Substitute.For<IAmazonSQS>();
 
     [Fact]
@@ -37,7 +37,7 @@ public class MonoLambdaEventListenerTest
         IOptions<LambdaEventListenerOptions> config =
             new OptionsWrapper<LambdaEventListenerOptions>(
                 new LambdaEventListenerOptions { QueueUrl = "http://queue.url", Enabled = true });
-        
+
         var listener = new MonoLambdaEventListener(sqs, eventHistoryFactory, config, [mockHandler],
             new NullLogger<MonoLambdaEventListener>());
 
@@ -45,7 +45,7 @@ public class MonoLambdaEventListenerTest
         var messageBody = """
                           { "event_type": "mock"}
                           """;
-        await listener.Handle(new Message { MessageId = "1234", Body = messageBody}, CancellationToken.None);
+        await listener.Handle(new Message { MessageId = "1234", Body = messageBody }, CancellationToken.None);
         Assert.Equal(1, mockHandler.callCount);
     }
 }

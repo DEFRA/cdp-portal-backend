@@ -13,13 +13,15 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
 {
     private CdpTenantAndMetadata serviceA = new CdpTenantAndMetadata
     {
-        Metadata = new TenantMetadata {
+        Metadata = new TenantMetadata
+        {
             Type = nameof(Type.Microservice),
             Subtype = nameof(SubType.Backend),
             Teams = ["platform"],
             ServiceCode = "CDP",
             Created = DateTime.UtcNow.ToString()
-        }, Tenant = new CdpTenant
+        },
+        Tenant = new CdpTenant
         {
             Urls = new Dictionary<string, TenantUrl>
             {
@@ -29,16 +31,16 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
             TenantConfig = new RequestedConfig { Zone = "protected", Mongo = true, Redis = false, }
         }
     };
-    
+
     [Fact]
     public async Task Create_entity_if_missing()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        
+
         Assert.Null(await service.GetEntity("service-a", CancellationToken.None));
 
-        
+
         var state = new PlatformStatePayload
         {
             Version = 1,
@@ -49,7 +51,7 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
                 { "service-a", serviceA }
             }
         };
-        
+
         await service.UpdateEnvironmentState(state, CancellationToken.None);
 
         var result = await service.GetEntity("service-a", CancellationToken.None);
@@ -69,9 +71,9 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
 
         await service.Create(new Entity { Name = "service-a", SubType = SubType.Frontend, Type = Type.Microservice, Status = Status.Created },
             CancellationToken.None);
-        
+
         Assert.NotNull(await service.GetEntity("service-a", CancellationToken.None));
-        
+
         var state = new PlatformStatePayload
         {
             Version = 1,
@@ -82,7 +84,7 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
                 { "service-a", serviceA }
             }
         };
-        
+
         await service.UpdateEnvironmentState(state, CancellationToken.None);
 
         var result = await service.GetEntity("service-a", CancellationToken.None);
@@ -92,13 +94,13 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
         Assert.True(result.Envs.ContainsKey("test"));
         Assert.Equivalent(serviceA.Tenant, result.Envs["test"]);
     }
-    
+
     [Fact]
     public async Task Unsets_existing_env_if_removed_from_payload()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        
+
         var state = new PlatformStatePayload
         {
             Version = 1,
@@ -109,12 +111,12 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
                 { "service-a", serviceA }
             }
         };
-        
+
         await service.UpdateEnvironmentState(state, CancellationToken.None);
         var result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
         Assert.True(result.Envs.ContainsKey("test"));
-        
+
         var nextState = new PlatformStatePayload
         {
             Version = 1,
@@ -122,20 +124,20 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
             Environment = "test",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>()
         };
-        
+
         await service.UpdateEnvironmentState(nextState, CancellationToken.None);
         result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
         Assert.False(result.Envs.ContainsKey("test"));
     }
-    
-        
+
+
     [Fact]
     public async Task Updates_multiple_environments()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        
+
         var testState = new PlatformStatePayload
         {
             Version = 1,
@@ -158,7 +160,7 @@ public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTes
             }
         };
         await service.UpdateEnvironmentState(devState, CancellationToken.None);
-        
+
         var result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
         Assert.True(result.Envs.ContainsKey("test"));

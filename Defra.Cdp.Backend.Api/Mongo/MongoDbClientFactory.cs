@@ -37,15 +37,15 @@ public class MongoDbClientFactory : IMongoDbClientFactory
     {
         if (!_mongoDatabase.ListCollectionNames().ToEnumerable().Contains(collection))
         {
-            _mongoDatabase.CreateCollection(collection, 
+            _mongoDatabase.CreateCollection(collection,
                 new CreateCollectionOptions
                 {
-                    Capped = true, 
-                    MaxDocuments = maxDocuments, 
+                    Capped = true,
+                    MaxDocuments = maxDocuments,
                     MaxSize = maxSize
                 });
         }
-        
+
         return _mongoDatabase.GetCollection<T>(collection);
     }
 }

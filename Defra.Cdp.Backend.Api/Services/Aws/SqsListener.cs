@@ -29,7 +29,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             logger.LogInformation("Listener for {QueueUrl} is disabled", QueueUrl);
             return;
         }
-        
+
 #pragma warning disable CS0618 // Type or member is obsolete        
         var receiveMessageRequest = new ReceiveMessageRequest
         {
@@ -61,14 +61,14 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
                     // Ensure we don't cancel the handler mid-request
                     if (cancellationToken.IsCancellationRequested) break;
                     var innerCancellationToken = CancellationToken.None;
-                    
+
                     try
                     {
                         await HandleMessageAsync(message, innerCancellationToken);
                     }
                     catch (Exception exception)
                     {
-                        
+
                         logger.LogError(exception, "Failed to process message");
                         logger.LogError("Message: {Id} - Exception: {Message}", message.MessageId, exception.Message);
                     }

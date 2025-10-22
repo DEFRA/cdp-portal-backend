@@ -18,10 +18,10 @@ public class EventHistoryRepositoryTest(MongoIntegrationTest fixture) : ServiceT
         var factory = new EventHistoryFactory(mongoFactory, new NullLoggerFactory());
         var service = factory.Create<EventHistoryRepositoryTest>();
 
-        
+
         var msg = JsonDocument.Parse("{\"foo\": 123, \"bar\": \"baz\"}");
         await service.PersistEvent("1234", msg.RootElement, CancellationToken.None);
-        
+
         var colName = nameof(EventHistoryRepositoryTest).ToLower() + "_events";
 
         var col = mongoFactory.GetCollection<BsonDocument>(colName);

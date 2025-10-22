@@ -149,7 +149,7 @@ public class AutoTestRunTriggerService(
         CancellationToken cancellationToken)
     {
         UpsertConfig(suites, trigger);
-        
+
         var filter = Builders<AutoTestRunTrigger>.Filter.Eq(t => t.ServiceName, trigger.ServiceName);
         var update = Builders<AutoTestRunTrigger>.Update
             .Set(t => t.TestSuites, suites)

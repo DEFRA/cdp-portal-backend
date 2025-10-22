@@ -44,10 +44,10 @@ public record Entity
 
     [property: JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
-    
+
     [property: JsonPropertyName("envs")]
     public Dictionary<string, CdpTenant> Envs { get; init; } = new();
-    
+
     [property: JsonPropertyName("metadata")]
     public TenantMetadata? Metadata { get; init; }
 }

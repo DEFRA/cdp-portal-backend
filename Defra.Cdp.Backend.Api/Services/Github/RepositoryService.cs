@@ -141,7 +141,7 @@ public class RepositoryService(
             .Eq(r => r.Id, repository.Id);
         await Collection.ReplaceOneAsync(filter, repository, new ReplaceOptions { IsUpsert = true }, cancellationToken);
     }
-    
+
     public async Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
         CancellationToken cancellationToken)
     {
