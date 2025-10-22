@@ -21,7 +21,7 @@ public class SelfServiceOpsClient
     }
 
     public async Task TriggerTestSuite(string testSuite, UserDetails user, Deployment deployment,
-        TestRunSettings? testRunSettings, CancellationToken cancellationToken)
+        TestRunSettings? testRunSettings, string? profile, CancellationToken cancellationToken)
     {
         const int defaultTestSuiteCpu = 4096; // 4 vCPU
         const int defaultTestSuiteMemory = 8192; // 8 GB
@@ -38,7 +38,8 @@ public class SelfServiceOpsClient
                 DeploymentId = deployment.CdpDeploymentId,
                 Service = deployment.Service,
                 Version = deployment.Version
-            }
+            },
+            profile
         };
         await SendAsyncWithSignature("/trigger-test-suite", JsonSerializer.Serialize(body), HttpMethod.Post, cancellationToken);
     }

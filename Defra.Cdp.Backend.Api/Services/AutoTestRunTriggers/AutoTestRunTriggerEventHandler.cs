@@ -33,38 +33,36 @@ public class AutoTestRunTriggerEventHandler(
         else if (deployment.Status is DeploymentStatus.Failed or DeploymentStatus.Undeployed)
         {
             // SERVICE_DEPLOYMENT_COMPLETED events implicitly mean the deployment is 'running'.
-            // The only exception is if its a undeploy or failed with no rollback.
-            logger.LogWarning("{Id} Deployment {DeploymentId} status is {Status}, not running tests", id, ecsEvent.Detail.DeploymentId, deployment.Status);
+            // The only exception is if it's an undeploy or failed with no rollback.
+            logger.LogWarning("{Id} Deployment {DeploymentId} status is {Status}, not running tests", id,
+                ecsEvent.Detail.DeploymentId, deployment.Status);
         }
         else
         {
             var trigger = await autoTestRunTriggerService.FindForService(deployment.Service, cancellationToken);
-            var environmentTestSuites = trigger?.TestSuites
-                // .Where(kvp => kvp.Value.Contains(deployment.Environment)) //FIXME
-                .Select(kvp => kvp.Key)
-                .ToList() ?? [];
 
-            logger.LogInformation("{Id} Deployment {DeploymentId} found {Count} triggers for {Service} & {Environment}",
-                id, ecsEvent.Detail.DeploymentId, environmentTestSuites.Count, deployment.Service,
-                deployment.Environment);
-
-            foreach (var testSuite in environmentTestSuites)
+            foreach (var (testSuite, runConfigs) in trigger?.TestSuites ?? [])
             {
-                logger.LogInformation("{Id} Triggering test run for {DeploymentId} {TestSuite} in {Environment}",
-                    id,
-                    ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment);
-
-                var testRunSettings =
-                    await testRunService.FindTestRunSettings(testSuite, deployment.Environment, cancellationToken);
-
-                var userDetails = new UserDetails
+                var configsToRunFor = runConfigs.Where(config => config.Environments.Contains(deployment.Environment))
+                    .ToList();
+                foreach (var configToRunFor in configsToRunFor)
                 {
-                    Id = AutoTestRunConstants.AutoTestRunId,
-                    DisplayName = "Auto test runner"
-                };
+                    logger.LogInformation(
+                        "{Id} Triggering test run for {DeploymentId} {TestSuite} in {Environment} with profile {Profile}",
+                        id,
+                        ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment, configToRunFor.Profile);
 
-                await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,
-                    cancellationToken);
+                    var testRunSettings =
+                        await testRunService.FindTestRunSettings(testSuite, deployment.Environment, cancellationToken);
+
+                    var userDetails = new UserDetails
+                    {
+                        Id = AutoTestRunConstants.AutoTestRunId, DisplayName = "Auto test runner"
+                    };
+
+                    await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,
+                        configToRunFor.Profile, cancellationToken);
+                }
             }
         }
     }
