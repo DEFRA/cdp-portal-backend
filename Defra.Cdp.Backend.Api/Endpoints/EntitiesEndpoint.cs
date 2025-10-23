@@ -19,15 +19,7 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{repositoryName}/decommission", StartDecommissioning);
         app.MapPost("/entities/{repositoryName}/tags", TagEntity);
         app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
-        app.MapGet("/update-entities", UpdateEntitiesStatus);
     }
-
-    private static async Task<IResult> UpdateEntitiesStatus(IEntitiesService entitiesService)
-    {
-        await entitiesService.BulkUpdateCreationStatus(CancellationToken.None);
-        return Results.Ok();
-    }
-       
     
     private static async Task<IResult> StartDecommissioning(IEntitiesService entitiesService,
         SelfServiceOpsClient selfServiceOpsClient,

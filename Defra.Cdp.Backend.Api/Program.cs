@@ -96,6 +96,13 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+// Setup Bson Serializers ahead of any mongo services (This will cause problems if the enum is used in an index)
+BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
+BsonSerializer.RegisterSerializer(typeof(SubType), new EnumSerializer<SubType>(BsonType.String));
+BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(BsonType.String));
+BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<ShutteringStatus>(BsonType.String));
+
+
 // Mongo
 builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
     new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri"),
@@ -341,10 +348,5 @@ Task.Run(() =>
         .ApplicationStopping)); // do not await this, we want it to run in the background
 
 #pragma warning restore CS4014
-
-BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
-BsonSerializer.RegisterSerializer(typeof(SubType), new EnumSerializer<SubType>(BsonType.String));
-BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(BsonType.String));
-BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<ShutteringStatus>(BsonType.String));
 
 app.Run();
