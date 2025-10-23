@@ -2,6 +2,7 @@ using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
@@ -36,6 +37,7 @@ public interface IEntitiesService
     Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
 
     Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken);
+    Task BulkUpdateCreationStatus(CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -216,6 +218,7 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(e => e.Name == entityName, update, new UpdateOptions(), cancellationToken);
     }
 
+    [Obsolete("will be replaced in CORE-1614")]
     public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
     {
         var updates = repos.Select(r =>
@@ -261,6 +264,64 @@ public class EntitiesService(
         public List<Team> Teams { get; set; } = [];
     }
 
+    /// <summary>
+    /// Brings all the creation Status fields into line based off the data from the state lambda.
+    /// Consists of 4 updates that check:
+    /// - its current state (to minimize redundant updates if its already correct)
+    /// - if its decomissioned (checks presense of the decom section)
+    /// - if the complete flag for each environment is true or not
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    public async Task BulkUpdateCreationStatus(CancellationToken cancellationToken)
+    {
+        var fb = new FilterDefinitionBuilder<Entity>();
+        var ub = new UpdateDefinitionBuilder<Entity>();
+        
+        var isDecommissioned = fb.Eq(e => e.Decommissioned!.WorkflowsTriggered, true);
+        var isNotDecommissioned = fb.Not(isDecommissioned);
+        var areAllEnvsComplete =
+            fb.And(CdpEnvironments.EnvironmentIds.Select(env => fb.Eq(e => e.Progress[env].Complete, true)));
+        
+        // The environment (and thus status
+        var isRemovedFromAllEnvs = fb.And(
+            CdpEnvironments.EnvironmentIds.Select(env => fb.Exists(e => e.Progress[env], false))
+        );
+        
+        var hasComplete = fb.And(
+            fb.Ne(e => e.Status, Status.Created),
+            isNotDecommissioned,
+            areAllEnvsComplete
+        );
+        
+        var isInProgress = fb.And(
+            fb.Ne(e => e.Status, Status.Creating),
+            isNotDecommissioned,
+            fb.Not(areAllEnvsComplete)
+        );
+
+        var hasBeenDecommissioned = fb.And(
+            fb.Ne(e => e.Status, Status.Decommissioned),
+            isDecommissioned,
+            isRemovedFromAllEnvs 
+        );
+        
+        var isDecommissioning = fb.And(
+            fb.Ne(e => e.Status, Status.Decommissioning),
+            isDecommissioned,
+            fb.Not(isRemovedFromAllEnvs) 
+        );
+        
+        // Bulk update all the statuses that need to change
+        var models = new List<WriteModel<Entity>> {
+            new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.Status, Status.Created)),
+            new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.Status, Status.Creating)),
+            new UpdateManyModel<Entity>(hasBeenDecommissioned, ub.Set(e => e.Status, Status.Decommissioned).Unset(e => e.Metadata)),
+            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.Status, Status.Decommissioning))
+        };
+        var result = await Collection.BulkWriteAsync(models, cancellationToken: cancellationToken);
+        _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
+    }
+    
     public async Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken)
     {
         var env = state.Environment;
@@ -271,11 +332,14 @@ public class EntitiesService(
             var filter = Builders<Entity>.Filter.Eq(f => f.Name, kv.Key);
             var update = Builders<Entity>.Update.Set(e => e.Name, kv.Key)
                 .Set(e => e.Envs[env], kv.Value.Tenant)
-                .Set(e => e.Metadata, kv.Value.Metadata);
-            // .Set(e => e.Teams, kv.Value.Metadata?.Teams.Select(t => new Team { Name = t, TeamId = t}) ?? [])
-            // TODO: lookup the team display name from USB once we've turned off the GitHub -> Entity team updater
-
-
+                .Set(e => e.Progress[env], kv.Value.Progress);
+            
+            // Update the metadata if its present.
+            if (kv.Value.Metadata != null)
+            {
+                update.Set(e => e.Metadata, kv.Value.Metadata);
+            }
+                
             // Copy the entity types to the root object
             if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
             {
@@ -300,6 +364,7 @@ public class EntitiesService(
             Builders<Entity>.Filter.Nin(f => f.Name, state.Tenants.Keys),
             Builders<Entity>.Update
                 .Unset(e => e.Envs[env])
+                .Unset(e => e.Progress[env])
         )
         { IsUpsert = false };
         models.Add(removeMissing);

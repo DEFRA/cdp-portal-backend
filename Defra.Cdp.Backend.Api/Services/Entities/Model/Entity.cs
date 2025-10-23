@@ -50,6 +50,10 @@ public record Entity
 
     [property: JsonPropertyName("metadata")]
     public TenantMetadata? Metadata { get; init; }
+    
+    [property: JsonPropertyName("progress")]
+    public Dictionary<string, CreationProgress> Progress { get; init; } = new();
+    
 }
 
 public record Decommission
@@ -98,5 +102,6 @@ public enum Status
     Creating,
     Created,
     Decommissioning,
-    Decommissioned
+    Decommissioned,
+    Missing
 }
