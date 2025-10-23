@@ -12,11 +12,8 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public interface IEntitiesService
 {
-    Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
-        CancellationToken cancellationToken);
-
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
-
+Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken);
     Task<EntitiesService.EntityFilters>
         GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
 
@@ -52,47 +49,22 @@ public class EntitiesService(
         IndexKeysDefinitionBuilder<Entity> builder)
     {
         return [
-            new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true })
+            new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true }),
+            new CreateIndexModel<Entity>(builder.Ascending(s => s.Status), new CreateIndexOptions()),
+            new CreateIndexModel<Entity>(builder.Ascending(s => s.Type), new CreateIndexOptions())
         ];
     }
 
+    public async Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken)
+    {
+        var pb = Builders<Entity>.Projection;
+        var removeEnvs = pb.Combine(pb.Exclude(e => e.Envs), pb.Exclude(e => e.Progress));
+        return await Collection.Find(matcher.Match()).Project<Entity>(removeEnvs).ToListAsync(cancellationToken);        
+    }
+    
     public async Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken)
     {
         return await Collection.Find(matcher.Match()).ToListAsync(cancellationToken);
-    }
-
-    [Obsolete("Use EntityMatcher variant")]
-    public async Task<List<Entity>> GetEntities(Type[] types, string? partialName, string[] teamIds, Status[] statuses,
-        CancellationToken cancellationToken)
-    {
-        var builder = Builders<Entity>.Filter;
-        var filter = builder.Empty;
-
-        if (types.Length > 0)
-        {
-            filter = builder.In(e => e.Type, types);
-        }
-
-        if (teamIds.Length > 0)
-        {
-            var teamFilter = builder.ElemMatch(e => e.Teams, t => t.TeamId != null && teamIds.Contains(t.TeamId));
-            filter &= teamFilter;
-        }
-
-        if (!string.IsNullOrWhiteSpace(partialName))
-        {
-            var partialServiceFilter =
-                builder.Regex(e => e.Name, new BsonRegularExpression(partialName, "i"));
-            filter &= partialServiceFilter;
-        }
-
-        if (statuses.Length > 0)
-        {
-            var statusFilter = builder.In(e => e.Status, statuses);
-            filter &= statusFilter;
-        }
-
-        return await Collection.Find(filter).ToListAsync(cancellationToken);
     }
 
     public async Task<EntityFilters> GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken)
@@ -153,7 +125,7 @@ public class EntitiesService(
                     }
                 })
         };
-
+        
         var result = await Collection.Aggregate<BsonDocument>(pipeline, cancellationToken: cancellationToken)
             .FirstAsync(cancellationToken);
 
@@ -173,6 +145,7 @@ public class EntitiesService(
         await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
     }
 
+    [Obsolete("Now handled by BulkUpdateCreationStatus")]
     public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
@@ -239,7 +212,7 @@ public class EntitiesService(
 
     public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
     {
-        return await GetEntities(new EntityMatcher { Status = Status.Decommissioning }, cancellationToken);
+        return await GetEntitiesWithoutEnvState(new EntityMatcher { Status = Status.Decommissioning }, cancellationToken);
     }
 
     public async Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken)
@@ -249,6 +222,7 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
+    [Obsolete("Now handled by BulkUpdateCreationStatus")]
     public async Task DecommissionFinished(string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
@@ -315,8 +289,13 @@ public class EntitiesService(
         var models = new List<WriteModel<Entity>> {
             new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.Status, Status.Created)),
             new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.Status, Status.Creating)),
-            new UpdateManyModel<Entity>(hasBeenDecommissioned, ub.Set(e => e.Status, Status.Decommissioned).Unset(e => e.Metadata)),
-            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.Status, Status.Decommissioning))
+            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.Status, Status.Decommissioning)),
+            new UpdateManyModel<Entity>(hasBeenDecommissioned, ub
+                .Set(e => e.Status, Status.Decommissioned)
+                .Set(e => e.Decommissioned!.Finished, DateTime.UtcNow)
+                .Set(e => e.Status, Status.Decommissioned)
+                .Unset(e => e.Metadata)
+            )
         };
         var result = await Collection.BulkWriteAsync(models, cancellationToken: cancellationToken);
         _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
@@ -338,16 +317,15 @@ public class EntitiesService(
             if (kv.Value.Metadata != null)
             {
                 update.Set(e => e.Metadata, kv.Value.Metadata);
-            }
-                
-            // Copy the entity types to the root object
-            if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
-            {
-                update = update.Set(e => e.Type, entityType);
-            }
-            if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype) && Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
-            {
-                update = update.Set(e => e.SubType, entitySubType);
+                // Copy the entity types to the root object
+                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
+                {
+                    update = update.Set(e => e.Type, entityType);
+                }
+                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype) && Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
+                {
+                    update = update.Set(e => e.SubType, entitySubType);
+                }
             }
 
             var m = new UpdateOneModel<Entity>(

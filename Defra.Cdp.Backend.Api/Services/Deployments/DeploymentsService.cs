@@ -256,7 +256,7 @@ public class DeploymentsService(
 
         if (query.Favourites?.Length > 0)
         {
-            var entities = await entitiesService.GetEntities([Type.Microservice], null, query.Favourites, [Status.Created], ct);
+            var entities = await entitiesService.GetEntitiesWithoutEnvState(new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites }, ct);
             var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.Service)).ToList();
         }
@@ -314,7 +314,7 @@ public class DeploymentsService(
         //  we may be able to do this in an easier way in the UI
         if (query.Favourites?.Length > 0)
         {
-            var entities = await entitiesService.GetEntities([Type.Microservice], null, query.Favourites, [Status.Created], ct);
+            var entities = await entitiesService.GetEntitiesWithoutEnvState(new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites }, ct);
             var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d =>
                 servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service)

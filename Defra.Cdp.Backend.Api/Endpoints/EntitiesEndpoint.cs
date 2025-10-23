@@ -19,8 +19,16 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{repositoryName}/decommission", StartDecommissioning);
         app.MapPost("/entities/{repositoryName}/tags", TagEntity);
         app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
+        app.MapGet("/update-entities", UpdateEntitiesStatus);
     }
 
+    private static async Task<IResult> UpdateEntitiesStatus(IEntitiesService entitiesService)
+    {
+        await entitiesService.BulkUpdateCreationStatus(CancellationToken.None);
+        return Results.Ok();
+    }
+       
+    
     private static async Task<IResult> StartDecommissioning(IEntitiesService entitiesService,
         SelfServiceOpsClient selfServiceOpsClient,
         string repositoryName,
@@ -48,10 +56,21 @@ public static class EntitiesEndpoint
         [FromQuery(Name = "status")] Status[] statuses,
         [FromQuery] string? name,
         IEntitiesService entitiesService, CancellationToken cancellationToken,
-        [FromQuery] bool includeDecommissioned = false)
+        [FromQuery] bool includeDecommissioned = false,
+        [FromQuery] bool summary = false
+    )
     {
-        var entities = await entitiesService.GetEntities(types, name, teamIds, statuses, cancellationToken);
-        return Results.Ok(entities);
+        var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name };
+        if (summary)
+        {
+            var entities = await entitiesService.GetEntitiesWithoutEnvState(matcher, cancellationToken);
+            return Results.Ok(entities);
+        }
+        else
+        {
+            var entities = await entitiesService.GetEntities(matcher, cancellationToken);
+            return Results.Ok(entities);
+        }
     }
 
     private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type[] types,

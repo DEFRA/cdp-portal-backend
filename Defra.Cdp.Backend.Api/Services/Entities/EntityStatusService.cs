@@ -60,6 +60,7 @@ public class EntityStatusService(
         return allTrue ? Status.Created : Status.Creating;
     }
 
+    [Obsolete("replaced by BulkUpdateCreationStatus")]
     public async Task UpdatePendingEntityStatuses(CancellationToken cancellationToken)
     {
         var creatingEntities = await entitiesService.GetCreatingEntities(cancellationToken);
