@@ -58,6 +58,7 @@ public sealed class PopulateGithubRepositories(
             finally
             {
                 await mongoLock.Unlock(LockName);
+                // TODO: remove this when we switch over to the new state status
                 await entityStatusService.UpdatePendingEntityStatuses(context.CancellationToken);
             }
         }
