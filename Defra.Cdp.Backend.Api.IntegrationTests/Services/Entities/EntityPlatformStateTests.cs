@@ -9,9 +9,9 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
-public class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
-    private CdpTenantAndMetadata serviceA = new CdpTenantAndMetadata
+    private CdpTenantAndMetadata serviceA = new()
     {
         Metadata = new TenantMetadata
         {

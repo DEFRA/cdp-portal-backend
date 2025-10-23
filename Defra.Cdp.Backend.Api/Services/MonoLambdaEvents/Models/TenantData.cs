@@ -142,6 +142,9 @@ public class CdpTenantAndMetadata
     [property: JsonPropertyName("metadata")]
     public TenantMetadata? Metadata { get; set; }
 
+    [property: JsonPropertyName("progress")]
+    public CreationProgress Progress { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -149,6 +152,17 @@ public class CdpTenantNginx
 {
     [property: JsonPropertyName("servers")]
     public Dictionary<string, NginxServer> Servers { get; set; }
+
+}
+
+[BsonIgnoreExtraElements]
+public class CreationProgress
+{
+    [property: JsonPropertyName("steps")]
+    public Dictionary<string, bool> Steps { get; set; }
+
+    [property: JsonPropertyName("complete")]
+    public bool Complete { get; set; }
 
 }
 
@@ -521,8 +535,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "d4d8f10a749184a17d57b32e09693b0e381a51ec67744839a7c2a88a39f21bfd";
+    public static readonly string Version = "4680d79b8597bbbb587d73aecd1bd82d95b752f8919f212a25f5619bed092085";
 }
-
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.

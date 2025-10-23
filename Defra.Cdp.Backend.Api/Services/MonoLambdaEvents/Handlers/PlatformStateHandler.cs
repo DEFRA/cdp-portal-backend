@@ -64,6 +64,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         _logger.LogInformation("WAF serial {Serial}", state.TerraformSerials.Tfwaf);
 
         await entitiesService.UpdateEnvironmentState(state, cancellationToken);
+        await entitiesService.BulkUpdateCreationStatus(cancellationToken);
     }
 
     public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData) where T : new()
