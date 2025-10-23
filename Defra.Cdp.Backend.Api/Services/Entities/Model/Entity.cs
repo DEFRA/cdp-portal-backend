@@ -102,6 +102,5 @@ public enum Status
     Creating,
     Created,
     Decommissioning,
-    Decommissioned,
-    Missing
+    Decommissioned
 }

@@ -12,24 +12,26 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public interface IEntitiesService
 {
+    Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
-Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken);
+    Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken);
+    Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
+    Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
+
     Task<EntitiesService.EntityFilters>
         GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
 
     Task Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
 
-    Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
-        CancellationToken cancellationToken);
-
-    Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
-    Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
 
     Task AddTag(string entityName, string tag, CancellationToken cancellationToken);
     Task RemoveTag(string entityName, string tag, CancellationToken cancellationToken);
+
     Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
-    Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
+
+    Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
+        CancellationToken cancellationToken);
     Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken);
     Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
 
@@ -51,22 +53,56 @@ public class EntitiesService(
         return [
             new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true }),
             new CreateIndexModel<Entity>(builder.Ascending(s => s.Status), new CreateIndexOptions()),
-            new CreateIndexModel<Entity>(builder.Ascending(s => s.Type), new CreateIndexOptions())
+            new CreateIndexModel<Entity>(builder.Ascending(s => s.Type), new CreateIndexOptions()),
+            new CreateIndexModel<Entity>(Builders<Entity>.IndexKeys.Ascending("teams.teamId"), new CreateIndexOptions())
         ];
     }
 
-    public async Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken)
+    /// <summary>
+    /// Gets a single entity by name.
+    /// </summary>
+    /// <param name="entityName"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken)
     {
-        var pb = Builders<Entity>.Projection;
-        var removeEnvs = pb.Combine(pb.Exclude(e => e.Envs), pb.Exclude(e => e.Progress));
-        return await Collection.Find(matcher.Match()).Project<Entity>(removeEnvs).ToListAsync(cancellationToken);        
+        return await Collection.Find(e => e.Name == entityName)
+            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Returns a list of all entities that match the matcher.
+    /// Note, the payload can be quite large when unfiltered.
+    /// </summary>
+    /// <param name="matcher"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken)
     {
         return await Collection.Find(matcher.Match()).ToListAsync(cancellationToken);
     }
+    
+    /// <summary>
+    /// Same as GetEntities except it excludes the large `env` section. Useful when you need a list of entities
+    /// but not the full details.
+    /// </summary>
+    /// <param name="matcher"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken)
+    {
+        var pb = Builders<Entity>.Projection;
+        var removeEnvs = pb.Exclude(e => e.Envs);
+        return await Collection.Find(matcher.Match()).Project<Entity>(removeEnvs).ToListAsync(cancellationToken);        
+    }
 
+    /// <summary>
+    /// Provides values for portals dropdown filters.
+    /// </summary>
+    /// <param name="types"></param>
+    /// <param name="statuses"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<EntityFilters> GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken)
     {
         var filters = new Dictionary<string, BsonDocument>();
@@ -168,12 +204,6 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public async Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken)
-    {
-        return await Collection.Find(e => e.Name == entityName)
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-    }
-
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
         return await GetEntities(new EntityMatcher { Status = Status.Creating }, cancellationToken);
@@ -239,11 +269,8 @@ public class EntitiesService(
     }
 
     /// <summary>
-    /// Brings all the creation Status fields into line based off the data from the state lambda.
-    /// Consists of 4 updates that check:
-    /// - its current state (to minimize redundant updates if its already correct)
-    /// - if its decomissioned (checks presense of the decom section)
-    /// - if the complete flag for each environment is true or not
+    /// Updates the status of all entities based on their 'Progress' data for each env.
+    /// Takes into account decommissioned services as well. 
     /// </summary>
     /// <param name="cancellationToken"></param>
     public async Task BulkUpdateCreationStatus(CancellationToken cancellationToken)
@@ -251,7 +278,7 @@ public class EntitiesService(
         var fb = new FilterDefinitionBuilder<Entity>();
         var ub = new UpdateDefinitionBuilder<Entity>();
         
-        var isDecommissioned = fb.Eq(e => e.Decommissioned!.WorkflowsTriggered, true);
+        var isDecommissioned = fb.Exists(e => e.Decommissioned!.Started);
         var isNotDecommissioned = fb.Not(isDecommissioned);
         var areAllEnvsComplete =
             fb.And(CdpEnvironments.EnvironmentIds.Select(env => fb.Eq(e => e.Progress[env].Complete, true)));
@@ -301,6 +328,12 @@ public class EntitiesService(
         _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
     }
     
+    /// <summary>
+    /// Updates entities based on a PlatformStatePayload for a given environment.
+    /// When the entity does not exist it will create the entity using the data available.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="cancellationToken"></param>
     public async Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken)
     {
         var env = state.Environment;
@@ -327,14 +360,8 @@ public class EntitiesService(
                     update = update.Set(e => e.SubType, entitySubType);
                 }
             }
-
-            var m = new UpdateOneModel<Entity>(
-                filter,
-                update
-            )
-            { IsUpsert = true };
-
-            models.Add(m);
+            
+            models.Add(new UpdateOneModel<Entity>(filter, update) {  IsUpsert = true });
         }
 
         // Remove environment for any service not in the list
