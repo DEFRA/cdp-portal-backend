@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Logging.Abstractions;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -165,5 +166,46 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
         Assert.NotNull(result);
         Assert.True(result.Envs.ContainsKey("test"));
         Assert.True(result.Envs.ContainsKey("dev"));
+    }
+    
+    [Fact]
+    public async Task Tenant_with_limited_environments_has_correct_status()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
+
+        var testState = new PlatformStatePayload
+        {
+            Version = 1,
+            TerraformSerials = new Serials(),
+            Environment = "management",
+            Tenants = new Dictionary<string, CdpTenantAndMetadata>
+            {
+                { "service-a",  new CdpTenantAndMetadata {
+                        Tenant = serviceA.Tenant,
+                        Metadata = new TenantMetadata
+                        {
+                            Type = nameof(Type.Microservice),
+                            Subtype = nameof(SubType.Backend),
+                            Teams = ["platform"],
+                            ServiceCode = "CDP",
+                            Created = DateTime.UtcNow.ToString(),
+                            Environments = ["management"]
+                        },
+                        Progress = new CreationProgress
+                        {
+                            Complete = true
+                        }
+                    }
+                }
+            }
+        };
+        await service.UpdateEnvironmentState(testState, CancellationToken.None);
+        await service.BulkUpdateCreationStatus(CancellationToken.None);
+        var result = await service.GetEntity("service-a", CancellationToken.None);
+        Assert.NotNull(result);
+        Assert.Equal(CdpEnvironments.EnvironmentIds.Length, result.Progress.Count);
+        Assert.True(result.Progress.Values.All(v => v.Complete));
+        Assert.Equal(Status.Created, result.Status);
     }
 }
