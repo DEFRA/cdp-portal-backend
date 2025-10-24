@@ -327,7 +327,7 @@ public class EntitiesService(
         var result = await Collection.BulkWriteAsync(models, cancellationToken: cancellationToken);
         _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
     }
-    
+
     /// <summary>
     /// Updates entities based on a PlatformStatePayload for a given environment.
     /// When the entity does not exist it will create the entity using the data available.
@@ -349,8 +349,7 @@ public class EntitiesService(
             // Update the metadata if its present.
             if (kv.Value.Metadata != null)
             {
-                update.Set(e => e.Metadata, kv.Value.Metadata);
-                // Copy the entity types to the root object
+                update = update.Set(e => e.Metadata, kv.Value.Metadata);
                 if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
                 {
                     update = update.Set(e => e.Type, entityType);
@@ -358,6 +357,19 @@ public class EntitiesService(
                 if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype) && Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
                 {
                     update = update.Set(e => e.SubType, entitySubType);
+                }
+            }
+
+            // Fix the progress for tenants that aren't deployed to all envs so Status is calculated correctly.
+            if (kv.Value.Metadata?.Environments != null)
+            {
+                var restrictedEnvs = kv.Value.Metadata.Environments;
+                foreach (var envToSkip in CdpEnvironments.EnvironmentIds)
+                {
+                    if (!restrictedEnvs.Contains(envToSkip))
+                    {
+                        update = update.Set(e => e.Progress[envToSkip].Complete, true);
+                    }
                 }
             }
             

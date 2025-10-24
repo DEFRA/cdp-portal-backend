@@ -163,7 +163,7 @@ public class CreationProgress
 
     [property: JsonPropertyName("complete")]
     public bool Complete { get; set; }
-
+   
 }
 
 [BsonIgnoreExtraElements]
@@ -428,6 +428,9 @@ public class TenantMetadata
     [property: JsonPropertyName("teams")]
     public List<string> Teams { get; set; }
 
+    [property: JsonPropertyName("environments")]
+    public List<string>? Environments { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -535,7 +538,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "4680d79b8597bbbb587d73aecd1bd82d95b752f8919f212a25f5619bed092085";
+    public static readonly string Version = "2ac3e38cb47b91dbb40d88316c10083dffd09708451ec2e3a522fb450d01d60d";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.

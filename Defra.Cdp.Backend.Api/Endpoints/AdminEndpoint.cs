@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -11,8 +12,20 @@ public static class AdminEndpoint
     {
         app.MapPost($"{AdminBaseRoute}/backfill", Backfill);
         app.MapPost($"{AdminBaseRoute}/scan", RescanImageRequest);
+        app.MapGet("/admin/entity/status", UpdateStatus);
     }
 
+    /// <summary>
+    /// Debugging endpoint: Forces an update of the entity creation status.
+    /// </summary>
+    /// <param name="entitiesService"></param>
+    /// <returns></returns>
+    private static async Task<IResult> UpdateStatus(IEntitiesService entitiesService)
+    {
+        await entitiesService.BulkUpdateCreationStatus(CancellationToken.None);
+        return Results.Ok();
+    }
+        
     // POST /admin/backfill
     private static async Task<IResult> Backfill(EcsEventListener eventListener, IArtifactScanner scanner,
         ILoggerFactory loggerFactory, CancellationToken cancellationToken)
