@@ -8,6 +8,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
+[Obsolete("Use Entities")]
 public interface IApiGatewaysService
 {
     Task<List<ApiGatewayRecord>> FindService(string service, CancellationToken cancellationToken);

@@ -12,7 +12,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 [Obsolete("Use EntityService")]
 public interface INginxVanityUrlsService : IEventsPersistenceService<NginxVanityUrlsPayload>, IResourceService;
 
-
+[Obsolete("Use EntityService")]
 public class NginxVanityUrlsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<NginxVanityUrlsRecord>(connectionFactory,
         CollectionName, loggerFactory), INginxVanityUrlsService

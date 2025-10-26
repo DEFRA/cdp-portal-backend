@@ -53,16 +53,8 @@ public static class EntitiesEndpoint
     )
     {
         var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name };
-        if (summary)
-        {
-            var entities = await entitiesService.GetEntitiesWithoutEnvState(matcher, cancellationToken);
-            return Results.Ok(entities);
-        }
-        else
-        {
-            var entities = await entitiesService.GetEntities(matcher, cancellationToken);
-            return Results.Ok(entities);
-        }
+        var options = new EntitySearchOptions { Summary = summary };
+        return Results.Ok(await entitiesService.GetEntities(matcher, options, cancellationToken));
     }
 
     private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type[] types,

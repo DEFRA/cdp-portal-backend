@@ -18,9 +18,8 @@ internal class Header
 public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
 {
     public string EventType => "platform_state";
-
     public bool PersistEvents => true;
-
+    
     private readonly ILogger<PlatformStateHandler> _logger = loggerFactory.CreateLogger<PlatformStateHandler>();
 
     public async Task HandleAsync(JsonElement message, CancellationToken cancellationToken)
@@ -68,7 +67,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         // await entitiesService.BulkUpdateCreationStatus(cancellationToken);
     }
 
-    public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData) where T : new()
+    public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData)
     {
         if (string.IsNullOrEmpty(base64CompressedData))
         {
