@@ -12,6 +12,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 [Obsolete("Use EntityService")]
 public interface INginxUpstreamsService : IEventsPersistenceService<NginxUpstreamsPayload>, IResourceService;
 
+[Obsolete("Use EntityService")]
 public class NginxUpstreamsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<NginxUpstreamsRecord>(connectionFactory,
         CollectionName, loggerFactory), INginxUpstreamsService

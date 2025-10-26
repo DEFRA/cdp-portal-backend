@@ -27,7 +27,6 @@ using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Defra.Cdp.Backend.Api.Services.TenantStatus;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
@@ -201,7 +200,6 @@ builder.Services.AddSingleton<ITfVanityUrlsService, TfVanityUrlsService>();
 builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
 builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
 builder.Services.AddSingleton<IApiGatewaysService, ApiGatewaysService>();
-builder.Services.AddSingleton<ITenantStatusService, TenantStatusService>();
 builder.Services.AddSingleton<ITenantRdsDatabasesService, TenantRdsDatabasesService>();
 
 // Proxy
@@ -296,7 +294,6 @@ app.MapEntitiesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
 app.MapAdminEndpoint();
-app.MapServiceStatusEndpoint();
 app.MapHealthChecks("/health");
 app.MapAutoDeploymentTriggerEndpoint();
 app.MapAutoTestRunTriggerEndpoint();

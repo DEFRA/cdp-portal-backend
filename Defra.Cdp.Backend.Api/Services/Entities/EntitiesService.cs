@@ -1,9 +1,11 @@
+using System.Linq.Expressions;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
@@ -14,7 +16,7 @@ public interface IEntitiesService
 {
     Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
-    Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken);
+    Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options, CancellationToken cancellationToken);
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
 
@@ -50,7 +52,8 @@ public class EntitiesService(
     protected override List<CreateIndexModel<Entity>> DefineIndexes(
         IndexKeysDefinitionBuilder<Entity> builder)
     {
-        return [
+        return
+        [
             new CreateIndexModel<Entity>(builder.Ascending(s => s.Name), new CreateIndexOptions { Unique = true }),
             new CreateIndexModel<Entity>(builder.Ascending(s => s.Status), new CreateIndexOptions()),
             new CreateIndexModel<Entity>(builder.Ascending(s => s.Type), new CreateIndexOptions()),
@@ -69,35 +72,58 @@ public class EntitiesService(
         return await Collection.Find(e => e.Name == entityName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
-    
+
     /// <summary>
-    /// Returns a list of all entities that match the matcher.
-    /// Note, the payload can be quite large when unfiltered.
+    /// Returns a list of all entities that match the matcher with default options.
     /// </summary>
     /// <param name="matcher"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken)
     {
-        return await Collection.Find(matcher.Match()).ToListAsync(cancellationToken);
-    }
-    
-    /// <summary>
-    /// Same as GetEntities except it excludes the large `env` section. Useful when you need a list of entities
-    /// but not the full details.
-    /// </summary>
-    /// <param name="matcher"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task<List<Entity>> GetEntitiesWithoutEnvState(EntityMatcher matcher, CancellationToken cancellationToken)
-    {
-        var pb = Builders<Entity>.Projection;
-        var removeEnvs = pb.Exclude(e => e.Envs);
-        return await Collection.Find(matcher.Match()).Project<Entity>(removeEnvs).ToListAsync(cancellationToken);        
+        return await GetEntities(matcher, new EntitySearchOptions(), cancellationToken);
     }
 
     /// <summary>
-    /// Provides values for portals dropdown filters.
+    /// Returns a list of all entities that match the matcher.
+    /// Performance Note: unfiltered the payload will be quite large, consider setting `options.Summary` to reduce the
+    /// size of the payload. 
+    /// </summary>
+    /// <param name="matcher"></param>
+    /// <param name="options"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options,
+        CancellationToken cancellationToken)
+    {
+        var sortBuilder = Builders<Entity>.Sort;
+        var projectionBuilder = Builders<Entity>.Projection;
+
+        var sortDefinition = sortBuilder.Ascending(e => e.Name);
+        if (options.SortBy == EntitySortBy.Team)
+        {
+            sortDefinition = sortBuilder.Ascending(e => e.Teams);
+        }
+
+        ProjectionDefinition<Entity, Entity> projectDefinition = projectionBuilder.Exclude(e => e.Id);
+        if (options.Summary)
+        {
+            projectDefinition = projectionBuilder.Combine(
+                projectionBuilder.Exclude(e => e.Id),
+                projectionBuilder.Exclude(e => e.Envs));
+        }
+
+        return await Collection
+            .Find(matcher.Match())
+            .Sort(sortDefinition)
+            .Project(projectDefinition)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Original version used an aggregation to perform this in a single pass.
+    /// Performance wise there's not a massive difference between doing it as a find/project
+    /// and grouping in code, while improving readability.
     /// </summary>
     /// <param name="types"></param>
     /// <param name="statuses"></param>
@@ -105,76 +131,47 @@ public class EntitiesService(
     /// <returns></returns>
     public async Task<EntityFilters> GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken)
     {
-        var filters = new Dictionary<string, BsonDocument>();
-
-        if (types.Length > 0)
-        {
-            var typeValues = new BsonArray(types.Select(t => t.ToString()));
-            filters["type"] = new BsonDocument("$in", typeValues);
-        }
-
-        if (statuses.Length > 0)
-        {
-            var statusValues = new BsonArray(statuses.Select(s => s.ToString()));
-            filters["status"] = new BsonDocument("$in", statusValues);
-        }
-
-        var pipeline = new[]
-        {
-            new BsonDocument("$match",
-                new BsonDocument
-                {
-                    filters
-                }),
-            new BsonDocument("$facet",
-                new BsonDocument
-                {
-                    {
-                        "uniqueNames",
-                        new BsonArray
-                        {
-                            new BsonDocument("$group", new BsonDocument { { "_id", "$name" } }),
-                            new BsonDocument("$project", new BsonDocument { { "_id", 0 }, { "name", "$_id" } })
-                        }
-                    },
-                    {
-                        "uniqueTeams", new BsonArray
-                        {
-                            new BsonDocument("$unwind", "$teams"),
-                            new BsonDocument("$group",
-                                new BsonDocument
-                                {
-                                    {
-                                        "_id",
-                                        new BsonDocument
-                                            {
-                                                { "teamId", "$teams.teamId" }, { "teamName", "$teams.name" }
-                                            }
-                                    }
-                                }),
-                            new BsonDocument("$project",
-                                new BsonDocument
-                                {
-                                    { "_id", 0 }, { "teamId", "$_id.teamId" }, { "teamName", "$_id.teamName" }
-                                })
-                        }
-                    }
-                })
-        };
+        var matcher = new EntityMatcher { Types = types, Statuses = statuses };
+        var pb = Builders<Entity>.Projection;
+        var projection = pb.Combine(
+            pb.Include(e => e.Name),
+            pb.Include(e => e.Teams),
+            pb.Exclude(e => e.Id)
+        );
         
-        var result = await Collection.Aggregate<BsonDocument>(pipeline, cancellationToken: cancellationToken)
-            .FirstAsync(cancellationToken);
+        var results = await Collection
+            .Find(matcher.Match())
+            .Project<EntityFiltersProjection>(projection)
+            .ToListAsync(cancellationToken);
+        
+        var names = results
+            .Select(doc => doc.Name)
+            .Distinct()
+            .ToList();
+        
+        var teams = results
+            .SelectMany(doc => doc.Teams ?? [])
+            .DistinctBy(t => t.TeamId)
+            .ToList();
+        
+        names.Sort();
+        teams.Sort( (a,b) => string.Compare(a.TeamId, b.TeamId, StringComparison.OrdinalIgnoreCase));
 
-        return new EntityFilters
-        {
-            Entities = result["uniqueNames"].AsBsonArray
-                .Select(n => n["name"].AsString)
-                .ToList(),
-            Teams = result["uniqueTeams"].AsBsonArray
-                .Select(t => new Team { TeamId = t["teamId"].AsString, Name = t["teamName"].AsString })
-                .ToList()
-        };
+        return new EntityFilters { Teams = teams, Entities = names };
     }
+
+    private class EntityFiltersProjection
+    {
+        public required string Name { get; set; }
+        public IEnumerable<Team>? Teams { get; set; }
+    }
+    
+    public class EntityFilters
+    {
+        public List<string> Entities { get; set; } = [];
+        public List<Team> Teams { get; set; } = [];
+    }
+
 
     public async Task Create(Entity entity, CancellationToken cancellationToken)
     {
@@ -206,9 +203,14 @@ public class EntitiesService(
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await GetEntities(new EntityMatcher { Status = Status.Creating }, cancellationToken);
+        return await GetEntities(new EntityMatcher { Status = Status.Creating }, new EntitySearchOptions { Summary = true}, cancellationToken);
     }
 
+    public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
+    {
+        return await GetEntities(new EntityMatcher { Status = Status.Decommissioning }, new EntitySearchOptions{ Summary = true }, cancellationToken);
+    }
+    
     public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
     {
         var update = new UpdateDefinitionBuilder<Entity>().AddToSet(e => e.Tags, tag);
@@ -240,11 +242,6 @@ public class EntitiesService(
         await Collection.BulkWriteAsync(updates, new BulkWriteOptions(), cancellationToken);
     }
 
-    public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
-    {
-        return await GetEntitiesWithoutEnvState(new EntityMatcher { Status = Status.Decommissioning }, cancellationToken);
-    }
-
     public async Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
@@ -262,11 +259,7 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    public class EntityFilters
-    {
-        public List<string> Entities { get; set; } = [];
-        public List<Team> Teams { get; set; } = [];
-    }
+
 
     /// <summary>
     /// Updates the status of all entities based on their 'Progress' data for each env.
@@ -280,7 +273,7 @@ public class EntitiesService(
         
         var isDecommissioned = fb.Exists(e => e.Decommissioned!.Started);
         var isNotDecommissioned = fb.Not(isDecommissioned);
-        var areAllEnvsComplete =
+        var isCompleteInAllEnvs =
             fb.And(CdpEnvironments.EnvironmentIds.Select(env => fb.Eq(e => e.Progress[env].Complete, true)));
         
         // The environment (and thus status
@@ -291,13 +284,13 @@ public class EntitiesService(
         var hasComplete = fb.And(
             fb.Ne(e => e.Status, Status.Created),
             isNotDecommissioned,
-            areAllEnvsComplete
+            isCompleteInAllEnvs
         );
         
         var isInProgress = fb.And(
             fb.Ne(e => e.Status, Status.Creating),
             isNotDecommissioned,
-            fb.Not(areAllEnvsComplete)
+            fb.Not(isCompleteInAllEnvs)
         );
 
         var hasBeenDecommissioned = fb.And(
@@ -320,7 +313,6 @@ public class EntitiesService(
             new UpdateManyModel<Entity>(hasBeenDecommissioned, ub
                 .Set(e => e.Status, Status.Decommissioned)
                 .Set(e => e.Decommissioned!.Finished, DateTime.UtcNow)
-                .Set(e => e.Status, Status.Decommissioned)
                 .Unset(e => e.Metadata)
             )
         };
@@ -346,7 +338,6 @@ public class EntitiesService(
                 .Set(e => e.Envs[env], kv.Value.Tenant)
                 .Set(e => e.Progress[env], kv.Value.Progress);
             
-            // Update the metadata if its present.
             if (kv.Value.Metadata != null)
             {
                 update = update.Set(e => e.Metadata, kv.Value.Metadata);
@@ -360,7 +351,9 @@ public class EntitiesService(
                 }
             }
 
-            // Fix the progress for tenants that aren't deployed to all envs so Status is calculated correctly.
+            // A small number of tenants aren't defined in all environments (defined in metadata.Environments)
+            // To ensure the status is calculated correctly (and to keep the calculation simple) we just set the
+            // completed status to 'true' in the envs these services aren't created in.
             if (kv.Value.Metadata?.Environments != null)
             {
                 var restrictedEnvs = kv.Value.Metadata.Environments;
@@ -376,14 +369,13 @@ public class EntitiesService(
             models.Add(new UpdateOneModel<Entity>(filter, update) {  IsUpsert = true });
         }
 
-        // Remove environment for any service not in the list
-        var removeMissing = new UpdateOneModel<Entity>(
+        // Remove environment for any service not in the list.
+        var removeMissing = new UpdateManyModel<Entity>(
             Builders<Entity>.Filter.Nin(f => f.Name, state.Tenants.Keys),
             Builders<Entity>.Update
                 .Unset(e => e.Envs[env])
                 .Unset(e => e.Progress[env])
-        )
-        { IsUpsert = false };
+            ) { IsUpsert = false };
         models.Add(removeMissing);
 
         if (models.Count > 0)

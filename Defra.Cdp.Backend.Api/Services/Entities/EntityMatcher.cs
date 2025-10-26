@@ -37,7 +37,7 @@ public record EntityMatcher(
         {
             filter &= builder.AnyEq(t => t.Metadata!.Teams, TeamId);
         }
-        else if (TeamIds != null)
+        else if (TeamIds is { Length: > 0 })
         {
             filter &= builder.AnyIn(t => t.Metadata!.Teams, TeamIds);
         }
@@ -51,7 +51,7 @@ public record EntityMatcher(
         {
             filter &= builder.Eq(t => t.Type, Type);
         }
-        else if (Types != null)
+        else if (Types is { Length: > 0})
         {
             filter &= builder.In(t => t.Type, Types);
         }
@@ -70,7 +70,7 @@ public record EntityMatcher(
         {
             filter &= builder.Eq(t => t.Status, Status);
         }
-        else if (Statuses != null)
+        else if (Statuses is { Length: > 0 })
         {
             filter &= builder.In(t => t.Status, Statuses);
         }

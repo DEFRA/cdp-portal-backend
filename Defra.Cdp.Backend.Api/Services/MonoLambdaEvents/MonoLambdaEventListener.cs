@@ -33,7 +33,15 @@ public class MonoLambdaEventListener : SqsListener
         logger.LogInformation("Registering lambda event handlers");
         foreach (var h in eventHandlers)
         {
-            _handlers[h.EventType] = h;
+            if (!_handlers.TryAdd(h.EventType, h))
+            {
+                logger.LogError("Failed to register {NewHandler} for event {Event}, already registered to {Handler}",
+                    h.GetType().FullName,
+                    h.EventType,
+                    _handlers[h.EventType].GetType().FullName
+                );
+                throw new Exception($"Duplicate IMonoLambdaEventHandler registered for event type {h.EventType}");
+            } 
             logger.LogInformation("Registered event handler for {EventType} to {HandlerName}", h.EventType, h.GetType().Name);
         }
     }

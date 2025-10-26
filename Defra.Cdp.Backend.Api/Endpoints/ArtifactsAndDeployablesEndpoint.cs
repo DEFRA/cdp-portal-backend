@@ -93,7 +93,7 @@ public static class ArtifactsAndDeployablesEndpoint
     }
 
     // GET /files/{layer}
-    [Obsolete("Use entities")]
+    [Obsolete("Not used")]
     private static async Task<IResult> GetFileContent(ILayerService layerService, string layer, string path,
         CancellationToken cancellationToken)
     {

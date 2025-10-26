@@ -26,9 +26,8 @@ internal class MockHandler : IMonoLambdaEventHandler
 
 public class MonoLambdaEventListenerTest
 {
-    private IEventHistoryFactory eventHistoryFactory = Substitute.For<IEventHistoryFactory>();
-
-    private IAmazonSQS sqs = Substitute.For<IAmazonSQS>();
+    private readonly IEventHistoryFactory _eventHistoryFactory = Substitute.For<IEventHistoryFactory>();
+    private readonly IAmazonSQS Sqs = Substitute.For<IAmazonSQS>();
 
     [Fact]
     public async Task TestMessagesAreDispatched()
@@ -38,7 +37,7 @@ public class MonoLambdaEventListenerTest
             new OptionsWrapper<LambdaEventListenerOptions>(
                 new LambdaEventListenerOptions { QueueUrl = "http://queue.url", Enabled = true });
 
-        var listener = new MonoLambdaEventListener(sqs, eventHistoryFactory, config, [mockHandler],
+        var listener = new MonoLambdaEventListener(Sqs, _eventHistoryFactory, config, [mockHandler],
             new NullLogger<MonoLambdaEventListener>());
 
 
@@ -47,5 +46,18 @@ public class MonoLambdaEventListenerTest
                           """;
         await listener.Handle(new Message { MessageId = "1234", Body = messageBody }, CancellationToken.None);
         Assert.Equal(1, mockHandler.callCount);
+    }
+
+    [Fact]
+    public void TestFailsIfDuplicateHandlersAreRegistered()
+    {
+        var mockHandler = new MockHandler();
+        IOptions<LambdaEventListenerOptions> config =
+            new OptionsWrapper<LambdaEventListenerOptions>(
+                new LambdaEventListenerOptions { QueueUrl = "http://queue.url", Enabled = true });
+
+        Assert.ThrowsAny<Exception>(() => new MonoLambdaEventListener(Sqs, _eventHistoryFactory, config,
+            [mockHandler, mockHandler],
+            new NullLogger<MonoLambdaEventListener>()));
     }
 }
