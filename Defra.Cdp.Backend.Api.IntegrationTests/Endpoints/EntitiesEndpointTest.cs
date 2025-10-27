@@ -81,11 +81,11 @@ public class EntitiesEndpointTest : ServiceTest
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
         var body = await result.Content.ReadAsStringAsync();
-        var entity = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
+        var filters = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
         var allEntityNames = TestData().Select(e => e.Name).ToList();
         allEntityNames.Sort();
-        Assert.Equal(allEntityNames, entity?.Entities);
+        Assert.Equal(allEntityNames, filters?.Entities);
     }
 
 
@@ -97,11 +97,11 @@ public class EntitiesEndpointTest : ServiceTest
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
         var body = await result.Content.ReadAsStringAsync();
-        var entity = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
+        var filters = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
         var allEntityNames = TestData().Where(e => e.Status == Status.Creating).Select(e => e.Name).ToList();
         allEntityNames.Sort();
-        Assert.Equal(allEntityNames, entity?.Entities);
+        Assert.Equal(allEntityNames, filters?.Entities);
     }
 
     [Fact]
@@ -112,11 +112,80 @@ public class EntitiesEndpointTest : ServiceTest
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
         var body = await result.Content.ReadAsStringAsync();
-        var entity = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
+        var filters = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
-        var allEntityNames = TestData().Where(e => e.Type == Type.TestSuite).Select(e => e.Name).ToList();
-        allEntityNames.Sort();
-        Assert.Equal(allEntityNames, entity?.Entities);
+        var expected = TestData().Where(e => e.Type == Type.TestSuite).Select(e => e.Name).ToList();
+        expected.Sort();
+        Assert.Equal(expected, filters?.Entities);
+    }
+    
+    
+    [Fact]
+    public async Task Should_list_all_entities()
+    {
+        var client = _server.CreateClient();
+        var result = await client.GetAsync("/entities");
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
+        var body = await result.Content.ReadAsStringAsync();
+        var entities = JsonSerializer.Deserialize<List<Entity>>(body);
+        Assert.NotNull(entities);
+        Assert.NotEmpty(entities);
+        
+        var expected = TestData().Select(e => e.Name).ToList();
+        expected.Sort();
+        var entitiesReturned = entities.Select(e => e.Name).ToList();
+        Assert.Equal(expected, entitiesReturned);
+    }
+    
+    
+    [Fact]
+    public async Task Should_list_entities_by_team()
+    {
+        var client = _server.CreateClient();
+        var result = await client.GetAsync("/entities?teamIds=platform");
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
+        var body = await result.Content.ReadAsStringAsync();
+        var entities = JsonSerializer.Deserialize<List<Entity>>(body);
+        Assert.NotNull(entities);
+
+        var expected = TestData().Where(e => e.Teams.Exists(t => t.TeamId == "platform")).Select(e => e.Name).ToList();
+        expected.Sort();
+        var entitiesReturned = entities.Select(e => e.Name).ToList();
+        Assert.Equal(expected, entitiesReturned);
+    }
+    
+    
+    [Fact]
+    public async Task Should_list_entities_by_type()
+    {
+        var client = _server.CreateClient();
+        var result = await client.GetAsync("/entities?type=TestSuite");
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
+        var body = await result.Content.ReadAsStringAsync();
+        var entities = JsonSerializer.Deserialize<List<Entity>>(body);
+        Assert.NotNull(entities);
+        Assert.NotEmpty(entities);
+
+        Assert.True(entities.TrueForAll(e => e.Type == Type.TestSuite));
+    }
+    
+    
+    [Fact]
+    public async Task Should_list_entities_by_status()
+    {
+        var client = _server.CreateClient();
+        var result = await client.GetAsync("/entities?status=Creating");
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
+        var body = await result.Content.ReadAsStringAsync();
+        var entities = JsonSerializer.Deserialize<List<Entity>>(body);
+        Assert.NotNull(entities);
+        Assert.NotEmpty(entities);
+
+        Assert.True(entities.TrueForAll(e => e.Status == Status.Creating));
     }
 
     private static Entity[] TestData()

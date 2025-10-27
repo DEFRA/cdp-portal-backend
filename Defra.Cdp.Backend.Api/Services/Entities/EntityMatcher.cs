@@ -35,11 +35,11 @@ public record EntityMatcher(
 
         if (TeamId != null)
         {
-            filter &= builder.AnyEq(t => t.Metadata!.Teams, TeamId);
+            filter &= builder.AnyEq(new StringFieldDefinition<Entity>("teams.teamId"), TeamId);
         }
         else if (TeamIds is { Length: > 0 })
         {
-            filter &= builder.AnyIn(t => t.Metadata!.Teams, TeamIds);
+            filter &= builder.AnyIn(new StringFieldDefinition<Entity>("teams.teamId"), TeamIds);
         }
 
         if (Environment != null)

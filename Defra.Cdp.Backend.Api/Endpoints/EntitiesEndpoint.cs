@@ -52,7 +52,7 @@ public static class EntitiesEndpoint
         [FromQuery] bool summary = true
     )
     {
-        var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name };
+        var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name, TeamIds = teamIds};
         var options = new EntitySearchOptions { Summary = summary };
         return Results.Ok(await entitiesService.GetEntities(matcher, options, cancellationToken));
     }
