@@ -272,12 +272,16 @@ public class EntitiesService(
         
         var isDecommissioned = fb.Exists(e => e.Decommissioned!.Started);
         var isNotDecommissioned = fb.Not(isDecommissioned);
-        var isCompleteInAllEnvs =
-            fb.And(CdpEnvironments.EnvironmentIds.Select(env => fb.Eq(e => e.Progress[env].Complete, true)));
         
-        // The environment (and thus status
+        // We do not expect the service to be provisioned in infra-dev
+        var environmentsToCheck = CdpEnvironments.EnvironmentExcludingInfraDev;
+        
+        var isCompleteInAllEnvs =
+            fb.And(environmentsToCheck.Select(env => fb.Eq(e => e.Progress[env].Complete, true)));
+        
+       // We DO expect it to be removed from infra-dev.
         var isRemovedFromAllEnvs = fb.And(
-            CdpEnvironments.EnvironmentIds.Select(env => fb.Exists(e => e.Progress[env], false))
+            environmentsToCheck.Select(env => fb.Exists(e => e.Progress[env], false))
         );
         
         var hasComplete = fb.And(
@@ -356,12 +360,10 @@ public class EntitiesService(
             if (kv.Value.Metadata?.Environments != null)
             {
                 var restrictedEnvs = kv.Value.Metadata.Environments;
-                foreach (var envToSkip in CdpEnvironments.EnvironmentIds)
+                var envsToSkip = CdpEnvironments.EnvironmentExcludingInfraDev.Where(e => !restrictedEnvs.Contains(e)).ToArray();
+                foreach (var envToSkip in envsToSkip)
                 {
-                    if (!restrictedEnvs.Contains(envToSkip))
-                    {
-                        update = update.Set(e => e.Progress[envToSkip].Complete, true);
-                    }
+                    update = update.Set(e => e.Progress[envToSkip].Complete, true);
                 }
             }
             
