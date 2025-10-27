@@ -49,7 +49,7 @@ public static class EntitiesEndpoint
         [FromQuery] string? name,
         IEntitiesService entitiesService, 
         CancellationToken cancellationToken,
-        [FromQuery] bool summary = false
+        [FromQuery] bool summary = true
     )
     {
         var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name };
