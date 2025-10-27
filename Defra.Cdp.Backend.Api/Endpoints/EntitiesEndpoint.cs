@@ -47,8 +47,8 @@ public static class EntitiesEndpoint
         [FromQuery(Name = "type")] Type[] types,
         [FromQuery(Name = "status")] Status[] statuses,
         [FromQuery] string? name,
-        IEntitiesService entitiesService, CancellationToken cancellationToken,
-        [FromQuery] bool includeDecommissioned = false,
+        IEntitiesService entitiesService, 
+        CancellationToken cancellationToken,
         [FromQuery] bool summary = false
     )
     {

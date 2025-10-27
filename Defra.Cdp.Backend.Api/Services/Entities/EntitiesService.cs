@@ -167,9 +167,9 @@ public class EntitiesService(
     public class EntityFilters
     {
         [JsonPropertyName("entities")]
-        public List<string> Entities { get; set; } = [];
+        public List<string> Entities { get; init; } = [];
         [JsonPropertyName("teams")]
-        public List<Team> Teams { get; set; } = [];
+        public List<Team> Teams { get; init; } = [];
     }
 
     public async Task Create(Entity entity, CancellationToken cancellationToken)
