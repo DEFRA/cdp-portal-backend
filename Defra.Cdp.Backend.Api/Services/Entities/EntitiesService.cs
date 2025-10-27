@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Models;
@@ -165,10 +166,11 @@ public class EntitiesService(
     
     public class EntityFilters
     {
+        [JsonPropertyName("entities")]
         public List<string> Entities { get; set; } = [];
+        [JsonPropertyName("teams")]
         public List<Team> Teams { get; set; } = [];
     }
-
 
     public async Task Create(Entity entity, CancellationToken cancellationToken)
     {
