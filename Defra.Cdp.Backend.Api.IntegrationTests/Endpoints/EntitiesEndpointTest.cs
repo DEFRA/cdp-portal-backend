@@ -47,7 +47,7 @@ public class EntitiesEndpointTest : ServiceTest
             });
 
         // insert test data
-        var tasks = testData().Select(e => _entitiesService.Create(e, CancellationToken.None));
+        var tasks = TestData().Select(e => _entitiesService.Create(e, CancellationToken.None));
         Task.WaitAll(tasks.ToArray(), CancellationToken.None);
 
         _server = new TestServer(builder);
@@ -83,7 +83,7 @@ public class EntitiesEndpointTest : ServiceTest
         var body = await result.Content.ReadAsStringAsync();
         var entity = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
-        var allEntityNames = testData().Select(e => e.Name).ToList();
+        var allEntityNames = TestData().Select(e => e.Name).ToList();
         allEntityNames.Sort();
         Assert.Equal(allEntityNames, entity?.Entities);
     }
@@ -99,7 +99,7 @@ public class EntitiesEndpointTest : ServiceTest
         var body = await result.Content.ReadAsStringAsync();
         var entity = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
-        var allEntityNames = testData().Where(e => e.Status == Status.Creating).Select(e => e.Name).ToList();
+        var allEntityNames = TestData().Where(e => e.Status == Status.Creating).Select(e => e.Name).ToList();
         allEntityNames.Sort();
         Assert.Equal(allEntityNames, entity?.Entities);
     }
@@ -114,12 +114,12 @@ public class EntitiesEndpointTest : ServiceTest
         var body = await result.Content.ReadAsStringAsync();
         var entity = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
-        var allEntityNames = testData().Where(e => e.Type == Type.TestSuite).Select(e => e.Name).ToList();
+        var allEntityNames = TestData().Where(e => e.Type == Type.TestSuite).Select(e => e.Name).ToList();
         allEntityNames.Sort();
         Assert.Equal(allEntityNames, entity?.Entities);
     }
 
-    private Entity[] testData()
+    private static Entity[] TestData()
     {
         Entity[] entities =
         [
