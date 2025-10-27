@@ -204,7 +204,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
         await service.BulkUpdateCreationStatus(CancellationToken.None);
         var result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
-        Assert.Equal(CdpEnvironments.EnvironmentIds.Length, result.Progress.Count);
+        Assert.Equal(CdpEnvironments.EnvironmentExcludingInfraDev.Length, result.Progress.Count);
         Assert.True(result.Progress.Values.All(v => v.Complete));
         Assert.Equal(Status.Created, result.Status);
     }
