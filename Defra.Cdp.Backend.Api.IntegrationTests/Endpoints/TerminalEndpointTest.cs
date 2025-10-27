@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
 using Audit = Defra.Cdp.Backend.Api.Services.Audit.Audit;
@@ -26,7 +27,7 @@ public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fi
     public async Task TerminalEndpointShowRecordSessionToMongo()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TerminalEndpointTest");
-        var loggerFactory = new LoggerFactory();
+        var loggerFactory = new NullLoggerFactory();
         var terminalService = new TerminalService(mongoFactory, loggerFactory);
         var cwMock = new Mock<ICloudWatchMetricsService>();
         var auditService = new AuditService(mongoFactory, cwMock.Object, loggerFactory);
