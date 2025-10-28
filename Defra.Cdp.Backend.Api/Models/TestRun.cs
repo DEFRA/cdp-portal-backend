@@ -54,6 +54,7 @@ public sealed class TestRun
     [property: JsonPropertyName("user")]
     public UserDetails User { get; init; } = default!;
 
+    [property: JsonPropertyName("deployment")]
     public DeploymentDetails Deployment { get; init; } = default!;
 
     [property: JsonPropertyName("created")]
@@ -82,18 +83,6 @@ public sealed class TestRun
 
     [property: JsonPropertyName("profile")]
     public string? Profile { get; set; }
-
-    public static TestRun FromDeployment(Deployment deployment, string testSuite)
-    {
-        return new TestRun
-        {
-            RunId = Guid.NewGuid().ToString(),
-            TestSuite = testSuite,
-            Environment = deployment.Environment,
-            User = deployment.User!,
-            Created = DateTime.Now
-        };
-    }
 }
 
 public sealed class DeploymentDetails

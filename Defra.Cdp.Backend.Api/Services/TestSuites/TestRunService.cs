@@ -21,6 +21,8 @@ public interface ITestRunService
         List<FailureReason> failureReasons, CancellationToken ct);
 
     public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
+
+    public Task<bool> ExistsTestRunAsync(string suite, string environment, string deploymentId, CancellationToken ct);
 }
 
 public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -144,6 +146,28 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
             .Sort(sort)
             .Project(t => new TestRunSettings { Cpu = t.Cpu, Memory = t.Memory })
             .FirstOrDefaultAsync(ct);
+    }
+    
+    public async Task<bool> ExistsTestRunAsync(
+        string suite,
+        string environment,
+        string deploymentId,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(suite) ||
+            string.IsNullOrWhiteSpace(environment) ||
+            string.IsNullOrWhiteSpace(deploymentId))
+        {
+            return false;
+        }
+    
+        var builder = Builders<TestRun>.Filter;
+    
+        var filter = builder.Eq(t => t.TestSuite, suite) &
+                     builder.Eq(t => t.Environment, environment) &
+                     builder.Eq(t => t.Deployment.DeploymentId, deploymentId);
+    
+        return await Collection.Find(filter).Limit(1).AnyAsync(ct);
     }
 
 }

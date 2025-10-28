@@ -43,26 +43,39 @@ public class AutoTestRunTriggerEventHandler(
 
             foreach (var (testSuite, runConfigs) in trigger?.TestSuites ?? [])
             {
-                var configsToRunFor = runConfigs.Where(config => config.Environments.Contains(deployment.Environment))
-                    .ToList();
-                foreach (var configToRunFor in configsToRunFor)
+                var existsTestRun = await testRunService.ExistsTestRunAsync(testSuite, deployment.Environment,
+                    ecsEvent.Detail.DeploymentId, cancellationToken);
+
+                if (existsTestRun)
                 {
                     logger.LogInformation(
-                        "{Id} Triggering test run for {DeploymentId} {TestSuite} in {Environment} with profile {Profile}",
-                        id,
-                        ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment, configToRunFor.Profile);
-
-                    var testRunSettings =
-                        await testRunService.FindTestRunSettings(testSuite, deployment.Environment, cancellationToken);
-
-                    var userDetails = new UserDetails
+                        "{Id} Not triggering test run for {DeploymentId} {TestSuite} in {Environment} as test run exists",
+                        id, ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment);                        
+                }
+                else
+                {
+                    var configsToRunFor = runConfigs
+                        .Where(config => config.Environments.Contains(deployment.Environment))
+                        .ToList();
+                    foreach (var configToRunFor in configsToRunFor)
                     {
-                        Id = AutoTestRunConstants.AutoTestRunId,
-                        DisplayName = "Auto test runner"
-                    };
+                        logger.LogInformation(
+                            "{Id} Triggering test run for {DeploymentId} {TestSuite} in {Environment} with profile {Profile}",
+                            id,
+                            ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment, configToRunFor.Profile);
 
-                    await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,
-                        configToRunFor.Profile, cancellationToken);
+                        var testRunSettings =
+                            await testRunService.FindTestRunSettings(testSuite, deployment.Environment,
+                                cancellationToken);
+
+                        var userDetails = new UserDetails
+                        {
+                            Id = AutoTestRunConstants.AutoTestRunId, DisplayName = "Auto test runner"
+                        };
+
+                        await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,
+                            configToRunFor.Profile, cancellationToken);
+                    }
                 }
             }
         }
