@@ -43,7 +43,7 @@ public static class EntitiesEndpoint
     }
 
     private static async Task<IResult> GetEntities(
-        [FromQuery] string[] teamIds,
+        [FromQuery(Name = "teamIds")] string[] teamIds,
         [FromQuery(Name = "type")] Type[] types,
         [FromQuery(Name = "status")] Status[] statuses,
         [FromQuery] string? name,
