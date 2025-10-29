@@ -153,52 +153,6 @@ public class ShutteringService(
         );
         return [service];
     }
-    
-    public async Task<List<ShutteringUrlState>> ShutteringStatesForService2(string serviceName,
-        CancellationToken cancellationToken)
-    {
-        
-        var states = new List<ShutteringUrlState>();
-        Entity? entity = null;//await entitiesService.GetEntity(serviceName, cancellationToken);
-        if (entity == null)
-        {
-            return states;
-        }
-        // [BsonIgnoreExtraElements]
-        // public record VanityUrlRecord(string Url, string Environment, string ServiceName, bool Enabled, bool Shuttered)
-        // {
-
-        var vanityUrls = new List<ShutterableUrl>();
-        foreach (var (env, tenant) in entity.Envs)
-        {
-            foreach (var (url, urlConfig) in tenant.Urls)
-            {
-                vanityUrls.Add(new ShutterableUrl(
-                    entity.Name,
-                    env,
-                    url,
-                    urlConfig.Enabled || urlConfig.Type == "internal",
-                    urlConfig.Shuttered,
-                    urlConfig.Type == "vanity"
-                ));
-            }
-        }
-        
-        
-        Logger.LogInformation("Found {Count} vanity URLs for service {ServiceName}", vanityUrls.Count, serviceName);
-
-        foreach (var vanity in vanityUrls)
-        {
-            var shutteringRecord = await Collection.Find(s => s.ServiceName == serviceName
-                                                              && s.Environment == vanity.Environment
-                                                              && s.Url == vanity.Url)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            var shutteringStateForVanityUrl = ShutteringStateForVanityUrl(vanity, shutteringRecord);
-            states.Add(shutteringStateForVanityUrl);
-        }
-        return states;
-    }
 }
 
 public record ShutterableUrl(
