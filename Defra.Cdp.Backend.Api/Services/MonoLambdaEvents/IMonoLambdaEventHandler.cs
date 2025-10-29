@@ -8,12 +8,12 @@ public interface IMonoLambdaEventHandler
     /// Handler will receive all messages where `event_type` matches this value
     /// </summary>
     string EventType { get; }
-    
+
     /// <summary>
     /// When true, copies of the events handled will be stored in the EventHistoryService
     /// </summary>
     bool PersistEvents { get; }
-    
+
     /// <summary>
     /// Message handler implementation.
     /// </summary>

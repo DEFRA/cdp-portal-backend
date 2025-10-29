@@ -20,7 +20,7 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{repositoryName}/tags", TagEntity);
         app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
     }
-    
+
     private static async Task<IResult> StartDecommissioning(IEntitiesService entitiesService,
         SelfServiceOpsClient selfServiceOpsClient,
         string repositoryName,
@@ -47,12 +47,12 @@ public static class EntitiesEndpoint
         [FromQuery(Name = "type")] Type[] types,
         [FromQuery(Name = "status")] Status[] statuses,
         [FromQuery] string? name,
-        IEntitiesService entitiesService, 
+        IEntitiesService entitiesService,
         CancellationToken cancellationToken,
         [FromQuery] bool summary = true
     )
     {
-        var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name, TeamIds = teamIds};
+        var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name, TeamIds = teamIds };
         var options = new EntitySearchOptions { Summary = summary };
         return Results.Ok(await entitiesService.GetEntities(matcher, options, cancellationToken));
     }

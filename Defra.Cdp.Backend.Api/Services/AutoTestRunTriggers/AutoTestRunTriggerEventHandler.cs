@@ -43,14 +43,14 @@ public class AutoTestRunTriggerEventHandler(
 
             foreach (var (testSuite, runConfigs) in trigger?.TestSuites ?? [])
             {
-                var existsTestRun = await testRunService.ExistsTestRunAsync(testSuite, deployment.Environment,
+                var anyTestRunsExist = await testRunService.AnyTestRunExists(testSuite, deployment.Environment,
                     ecsEvent.Detail.DeploymentId, cancellationToken);
 
-                if (existsTestRun)
+                if (anyTestRunsExist)
                 {
                     logger.LogInformation(
-                        "{Id} Not triggering test run for {DeploymentId} {TestSuite} in {Environment} as test run exists",
-                        id, ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment);                        
+                        "{Id} Not triggering test run for {DeploymentId} {TestSuite} in {Environment} as test run(s) exist",
+                        id, ecsEvent.Detail.DeploymentId, testSuite, deployment.Environment);
                 }
                 else
                 {
@@ -70,7 +70,8 @@ public class AutoTestRunTriggerEventHandler(
 
                         var userDetails = new UserDetails
                         {
-                            Id = AutoTestRunConstants.AutoTestRunId, DisplayName = "Auto test runner"
+                            Id = AutoTestRunConstants.AutoTestRunId,
+                            DisplayName = "Auto test runner"
                         };
 
                         await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,

@@ -41,7 +41,7 @@ public class MonoLambdaEventListener : SqsListener
                     _handlers[h.EventType].GetType().FullName
                 );
                 throw new ArgumentException($"Duplicate IMonoLambdaEventHandler registered for event type {h.EventType}");
-            } 
+            }
             logger.LogInformation("Registered event handler for {EventType} to {HandlerName}", h.EventType, h.GetType().Name);
         }
     }

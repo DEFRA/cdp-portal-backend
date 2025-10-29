@@ -130,7 +130,6 @@ public class CdpTenant
 
     [property: JsonPropertyName("squid")]
     public Squid? Squid { get; set; }
-
 }
 
 [BsonIgnoreExtraElements]
@@ -144,7 +143,6 @@ public class CdpTenantAndMetadata
 
     [property: JsonPropertyName("progress")]
     public CreationProgress Progress { get; set; }
-
 }
 
 [BsonIgnoreExtraElements]
@@ -152,7 +150,6 @@ public class CdpTenantNginx
 {
     [property: JsonPropertyName("servers")]
     public Dictionary<string, NginxServer> Servers { get; set; }
-
 }
 
 [BsonIgnoreExtraElements]
@@ -163,7 +160,6 @@ public class CreationProgress
 
     [property: JsonPropertyName("complete")]
     public bool Complete { get; set; }
-   
 }
 
 [BsonIgnoreExtraElements]

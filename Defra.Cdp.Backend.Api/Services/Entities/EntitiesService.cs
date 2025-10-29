@@ -36,7 +36,7 @@ public interface IEntitiesService
     Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
 
     Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken);
-    Task BulkUpdateCreationStatus(CancellationToken cancellationToken);
+    Task BulkUpdateTenantConfigStatus(CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -108,7 +108,7 @@ public class EntitiesService(
         {
             projectDefinition = projectionBuilder.Combine(
                 projectionBuilder.Exclude(e => e.Id),
-                projectionBuilder.Exclude(e => e.Envs));
+                projectionBuilder.Exclude(e => e.Environments));
         }
 
         return await Collection
@@ -136,24 +136,24 @@ public class EntitiesService(
             pb.Include(e => e.Teams),
             pb.Exclude(e => e.Id)
         );
-        
+
         var results = await Collection
             .Find(matcher.Match())
             .Project<EntityFiltersProjection>(projection)
             .ToListAsync(cancellationToken);
-        
+
         var names = results
             .Select(doc => doc.Name)
             .Distinct()
             .ToList();
-        
+
         var teams = results
             .SelectMany(doc => doc.Teams ?? [])
             .DistinctBy(t => t.TeamId)
             .ToList();
-        
+
         names.Sort();
-        teams.Sort( (a,b) => string.Compare(a.TeamId, b.TeamId, StringComparison.OrdinalIgnoreCase));
+        teams.Sort((a, b) => string.Compare(a.TeamId, b.TeamId, StringComparison.OrdinalIgnoreCase));
 
         return new EntityFilters { Teams = teams, Entities = names };
     }
@@ -163,13 +163,11 @@ public class EntitiesService(
         public required string Name { get; set; }
         public IEnumerable<Team>? Teams { get; set; }
     }
-    
+
     public class EntityFilters
     {
-        [JsonPropertyName("entities")]
-        public List<string> Entities { get; init; } = [];
-        [JsonPropertyName("teams")]
-        public List<Team> Teams { get; init; } = [];
+        [JsonPropertyName("entities")] public List<string> Entities { get; init; } = [];
+        [JsonPropertyName("teams")] public List<Team> Teams { get; init; } = [];
     }
 
     public async Task Create(Entity entity, CancellationToken cancellationToken)
@@ -177,7 +175,7 @@ public class EntitiesService(
         await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
     }
 
-    [Obsolete("Now handled by BulkUpdateCreationStatus")]
+    [Obsolete("Now handled by BulkUpdateEntityStatus")]
     public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
@@ -202,14 +200,16 @@ public class EntitiesService(
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await GetEntities(new EntityMatcher { Status = Status.Creating }, new EntitySearchOptions { Summary = true}, cancellationToken);
+        return await GetEntities(new EntityMatcher { Status = Status.Creating },
+            new EntitySearchOptions { Summary = true }, cancellationToken);
     }
 
     public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
     {
-        return await GetEntities(new EntityMatcher { Status = Status.Decommissioning }, new EntitySearchOptions{ Summary = true }, cancellationToken);
+        return await GetEntities(new EntityMatcher { Status = Status.Decommissioning },
+            new EntitySearchOptions { Summary = true }, cancellationToken);
     }
-    
+
     public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
     {
         var update = new UpdateDefinitionBuilder<Entity>().AddToSet(e => e.Tags, tag);
@@ -248,7 +248,7 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    [Obsolete("Now handled by BulkUpdateCreationStatus")]
+    [Obsolete("Now handled by BulkUpdateEntityStatus")]
     public async Task DecommissionFinished(string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
@@ -258,62 +258,63 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    
+
     /// <summary>
     /// Updates the status of all entities based on their 'Progress' data for each env.
     /// Takes into account decommissioned services as well. 
     /// </summary>
     /// <param name="cancellationToken"></param>
-    public async Task BulkUpdateCreationStatus(CancellationToken cancellationToken)
+    public async Task BulkUpdateTenantConfigStatus(CancellationToken cancellationToken)
     {
         var fb = new FilterDefinitionBuilder<Entity>();
         var ub = new UpdateDefinitionBuilder<Entity>();
-        
-        var isDecommissioned = fb.Exists(e => e.Decommissioned!.Started);
-        var isNotDecommissioned = fb.Not(isDecommissioned);
-        
+
+        var hasDecommissionStarted = fb.Exists(e => e.Decommissioned!.Started);
+        var hasDecommissionNotStarted = fb.Not(hasDecommissionStarted);
+
         // We do not expect the service to be provisioned in infra-dev
         var environmentsToCheck = CdpEnvironments.EnvironmentExcludingInfraDev;
-        
+
         var isCompleteInAllEnvs =
             fb.And(environmentsToCheck.Select(env => fb.Eq(e => e.Progress[env].Complete, true)));
-        
-       // We DO expect it to be removed from infra-dev.
+
+        // We DO expect it to be removed from infra-dev.
         var isRemovedFromAllEnvs = fb.And(
             environmentsToCheck.Select(env => fb.Exists(e => e.Progress[env], false))
         );
-        
+
         var hasComplete = fb.And(
-            fb.Ne(e => e.Status, Status.Created),
-            isNotDecommissioned,
+            fb.Ne(e => e.TenantConfigStatus, Status.Created),
+            hasDecommissionNotStarted,
             isCompleteInAllEnvs
         );
-        
+
         var isInProgress = fb.And(
-            fb.Ne(e => e.Status, Status.Creating),
-            isNotDecommissioned,
+            fb.Ne(e => e.TenantConfigStatus, Status.Creating),
+            hasDecommissionNotStarted,
             fb.Not(isCompleteInAllEnvs)
         );
 
         var hasBeenDecommissioned = fb.And(
-            fb.Ne(e => e.Status, Status.Decommissioned),
-            isDecommissioned,
-            isRemovedFromAllEnvs 
+            fb.Ne(e => e.TenantConfigStatus, Status.Decommissioned),
+            hasDecommissionStarted,
+            isRemovedFromAllEnvs
         );
-        
+
         var isDecommissioning = fb.And(
-            fb.Ne(e => e.Status, Status.Decommissioning),
-            isDecommissioned,
-            fb.Not(isRemovedFromAllEnvs) 
+            fb.Ne(e => e.TenantConfigStatus, Status.Decommissioning),
+            hasDecommissionStarted,
+            fb.Not(isRemovedFromAllEnvs)
         );
-        
+
         // Bulk update all the statuses that need to change
-        var models = new List<WriteModel<Entity>> {
-            new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.Status, Status.Created)),
-            new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.Status, Status.Creating)),
-            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.Status, Status.Decommissioning)),
+        var models = new List<WriteModel<Entity>>
+        {
+            new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.TenantConfigStatus, Status.Created)),
+            new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.TenantConfigStatus, Status.Creating)),
+            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.TenantConfigStatus, Status.Decommissioning)),
             new UpdateManyModel<Entity>(hasBeenDecommissioned, ub
-                .Set(e => e.Status, Status.Decommissioned)
+                .Set(e => e.TenantConfigStatus, Status.Decommissioned)
                 .Set(e => e.Decommissioned!.Finished, DateTime.UtcNow)
                 .Unset(e => e.Metadata)
             )
@@ -332,22 +333,25 @@ public class EntitiesService(
     {
         var env = state.Environment;
         var models = new List<WriteModel<Entity>>();
-        
+
         foreach (var kv in state.Tenants)
         {
             var filter = Builders<Entity>.Filter.Eq(f => f.Name, kv.Key);
             var update = Builders<Entity>.Update.Set(e => e.Name, kv.Key)
-                .Set(e => e.Envs[env], kv.Value.Tenant)
+                .Set(e => e.Environments[env], kv.Value.Tenant)
                 .Set(e => e.Progress[env], kv.Value.Progress);
-            
+
             if (kv.Value.Metadata != null)
             {
                 update = update.Set(e => e.Metadata, kv.Value.Metadata);
-                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) && Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
+                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Type) &&
+                    Enum.TryParse<Type>(kv.Value.Metadata?.Type, true, out var entityType))
                 {
                     update = update.Set(e => e.Type, entityType);
                 }
-                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype) && Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
+
+                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Subtype) &&
+                    Enum.TryParse<SubType>(kv.Value.Metadata?.Subtype, true, out var entitySubType))
                 {
                     update = update.Set(e => e.SubType, entitySubType);
                 }
@@ -359,27 +363,27 @@ public class EntitiesService(
             if (kv.Value.Metadata?.Environments != null)
             {
                 var restrictedEnvs = kv.Value.Metadata.Environments;
-                var envsToSkip = CdpEnvironments.EnvironmentExcludingInfraDev.Where(e => !restrictedEnvs.Contains(e)).ToArray();
-                foreach (var envToSkip in envsToSkip)
-                {
-                    update = update.Set(e => e.Progress[envToSkip].Complete, true);
-                }
+                var envsToSkip = CdpEnvironments.EnvironmentExcludingInfraDev.Where(e => !restrictedEnvs.Contains(e))
+                    .ToArray();
+                update = envsToSkip.Aggregate(update,
+                    (current, envToSkip) => current.Set(e => e.Progress[envToSkip].Complete, true));
             }
-            
-            models.Add(new UpdateOneModel<Entity>(filter, update) {  IsUpsert = true });
+
+            models.Add(new UpdateOneModel<Entity>(filter, update) { IsUpsert = true });
         }
 
         // Remove environment for any service not in the list.
         var fb = Builders<Entity>.Filter;
         var removeMissing = new UpdateManyModel<Entity>(
             fb.And(
-                fb.Nin(f => f.Name, state.Tenants.Keys),  
-                fb.Exists(f => f.Envs[env])),
+                fb.Nin(f => f.Name, state.Tenants.Keys),
+                fb.Exists(f => f.Environments[env])),
             Builders<Entity>.Update
-                .Unset(e => e.Envs[env])
+                .Unset(e => e.Environments[env])
                 .Unset(e => e.Progress[env])
-            ) { IsUpsert = false };
-        
+            )
+        { IsUpsert = false };
+
         models.Add(removeMissing);
 
         if (models.Count > 0)
