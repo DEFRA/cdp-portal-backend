@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Defra.Cdp.Backend.Api.Utils;
+using Microsoft.Extensions.Azure;
 using MongoDB.Driver;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
@@ -258,8 +259,7 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-
-
+    
     /// <summary>
     /// Updates the status of all entities based on their 'Progress' data for each env.
     /// Takes into account decommissioned services as well. 
@@ -333,7 +333,7 @@ public class EntitiesService(
     {
         var env = state.Environment;
         var models = new List<WriteModel<Entity>>();
-
+        
         foreach (var kv in state.Tenants)
         {
             var filter = Builders<Entity>.Filter.Eq(f => f.Name, kv.Key);
@@ -371,12 +371,16 @@ public class EntitiesService(
         }
 
         // Remove environment for any service not in the list.
+        var fb = Builders<Entity>.Filter;
         var removeMissing = new UpdateManyModel<Entity>(
-            Builders<Entity>.Filter.Nin(f => f.Name, state.Tenants.Keys),
+            fb.And(
+                fb.Nin(f => f.Name, state.Tenants.Keys),  
+                fb.Exists(f => f.Envs[env])),
             Builders<Entity>.Update
                 .Unset(e => e.Envs[env])
                 .Unset(e => e.Progress[env])
             ) { IsUpsert = false };
+        
         models.Add(removeMissing);
 
         if (models.Count > 0)
