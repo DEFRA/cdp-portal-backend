@@ -148,31 +148,59 @@ public partial class EntityPlatformStateTests
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(entityWithRestrictedEnvs, CancellationToken.None);
-        await service.UpdateEnvironmentState(new PlatformStatePayload
+        await service.Create(entityCompleted, CancellationToken.None);
+        
+        var platformPayload = new PlatformStatePayload
         {
             Environment = "management",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
-                {entityWithRestrictedEnvs.Name, new CdpTenantAndMetadata {
-                    Metadata = entityWithRestrictedEnvs.Metadata,
-                    Tenant = new CdpTenant(),
-                    Progress = new CreationProgress { Complete = true, Steps = new Dictionary<string, bool>()}
-                }}
+                {
+                    entityWithRestrictedEnvs.Name,
+                    new CdpTenantAndMetadata
+                    {
+                        Metadata = entityWithRestrictedEnvs.Metadata,
+                        Tenant = new CdpTenant(),
+                        Progress =
+                            new CreationProgress { Complete = true, Steps = new Dictionary<string, bool>() }
+                    }
+                },
+                {
+                    entityCompleted.Name,
+                    new CdpTenantAndMetadata
+                    {
+                        Tenant = new CdpTenant(),
+                        Progress = new CreationProgress
+                        {
+                            Complete = true, Steps = new Dictionary<string, bool>()
+                        }
+                    }
+                }
             },
             TerraformSerials = new Serials(),
             Created = "",
             Version = 1
-        }, CancellationToken.None);
+        };
+        await service.UpdateEnvironmentState(platformPayload, CancellationToken.None);
+        await service.BulkUpdateCreationStatus(CancellationToken.None);
 
 
         var restricted = await service.GetEntity(entityWithRestrictedEnvs.Name, CancellationToken.None);
         Assert.Equal(Status.Created, restricted?.Status);
         
-        // Update an environment in which the service doesn't exist.
+        // Restricted entity doesn't exist in prod, but should be ok.
         await service.UpdateEnvironmentState(new PlatformStatePayload
         {
             Environment = "prod",
-            Tenants = new Dictionary<string, CdpTenantAndMetadata>(),
+            Tenants = new Dictionary<string, CdpTenantAndMetadata>
+            {
+                {
+                    entityCompleted.Name, new CdpTenantAndMetadata {
+                        Tenant = new CdpTenant(),
+                        Progress = new CreationProgress { Complete = true, Steps = new Dictionary<string, bool>()}
+                    }
+                }
+            },
             TerraformSerials = new Serials(),
             Created = "",
             Version = 1
@@ -182,5 +210,61 @@ public partial class EntityPlatformStateTests
 
         restricted = await service.GetEntity(entityWithRestrictedEnvs.Name, CancellationToken.None);
         Assert.Equal(Status.Created, restricted?.Status);
+
+        var completed = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
+        Assert.Equal(Status.Created, completed?.Status );
+    }
+    
+    [Fact]
+    public async Task Handles_removal_of_services_normally()
+    {
+        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
+
+        var updatePayload = new PlatformStatePayload
+        {
+            Environment = "management",
+            Tenants = new Dictionary<string, CdpTenantAndMetadata>
+            {
+                {
+                    entityCompleted.Name,
+                    new CdpTenantAndMetadata
+                    {
+                        Metadata = entityCompleted.Metadata,
+                        Tenant = new CdpTenant(),
+                        Progress = new CreationProgress
+                        {
+                            Complete = true, Steps = new Dictionary<string, bool>()
+                        }
+                    }
+                }
+            },
+            TerraformSerials = new Serials(),
+            Created = "",
+            Version = 1
+        };
+        
+        await service.Create(entityCompleted, CancellationToken.None);
+        await service.UpdateEnvironmentState(updatePayload, CancellationToken.None);
+        await service.BulkUpdateCreationStatus(CancellationToken.None);
+
+        var entity = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
+        Assert.Equal(Status.Created, entity?.Status);
+        
+        // Update an environment in which the service doesn't exist.
+        await service.UpdateEnvironmentState(new PlatformStatePayload
+        {
+            Environment = "management",
+            Tenants = new Dictionary<string, CdpTenantAndMetadata>(),
+            TerraformSerials = new Serials(),
+            Created = "",
+            Version = 1
+        }, CancellationToken.None);
+        
+        await service.BulkUpdateCreationStatus(CancellationToken.None);
+
+        entity = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
+        Assert.DoesNotContain("management", entity!.Progress.Keys);
+        Assert.Contains("prod", entity.Progress.Keys);
     }
 }
