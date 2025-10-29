@@ -12,7 +12,7 @@ public static class AdminEndpoint
     {
         app.MapPost($"{AdminBaseRoute}/backfill", Backfill);
         app.MapPost($"{AdminBaseRoute}/scan", RescanImageRequest);
-        app.MapGet("/admin/entity/status", UpdateStatus);
+        app.MapGet($"{AdminBaseRoute}/entity/status", UpdateStatus);
     }
 
     /// <summary>
@@ -22,10 +22,10 @@ public static class AdminEndpoint
     /// <returns></returns>
     private static async Task<IResult> UpdateStatus(IEntitiesService entitiesService)
     {
-        await entitiesService.BulkUpdateCreationStatus(CancellationToken.None);
+        await entitiesService.BulkUpdateTenantConfigStatus(CancellationToken.None);
         return Results.Ok();
     }
-        
+
     // POST /admin/backfill
     private static async Task<IResult> Backfill(EcsEventListener eventListener, IArtifactScanner scanner,
         ILoggerFactory loggerFactory, CancellationToken cancellationToken)

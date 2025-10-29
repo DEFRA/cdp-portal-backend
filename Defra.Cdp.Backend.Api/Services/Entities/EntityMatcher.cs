@@ -44,14 +44,14 @@ public record EntityMatcher(
 
         if (Environment != null)
         {
-            filter &= builder.Exists(t => t.Envs[Environment]);
+            filter &= builder.Exists(t => t.Environments[Environment]);
         }
 
         if (Type != null)
         {
             filter &= builder.Eq(t => t.Type, Type);
         }
-        else if (Types is { Length: > 0})
+        else if (Types is { Length: > 0 })
         {
             filter &= builder.In(t => t.Type, Types);
         }
@@ -63,7 +63,7 @@ public record EntityMatcher(
 
         if (HasPostgres && Environment != null)
         {
-            filter &= builder.Ne(t => t.Envs[Environment].SqlDatabase, null);
+            filter &= builder.Ne(t => t.Environments[Environment].SqlDatabase, null);
         }
 
         if (Status != null)

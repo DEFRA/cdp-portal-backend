@@ -39,21 +39,25 @@ public record Entity
     [property: JsonPropertyName("status")]
     public Status Status { get; set; }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [property: JsonPropertyName("tenantConfigStatus")]
+    public Status TenantConfigStatus { get; set; }
+
     [property: JsonPropertyName("decommissioned")]
     public Decommission? Decommissioned { get; set; }
 
     [property: JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
 
-    [property: JsonPropertyName("envs")]
-    public Dictionary<string, CdpTenant> Envs { get; init; } = new();
+    [property: JsonPropertyName("environments")]
+    public Dictionary<string, CdpTenant> Environments { get; init; } = new();
 
     [property: JsonPropertyName("metadata")]
     public TenantMetadata? Metadata { get; init; }
-    
+
     [property: JsonPropertyName("progress")]
     public Dictionary<string, CreationProgress> Progress { get; init; } = new();
-    
+
 }
 
 public record Decommission

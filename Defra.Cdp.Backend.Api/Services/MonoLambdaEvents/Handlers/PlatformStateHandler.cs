@@ -19,7 +19,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
 {
     public string EventType => "platform_state";
     public bool PersistEvents => true;
-    
+
     private readonly ILogger<PlatformStateHandler> _logger = loggerFactory.CreateLogger<PlatformStateHandler>();
 
     public async Task HandleAsync(JsonElement message, CancellationToken cancellationToken)
@@ -63,8 +63,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         _logger.LogInformation("WAF serial {Serial}", state.TerraformSerials.Tfwaf);
 
         await entitiesService.UpdateEnvironmentState(state, cancellationToken);
-        // TODO: re-enable once we've tested this with actual portal data.
-        // await entitiesService.BulkUpdateCreationStatus(cancellationToken);
+        await entitiesService.BulkUpdateTenantConfigStatus(cancellationToken);
     }
 
     public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData)
@@ -80,10 +79,6 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         await using var decompressedStream = new GZipStream(compressedStream, CompressionMode.Decompress);
 
         var result = await JsonSerializer.DeserializeAsync<T>(decompressedStream);
-        if (result == null)
-        {
-            throw new JsonException("Deserialization resulted in a null object, check the JSON structure.");
-        }
-        return result;
+        return result ?? throw new JsonException("Deserialization resulted in a null object, check the JSON structure.");
     }
 }

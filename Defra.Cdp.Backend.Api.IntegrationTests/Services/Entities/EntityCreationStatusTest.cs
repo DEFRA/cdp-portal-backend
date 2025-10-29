@@ -1,5 +1,3 @@
-using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
@@ -12,8 +10,8 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
 public partial class EntityPlatformStateTests
 {
-    
-    private Entity entityCompleted = new()
+
+    private readonly Entity _entityCompleted = new()
     {
         Name = "complete",
         Status = Status.Creating,
@@ -29,8 +27,8 @@ public partial class EntityPlatformStateTests
             {"infra-dev", new CreationProgress { Complete = true }},
         }
     };
-    
-    private Entity entityInProgress = new()
+
+    private readonly Entity _entityInProgress = new()
     {
         Name = "inprogress",
         Status = Status.Creating,
@@ -46,8 +44,8 @@ public partial class EntityPlatformStateTests
             {"infra-dev", new CreationProgress { Complete = true }},
         }
     };
-    
-    private Entity entityBeingDecommissioned = new()
+
+    private readonly Entity _entityBeingDecommissioned = new()
     {
         Name = "decomming",
         Status = Status.Created,
@@ -70,8 +68,8 @@ public partial class EntityPlatformStateTests
             {"infra-dev", new CreationProgress { Complete = true }},
         }
     };
-    
-    private Entity entityDecomissioned = new()
+
+    private readonly Entity _entityDecommissioned = new()
     {
         Name = "decommed",
         Status = Status.Decommissioning,
@@ -85,8 +83,8 @@ public partial class EntityPlatformStateTests
         },
         Progress = new Dictionary<string, CreationProgress>()
     };
-    
-    private Entity entityWithRestrictedEnvs = new()
+
+    private readonly Entity _entityWithRestrictedEnvs = new()
     {
         Name = "restricted",
         Status = Status.Created,
@@ -100,73 +98,73 @@ public partial class EntityPlatformStateTests
         {
             Environments = ["management"]
         }
-        
+
     };
-    
+
     [Fact]
     public async Task Updates_to_complete()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
-        await service.Create(entityCompleted, CancellationToken.None);
-        await service.Create(entityInProgress, CancellationToken.None);
-        await service.Create(entityBeingDecommissioned, CancellationToken.None);
-        await service.Create(entityDecomissioned, CancellationToken.None);
-        
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
+        await service.Create(_entityCompleted, CancellationToken.None);
+        await service.Create(_entityInProgress, CancellationToken.None);
+        await service.Create(_entityBeingDecommissioned, CancellationToken.None);
+        await service.Create(_entityDecommissioned, CancellationToken.None);
 
-        var complete = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
-        var progress = await service.GetEntity(entityInProgress.Name, CancellationToken.None);
-        var decomming = await service.GetEntity(entityBeingDecommissioned.Name, CancellationToken.None);
-        var decommed = await service.GetEntity(entityDecomissioned.Name, CancellationToken.None);
-        
-        Assert.Equal(Status.Created, complete?.Status);
-        Assert.Equal(Status.Creating, progress?.Status);
-        Assert.Equal(Status.Decommissioning, decomming?.Status);
-        Assert.Equal(Status.Decommissioned, decommed?.Status);
-        
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+
+        var complete = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        var progress = await service.GetEntity(_entityInProgress.Name, CancellationToken.None);
+        var decomming = await service.GetEntity(_entityBeingDecommissioned.Name, CancellationToken.None);
+        var decommed = await service.GetEntity(_entityDecommissioned.Name, CancellationToken.None);
+
+        Assert.Equal(Status.Created, complete?.TenantConfigStatus);
+        Assert.Equal(Status.Creating, progress?.TenantConfigStatus);
+        Assert.Equal(Status.Decommissioning, decomming?.TenantConfigStatus);
+        Assert.Equal(Status.Decommissioned, decommed?.TenantConfigStatus);
+
         // Check a second run doesn't change any state
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
 
-        complete = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
-        progress = await service.GetEntity(entityInProgress.Name, CancellationToken.None);
-        decomming = await service.GetEntity(entityBeingDecommissioned.Name, CancellationToken.None);
-        decommed = await service.GetEntity(entityDecomissioned.Name, CancellationToken.None);
-        
-        Assert.Equal(Status.Created, complete?.Status);
-        Assert.Equal(Status.Creating, progress?.Status);
-        Assert.Equal(Status.Decommissioning, decomming?.Status);
-        Assert.Equal(Status.Decommissioned, decommed?.Status);
+        complete = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        progress = await service.GetEntity(_entityInProgress.Name, CancellationToken.None);
+        decomming = await service.GetEntity(_entityBeingDecommissioned.Name, CancellationToken.None);
+        decommed = await service.GetEntity(_entityDecommissioned.Name, CancellationToken.None);
+
+        Assert.Equal(Status.Created, complete?.TenantConfigStatus);
+        Assert.Equal(Status.Creating, progress?.TenantConfigStatus);
+        Assert.Equal(Status.Decommissioning, decomming?.TenantConfigStatus);
+        Assert.Equal(Status.Decommissioned, decommed?.TenantConfigStatus);
     }
-    
-    
+
+
     [Fact]
     public async Task Handles_environment_exceptions_correctly()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
-        await service.Create(entityWithRestrictedEnvs, CancellationToken.None);
-        await service.Create(entityCompleted, CancellationToken.None);
-        
+        await service.Create(_entityWithRestrictedEnvs, CancellationToken.None);
+        await service.Create(_entityCompleted, CancellationToken.None);
+
         var platformPayload = new PlatformStatePayload
         {
             Environment = "management",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
                 {
-                    entityWithRestrictedEnvs.Name,
+                    _entityWithRestrictedEnvs.Name,
                     new CdpTenantAndMetadata
                     {
-                        Metadata = entityWithRestrictedEnvs.Metadata,
+                        Metadata = _entityWithRestrictedEnvs.Metadata,
                         Tenant = new CdpTenant(),
                         Progress =
                             new CreationProgress { Complete = true, Steps = new Dictionary<string, bool>() }
                     }
                 },
                 {
-                    entityCompleted.Name,
+                    _entityCompleted.Name,
                     new CdpTenantAndMetadata
                     {
                         Tenant = new CdpTenant(),
@@ -182,12 +180,12 @@ public partial class EntityPlatformStateTests
             Version = 1
         };
         await service.UpdateEnvironmentState(platformPayload, CancellationToken.None);
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
 
 
-        var restricted = await service.GetEntity(entityWithRestrictedEnvs.Name, CancellationToken.None);
-        Assert.Equal(Status.Created, restricted?.Status);
-        
+        var restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, CancellationToken.None);
+        Assert.Equal(Status.Created, restricted?.TenantConfigStatus);
+
         // Restricted entity doesn't exist in prod, but should be ok.
         await service.UpdateEnvironmentState(new PlatformStatePayload
         {
@@ -195,7 +193,7 @@ public partial class EntityPlatformStateTests
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
                 {
-                    entityCompleted.Name, new CdpTenantAndMetadata {
+                    _entityCompleted.Name, new CdpTenantAndMetadata {
                         Tenant = new CdpTenant(),
                         Progress = new CreationProgress { Complete = true, Steps = new Dictionary<string, bool>()}
                     }
@@ -205,16 +203,16 @@ public partial class EntityPlatformStateTests
             Created = "",
             Version = 1
         }, CancellationToken.None);
-        
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
 
-        restricted = await service.GetEntity(entityWithRestrictedEnvs.Name, CancellationToken.None);
-        Assert.Equal(Status.Created, restricted?.Status);
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
 
-        var completed = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
-        Assert.Equal(Status.Created, completed?.Status );
+        restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, CancellationToken.None);
+        Assert.Equal(Status.Created, restricted?.TenantConfigStatus);
+
+        var completed = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        Assert.Equal(Status.Created, completed?.TenantConfigStatus);
     }
-    
+
     [Fact]
     public async Task Handles_removal_of_services_normally()
     {
@@ -227,10 +225,10 @@ public partial class EntityPlatformStateTests
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
                 {
-                    entityCompleted.Name,
+                    _entityCompleted.Name,
                     new CdpTenantAndMetadata
                     {
-                        Metadata = entityCompleted.Metadata,
+                        Metadata = _entityCompleted.Metadata,
                         Tenant = new CdpTenant(),
                         Progress = new CreationProgress
                         {
@@ -243,14 +241,14 @@ public partial class EntityPlatformStateTests
             Created = "",
             Version = 1
         };
-        
-        await service.Create(entityCompleted, CancellationToken.None);
-        await service.UpdateEnvironmentState(updatePayload, CancellationToken.None);
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
 
-        var entity = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
-        Assert.Equal(Status.Created, entity?.Status);
-        
+        await service.Create(_entityCompleted, CancellationToken.None);
+        await service.UpdateEnvironmentState(updatePayload, CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+
+        var entity = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        Assert.Equal(Status.Created, entity?.TenantConfigStatus);
+
         // Update an environment in which the service doesn't exist.
         await service.UpdateEnvironmentState(new PlatformStatePayload
         {
@@ -260,10 +258,10 @@ public partial class EntityPlatformStateTests
             Created = "",
             Version = 1
         }, CancellationToken.None);
-        
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
 
-        entity = await service.GetEntity(entityCompleted.Name, CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+
+        entity = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
         Assert.DoesNotContain("management", entity!.Progress.Keys);
         Assert.Contains("prod", entity.Progress.Keys);
     }

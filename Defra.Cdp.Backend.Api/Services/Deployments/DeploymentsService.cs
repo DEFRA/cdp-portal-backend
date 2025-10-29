@@ -257,7 +257,7 @@ public class DeploymentsService(
         if (query.Favourites?.Length > 0)
         {
             var entities = await entitiesService.GetEntities(
-                new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites }, 
+                new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites },
                 new EntitySearchOptions { Summary = true },
                 ct);
             var servicesOwnedByTeam = entities.Select(r => r.Name);
@@ -318,7 +318,7 @@ public class DeploymentsService(
         if (query.Favourites?.Length > 0)
         {
             var entities = await entitiesService.GetEntities(
-                new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites }, 
+                new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites },
                 new EntitySearchOptions { Summary = true },
                 ct);
             var servicesOwnedByTeam = entities.Select(r => r.Name);

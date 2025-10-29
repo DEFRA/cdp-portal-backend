@@ -12,7 +12,7 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
 public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTest(fixture)
 {
-    private CdpTenantAndMetadata serviceA = new()
+    private readonly CdpTenantAndMetadata _serviceA = new()
     {
         Metadata = new TenantMetadata
         {
@@ -49,7 +49,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             Environment = "test",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
-                { "service-a", serviceA }
+                { "service-a", _serviceA }
             }
         };
 
@@ -59,9 +59,9 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
         Assert.NotNull(result);
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Backend, result.SubType);
-        Assert.Equal(Status.Creating, result.Status);
-        Assert.True(result.Envs.ContainsKey("test"));
-        Assert.Equivalent(serviceA.Tenant, result.Envs["test"]);
+        Assert.Equal(Status.Creating, result.TenantConfigStatus);
+        Assert.True(result.Environments.ContainsKey("test"));
+        Assert.Equivalent(_serviceA.Tenant, result.Environments["test"]);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             Environment = "test",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
-                { "service-a", serviceA }
+                { "service-a", _serviceA }
             }
         };
 
@@ -92,8 +92,8 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
         Assert.NotNull(result);
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Backend, result.SubType);
-        Assert.True(result.Envs.ContainsKey("test"));
-        Assert.Equivalent(serviceA.Tenant, result.Envs["test"]);
+        Assert.True(result.Environments.ContainsKey("test"));
+        Assert.Equivalent(_serviceA.Tenant, result.Environments["test"]);
     }
 
     [Fact]
@@ -109,14 +109,14 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             Environment = "test",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
-                { "service-a", serviceA }
+                { "service-a", _serviceA }
             }
         };
 
         await service.UpdateEnvironmentState(state, CancellationToken.None);
         var result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
-        Assert.True(result.Envs.ContainsKey("test"));
+        Assert.True(result.Environments.ContainsKey("test"));
 
         var nextState = new PlatformStatePayload
         {
@@ -129,7 +129,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
         await service.UpdateEnvironmentState(nextState, CancellationToken.None);
         result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
-        Assert.False(result.Envs.ContainsKey("test"));
+        Assert.False(result.Environments.ContainsKey("test"));
     }
 
 
@@ -146,7 +146,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             Environment = "test",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
-                { "service-a", serviceA }
+                { "service-a", _serviceA }
             }
         };
         await service.UpdateEnvironmentState(testState, CancellationToken.None);
@@ -157,17 +157,17 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             TerraformSerials = new Serials(),
             Environment = "dev",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>{
-                { "service-a", serviceA }
+                { "service-a", _serviceA }
             }
         };
         await service.UpdateEnvironmentState(devState, CancellationToken.None);
 
         var result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
-        Assert.True(result.Envs.ContainsKey("test"));
-        Assert.True(result.Envs.ContainsKey("dev"));
+        Assert.True(result.Environments.ContainsKey("test"));
+        Assert.True(result.Environments.ContainsKey("dev"));
     }
-    
+
     [Fact]
     public async Task Tenant_with_limited_environments_has_correct_status()
     {
@@ -182,7 +182,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
                 { "service-a",  new CdpTenantAndMetadata {
-                        Tenant = serviceA.Tenant,
+                        Tenant = _serviceA.Tenant,
                         Metadata = new TenantMetadata
                         {
                             Type = nameof(Type.Microservice),
@@ -201,11 +201,11 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
             }
         };
         await service.UpdateEnvironmentState(testState, CancellationToken.None);
-        await service.BulkUpdateCreationStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
         var result = await service.GetEntity("service-a", CancellationToken.None);
         Assert.NotNull(result);
         Assert.Equal(CdpEnvironments.EnvironmentExcludingInfraDev.Length, result.Progress.Count);
         Assert.True(result.Progress.Values.All(v => v.Complete));
-        Assert.Equal(Status.Created, result.Status);
+        Assert.Equal(Status.Created, result.TenantConfigStatus);
     }
 }

@@ -28,7 +28,8 @@
         "Github__AppKey": "// generate a random key for local testing using `ssh-keygen -t rsa -b 4096 -m PEM -f /tmp/mock.key -q -P '' && cat /tmp/mock.key | base64 -w0`",
         "Github__ApiUrl": "http://localhost:3939",
         "UserServiceBackendUrl": "http://localhost:3001",
-        "SelfServiceOpsUrl": "http://localhost:3009"
+        "SelfServiceOpsUrl": "http://localhost:3009",
+        "SelfServiceOpsSecret": "test_shared_secret_local"
       }
     }
   }

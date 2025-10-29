@@ -18,16 +18,16 @@ public class TestRunServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixt
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "testruns");
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
-        var exists = await testRunService.ExistsTestRunAsync("test-suite", "dev", "1234", new CancellationToken());
+        var exists = await testRunService.AnyTestRunExists("test-suite", "dev", "1234", new CancellationToken());
         Assert.False(exists);
     }
-    
+
     [Fact]
     public async Task ExistsTestRunReturnsTrueWhenTestRunDoesExists()
     {
         var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "testruns");
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
-        
+
         var testRun = JsonSerializer.Deserialize<TestRun>("""
                                                           {
                                                             "_id": "68c97adb7e200c8c06ace0de",
@@ -56,8 +56,8 @@ public class TestRunServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixt
                                                           }
                                                           """)!;
         await testRunService.CreateTestRun(testRun, new CancellationToken());
-        
-        var exists = testRunService.ExistsTestRunAsync("test-suite", "dev", "1234", new CancellationToken()).GetAwaiter().GetResult();
+
+        var exists = testRunService.AnyTestRunExists("test-suite", "dev", "1234", new CancellationToken()).GetAwaiter().GetResult();
         Assert.True(exists);
     }
 

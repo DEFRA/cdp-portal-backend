@@ -12,7 +12,7 @@ public static class CdpEnvironments
         "perf-test",
         "prod"
     ];
-    
+
     public static readonly string[] EnvironmentExcludingInfraDev =
     [
         "management",

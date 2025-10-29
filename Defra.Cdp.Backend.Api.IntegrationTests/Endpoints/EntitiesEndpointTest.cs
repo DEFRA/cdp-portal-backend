@@ -118,8 +118,8 @@ public class EntitiesEndpointTest : ServiceTest
         expected.Sort();
         Assert.Equal(expected, filters?.Entities);
     }
-    
-    
+
+
     [Fact]
     public async Task Should_list_all_entities()
     {
@@ -131,14 +131,14 @@ public class EntitiesEndpointTest : ServiceTest
         var entities = JsonSerializer.Deserialize<List<Entity>>(body);
         Assert.NotNull(entities);
         Assert.NotEmpty(entities);
-        
+
         var expected = TestData().Select(e => e.Name).ToList();
         expected.Sort();
         var entitiesReturned = entities.Select(e => e.Name).ToList();
         Assert.Equal(expected, entitiesReturned);
     }
-    
-    
+
+
     [Fact]
     public async Task Should_list_entities_by_team()
     {
@@ -155,8 +155,8 @@ public class EntitiesEndpointTest : ServiceTest
         var entitiesReturned = entities.Select(e => e.Name).ToList();
         Assert.Equal(expected, entitiesReturned);
     }
-    
-    
+
+
     [Fact]
     public async Task Should_list_entities_by_type()
     {
@@ -171,8 +171,8 @@ public class EntitiesEndpointTest : ServiceTest
 
         Assert.True(entities.TrueForAll(e => e.Type == Type.TestSuite));
     }
-    
-    
+
+
     [Fact]
     public async Task Should_list_entities_by_status()
     {

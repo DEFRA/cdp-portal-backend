@@ -22,7 +22,7 @@ public interface ITestRunService
 
     public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
 
-    public Task<bool> ExistsTestRunAsync(string suite, string environment, string deploymentId, CancellationToken ct);
+    public Task<bool> AnyTestRunExists(string suite, string environment, string deploymentId, CancellationToken ct);
 }
 
 public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -147,8 +147,8 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
             .Project(t => new TestRunSettings { Cpu = t.Cpu, Memory = t.Memory })
             .FirstOrDefaultAsync(ct);
     }
-    
-    public async Task<bool> ExistsTestRunAsync(
+
+    public async Task<bool> AnyTestRunExists(
         string suite,
         string environment,
         string deploymentId,
@@ -160,14 +160,14 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
         {
             return false;
         }
-    
+
         var builder = Builders<TestRun>.Filter;
-    
+
         var filter = builder.Eq(t => t.TestSuite, suite) &
                      builder.Eq(t => t.Environment, environment) &
                      builder.Eq(t => t.Deployment.DeploymentId, deploymentId);
-    
-        return await Collection.Find(filter).Limit(1).AnyAsync(ct);
+
+        return await Collection.Find(filter).AnyAsync(ct);
     }
 
 }
