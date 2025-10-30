@@ -1,10 +1,16 @@
+using System;
 using Defra.Cdp.Backend.Api.Mongo;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 
-public class MongoTestSupport(MongoContainerFixture fixture) : IClassFixture<MongoContainerFixture>
+public class MongoTestSupport(MongoContainerFixture fixture) 
 {
-    
+    /// <summary>
+    /// Creates a MongoDBClientFactory. By default, it will generate a random database name, which will keep the
+    /// DB connection isolated from other tests using the same container. 
+    /// </summary>
+    /// <param name="dbName"></param>
+    /// <returns></returns>
     protected MongoDbClientFactory CreateConnectionFactory(string? dbName = null)
     {
         if (dbName == null)
