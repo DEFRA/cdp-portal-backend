@@ -1,4 +1,3 @@
-using System;
 using Defra.Cdp.Backend.Api.Mongo;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Mongo;

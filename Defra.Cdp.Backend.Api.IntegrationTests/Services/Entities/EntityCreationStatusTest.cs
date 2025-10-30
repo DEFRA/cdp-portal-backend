@@ -23,7 +23,7 @@ public partial class EntityPlatformStateTests
             {"ext-test", new CreationProgress { Complete = true }},
             {"prod", new CreationProgress { Complete = true }},
             {"management", new CreationProgress { Complete = true }},
-            {"infra-dev", new CreationProgress { Complete = true }},
+            {"infra-dev", new CreationProgress { Complete = true }}
         }
     };
 
@@ -40,7 +40,7 @@ public partial class EntityPlatformStateTests
             {"ext-test", new CreationProgress { Complete = true }},
             {"prod", new CreationProgress { Complete = false }},
             {"management", new CreationProgress { Complete = true }},
-            {"infra-dev", new CreationProgress { Complete = true }},
+            {"infra-dev", new CreationProgress { Complete = true }}
         }
     };
 
@@ -64,7 +64,7 @@ public partial class EntityPlatformStateTests
             {"ext-test", new CreationProgress { Complete = true }},
             {"prod", new CreationProgress { Complete = false }},
             {"management", new CreationProgress { Complete = true }},
-            {"infra-dev", new CreationProgress { Complete = true }},
+            {"infra-dev", new CreationProgress { Complete = true }}
         }
     };
 
@@ -91,7 +91,7 @@ public partial class EntityPlatformStateTests
         Progress = new Dictionary<string, CreationProgress>
         {
             {"management", new CreationProgress { Complete = true }},
-            {"infra-dev", new CreationProgress { Complete = true }},
+            {"infra-dev", new CreationProgress { Complete = true }}
         },
         Metadata = new TenantMetadata
         {
@@ -106,17 +106,17 @@ public partial class EntityPlatformStateTests
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
-        await service.Create(_entityCompleted, CancellationToken.None);
-        await service.Create(_entityInProgress, CancellationToken.None);
-        await service.Create(_entityBeingDecommissioned, CancellationToken.None);
-        await service.Create(_entityDecommissioned, CancellationToken.None);
+        await service.Create(_entityCompleted, TestContext.Current.CancellationToken);
+        await service.Create(_entityInProgress, TestContext.Current.CancellationToken);
+        await service.Create(_entityBeingDecommissioned, TestContext.Current.CancellationToken);
+        await service.Create(_entityDecommissioned, TestContext.Current.CancellationToken);
 
-        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
-        var complete = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
-        var progress = await service.GetEntity(_entityInProgress.Name, CancellationToken.None);
-        var decomming = await service.GetEntity(_entityBeingDecommissioned.Name, CancellationToken.None);
-        var decommed = await service.GetEntity(_entityDecommissioned.Name, CancellationToken.None);
+        var complete = await service.GetEntity(_entityCompleted.Name, TestContext.Current.CancellationToken);
+        var progress = await service.GetEntity(_entityInProgress.Name, TestContext.Current.CancellationToken);
+        var decomming = await service.GetEntity(_entityBeingDecommissioned.Name, TestContext.Current.CancellationToken);
+        var decommed = await service.GetEntity(_entityDecommissioned.Name, TestContext.Current.CancellationToken);
 
         Assert.Equal(Status.Created, complete?.TenantConfigStatus);
         Assert.Equal(Status.Creating, progress?.TenantConfigStatus);
@@ -124,12 +124,12 @@ public partial class EntityPlatformStateTests
         Assert.Equal(Status.Decommissioned, decommed?.TenantConfigStatus);
 
         // Check a second run doesn't change any state
-        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
-        complete = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
-        progress = await service.GetEntity(_entityInProgress.Name, CancellationToken.None);
-        decomming = await service.GetEntity(_entityBeingDecommissioned.Name, CancellationToken.None);
-        decommed = await service.GetEntity(_entityDecommissioned.Name, CancellationToken.None);
+        complete = await service.GetEntity(_entityCompleted.Name, TestContext.Current.CancellationToken);
+        progress = await service.GetEntity(_entityInProgress.Name, TestContext.Current.CancellationToken);
+        decomming = await service.GetEntity(_entityBeingDecommissioned.Name, TestContext.Current.CancellationToken);
+        decommed = await service.GetEntity(_entityDecommissioned.Name, TestContext.Current.CancellationToken);
 
         Assert.Equal(Status.Created, complete?.TenantConfigStatus);
         Assert.Equal(Status.Creating, progress?.TenantConfigStatus);
@@ -144,8 +144,8 @@ public partial class EntityPlatformStateTests
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
-        await service.Create(_entityWithRestrictedEnvs, CancellationToken.None);
-        await service.Create(_entityCompleted, CancellationToken.None);
+        await service.Create(_entityWithRestrictedEnvs, TestContext.Current.CancellationToken);
+        await service.Create(_entityCompleted, TestContext.Current.CancellationToken);
 
         var platformPayload = new PlatformStatePayload
         {
@@ -178,11 +178,11 @@ public partial class EntityPlatformStateTests
             Created = "",
             Version = 1
         };
-        await service.UpdateEnvironmentState(platformPayload, CancellationToken.None);
-        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await service.UpdateEnvironmentState(platformPayload, TestContext.Current.CancellationToken);
+        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
 
-        var restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, CancellationToken.None);
+        var restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, TestContext.Current.CancellationToken);
         Assert.Equal(Status.Created, restricted?.TenantConfigStatus);
 
         // Restricted entity doesn't exist in prod, but should be ok.
@@ -201,14 +201,14 @@ public partial class EntityPlatformStateTests
             TerraformSerials = new Serials(),
             Created = "",
             Version = 1
-        }, CancellationToken.None);
+        }, TestContext.Current.CancellationToken);
 
-        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
-        restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, CancellationToken.None);
+        restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, TestContext.Current.CancellationToken);
         Assert.Equal(Status.Created, restricted?.TenantConfigStatus);
 
-        var completed = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        var completed = await service.GetEntity(_entityCompleted.Name, TestContext.Current.CancellationToken);
         Assert.Equal(Status.Created, completed?.TenantConfigStatus);
     }
 
@@ -241,11 +241,11 @@ public partial class EntityPlatformStateTests
             Version = 1
         };
 
-        await service.Create(_entityCompleted, CancellationToken.None);
-        await service.UpdateEnvironmentState(updatePayload, CancellationToken.None);
-        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await service.Create(_entityCompleted, TestContext.Current.CancellationToken);
+        await service.UpdateEnvironmentState(updatePayload, TestContext.Current.CancellationToken);
+        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
-        var entity = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        var entity = await service.GetEntity(_entityCompleted.Name, TestContext.Current.CancellationToken);
         Assert.Equal(Status.Created, entity?.TenantConfigStatus);
 
         // Update an environment in which the service doesn't exist.
@@ -256,11 +256,11 @@ public partial class EntityPlatformStateTests
             TerraformSerials = new Serials(),
             Created = "",
             Version = 1
-        }, CancellationToken.None);
+        }, TestContext.Current.CancellationToken);
 
-        await service.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
-        entity = await service.GetEntity(_entityCompleted.Name, CancellationToken.None);
+        entity = await service.GetEntity(_entityCompleted.Name, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("management", entity!.Progress.Keys);
         Assert.Contains("prod", entity.Progress.Keys);
     }

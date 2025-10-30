@@ -15,7 +15,7 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
     [Fact]
     public async Task WillAddAndRemoveTags()
     {
-        var ct = CancellationToken.None;
+        var ct = TestContext.Current.CancellationToken;
         var logger = new NullLoggerFactory();
         var mongoFactory = CreateMongoDbClientFactory();
         var entitiesService = new EntitiesService(mongoFactory, logger);
@@ -24,7 +24,7 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
             Name = _fooRepository.Id,
             Teams = [],
             Status = Status.Created,
-            Type = Type.Microservice,
+            Type = Type.Microservice
         };
         await entitiesService.Create(entity, ct);
 
@@ -48,20 +48,20 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
         var repositoryService = new RepositoryService(mongoFactory, logger);
         var entitiesService = new EntitiesService(mongoFactory, logger);
 
-        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
+        await repositoryService.Upsert(_fooRepository, TestContext.Current.CancellationToken);
 
         var entityToCreate = new Entity
         {
             Name = _fooRepository.Id,
             Teams = [],
             Status = Status.Created,
-            Type = Type.Microservice,
+            Type = Type.Microservice
         };
 
-        await entitiesService.Create(entityToCreate, CancellationToken.None);
+        await entitiesService.Create(entityToCreate, TestContext.Current.CancellationToken);
 
         // Check initial state
-        var entity = await entitiesService.GetEntity(_fooRepository.Id, CancellationToken.None);
+        var entity = await entitiesService.GetEntity(_fooRepository.Id, TestContext.Current.CancellationToken);
         Assert.NotNull(entity);
         Assert.Empty(entity.Teams);
 
@@ -69,7 +69,7 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
         // Update the teams in github
         List<Repository> repos =
         [
-            new Repository
+            new()
             {
                 Id = "foo",
                 Teams = [new RepositoryTeam("bar-team", "9999", "bar-team")],
@@ -80,9 +80,9 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
         ];
 
         // Force refresh
-        await entitiesService.RefreshTeams(repos, CancellationToken.None);
+        await entitiesService.RefreshTeams(repos, TestContext.Current.CancellationToken);
 
-        var updatedEntity = await entitiesService.GetEntity(_fooRepository.Id, CancellationToken.None);
+        var updatedEntity = await entitiesService.GetEntity(_fooRepository.Id, TestContext.Current.CancellationToken);
 
         Assert.NotNull(updatedEntity);
         var team = new Team { TeamId = "9999", Name = "bar-team" };

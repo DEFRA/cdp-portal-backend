@@ -30,8 +30,8 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
             CdpMigrationId = cdpMigrationId,
             Service = "test-backend",
             User = new UserDetails(),
-            Version = "0.1.0",
-        }, CancellationToken.None);
+            Version = "0.1.0"
+        }, TestContext.Current.CancellationToken);
 
 
 
@@ -41,9 +41,9 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
             Account: AwsAccount,
             Time: DateTime.Now
         );
-        await handler.Handle("id", lambdaEvent, CancellationToken.None);
+        await handler.Handle("id", lambdaEvent, TestContext.Current.CancellationToken);
 
-        var result = await service.FindByBuildId(buildId, CancellationToken.None);
+        var result = await service.FindByBuildId(buildId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal(cdpMigrationId, result.CdpMigrationId);
@@ -78,9 +78,9 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
                 Version = "0.1.0"
             }
         );
-        await handler.Handle("id", lambdaEvent, CancellationToken.None);
+        await handler.Handle("id", lambdaEvent, TestContext.Current.CancellationToken);
 
-        var result = await service.FindByBuildId(buildId, CancellationToken.None);
+        var result = await service.FindByBuildId(buildId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal(cdpMigrationId, result.CdpMigrationId);
@@ -90,6 +90,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
     [Fact]
     public async Task TestUpdateMessages()
     {
+        var cancellationToken = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
@@ -111,19 +112,19 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
             CdpMigrationId = cdpMigrationId,
             Service = "test-backend",
             User = new UserDetails(),
-            Version = "0.1.0",
-        }, CancellationToken.None);
+            Version = "0.1.0"
+        }, cancellationToken);
 
-        await service.Link(cdpMigrationId, buildId, CancellationToken.None);
+        await service.Link(cdpMigrationId, buildId,cancellationToken);
 
-        await handler.Handle("1", inProgressEvent, CancellationToken.None);
+        await handler.Handle("1", inProgressEvent, cancellationToken);
 
-        var build = await service.FindByBuildId(buildId, CancellationToken.None);
+        var build = await service.FindByBuildId(buildId, cancellationToken);
         Assert.NotNull(build);
         Assert.Equal("IN_PROGRESS", build.Status);
 
-        await handler.Handle("2", succeededEvent, CancellationToken.None);
-        build = await service.FindByBuildId(buildId, CancellationToken.None);
+        await handler.Handle("2", succeededEvent, cancellationToken);
+        build = await service.FindByBuildId(buildId, cancellationToken);
         Assert.NotNull(build);
         Assert.Equal("SUCCEEDED", build.Status);
     }
@@ -132,12 +133,13 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
     [Fact]
     public async Task TestLatestForService()
     {
+        var cancellationToken = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
 
         List<DatabaseMigration> migrations =
         [
-            new DatabaseMigration
+            new()
             {
                 Environment = "test",
                 CdpMigrationId = "1",
@@ -148,7 +150,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
                 Updated = DateTime.Now.AddDays(-5)
             },
 
-            new DatabaseMigration
+            new()
             {
                 Environment = "test",
                 CdpMigrationId = "1",
@@ -158,7 +160,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now
             },
-            new DatabaseMigration
+            new()
             {
                 Environment = "dev",
                 CdpMigrationId = "1",
@@ -168,7 +170,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now.AddDays(-4)
             },
-            new DatabaseMigration
+            new()
             {
                 Environment = "dev",
                 CdpMigrationId = "1",
@@ -178,7 +180,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
                 Status = CodeBuildStatuses.Succeeded,
                 Updated = DateTime.Now.AddDays(-1)
             },
-            new DatabaseMigration
+            new()
             {
                 Environment = "test",
                 CdpMigrationId = "1",
@@ -192,11 +194,11 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
 
         foreach (var databaseMigration in migrations)
         {
-            await service.CreateMigration(databaseMigration, CancellationToken.None);
+            await service.CreateMigration(databaseMigration, cancellationToken);
         }
 
 
-        var result = await service.LatestForService("test-backend", CancellationToken.None);
+        var result = await service.LatestForService("test-backend", cancellationToken);
 
         Assert.Equal(2, result.Count);
         Assert.Contains(result, m => m.Environment == "dev" && m.Version == "0.5.0");

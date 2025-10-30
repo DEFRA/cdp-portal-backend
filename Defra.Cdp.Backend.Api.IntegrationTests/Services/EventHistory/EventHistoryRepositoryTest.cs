@@ -18,12 +18,12 @@ public class EventHistoryRepositoryTest(MongoContainerFixture fixture) : MongoTe
 
 
         var msg = JsonDocument.Parse("{\"foo\": 123, \"bar\": \"baz\"}");
-        await service.PersistEvent("1234", msg.RootElement, CancellationToken.None);
+        await service.PersistEvent("1234", msg.RootElement, TestContext.Current.CancellationToken);
 
         var colName = nameof(EventHistoryRepositoryTest).ToLower() + "_events";
 
         var col = mongoFactory.GetCollection<BsonDocument>(colName);
-        var result = col.Find(FilterDefinition<BsonDocument>.Empty).FirstOrDefault(CancellationToken.None);
+        var result = col.Find(FilterDefinition<BsonDocument>.Empty).FirstOrDefault(TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("1234", result.GetValue("messageId").AsString);

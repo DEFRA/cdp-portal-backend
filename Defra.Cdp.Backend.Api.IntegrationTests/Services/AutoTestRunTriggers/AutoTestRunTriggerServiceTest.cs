@@ -16,7 +16,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
         var autoTestRunTriggerService =
             new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
-        var trigger = await autoTestRunTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
+        var trigger = await autoTestRunTriggerService.FindForService("cdp-portal-backend", TestContext.Current.CancellationToken);
         Assert.Null(trigger);
 
         var newTrigger = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
@@ -27,9 +27,9 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
                                                                         }
                                                                         """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(newTrigger, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger, TestContext.Current.CancellationToken);
         var triggerFromDb =
-            await autoTestRunTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
+            await autoTestRunTriggerService.FindForService("cdp-portal-backend", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
@@ -45,8 +45,8 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
                                                                             }
                                                                             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(updatedTrigger, CancellationToken.None);
-        triggerFromDb = await autoTestRunTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(updatedTrigger, TestContext.Current.CancellationToken);
+        triggerFromDb = await autoTestRunTriggerService.FindForService("cdp-portal-backend", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
@@ -67,7 +67,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             Environments = []
         };
 
-        var result = await autoTestRunTriggerService.RemoveTestRun(dto, CancellationToken.None);
+        var result = await autoTestRunTriggerService.RemoveTestRun(dto, TestContext.Current.CancellationToken);
         Assert.Null(result);
     }
 
@@ -85,7 +85,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             Environments = ["dev"]
         };
 
-        var result = await autoTestRunTriggerService.UpdateTestRun(dto, CancellationToken.None);
+        var result = await autoTestRunTriggerService.UpdateTestRun(dto, TestContext.Current.CancellationToken);
         Assert.Null(result);
     }
 
@@ -104,8 +104,8 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(newTrigger, CancellationToken.None);
-        var triggerFromDb = await autoTestRunTriggerService.FindForService("profile-test-service", CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger, TestContext.Current.CancellationToken);
+        var triggerFromDb = await autoTestRunTriggerService.FindForService("profile-test-service", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("profile-test-service", triggerFromDb.ServiceName);
@@ -129,7 +129,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(firstConfig, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(firstConfig, TestContext.Current.CancellationToken);
 
         var secondConfig = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
             {
@@ -140,9 +140,9 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(secondConfig, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(secondConfig, TestContext.Current.CancellationToken);
 
-        var triggerFromDb = await autoTestRunTriggerService.FindForService("multi-config-service", CancellationToken.None);
+        var triggerFromDb = await autoTestRunTriggerService.FindForService("multi-config-service", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Single(triggerFromDb.TestSuites);
@@ -166,8 +166,8 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(newTrigger, CancellationToken.None);
-        var triggerFromDb = await autoTestRunTriggerService.FindForService("null-profile-service", CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger, TestContext.Current.CancellationToken);
+        var triggerFromDb = await autoTestRunTriggerService.FindForService("null-profile-service", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("null-profile-service", triggerFromDb.ServiceName);
@@ -191,7 +191,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(nullProfileConfig, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(nullProfileConfig, TestContext.Current.CancellationToken);
 
         var namedProfileConfig = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
             {
@@ -202,9 +202,9 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(namedProfileConfig, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(namedProfileConfig, TestContext.Current.CancellationToken);
 
-        var triggerFromDb = await autoTestRunTriggerService.FindForService("mixed-profile-service", CancellationToken.None);
+        var triggerFromDb = await autoTestRunTriggerService.FindForService("mixed-profile-service", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Single(triggerFromDb.TestSuites);
@@ -229,7 +229,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(nullProfileConfig, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(nullProfileConfig, TestContext.Current.CancellationToken);
 
         var namedProfileConfig = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
             {
@@ -240,7 +240,7 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.SaveTrigger(namedProfileConfig, CancellationToken.None);
+        await autoTestRunTriggerService.SaveTrigger(namedProfileConfig, TestContext.Current.CancellationToken);
 
         // Remove the null profile config
         var removeConfig = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
@@ -252,8 +252,8 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
             }
             """)!;
 
-        await autoTestRunTriggerService.RemoveTestRun(removeConfig, CancellationToken.None);
-        var triggerFromDb = await autoTestRunTriggerService.FindForService("remove-null-profile-service", CancellationToken.None);
+        await autoTestRunTriggerService.RemoveTestRun(removeConfig, TestContext.Current.CancellationToken);
+        var triggerFromDb = await autoTestRunTriggerService.FindForService("remove-null-profile-service", TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Single(triggerFromDb.TestSuites);
