@@ -14,7 +14,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
     public async Task WillUpdateTeamsInTenantData()
     {
         var envLookup = new MockEnvironmentLookup();
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
@@ -65,7 +65,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
     public async Task WillAddTeamToTenantData()
     {
         var envLookup = new MockEnvironmentLookup();
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
@@ -97,7 +97,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
     public async Task WillRemoveDeletedTenants()
     {
         var envLookup = new MockEnvironmentLookup();
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
@@ -138,7 +138,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
     public async Task WillFilterResults()
     {
         var envLookup = new MockEnvironmentLookup();
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
@@ -207,7 +207,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
     public async Task WillRefreshTeams()
     {
         var envLookup = new MockEnvironmentLookup();
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
@@ -267,7 +267,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
     public async Task WillUseS3BucketUrl()
     {
         var envLookup = new MockEnvironmentLookup();
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 

@@ -11,7 +11,7 @@ public class ApiGatewaysServiceTest(MongoContainerFixture fixture) : ServiceTest
     [Fact]
     public async Task ApiGatewaysReturnsAsExpected()
     {
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var enabledApisService = new EnabledApisService(connectionFactory, new LoggerFactory());
 
         var sampleEvent = EventFromJson<EnabledApisPayload>("""

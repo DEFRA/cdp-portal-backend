@@ -103,7 +103,7 @@ public partial class EntityPlatformStateTests
     [Fact]
     public async Task Updates_to_complete()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(_entityCompleted, CancellationToken.None);
@@ -141,7 +141,7 @@ public partial class EntityPlatformStateTests
     [Fact]
     public async Task Handles_environment_exceptions_correctly()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(_entityWithRestrictedEnvs, CancellationToken.None);
@@ -215,7 +215,7 @@ public partial class EntityPlatformStateTests
     [Fact]
     public async Task Handles_removal_of_services_normally()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var updatePayload = new PlatformStatePayload

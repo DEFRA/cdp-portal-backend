@@ -15,7 +15,7 @@ public class TestRunServiceTest(MongoContainerFixture fixture) : ServiceTest(fix
     [Fact]
     public async Task ExistsTestRunReturnsFalseWhenTestRunDoesNotExist()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
         var exists = await testRunService.AnyTestRunExists("test-suite", "dev", "1234", new CancellationToken());
         Assert.False(exists);
@@ -24,7 +24,7 @@ public class TestRunServiceTest(MongoContainerFixture fixture) : ServiceTest(fix
     [Fact]
     public async Task ExistsTestRunReturnsTrueWhenTestRunDoesExists()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
 
         var testRun = JsonSerializer.Deserialize<TestRun>("""

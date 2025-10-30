@@ -12,7 +12,7 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
     [Fact]
     public async Task AutoDeploymentTriggerOverwritesExistingTrigger()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
         var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
@@ -60,7 +60,7 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
     [Fact]
     public async Task AutoDeploymentTriggerDeletesTriggerWithNoEnvironments()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         IAutoDeploymentTriggerService autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
         var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
@@ -101,7 +101,7 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
     [Fact]
     public async Task AutoDeploymentTriggerDoesntPersistProdEnvironment()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         IAutoDeploymentTriggerService autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
         var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);

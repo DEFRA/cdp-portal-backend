@@ -12,7 +12,7 @@ public class EventHistoryRepositoryTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Persists_json_events()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var factory = new EventHistoryFactory(mongoFactory, new NullLoggerFactory());
         var service = factory.Create<EventHistoryRepositoryTest>();
 

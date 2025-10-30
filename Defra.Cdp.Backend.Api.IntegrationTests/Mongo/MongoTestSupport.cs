@@ -11,7 +11,7 @@ public class MongoTestSupport(MongoContainerFixture fixture)
     /// </summary>
     /// <param name="dbName"></param>
     /// <returns></returns>
-    protected MongoDbClientFactory CreateConnectionFactory(string? dbName = null)
+    protected MongoDbClientFactory CreateMongoDbClientFactory(string? dbName = null)
     {
         if (dbName == null)
         {

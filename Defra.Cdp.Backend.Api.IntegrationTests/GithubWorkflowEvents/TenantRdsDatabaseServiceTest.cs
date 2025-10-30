@@ -53,7 +53,7 @@ public class TenantRdsDatabasesServiceTest(MongoContainerFixture fixture) : Serv
     public async Task WillUpdateDatabases()
     {
         
-        var databaseService = new TenantRdsDatabasesService(CreateConnectionFactory(), new NullLoggerFactory());
+        var databaseService = new TenantRdsDatabasesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
         var sampleEvent = TestData();
 
@@ -69,7 +69,7 @@ public class TenantRdsDatabasesServiceTest(MongoContainerFixture fixture) : Serv
     [Fact]
     public async Task WillCleanUpDeletedDatabases()
     {
-        var databaseService = new TenantRdsDatabasesService(CreateConnectionFactory(), new NullLoggerFactory());
+        var databaseService = new TenantRdsDatabasesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
         var sampleEvent = TestData();
 

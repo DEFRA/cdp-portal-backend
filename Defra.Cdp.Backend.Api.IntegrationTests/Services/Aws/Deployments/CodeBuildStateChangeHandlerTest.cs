@@ -17,7 +17,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
     [Fact]
     public async Task TestCreateAndLinkingMessages()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
 
@@ -53,7 +53,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
     [Fact]
     public async Task CreatingOnLinkFailure()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
 
@@ -90,7 +90,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
     [Fact]
     public async Task TestUpdateMessages()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
 
@@ -132,7 +132,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
     [Fact]
     public async Task TestLatestForService()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
 
         List<DatabaseMigration> migrations =

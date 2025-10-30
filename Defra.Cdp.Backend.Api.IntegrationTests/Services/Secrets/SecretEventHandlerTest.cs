@@ -12,7 +12,7 @@ public class SecretEventHandlerTest(MongoContainerFixture fixture) : ServiceTest
     [Fact]
     public async Task SecretsEventHandlerPersistsNewSecretsAndDeletesRemovedSecrets()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var secretsService = new SecretsService(mongoFactory, new LoggerFactory());
         var secretEventHandler = new SecretEventHandler(secretsService, Substitute.For<IPendingSecretsService>(),
             new LoggerFactory().CreateLogger<SecretEventHandler>());

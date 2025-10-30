@@ -23,7 +23,7 @@ public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoT
     public async Task TerminalEndpointShowRecordSessionToMongo()
     {
 
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var loggerFactory = new NullLoggerFactory();
         var terminalService = new TerminalService(mongoFactory, loggerFactory);
         var cwMock = new Mock<ICloudWatchMetricsService>();
