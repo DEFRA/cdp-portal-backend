@@ -17,25 +17,17 @@ public interface IEntitiesService
     Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options, CancellationToken cancellationToken);
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
-
     Task<EntitiesService.EntityFilters>
         GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
-
     Task Create(Entity entity, CancellationToken cancellationToken);
     Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
-
-
     Task AddTag(string entityName, string tag, CancellationToken cancellationToken);
     Task RemoveTag(string entityName, string tag, CancellationToken cancellationToken);
-
-    Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken);
-
     Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
         CancellationToken cancellationToken);
     Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken);
     Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
-
-    Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken);
+    Task UpdateEnvironmentState(PlatformStatePayload state, Dictionary<string, UserServiceTeam> userServiceTeams, CancellationToken cancellationToken);
     Task BulkUpdateTenantConfigStatus(CancellationToken cancellationToken);
 }
 
@@ -222,25 +214,6 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(e => e.Name == entityName, update, new UpdateOptions(), cancellationToken);
     }
 
-    [Obsolete("will be replaced in CORE-1614")]
-    public async Task RefreshTeams(List<Repository> repos, CancellationToken cancellationToken)
-    {
-        var updates = repos.Select(r =>
-        {
-            var entity = r.Id;
-            var teams = r.Teams.Select(t => new Team { TeamId = t.TeamId, Name = t.Name }).ToList();
-
-            var filterBuilder = Builders<Entity>.Filter;
-            var filter = filterBuilder.Eq(e => e.Name, entity);
-
-            var updateBuilder = Builders<Entity>.Update;
-            var update = updateBuilder.Set(e => e.Teams, teams);
-            return new UpdateManyModel<Entity>(filter, update) { IsUpsert = false };
-        }).ToList();
-
-        await Collection.BulkWriteAsync(updates, new BulkWriteOptions(), cancellationToken);
-    }
-
     public async Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken)
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
@@ -328,8 +301,9 @@ public class EntitiesService(
     /// When the entity does not exist it will create the entity using the data available.
     /// </summary>
     /// <param name="state"></param>
+    /// <param name="userServiceTeams"></param>
     /// <param name="cancellationToken"></param>
-    public async Task UpdateEnvironmentState(PlatformStatePayload state, CancellationToken cancellationToken)
+    public async Task UpdateEnvironmentState(PlatformStatePayload state, Dictionary<string, UserServiceTeam> userServiceTeams, CancellationToken cancellationToken)
     {
         var env = state.Environment;
         var models = new List<WriteModel<Entity>>();
@@ -355,6 +329,13 @@ public class EntitiesService(
                 {
                     update = update.Set(e => e.SubType, entitySubType);
                 }
+
+                var teams = kv.Value.Metadata?.Teams?.Select(t =>
+                        userServiceTeams.TryGetValue(t, out var userServiceTeam)
+                            ? new Team { TeamId = t, Name = userServiceTeam.name }
+                            : new Team { TeamId = t })
+                    .ToList() ?? [];
+                update = update.Set(e => e.Teams, teams);
             }
 
             // A small number of tenants aren't defined in all environments (defined in metadata.Environments)

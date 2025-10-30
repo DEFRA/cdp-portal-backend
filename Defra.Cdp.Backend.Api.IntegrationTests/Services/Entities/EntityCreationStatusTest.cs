@@ -178,9 +178,11 @@ public partial class EntityPlatformStateTests
             Created = "",
             Version = 1
         };
-        await service.UpdateEnvironmentState(platformPayload, TestContext.Current.CancellationToken);
+        
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
+        
+        await service.UpdateEnvironmentState(platformPayload, userServiceTeams, TestContext.Current.CancellationToken);
         await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
-
 
         var restricted = await service.GetEntity(_entityWithRestrictedEnvs.Name, TestContext.Current.CancellationToken);
         Assert.Equal(Status.Created, restricted?.TenantConfigStatus);
@@ -201,7 +203,7 @@ public partial class EntityPlatformStateTests
             TerraformSerials = new Serials(),
             Created = "",
             Version = 1
-        }, TestContext.Current.CancellationToken);
+        }, userServiceTeams, TestContext.Current.CancellationToken);
 
         await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
@@ -240,9 +242,11 @@ public partial class EntityPlatformStateTests
             Created = "",
             Version = 1
         };
+        
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
 
         await service.Create(_entityCompleted, TestContext.Current.CancellationToken);
-        await service.UpdateEnvironmentState(updatePayload, TestContext.Current.CancellationToken);
+        await service.UpdateEnvironmentState(updatePayload, userServiceTeams, CancellationToken.None);
         await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 
         var entity = await service.GetEntity(_entityCompleted.Name, TestContext.Current.CancellationToken);
@@ -256,7 +260,7 @@ public partial class EntityPlatformStateTests
             TerraformSerials = new Serials(),
             Created = "",
             Version = 1
-        }, TestContext.Current.CancellationToken);
+        }, userServiceTeams, TestContext.Current.CancellationToken);
 
         await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
 

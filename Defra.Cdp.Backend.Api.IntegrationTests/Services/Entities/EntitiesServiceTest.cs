@@ -40,56 +40,6 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
 
     }
 
-    [Fact]
-    public async Task WillRefreshTeams()
-    {
-        var logger = new NullLoggerFactory();
-        var mongoFactory = CreateMongoDbClientFactory();
-        var repositoryService = new RepositoryService(mongoFactory, logger);
-        var entitiesService = new EntitiesService(mongoFactory, logger);
-
-        await repositoryService.Upsert(_fooRepository, TestContext.Current.CancellationToken);
-
-        var entityToCreate = new Entity
-        {
-            Name = _fooRepository.Id,
-            Teams = [],
-            Status = Status.Created,
-            Type = Type.Microservice
-        };
-
-        await entitiesService.Create(entityToCreate, TestContext.Current.CancellationToken);
-
-        // Check initial state
-        var entity = await entitiesService.GetEntity(_fooRepository.Id, TestContext.Current.CancellationToken);
-        Assert.NotNull(entity);
-        Assert.Empty(entity.Teams);
-
-
-        // Update the teams in github
-        List<Repository> repos =
-        [
-            new()
-            {
-                Id = "foo",
-                Teams = [new RepositoryTeam("bar-team", "9999", "bar-team")],
-                IsArchived = false,
-                IsTemplate = false,
-                IsPrivate = false
-            }
-        ];
-
-        // Force refresh
-        await entitiesService.RefreshTeams(repos, TestContext.Current.CancellationToken);
-
-        var updatedEntity = await entitiesService.GetEntity(_fooRepository.Id, TestContext.Current.CancellationToken);
-
-        Assert.NotNull(updatedEntity);
-        var team = new Team { TeamId = "9999", Name = "bar-team" };
-        Assert.Contains(team, updatedEntity.Teams);
-        Assert.Single(updatedEntity.Teams);
-    }
-
     private readonly Repository _fooRepository = new()
     {
         Id = "foo",

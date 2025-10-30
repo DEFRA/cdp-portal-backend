@@ -216,7 +216,7 @@ public class RepositoryService(
         return "Repository";
     }
 
-    public async Task<Boolean> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
+    public async Task<bool> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
     {
         return await Collection.Find(r => r.Id == repositoryName && !r.IsArchived).AnyAsync(cancellationToken);
     }

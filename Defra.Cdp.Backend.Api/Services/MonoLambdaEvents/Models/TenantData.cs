@@ -422,7 +422,7 @@ public class TenantMetadata
     public string Type { get; set; }
 
     [property: JsonPropertyName("teams")]
-    public List<string> Teams { get; set; }
+    public List<string>? Teams { get; set; }
 
     [property: JsonPropertyName("environments")]
     public List<string>? Environments { get; set; }
