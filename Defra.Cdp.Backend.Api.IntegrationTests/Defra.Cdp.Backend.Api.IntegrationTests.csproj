@@ -16,7 +16,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.16" />
     <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="Testcontainers.MongoDb" Version="4.1.0"/>
+    <PackageReference Include="Testcontainers.MongoDb" Version="4.8.1"/>
+    <PackageReference Include="Testcontainers.Xunit" Version="4.8.1"/>
+
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="NSubstitute" Version="5.1.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">

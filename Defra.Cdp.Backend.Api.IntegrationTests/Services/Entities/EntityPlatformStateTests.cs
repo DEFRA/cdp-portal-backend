@@ -1,6 +1,4 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
@@ -10,7 +8,7 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
-public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
     private readonly CdpTenantAndMetadata _serviceA = new()
     {
@@ -36,7 +34,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task Create_entity_if_missing()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         Assert.Null(await service.GetEntity("service-a", CancellationToken.None));
@@ -67,7 +65,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task Update_entity_if_it_exists()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(new Entity { Name = "service-a", SubType = SubType.Frontend, Type = Type.Microservice, Status = Status.Created },
@@ -99,7 +97,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task Unsets_existing_env_if_removed_from_payload()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var state = new PlatformStatePayload
@@ -136,7 +134,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task Updates_multiple_environments()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+                var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var testState = new PlatformStatePayload
@@ -171,7 +169,7 @@ public partial class EntityPlatformStateTests(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task Tenant_with_limited_environments_has_correct_status()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+                var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var testState = new PlatformStatePayload

@@ -1,7 +1,7 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
+
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -10,14 +10,14 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Aws.Deployments;
 
-public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     private const string AwsAccount = "0000000000";
 
     [Fact]
     public async Task TestCreateAndLinkingMessages()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "CodeBuildStateChangeHandler");
+        var mongoFactory = CreateConnectionFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
 
@@ -53,7 +53,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
     [Fact]
     public async Task CreatingOnLinkFailure()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "CodeBuildStateChangeHandler");
+        var mongoFactory = CreateConnectionFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
 
@@ -90,7 +90,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
     [Fact]
     public async Task TestUpdateMessages()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "CodeBuildStateChangeHandler");
+        var mongoFactory = CreateConnectionFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
         var handler = new CodeBuildStateChangeHandler(service, new NullLogger<CodeBuildStateChangeHandler>());
 
@@ -132,7 +132,7 @@ public class CodeBuildStateChangeHandlerTest(MongoIntegrationTest fixture) : Ser
     [Fact]
     public async Task TestLatestForService()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "CodeBuildStateChangeHandler");
+        var mongoFactory = CreateConnectionFactory();
         var service = new DatabaseMigrationService(mongoFactory, new NullLoggerFactory());
 
         List<DatabaseMigration> migrations =

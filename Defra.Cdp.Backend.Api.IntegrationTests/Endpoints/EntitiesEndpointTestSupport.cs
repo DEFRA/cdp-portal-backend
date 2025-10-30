@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -17,7 +16,7 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
-public class EntitiesEndpointTest : ServiceTest
+public class EntitiesEndpointTestSupport : MongoTestSupport
 {
     private readonly IMongoDbClientFactory _mongoFactory;
     private ILoggerFactory _loggerFactory = new NullLoggerFactory();
@@ -27,9 +26,9 @@ public class EntitiesEndpointTest : ServiceTest
     // Create Server
     private readonly TestServer _server;
 
-    public EntitiesEndpointTest(MongoIntegrationTest fixture) : base(fixture)
+    public EntitiesEndpointTestSupport(MongoContainerFixture fixture) : base(fixture)
     {
-        _mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "EntitiesEndpointTest");
+        _mongoFactory = CreateConnectionFactory();
         _entitiesService = new EntitiesService(_mongoFactory, _loggerFactory);
         _entityStatusService = NSubstitute.Substitute.For<IEntityStatusService>();
 
@@ -68,7 +67,7 @@ public class EntitiesEndpointTest : ServiceTest
         var result = await client.GetAsync("/entities/foo-frontend");
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var entity = FromJson<Entity>(await result.Content.ReadAsStringAsync());
+        var entity = JsonSerializer.Deserialize<Entity>(await result.Content.ReadAsStringAsync());
         Assert.Equal("foo-frontend", entity.Name);
     }
 

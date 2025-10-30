@@ -1,11 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using Defra.Cdp.Backend.Api.Endpoints;
-using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Terminal;
@@ -13,7 +10,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
@@ -21,12 +17,13 @@ using Audit = Defra.Cdp.Backend.Api.Services.Audit.Audit;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
-public class TerminalEndpointTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
     [Fact]
     public async Task TerminalEndpointShowRecordSessionToMongo()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TerminalEndpointTest");
+
+        var mongoFactory = CreateConnectionFactory();
         var loggerFactory = new NullLoggerFactory();
         var terminalService = new TerminalService(mongoFactory, loggerFactory);
         var cwMock = new Mock<ICloudWatchMetricsService>();

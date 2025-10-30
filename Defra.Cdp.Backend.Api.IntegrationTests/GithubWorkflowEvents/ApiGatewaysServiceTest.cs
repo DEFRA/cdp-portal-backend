@@ -1,19 +1,18 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 
-public class ApiGatewaysServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class ApiGatewaysServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     [Fact]
     public async Task ApiGatewaysReturnsAsExpected()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "ApiGateways");
-        var enabledApisService = new EnabledApisService(mongoFactory, new LoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var enabledApisService = new EnabledApisService(connectionFactory, new LoggerFactory());
 
         var sampleEvent = EventFromJson<EnabledApisPayload>("""
                 {
@@ -34,7 +33,7 @@ public class ApiGatewaysServiceTest(MongoIntegrationTest fixture) : ServiceTest(
 
         await enabledApisService.PersistEvent(sampleEvent, CancellationToken.None);
 
-        var apiGatewaysService = new ApiGatewaysService(mongoFactory);
+        var apiGatewaysService = new ApiGatewaysService(connectionFactory);
 
         var result = await apiGatewaysService.FindService("pha-import-notifications", CancellationToken.None);
         Assert.NotNull(result);
@@ -58,7 +57,7 @@ public class ApiGatewaysServiceTest(MongoIntegrationTest fixture) : ServiceTest(
                  }
                 """);
 
-        var shutteredUrlsService = new ShutteredUrlsService(mongoFactory, new LoggerFactory());
+        var shutteredUrlsService = new ShutteredUrlsService(connectionFactory, new LoggerFactory());
         await shutteredUrlsService.PersistEvent(shutteredEvent, CancellationToken.None);
 
         var shutteredResult = await apiGatewaysService.FindService("pha-import-notifications", CancellationToken.None);

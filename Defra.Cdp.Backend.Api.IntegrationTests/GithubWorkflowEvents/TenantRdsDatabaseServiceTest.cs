@@ -1,14 +1,13 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 
-public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class TenantRdsDatabasesServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
 
     private CommonEvent<TenantDatabasePayload> TestData()
@@ -53,8 +52,8 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task WillUpdateDatabases()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantDatabases");
-        var databaseService = new TenantRdsDatabasesService(mongoFactory, new NullLoggerFactory());
+        
+        var databaseService = new TenantRdsDatabasesService(CreateConnectionFactory(), new NullLoggerFactory());
 
         var sampleEvent = TestData();
 
@@ -70,8 +69,7 @@ public class TenantRdsDatabasesServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task WillCleanUpDeletedDatabases()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantDatabases");
-        var databaseService = new TenantRdsDatabasesService(mongoFactory, new NullLoggerFactory());
+        var databaseService = new TenantRdsDatabasesService(CreateConnectionFactory(), new NullLoggerFactory());
 
         var sampleEvent = TestData();
 

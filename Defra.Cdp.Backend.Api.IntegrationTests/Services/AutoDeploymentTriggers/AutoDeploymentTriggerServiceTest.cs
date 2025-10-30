@@ -2,18 +2,17 @@ using System.Text.Json;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.AutoDeploymentTriggers;
 
-public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     [Fact]
     public async Task AutoDeploymentTriggerOverwritesExistingTrigger()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoDeploymentTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
         var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
@@ -61,7 +60,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task AutoDeploymentTriggerDeletesTriggerWithNoEnvironments()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoDeploymentTriggers");
+        var mongoFactory = CreateConnectionFactory();
         IAutoDeploymentTriggerService autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
         var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
@@ -102,7 +101,7 @@ public class AutoDeploymentTriggerServiceTest(MongoIntegrationTest fixture) : Se
     [Fact]
     public async Task AutoDeploymentTriggerDoesntPersistProdEnvironment()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoDeploymentTriggers");
+        var mongoFactory = CreateConnectionFactory();
         IAutoDeploymentTriggerService autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
         var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);

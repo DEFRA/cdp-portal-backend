@@ -5,7 +5,6 @@ using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
@@ -13,6 +12,7 @@ using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
@@ -20,7 +20,7 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
-public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
     private readonly IOptions<GithubWorkflowEventListenerOptions> _githubWorkflowEventListenerOptions =
         Substitute.For<IOptions<GithubWorkflowEventListenerOptions>>();
@@ -31,9 +31,9 @@ public class EntityStatusTest(MongoIntegrationTest fixture) : ServiceTest(fixtur
         _githubWorkflowEventListenerOptions.Value.Returns(
             new GithubWorkflowEventListenerOptions { QueueUrl = "http://localhost" });
 
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "EntityStatusTest");
+        var mongoFactory = CreateConnectionFactory();
 
-        var loggerFactory = new LoggerFactory();
+        var loggerFactory = new NullLoggerFactory();
         var envLookup = new MockEnvironmentLookup();
         var entitiesService = new EntitiesService(mongoFactory, loggerFactory);
         var repositoryService = new RepositoryService(mongoFactory, loggerFactory);
