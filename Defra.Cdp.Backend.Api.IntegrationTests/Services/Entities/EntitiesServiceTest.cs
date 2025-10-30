@@ -1,7 +1,5 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github;
@@ -11,7 +9,7 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
-public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
 
     [Fact]
@@ -19,7 +17,7 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
     {
         var ct = CancellationToken.None;
         var logger = new NullLoggerFactory();
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
+        var mongoFactory = CreateConnectionFactory();
         var entitiesService = new EntitiesService(mongoFactory, logger);
         var entity = new Entity
         {
@@ -46,7 +44,7 @@ public class EntitiesServiceTest(MongoIntegrationTest fixture) : ServiceTest(fix
     public async Task WillRefreshTeams()
     {
         var logger = new NullLoggerFactory();
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
+        var mongoFactory = CreateConnectionFactory();
         var repositoryService = new RepositoryService(mongoFactory, logger);
         var entitiesService = new EntitiesService(mongoFactory, logger);
 

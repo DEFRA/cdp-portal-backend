@@ -1,20 +1,18 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.AutoTestRunTriggers;
 
-public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
 
     [Fact]
     public async Task AutoTestRunTriggerDeletesTriggerWithNoEnvironments()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService =
             new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
@@ -58,7 +56,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task RemoveTestRun_NonExistentTrigger_ReturnsNull()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var dto = new AutoTestRunTriggerDto
@@ -76,7 +74,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task UpdateTestRun_NonExistentTrigger_ReturnsNull()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var dto = new AutoTestRunTriggerDto
@@ -94,7 +92,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task SaveTrigger_WithProfile_CreatesCorrectConfig()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var newTrigger = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
@@ -119,7 +117,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task SaveTrigger_MultipleConfigsForSameTestSuite_SavesCorrectly()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var firstConfig = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
@@ -156,7 +154,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task SaveTrigger_WithNullProfile_CreatesCorrectConfig()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var newTrigger = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
@@ -181,7 +179,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task SaveTrigger_MixedNullAndNonNullProfiles_SavesCorrectly()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         var nullProfileConfig = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
@@ -218,7 +216,7 @@ public class AutoTestRunTriggerServiceTest(MongoIntegrationTest fixture) : Servi
     [Fact]
     public async Task RemoveTestRun_WithNullProfile_RemovesCorrectConfig()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AutoTestRunTriggers");
+        var mongoFactory = CreateConnectionFactory();
         var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
 
         // First add two configs - one with null profile and one with named profile

@@ -2,7 +2,6 @@ using System.Text.Json;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.Extensions.Logging;
 
@@ -10,13 +9,13 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.TestSuites;
 
 
 
-public class TestRunServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class TestRunServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 
 {
     [Fact]
     public async Task ExistsTestRunReturnsFalseWhenTestRunDoesNotExist()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "testruns");
+        var mongoFactory = CreateConnectionFactory();
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
         var exists = await testRunService.AnyTestRunExists("test-suite", "dev", "1234", new CancellationToken());
         Assert.False(exists);
@@ -25,7 +24,7 @@ public class TestRunServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixt
     [Fact]
     public async Task ExistsTestRunReturnsTrueWhenTestRunDoesExists()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "testruns");
+        var mongoFactory = CreateConnectionFactory();
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
 
         var testRun = JsonSerializer.Deserialize<TestRun>("""

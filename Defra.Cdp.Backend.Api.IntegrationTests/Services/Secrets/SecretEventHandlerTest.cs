@@ -1,6 +1,5 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Secrets.events;
 using Microsoft.Extensions.Logging;
@@ -8,12 +7,12 @@ using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Secrets;
 
-public class SecretEventHandlerTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class SecretEventHandlerTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     [Fact]
     public async Task SecretsEventHandlerPersistsNewSecretsAndDeletesRemovedSecrets()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "Secrets");
+        var mongoFactory = CreateConnectionFactory();
         var secretsService = new SecretsService(mongoFactory, new LoggerFactory());
         var secretEventHandler = new SecretEventHandler(secretsService, Substitute.For<IPendingSecretsService>(),
             new LoggerFactory().CreateLogger<SecretEventHandler>());

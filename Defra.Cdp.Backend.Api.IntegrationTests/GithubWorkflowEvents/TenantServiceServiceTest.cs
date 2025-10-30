@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
@@ -9,15 +8,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 
-public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     [Fact]
     public async Task WillUpdateTeamsInTenantData()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
-        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var envLookup = new MockEnvironmentLookup();
-        var tenantServicesService = new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
+        var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
 
@@ -65,11 +64,10 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     [Fact]
     public async Task WillAddTeamToTenantData()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
-        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var envLookup = new MockEnvironmentLookup();
-        var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
+        var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
 
@@ -98,11 +96,10 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     [Fact]
     public async Task WillRemoveDeletedTenants()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
-        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var envLookup = new MockEnvironmentLookup();
-        var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
+        var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
@@ -140,11 +137,10 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     [Fact]
     public async Task WillFilterResults()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
-        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var envLookup = new MockEnvironmentLookup();
-        var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
+        var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
         await repositoryService.Upsert(_fooTestRepository, CancellationToken.None);
 
@@ -210,12 +206,10 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     [Fact]
     public async Task WillRefreshTeams()
     {
-        var logger = new NullLoggerFactory();
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
-        var repositoryService = new RepositoryService(mongoFactory, logger);
         var envLookup = new MockEnvironmentLookup();
-        var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
+        var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await repositoryService.Upsert(_fooRepository, CancellationToken.None);
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
@@ -272,11 +266,10 @@ public class TenantServiceServiceTest(MongoIntegrationTest fixture) : ServiceTes
     [Fact]
     public async Task WillUseS3BucketUrl()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "TenantServices");
-        var repositoryService = new RepositoryService(mongoFactory, new NullLoggerFactory());
         var envLookup = new MockEnvironmentLookup();
-        var tenantServicesService =
-            new TenantServicesService(mongoFactory, repositoryService, envLookup, new NullLoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
+        var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {

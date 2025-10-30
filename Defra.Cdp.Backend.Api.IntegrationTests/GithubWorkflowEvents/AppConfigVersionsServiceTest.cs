@@ -1,19 +1,18 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 
-public class AppConfigVersionsServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class AppConfigVersionsServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     [Fact]
     public async Task AppConfigVersionsReturnsLatestEventByCommitTimestamp()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "AppConfigVersions");
-        var appConfigVersionsService = new AppConfigVersionsService(mongoFactory, new LoggerFactory());
+        var connectionFactory = CreateConnectionFactory();
+        var appConfigVersionsService = new AppConfigVersionsService(connectionFactory, new LoggerFactory());
 
         var sampleEvent = EventFromJson<AppConfigVersionPayload>("""
                 {

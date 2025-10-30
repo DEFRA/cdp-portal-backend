@@ -1,5 +1,4 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
@@ -104,7 +103,7 @@ public partial class EntityPlatformStateTests
     [Fact]
     public async Task Updates_to_complete()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(_entityCompleted, CancellationToken.None);
@@ -142,7 +141,7 @@ public partial class EntityPlatformStateTests
     [Fact]
     public async Task Handles_environment_exceptions_correctly()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(_entityWithRestrictedEnvs, CancellationToken.None);
@@ -216,7 +215,7 @@ public partial class EntityPlatformStateTests
     [Fact]
     public async Task Handles_removal_of_services_normally()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, GetType().Name);
+        var mongoFactory = CreateConnectionFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var updatePayload = new PlatformStatePayload

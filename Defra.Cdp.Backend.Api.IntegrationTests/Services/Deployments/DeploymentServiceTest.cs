@@ -16,14 +16,20 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Deployments;
 
-public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class DeploymentServiceTest : ServiceTest
 {
     readonly IUserServiceFetcher _userServiceFetcher = Substitute.For<IUserServiceFetcher>();
+    private MongoDbClientFactory mongoFactory;
+        
+    public DeploymentServiceTest(MongoContainerFixture fixture) : base(fixture)
+    {
+        mongoFactory = CreateConnectionFactory();;
+    }
 
+    
     [Fact]
     public async Task RegisterDeploymentWithAuditSection()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "DeploymentServiceTest");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -65,7 +71,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task RegisterDeploymentWhenAuditDataIsUnavailable()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -96,7 +101,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task LinkDeployment()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -132,7 +136,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task UpdateDeploymentInstance()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -171,7 +174,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task FindWhatsRunningWhereWithNoData()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -184,7 +186,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task FindWhatsRunningWhereForService()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -229,7 +230,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task CleansUpStuckRequestsOnRegister()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
@@ -290,7 +290,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task FindDeployments()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
         var ct = CancellationToken.None;
@@ -329,7 +328,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task GetDeploymentsFilters()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service =
             new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
@@ -348,7 +346,6 @@ public class DeploymentServiceTest(MongoIntegrationTest fixture) : ServiceTest(f
     [Fact]
     public async Task GetWhatsRunningWhereFilters()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "deploymentsV2");
         var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var service =
             new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());

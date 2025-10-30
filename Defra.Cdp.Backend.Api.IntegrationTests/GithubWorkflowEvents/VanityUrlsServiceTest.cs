@@ -1,18 +1,17 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.IntegrationTests.Utils;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.GithubWorkflowEvents;
 
-public class VanityUrlsServiceTest(MongoIntegrationTest fixture) : ServiceTest(fixture)
+public class VanityUrlsServiceTest(MongoContainerFixture fixture) : ServiceTest(fixture)
 {
     [Fact]
     public async Task VanityUrlsReturnsAsExpected()
     {
-        var mongoFactory = new MongoDbClientFactory(Fixture.connectionString, "VanityUrls");
+        var mongoFactory = CreateConnectionFactory();
         var nginxVanityUrlsService = new NginxVanityUrlsService(mongoFactory, new LoggerFactory());
 
         var sampleEvent = EventFromJson<NginxVanityUrlsPayload>("""
