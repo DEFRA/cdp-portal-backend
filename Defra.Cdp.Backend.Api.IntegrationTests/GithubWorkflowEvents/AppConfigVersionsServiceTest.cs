@@ -26,9 +26,9 @@ public class AppConfigVersionsServiceTest(MongoContainerFixture fixture) : Servi
                 }
                 """);
 
-        await appConfigVersionsService.PersistEvent(sampleEvent, CancellationToken.None);
+        await appConfigVersionsService.PersistEvent(sampleEvent, TestContext.Current.CancellationToken);
 
-        var result = await appConfigVersionsService.FindLatestAppConfigVersion("test", CancellationToken.None);
+        var result = await appConfigVersionsService.FindLatestAppConfigVersion("test", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal("abc123", result.CommitSha);
         Assert.Equal("test", result.Environment);
@@ -46,9 +46,9 @@ public class AppConfigVersionsServiceTest(MongoContainerFixture fixture) : Servi
                                                                  }
                                                                  """);
 
-        await appConfigVersionsService.PersistEvent(olderEvent, CancellationToken.None);
+        await appConfigVersionsService.PersistEvent(olderEvent, TestContext.Current.CancellationToken);
 
-        result = await appConfigVersionsService.FindLatestAppConfigVersion("test", CancellationToken.None);
+        result = await appConfigVersionsService.FindLatestAppConfigVersion("test", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal("abc123", result.CommitSha);
         Assert.Equal("test", result.Environment);
@@ -66,9 +66,9 @@ public class AppConfigVersionsServiceTest(MongoContainerFixture fixture) : Servi
                                                                  }
                                                                  """);
 
-        await appConfigVersionsService.PersistEvent(newerEvent, CancellationToken.None);
+        await appConfigVersionsService.PersistEvent(newerEvent, TestContext.Current.CancellationToken);
 
-        result = await appConfigVersionsService.FindLatestAppConfigVersion("test", CancellationToken.None);
+        result = await appConfigVersionsService.FindLatestAppConfigVersion("test", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal("ghi789", result.CommitSha);
         Assert.Equal("test", result.Environment);

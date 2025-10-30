@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Mongo;
@@ -15,7 +11,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -23,8 +18,6 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
 public class EntitiesEndpointTestSupport : MongoTestSupport
 {
-    private readonly IMongoDbClientFactory _mongoFactory;
-    private ILoggerFactory _loggerFactory = new NullLoggerFactory();
     private readonly IEntitiesService _entitiesService;
     private readonly IEntityStatusService _entityStatusService;
 
@@ -33,8 +26,7 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
 
     public EntitiesEndpointTestSupport(MongoContainerFixture fixture) : base(fixture)
     {
-        _mongoFactory = CreateMongoDbClientFactory();
-        _entitiesService = new EntitiesService(_mongoFactory, _loggerFactory);
+        _entitiesService = new EntitiesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
         _entityStatusService = NSubstitute.Substitute.For<IEntityStatusService>();
 
         var builder = new WebHostBuilder()
@@ -61,7 +53,7 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_return_404_when_entity_is_missing()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities/missing-entity");
+        var result = await client.GetAsync("/entities/missing-entity", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
     }
 
@@ -69,11 +61,11 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_return_entity_when_it_exists()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities/foo-frontend");
+        var result = await client.GetAsync("/entities/foo-frontend", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var entity = JsonSerializer.Deserialize<Entity>(await result.Content.ReadAsStringAsync());
-        Assert.Equal("foo-frontend", entity.Name);
+        var entity = JsonSerializer.Deserialize<Entity>(await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("foo-frontend", entity?.Name);
     }
 
 
@@ -81,10 +73,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_return_filters_for_everything()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities/filters");
+        var result = await client.GetAsync("/entities/filters", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var filters = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
         var allEntityNames = TestData().Select(e => e.Name).ToList();
@@ -97,10 +89,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_return_filters_by_status()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities/filters?status=Creating");
+        var result = await client.GetAsync("/entities/filters?status=Creating", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var filters = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
         var allEntityNames = TestData().Where(e => e.Status == Status.Creating).Select(e => e.Name).ToList();
@@ -112,10 +104,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_return_filters_by_type()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities/filters?type=TestSuite");
+        var result = await client.GetAsync("/entities/filters?type=TestSuite", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var filters = JsonSerializer.Deserialize<EntitiesService.EntityFilters>(body);
 
         var expected = TestData().Where(e => e.Type == Type.TestSuite).Select(e => e.Name).ToList();
@@ -128,10 +120,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_list_all_entities()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities");
+        var result = await client.GetAsync("/entities", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var entities = JsonSerializer.Deserialize<List<Entity>>(body);
         Assert.NotNull(entities);
         Assert.NotEmpty(entities);
@@ -147,10 +139,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_list_entities_by_team()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities?teamIds=platform");
+        var result = await client.GetAsync("/entities?teamIds=platform", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var entities = JsonSerializer.Deserialize<List<Entity>>(body);
         Assert.NotNull(entities);
 
@@ -165,10 +157,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_list_entities_by_type()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities?type=TestSuite");
+        var result = await client.GetAsync("/entities?type=TestSuite", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var entities = JsonSerializer.Deserialize<List<Entity>>(body);
         Assert.NotNull(entities);
         Assert.NotEmpty(entities);
@@ -181,10 +173,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public async Task Should_list_entities_by_status()
     {
         var client = _server.CreateClient();
-        var result = await client.GetAsync("/entities?status=Creating");
+        var result = await client.GetAsync("/entities?status=Creating", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var body = await result.Content.ReadAsStringAsync();
+        var body = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var entities = JsonSerializer.Deserialize<List<Entity>>(body);
         Assert.NotNull(entities);
         Assert.NotEmpty(entities);

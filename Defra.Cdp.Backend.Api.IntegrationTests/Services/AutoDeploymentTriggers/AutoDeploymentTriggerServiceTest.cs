@@ -15,22 +15,24 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
         var mongoFactory = CreateMongoDbClientFactory();
         var autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
-        var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
+        var triggers = await autoDeploymentTriggerService.FindAll(TestContext.Current.CancellationToken);
         Assert.Empty(triggers);
 
         var trigger = JsonSerializer.Deserialize<AutoDeploymentTrigger>("""
-                {
-                        "serviceName": "cdp-portal-frontend",
-                        "environments":
-                            [
-                               "infra-dev",
-                               "development"
-                            ]
-                }
-                """)!;
+                                                                        {
+                                                                                "serviceName": "cdp-portal-frontend",
+                                                                                "environments":
+                                                                                    [
+                                                                                       "infra-dev",
+                                                                                       "development"
+                                                                                    ]
+                                                                        }
+                                                                        """)!;
 
-        await autoDeploymentTriggerService.PersistTrigger(trigger, CancellationToken.None);
-        var triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-frontend", CancellationToken.None);
+        await autoDeploymentTriggerService.PersistTrigger(trigger, TestContext.Current.CancellationToken);
+        var triggerFromDb =
+            await autoDeploymentTriggerService.FindForService("cdp-portal-frontend",
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
@@ -38,18 +40,20 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
         Assert.Equal(["infra-dev", "development"], triggerFromDb.Environments);
 
         var updatedTrigger = JsonSerializer.Deserialize<AutoDeploymentTrigger>("""
-                {
-                        "serviceName": "cdp-portal-frontend",
-                        "environments":
-                            [
-                               "ext-test",
-                               "test"
-                            ]
-                }
-                """)!;
+                                                                               {
+                                                                                       "serviceName": "cdp-portal-frontend",
+                                                                                       "environments":
+                                                                                           [
+                                                                                              "ext-test",
+                                                                                              "test"
+                                                                                           ]
+                                                                               }
+                                                                               """)!;
 
-        await autoDeploymentTriggerService.PersistTrigger(updatedTrigger, CancellationToken.None);
-        triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-frontend", CancellationToken.None);
+        await autoDeploymentTriggerService.PersistTrigger(updatedTrigger, TestContext.Current.CancellationToken);
+        triggerFromDb =
+            await autoDeploymentTriggerService.FindForService("cdp-portal-frontend",
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-frontend", triggerFromDb.ServiceName);
@@ -61,24 +65,27 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
     public async Task AutoDeploymentTriggerDeletesTriggerWithNoEnvironments()
     {
         var mongoFactory = CreateMongoDbClientFactory();
-        IAutoDeploymentTriggerService autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
+        IAutoDeploymentTriggerService autoDeploymentTriggerService =
+            new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
-        var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
+        var triggers = await autoDeploymentTriggerService.FindAll(TestContext.Current.CancellationToken);
         Assert.Empty(triggers);
 
         var trigger = JsonSerializer.Deserialize<AutoDeploymentTrigger>("""
-                {
-                        "serviceName": "cdp-portal-backend",
-                        "environments":
-                            [
-                               "infra-dev",
-                               "development"
-                            ]
-                }
-                """)!;
+                                                                        {
+                                                                                "serviceName": "cdp-portal-backend",
+                                                                                "environments":
+                                                                                    [
+                                                                                       "infra-dev",
+                                                                                       "development"
+                                                                                    ]
+                                                                        }
+                                                                        """)!;
 
-        await autoDeploymentTriggerService.PersistTrigger(trigger, CancellationToken.None);
-        var triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
+        await autoDeploymentTriggerService.PersistTrigger(trigger, TestContext.Current.CancellationToken);
+        var triggerFromDb =
+            await autoDeploymentTriggerService.FindForService("cdp-portal-backend",
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);
@@ -86,14 +93,16 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
         Assert.Equal(["infra-dev", "development"], triggerFromDb.Environments);
 
         var updatedTrigger = JsonSerializer.Deserialize<AutoDeploymentTrigger>("""
-                {
-                        "serviceName": "cdp-portal-backend",
-                        "environments": [ ]
-                }
-                """)!;
+                                                                               {
+                                                                                       "serviceName": "cdp-portal-backend",
+                                                                                       "environments": [ ]
+                                                                               }
+                                                                               """)!;
 
-        await autoDeploymentTriggerService.PersistTrigger(updatedTrigger, CancellationToken.None);
-        triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
+        await autoDeploymentTriggerService.PersistTrigger(updatedTrigger, TestContext.Current.CancellationToken);
+        triggerFromDb =
+            await autoDeploymentTriggerService.FindForService("cdp-portal-backend",
+                TestContext.Current.CancellationToken);
 
         Assert.Null(triggerFromDb);
     }
@@ -102,24 +111,27 @@ public class AutoDeploymentTriggerServiceTest(MongoContainerFixture fixture) : S
     public async Task AutoDeploymentTriggerDoesntPersistProdEnvironment()
     {
         var mongoFactory = CreateMongoDbClientFactory();
-        IAutoDeploymentTriggerService autoDeploymentTriggerService = new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
+        IAutoDeploymentTriggerService autoDeploymentTriggerService =
+            new AutoDeploymentTriggerService(mongoFactory, new LoggerFactory());
 
-        var triggers = await autoDeploymentTriggerService.FindAll(CancellationToken.None);
+        var triggers = await autoDeploymentTriggerService.FindAll(TestContext.Current.CancellationToken);
         Assert.Empty(triggers);
 
         var trigger = JsonSerializer.Deserialize<AutoDeploymentTrigger>("""
-                {
-                        "serviceName": "cdp-portal-backend",
-                        "environments":
-                            [
-                               "prod",
-                               "development"
-                            ]
-                }
-                """)!;
+                                                                        {
+                                                                                "serviceName": "cdp-portal-backend",
+                                                                                "environments":
+                                                                                    [
+                                                                                       "prod",
+                                                                                       "development"
+                                                                                    ]
+                                                                        }
+                                                                        """)!;
 
-        await autoDeploymentTriggerService.PersistTrigger(trigger, CancellationToken.None);
-        var triggerFromDb = await autoDeploymentTriggerService.FindForService("cdp-portal-backend", CancellationToken.None);
+        await autoDeploymentTriggerService.PersistTrigger(trigger, TestContext.Current.CancellationToken);
+        var triggerFromDb =
+            await autoDeploymentTriggerService.FindForService("cdp-portal-backend",
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(triggerFromDb);
         Assert.Equal("cdp-portal-backend", triggerFromDb.ServiceName);

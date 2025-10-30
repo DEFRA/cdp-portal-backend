@@ -18,20 +18,20 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Deployments;
 
 public class DeploymentServiceTest : ServiceTest
 {
-    readonly IUserServiceFetcher _userServiceFetcher = Substitute.For<IUserServiceFetcher>();
-    private MongoDbClientFactory mongoFactory;
+    private readonly IUserServiceFetcher _userServiceFetcher = Substitute.For<IUserServiceFetcher>();
+    private readonly MongoDbClientFactory _mongoFactory;
         
     public DeploymentServiceTest(MongoContainerFixture fixture) : base(fixture)
     {
-        mongoFactory = CreateMongoDbClientFactory();;
+        _mongoFactory = CreateMongoDbClientFactory();;
     }
 
     
     [Fact]
     public async Task RegisterDeploymentWithAuditSection()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
         await repositoryService.Create(new Entity
         {
@@ -40,7 +40,7 @@ public class DeploymentServiceTest : ServiceTest
             Status = Status.Created,
             Type = Type.Microservice,
             SubType = SubType.Backend
-        }, CancellationToken.None);
+        }, TestContext.Current.CancellationToken);
 
         var deployment = Deployment.FromRequest(new RequestedDeployment
         {
@@ -52,7 +52,7 @@ public class DeploymentServiceTest : ServiceTest
             InstanceCount = 1,
             Service = "test-backend",
             Version = "1.0.0",
-            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }
         });
 
         var fullUserDetails = new UserServiceUser("Test User", "test.user@test.com", "9999-9999-9999",
@@ -60,9 +60,9 @@ public class DeploymentServiceTest : ServiceTest
         _userServiceFetcher.GetUser(deployment.User!.Id, Arg.Any<CancellationToken>())
             .Returns(fullUserDetails);
 
-        await service.RegisterDeployment(deployment, CancellationToken.None);
+        await service.RegisterDeployment(deployment, TestContext.Current.CancellationToken);
 
-        var result = await service.FindDeployment(deployment.CdpDeploymentId, CancellationToken.None);
+        var result = await service.FindDeployment(deployment.CdpDeploymentId, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal([new Team { Name = "test-team", TeamId = "test team" }], result.Audit?.ServiceOwners);
         Assert.Equivalent(fullUserDetails, result.Audit?.User);
@@ -71,8 +71,8 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task RegisterDeploymentWhenAuditDataIsUnavailable()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
         var deployment = Deployment.FromRequest(new RequestedDeployment
         {
@@ -84,15 +84,15 @@ public class DeploymentServiceTest : ServiceTest
             InstanceCount = 1,
             Service = "test-backend",
             Version = "1.0.0",
-            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }
         });
 
         _userServiceFetcher.GetUser(deployment.User!.Id, Arg.Any<CancellationToken>())
             .ReturnsNull();
 
-        await service.RegisterDeployment(deployment, CancellationToken.None);
+        await service.RegisterDeployment(deployment, TestContext.Current.CancellationToken);
 
-        var result = await service.FindDeployment(deployment.CdpDeploymentId, CancellationToken.None);
+        var result = await service.FindDeployment(deployment.CdpDeploymentId, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal([], result.Audit?.ServiceOwners);
         Assert.Null(result.Audit?.User);
@@ -101,8 +101,8 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task LinkDeployment()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
         const string lambdaId = "ecs/12345";
         var deployment = Deployment.FromRequest(new RequestedDeployment
@@ -115,11 +115,11 @@ public class DeploymentServiceTest : ServiceTest
             InstanceCount = 1,
             Service = "link-test-backend",
             Version = "1.0.0",
-            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }
         });
 
-        var ct = CancellationToken.None;
-        await service.RegisterDeployment(deployment, CancellationToken.None);
+        var ct = TestContext.Current.CancellationToken;
+        await service.RegisterDeployment(deployment, TestContext.Current.CancellationToken);
         var linked = await service.LinkDeployment(deployment.CdpDeploymentId, lambdaId, ct);
         Assert.True(linked);
 
@@ -136,8 +136,8 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task UpdateDeploymentInstance()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
         const string lambdaId = "ecs/12345";
         var deployment = Deployment.FromRequest(new RequestedDeployment
@@ -150,10 +150,10 @@ public class DeploymentServiceTest : ServiceTest
             InstanceCount = 2,
             Service = "link-test-backend",
             Version = "1.0.0",
-            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }
         });
 
-        var ct = CancellationToken.None;
+        var ct = TestContext.Current.CancellationToken;
         await service.RegisterDeployment(deployment, ct);
         var linked = await service.LinkDeployment(deployment.CdpDeploymentId, lambdaId, ct);
         Assert.True(linked);
@@ -174,10 +174,10 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task FindWhatsRunningWhereWithNoData()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
-        var result = await service.RunningDeploymentsForService(new DeploymentMatchers(), CancellationToken.None);
+        var result = await service.RunningDeploymentsForService(new DeploymentMatchers(), TestContext.Current.CancellationToken);
 
         Assert.Empty(result);
     }
@@ -186,8 +186,8 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task FindWhatsRunningWhereForService()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
         var deployment1 = new Deployment
         {
@@ -218,10 +218,10 @@ public class DeploymentServiceTest : ServiceTest
             Status = DeploymentStatus.Running
         };
 
-        await service.RegisterDeployment(deployment1, CancellationToken.None);
-        await service.RegisterDeployment(deployment2, CancellationToken.None);
+        await service.RegisterDeployment(deployment1, TestContext.Current.CancellationToken);
+        await service.RegisterDeployment(deployment2, TestContext.Current.CancellationToken);
 
-        var result = await service.RunningDeploymentsForService(deployment1.Service, CancellationToken.None);
+        var result = await service.RunningDeploymentsForService(deployment1.Service, TestContext.Current.CancellationToken);
         // The most recent running service should be shown
         Assert.Single(result);
         Assert.Equal(deployment2.CdpDeploymentId, result[0].CdpDeploymentId);
@@ -230,8 +230,8 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task CleansUpStuckRequestsOnRegister()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
 
         var stuckDeployment = new Deployment
         {
@@ -248,14 +248,14 @@ public class DeploymentServiceTest : ServiceTest
             Updated = DateTime.Now.Subtract(TimeSpan.FromDays(30)),
             Status = DeploymentStatus.Requested
         };
-        await mongoFactory.GetCollection<Deployment>(DeploymentsService.CollectionName)
-            .InsertOneAsync(stuckDeployment, new InsertOneOptions(), CancellationToken.None);
+        await _mongoFactory.GetCollection<Deployment>(DeploymentsService.CollectionName)
+            .InsertOneAsync(stuckDeployment, new InsertOneOptions(), TestContext.Current.CancellationToken);
 
-        var totalDeployments = await mongoFactory.GetCollection<Deployment>(DeploymentsService.CollectionName)
+        var totalDeployments = await _mongoFactory.GetCollection<Deployment>(DeploymentsService.CollectionName)
             .Find(d =>
                 d.Service == stuckDeployment.Service &&
                 d.Environment == stuckDeployment.Environment &&
-                d.Status == DeploymentStatus.Requested).CountDocumentsAsync(CancellationToken.None);
+                d.Status == DeploymentStatus.Requested).CountDocumentsAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(1, totalDeployments);
 
@@ -272,27 +272,27 @@ public class DeploymentServiceTest : ServiceTest
             InstanceCount = 1,
             Service = "test-backend",
             Version = "1.0.0",
-            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User", }
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }
         });
-        await service.RegisterDeployment(deployment, CancellationToken.None);
+        await service.RegisterDeployment(deployment, TestContext.Current.CancellationToken);
 
         // check its registered the new deployment
-        var result = await service.FindDeployment(deployment.CdpDeploymentId, CancellationToken.None);
+        var result = await service.FindDeployment(deployment.CdpDeploymentId, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal([], result.Audit?.ServiceOwners);
         Assert.Null(result.Audit?.User);
 
         // Check its removed the old requested deployment
-        var stuck = await service.FindDeployment(stuckDeployment.CdpDeploymentId, CancellationToken.None);
+        var stuck = await service.FindDeployment(stuckDeployment.CdpDeploymentId, TestContext.Current.CancellationToken);
         Assert.Equal(DeploymentStatus.Failed, stuck?.Status);
     }
 
     [Fact]
     public async Task FindDeployments()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var service = new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
-        var ct = CancellationToken.None;
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var ct = TestContext.Current.CancellationToken;
         await DeploymentsTestHelpers.PopulateWithTestData(service, ct);
 
         // partial service match
@@ -328,10 +328,10 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task GetDeploymentsFilters()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
         var service =
-            new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
-        var ct = CancellationToken.None;
+            new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var ct = TestContext.Current.CancellationToken;
         var deployments = await DeploymentsTestHelpers.PopulateWithTestData(service, ct);
 
         var services = deployments.Select(d => d.Service).Distinct();
@@ -346,10 +346,10 @@ public class DeploymentServiceTest : ServiceTest
     [Fact]
     public async Task GetWhatsRunningWhereFilters()
     {
-        var repositoryService = new EntitiesService(mongoFactory, new NullLoggerFactory());
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
         var service =
-            new DeploymentsService(mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
-        var ct = CancellationToken.None;
+            new DeploymentsService(_mongoFactory, repositoryService, _userServiceFetcher, new NullLoggerFactory());
+        var ct = TestContext.Current.CancellationToken;
         var deployments = await DeploymentsTestHelpers.PopulateWithTestData(service, ct);
 
         var services = deployments.Select(d => d.Service).Distinct();

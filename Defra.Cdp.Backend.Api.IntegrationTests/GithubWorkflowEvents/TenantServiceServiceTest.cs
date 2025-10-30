@@ -18,7 +18,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
-        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
+        await repositoryService.Upsert(_fooRepository, TestContext.Current.CancellationToken);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
@@ -26,12 +26,12 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
         // Create existing data
         var resultFoo =
             await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" },
-                CancellationToken.None);
+                TestContext.Current.CancellationToken);
         Assert.Equivalent(resultFoo?.Teams, _fooRepository.Teams);
 
         // Update teams in repositories service
@@ -43,7 +43,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             IsTemplate = false,
             IsPrivate = false
         };
-        await repositoryService.Upsert(updatedFooRepository, CancellationToken.None);
+        await repositoryService.Upsert(updatedFooRepository, TestContext.Current.CancellationToken);
 
         // Trigger another update
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
@@ -52,11 +52,11 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
         var updatedResults =
             await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" },
-                CancellationToken.None);
+                TestContext.Current.CancellationToken);
         Assert.Equivalent(updatedResults?.Teams, updatedFooRepository.Teams);
     }
 
@@ -69,7 +69,7 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
-        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
+        await repositoryService.Upsert(_fooRepository, TestContext.Current.CancellationToken);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
@@ -77,16 +77,16 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
         var resultFoo =
             await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" },
-                CancellationToken.None);
+                TestContext.Current.CancellationToken);
         Assert.Equivalent(resultFoo?.Teams, new List<RepositoryTeam> { new("foo-team", "1234", "foo-team") });
 
         var resultBar =
             await tenantServicesService.FindOne(new TenantServiceFilter { Name = "bar", Environment = "test" },
-                CancellationToken.None);
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(resultBar?.Teams);
         Assert.Empty(resultBar.Teams);
@@ -107,14 +107,14 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
         var resultFoo =
             await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" },
-                CancellationToken.None);
+                TestContext.Current.CancellationToken);
         var resultBar =
             await tenantServicesService.FindOne(new TenantServiceFilter { Name = "bar", Environment = "test" },
-                CancellationToken.None);
+                TestContext.Current.CancellationToken);
         Assert.NotNull(resultFoo);
         Assert.NotNull(resultBar);
 
@@ -122,13 +122,13 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
         {
             EventType = "tenant-services",
             Timestamp = DateTime.Now,
-            Payload = new() { Environment = "test", Services = [_sampleEvent.Services[0]] }
+            Payload = new TenantServicesPayload { Environment = "test", Services = [_sampleEvent.Services[0]] }
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
         resultFoo = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         resultBar = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "bar", Environment = "test" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         Assert.NotNull(resultFoo);
         Assert.Null(resultBar);
     }
@@ -141,8 +141,8 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
         var connectionFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
-        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
-        await repositoryService.Upsert(_fooTestRepository, CancellationToken.None);
+        await repositoryService.Upsert(_fooRepository, TestContext.Current.CancellationToken);
+        await repositoryService.Upsert(_fooTestRepository, TestContext.Current.CancellationToken);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
@@ -150,55 +150,55 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
 
         // Find By Name
-        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo" }, CancellationToken.None);
+        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo" }, TestContext.Current.CancellationToken);
         Assert.Single(result);
         Assert.Equal("foo", result[0].ServiceName);
 
         // Find By Env
         result = await tenantServicesService.Find(new TenantServiceFilter { Environment = "test" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         Assert.Equal(4, result.Count);
 
         result = await tenantServicesService.Find(new TenantServiceFilter { Environment = "prod" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         Assert.Empty(result);
 
         // Find by Team
         result = await tenantServicesService.Find(new TenantServiceFilter { Team = "foo-team" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Count);
         Assert.Contains(result, t => t.ServiceName == "foo");
         Assert.Contains(result, t => t.ServiceName == "foo-tests");
 
         // Find by Team and name
         result = await tenantServicesService.Find(new TenantServiceFilter(Team: "foo-team", Name: "foo"),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "foo");
 
         // Find by TeamId and name
         result = await tenantServicesService.Find(new TenantServiceFilter(TeamId: "1234", Name: "foo"),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "foo");
 
         // Find test suites
-        result = await tenantServicesService.Find(new TenantServiceFilter { IsTest = true }, CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { IsTest = true }, TestContext.Current.CancellationToken);
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "foo-tests");
 
         // Find services suites
-        result = await tenantServicesService.Find(new TenantServiceFilter { IsService = true }, CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { IsService = true }, TestContext.Current.CancellationToken);
         Assert.Equal(3, result.Count);
         Assert.Contains(result, t => t.ServiceName == "foo");
         Assert.Contains(result, t => t.ServiceName == "bar");
 
         // Find services with postgres
-        result = await tenantServicesService.Find(new TenantServiceFilter { HasPostgres = true }, CancellationToken.None);
+        result = await tenantServicesService.Find(new TenantServiceFilter { HasPostgres = true }, TestContext.Current.CancellationToken);
         Assert.Single(result);
         Assert.Contains(result, t => t.ServiceName == "postgres-service");
     }
@@ -211,14 +211,14 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
         var repositoryService = new RepositoryService(connectionFactory, new NullLoggerFactory());
         var tenantServicesService = new TenantServicesService(connectionFactory, repositoryService, envLookup, new NullLoggerFactory());
 
-        await repositoryService.Upsert(_fooRepository, CancellationToken.None);
+        await repositoryService.Upsert(_fooRepository, TestContext.Current.CancellationToken);
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
             EventType = "tenant-services",
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
         await tenantServicesService.PersistEvent(new CommonEvent<TenantServicesPayload>
         {
@@ -230,18 +230,18 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
                 Services = _sampleEvent.Services
             }
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
 
         // Check initial state
-        var tenant = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo" }, CancellationToken.None);
+        var tenant = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo" }, TestContext.Current.CancellationToken);
         Assert.NotNull(tenant);
         Assert.Equal("foo-team", tenant.Teams?[0].Github);
 
         // Update the teams in github
         List<Repository> repos =
         [
-            new Repository
+            new()
             {
                 Id = "foo",
                 Teams = [new RepositoryTeam("bar-team", "9999", "bar-team")],
@@ -252,13 +252,13 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
         ];
 
         // Force refresh
-        await tenantServicesService.RefreshTeams(repos, CancellationToken.None);
+        await tenantServicesService.RefreshTeams(repos, TestContext.Current.CancellationToken);
 
-        var tenantProd = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "prod" }, CancellationToken.None);
+        var tenantProd = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "prod" }, TestContext.Current.CancellationToken);
         Assert.NotNull(tenantProd);
         Assert.Equal("bar-team", tenantProd.Teams?[0].Github);
 
-        var tenantTest = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" }, CancellationToken.None);
+        var tenantTest = await tenantServicesService.FindOne(new TenantServiceFilter { Name = "foo", Environment = "test" }, TestContext.Current.CancellationToken);
         Assert.NotNull(tenantTest);
         Assert.Equal("bar-team", tenantTest.Teams?[0].Github);
     }
@@ -277,11 +277,11 @@ public class TenantServiceServiceTest(MongoContainerFixture fixture) : ServiceTe
             Timestamp = DateTime.Now,
             Payload = _sampleEvent
         }
-            , CancellationToken.None);
+            , TestContext.Current.CancellationToken);
 
 
         // Find By Name
-        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo", Environment = "test" }, CancellationToken.None);
+        var result = await tenantServicesService.Find(new TenantServiceFilter { Name = "foo", Environment = "test" }, TestContext.Current.CancellationToken);
         Assert.Single(result);
         Assert.Equal(2, result[0].S3Buckets?.Count);
         Assert.Equal($"s3://foo-bucket-{envLookup.FindS3BucketSuffix("test")}", result[0].S3Buckets![0].Url);

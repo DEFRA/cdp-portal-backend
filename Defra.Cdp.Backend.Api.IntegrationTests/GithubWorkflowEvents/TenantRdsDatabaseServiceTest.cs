@@ -57,12 +57,12 @@ public class TenantRdsDatabasesServiceTest(MongoContainerFixture fixture) : Serv
 
         var sampleEvent = TestData();
 
-        await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
+        await databaseService.PersistEvent(sampleEvent, TestContext.Current.CancellationToken);
 
-        var results = await databaseService.FindAllForService("fcp-mpdp-backend", CancellationToken.None);
+        var results = await databaseService.FindAllForService("fcp-mpdp-backend", TestContext.Current.CancellationToken);
         Assert.Equal("fcp_mpdp_backend", results[0].DatabaseName);
 
-        var result = await databaseService.FindForServiceByEnv("fcp-mpdp-backend", "dev", CancellationToken.None);
+        var result = await databaseService.FindForServiceByEnv("fcp-mpdp-backend", "dev", TestContext.Current.CancellationToken);
         Assert.Equal("fcp_mpdp_backend", result.DatabaseName);
     }
 
@@ -73,13 +73,13 @@ public class TenantRdsDatabasesServiceTest(MongoContainerFixture fixture) : Serv
 
         var sampleEvent = TestData();
 
-        await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
-        var resultBeforeDelete = await databaseService.FindAllForService("fcp-mpdp-backend", CancellationToken.None);
+        await databaseService.PersistEvent(sampleEvent, TestContext.Current.CancellationToken);
+        var resultBeforeDelete = await databaseService.FindAllForService("fcp-mpdp-backend", TestContext.Current.CancellationToken);
         Assert.Single(resultBeforeDelete);
 
         sampleEvent.Payload.RdsDatabases.RemoveAt(1);
-        await databaseService.PersistEvent(sampleEvent, CancellationToken.None);
-        var resultAfterDelete = await databaseService.FindAllForService("fcp-mpdp-backend", CancellationToken.None);
+        await databaseService.PersistEvent(sampleEvent, TestContext.Current.CancellationToken);
+        var resultAfterDelete = await databaseService.FindAllForService("fcp-mpdp-backend", TestContext.Current.CancellationToken);
         Assert.Empty(resultAfterDelete);
     }
 }

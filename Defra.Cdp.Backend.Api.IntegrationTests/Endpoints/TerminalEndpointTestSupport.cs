@@ -57,15 +57,15 @@ public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoT
         var client = server.CreateClient();
 
         var prodSession = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
-        var prodResponse = await client.PostAsJsonAsync("/terminals", prodSession);
+        var prodResponse = await client.PostAsJsonAsync("/terminals", prodSession, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, prodResponse.StatusCode);
         var testSession = new TerminalSession { Token = "123456", Environment = "test", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
-        var testResponse = await client.PostAsJsonAsync("/terminals", testSession);
+        var testResponse = await client.PostAsJsonAsync("/terminals", testSession, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, testResponse.StatusCode);
 
 
         var terminalCollections = mongoFactory.GetCollection<TerminalSession>(TerminalService.CollectionName);
-        var fromDatabase = await terminalCollections.Find(t => t.Token == prodSession.Token).ToListAsync(CancellationToken.None);
+        var fromDatabase = await terminalCollections.Find(t => t.Token == prodSession.Token).ToListAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, fromDatabase.Count);
         var saved = fromDatabase.First();
 
@@ -78,7 +78,7 @@ public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoT
         Assert.InRange(saved.Requested, prodSession.Requested.Subtract(TimeSpan.FromMilliseconds(1)), prodSession.Requested.Add(TimeSpan.FromMilliseconds(1)));
 
         var auditCollections = mongoFactory.GetCollection<Audit>(AuditService.CollectionName);
-        var auditsFromDb = await auditCollections.Find(Builders<Audit>.Filter.Empty).ToListAsync(CancellationToken.None);
+        var auditsFromDb = await auditCollections.Find(Builders<Audit>.Filter.Empty).ToListAsync(TestContext.Current.CancellationToken);
         Assert.Single(auditsFromDb);
         var audit = auditsFromDb.First();
 

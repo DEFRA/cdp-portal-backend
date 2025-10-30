@@ -28,11 +28,11 @@ public class VanityUrlsServiceTest(MongoContainerFixture fixture) : ServiceTest(
                 }
                 """);
 
-        await nginxVanityUrlsService.PersistEvent(sampleEvent, CancellationToken.None);
+        await nginxVanityUrlsService.PersistEvent(sampleEvent, TestContext.Current.CancellationToken);
 
         var vanityUrlsService = new VanityUrlsService(mongoFactory);
 
-        var result = await vanityUrlsService.FindService("service-a", CancellationToken.None);
+        var result = await vanityUrlsService.FindService("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Single(result);
 
@@ -56,9 +56,9 @@ public class VanityUrlsServiceTest(MongoContainerFixture fixture) : ServiceTest(
                 """);
 
         var shutteredUrlsService = new ShutteredUrlsService(mongoFactory, new LoggerFactory());
-        await shutteredUrlsService.PersistEvent(shutteredEvent, CancellationToken.None);
+        await shutteredUrlsService.PersistEvent(shutteredEvent, TestContext.Current.CancellationToken);
 
-        var shutteredResult = await vanityUrlsService.FindService("service-a", CancellationToken.None);
+        var shutteredResult = await vanityUrlsService.FindService("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(shutteredResult);
         Assert.Single(shutteredResult);
 
@@ -82,9 +82,9 @@ public class VanityUrlsServiceTest(MongoContainerFixture fixture) : ServiceTest(
                 """);
 
         var enabledVanityUrlsService = new EnabledVanityUrlsService(mongoFactory, new LoggerFactory());
-        await enabledVanityUrlsService.PersistEvent(enabledEvent, CancellationToken.None);
+        await enabledVanityUrlsService.PersistEvent(enabledEvent, TestContext.Current.CancellationToken);
 
-        var enabledResult = await vanityUrlsService.FindService("service-a", CancellationToken.None);
+        var enabledResult = await vanityUrlsService.FindService("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(enabledResult);
         Assert.Single(enabledResult);
 
@@ -106,9 +106,9 @@ public class VanityUrlsServiceTest(MongoContainerFixture fixture) : ServiceTest(
                                                                   }
                                                                  """);
 
-        await shutteredUrlsService.PersistEvent(unshutteredEvent, CancellationToken.None);
+        await shutteredUrlsService.PersistEvent(unshutteredEvent, TestContext.Current.CancellationToken);
 
-        var unshutteredResult = await vanityUrlsService.FindService("service-a", CancellationToken.None);
+        var unshutteredResult = await vanityUrlsService.FindService("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(unshutteredResult);
         Assert.Single(unshutteredResult);
 

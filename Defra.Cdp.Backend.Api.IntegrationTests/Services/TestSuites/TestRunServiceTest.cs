@@ -17,7 +17,7 @@ public class TestRunServiceTest(MongoContainerFixture fixture) : ServiceTest(fix
     {
         var mongoFactory = CreateMongoDbClientFactory();
         var testRunService = new TestRunService(mongoFactory, new LoggerFactory());
-        var exists = await testRunService.AnyTestRunExists("test-suite", "dev", "1234", new CancellationToken());
+        var exists = await testRunService.AnyTestRunExists("test-suite", "dev", "1234", TestContext.Current.CancellationToken);
         Assert.False(exists);
     }
 
@@ -54,9 +54,9 @@ public class TestRunServiceTest(MongoContainerFixture fixture) : ServiceTest(fix
                                                             "configVersion": "b81af8dfb378253cf4107eeb00cea44e2f579eab"
                                                           }
                                                           """)!;
-        await testRunService.CreateTestRun(testRun, new CancellationToken());
+        await testRunService.CreateTestRun(testRun, TestContext.Current.CancellationToken);
 
-        var exists = testRunService.AnyTestRunExists("test-suite", "dev", "1234", new CancellationToken()).GetAwaiter().GetResult();
+        var exists = await testRunService.AnyTestRunExists("test-suite", "dev", "1234", TestContext.Current.CancellationToken);
         Assert.True(exists);
     }
 

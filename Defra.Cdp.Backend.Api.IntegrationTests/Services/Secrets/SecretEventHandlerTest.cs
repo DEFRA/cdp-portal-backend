@@ -37,7 +37,7 @@ public class SecretEventHandlerTest(MongoContainerFixture fixture) : ServiceTest
                            }
                            """);
 
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = TestContext.Current.CancellationToken;
         await secretEventHandler.Handle(header, cancellationToken);
 
         var result = await secretsService.FindAllSecretsForEnvironment("infra-dev", cancellationToken);

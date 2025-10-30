@@ -64,9 +64,9 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
             Created = DateTime.UtcNow
         };
 
-        await entitiesService.Create(entity, CancellationToken.None);
+        await entitiesService.Create(entity, TestContext.Current.CancellationToken);
 
-        var persistedEntityStatus = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        var persistedEntityStatus = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
         var persistedEntity = persistedEntityStatus?.Entity;
         Assert.NotNull(persistedEntity);
         Assert.Equal("example-repo", persistedEntity.Name);
@@ -117,10 +117,10 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
                     "example-team"
                 )
             ],
-            CreatedAt = DateTime.UtcNow,
-        }, CancellationToken.None);
+            CreatedAt = DateTime.UtcNow
+        }, TestContext.Current.CancellationToken);
 
-        var updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        var updatedEntity = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
 
         Assert.NotNull(updatedEntity);
         Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
@@ -150,16 +150,16 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
                     Mongo = true,
                     Redis = false,
                     ServiceCode = "example-repo",
-                    TestSuite = null,
+                    TestSuite = null
                 }
             ]
         };
 
         await githubWorkflowEventListener.Handle(
             new Message { Body = WrapBodyAsJson(tenantServicesPayload, "tenant-services"), MessageId = "1234" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
         Assert.NotNull(updatedEntity);
         Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
@@ -180,9 +180,9 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
 
         await githubWorkflowEventListener.Handle(
             new Message { Body = WrapBodyAsJson(nginxUpstreamsPayload, "nginx-upstreams"), MessageId = "1234" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
         Assert.NotNull(updatedEntity);
         Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
@@ -205,9 +205,9 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
 
         await githubWorkflowEventListener.Handle(
             new Message { Body = WrapBodyAsJson(appConfigPayload, "app-config"), MessageId = "1234" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
         Assert.NotNull(updatedEntity);
         Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
@@ -223,15 +223,15 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
             DefaultDomains = [],
             Services =
             [
-                new ServiceConfig { AllowedDomains = [], Name = "example-repo", }
+                new ServiceConfig { AllowedDomains = [], Name = "example-repo" }
             ]
         };
 
         await githubWorkflowEventListener.Handle(
             new Message { Body = WrapBodyAsJson(squidProxyConfig, "squid-proxy-config"), MessageId = "1234" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
         Assert.NotNull(updatedEntity);
         Assert.Equal(Status.Creating, updatedEntity.Entity.Status);
         Assert.True(updatedEntity.Resources["Repository"]);
@@ -251,9 +251,9 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
         };
         await githubWorkflowEventListener.Handle(
             new Message { Body = WrapBodyAsJson(grafanaDashboardPayload, "grafana-dashboard"), MessageId = "1234" },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", CancellationToken.None);
+        updatedEntity = await entityStatusService.GetEntityStatus("example-repo", TestContext.Current.CancellationToken);
         Assert.NotNull(updatedEntity);
         Assert.True(updatedEntity.Resources["Repository"]);
         Assert.True(updatedEntity.Resources["TenantServices"]);

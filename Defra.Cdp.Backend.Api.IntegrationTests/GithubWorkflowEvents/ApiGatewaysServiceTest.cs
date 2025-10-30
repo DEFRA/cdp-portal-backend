@@ -31,11 +31,11 @@ public class ApiGatewaysServiceTest(MongoContainerFixture fixture) : ServiceTest
                 }
                 """);
 
-        await enabledApisService.PersistEvent(sampleEvent, CancellationToken.None);
+        await enabledApisService.PersistEvent(sampleEvent, TestContext.Current.CancellationToken);
 
         var apiGatewaysService = new ApiGatewaysService(connectionFactory);
 
-        var result = await apiGatewaysService.FindService("pha-import-notifications", CancellationToken.None);
+        var result = await apiGatewaysService.FindService("pha-import-notifications", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Single(result);
 
@@ -58,9 +58,9 @@ public class ApiGatewaysServiceTest(MongoContainerFixture fixture) : ServiceTest
                 """);
 
         var shutteredUrlsService = new ShutteredUrlsService(connectionFactory, new LoggerFactory());
-        await shutteredUrlsService.PersistEvent(shutteredEvent, CancellationToken.None);
+        await shutteredUrlsService.PersistEvent(shutteredEvent, TestContext.Current.CancellationToken);
 
-        var shutteredResult = await apiGatewaysService.FindService("pha-import-notifications", CancellationToken.None);
+        var shutteredResult = await apiGatewaysService.FindService("pha-import-notifications", TestContext.Current.CancellationToken);
         Assert.NotNull(shutteredResult);
         Assert.Single(shutteredResult);
 
