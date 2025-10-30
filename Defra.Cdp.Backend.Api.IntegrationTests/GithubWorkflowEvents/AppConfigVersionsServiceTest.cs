@@ -11,7 +11,7 @@ public class AppConfigVersionsServiceTest(MongoContainerFixture fixture) : Servi
     [Fact]
     public async Task AppConfigVersionsReturnsLatestEventByCommitTimestamp()
     {
-        var connectionFactory = CreateConnectionFactory();
+        var connectionFactory = CreateMongoDbClientFactory();
         var appConfigVersionsService = new AppConfigVersionsService(connectionFactory, new LoggerFactory());
 
         var sampleEvent = EventFromJson<AppConfigVersionPayload>("""

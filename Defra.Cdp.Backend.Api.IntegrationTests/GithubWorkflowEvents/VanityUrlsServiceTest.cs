@@ -11,7 +11,7 @@ public class VanityUrlsServiceTest(MongoContainerFixture fixture) : ServiceTest(
     [Fact]
     public async Task VanityUrlsReturnsAsExpected()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var nginxVanityUrlsService = new NginxVanityUrlsService(mongoFactory, new LoggerFactory());
 
         var sampleEvent = EventFromJson<NginxVanityUrlsPayload>("""

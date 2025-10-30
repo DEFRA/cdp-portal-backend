@@ -23,7 +23,7 @@ public class DeploymentServiceTest : ServiceTest
         
     public DeploymentServiceTest(MongoContainerFixture fixture) : base(fixture)
     {
-        mongoFactory = CreateConnectionFactory();;
+        mongoFactory = CreateMongoDbClientFactory();;
     }
 
     

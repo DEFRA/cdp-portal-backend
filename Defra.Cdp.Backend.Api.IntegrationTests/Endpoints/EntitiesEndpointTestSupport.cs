@@ -33,7 +33,7 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
 
     public EntitiesEndpointTestSupport(MongoContainerFixture fixture) : base(fixture)
     {
-        _mongoFactory = CreateConnectionFactory();
+        _mongoFactory = CreateMongoDbClientFactory();
         _entitiesService = new EntitiesService(_mongoFactory, _loggerFactory);
         _entityStatusService = NSubstitute.Substitute.For<IEntityStatusService>();
 

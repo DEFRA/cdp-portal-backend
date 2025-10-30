@@ -34,7 +34,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Create_entity_if_missing()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         Assert.Null(await service.GetEntity("service-a", CancellationToken.None));
@@ -65,7 +65,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Update_entity_if_it_exists()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         await service.Create(new Entity { Name = "service-a", SubType = SubType.Frontend, Type = Type.Microservice, Status = Status.Created },
@@ -97,7 +97,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Unsets_existing_env_if_removed_from_payload()
     {
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var state = new PlatformStatePayload
@@ -134,7 +134,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Updates_multiple_environments()
     {
-                var mongoFactory = CreateConnectionFactory();
+                var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var testState = new PlatformStatePayload
@@ -169,7 +169,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Tenant_with_limited_environments_has_correct_status()
     {
-                var mongoFactory = CreateConnectionFactory();
+                var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var testState = new PlatformStatePayload

@@ -31,7 +31,7 @@ public class EntityStatusTest(MongoContainerFixture fixture) : MongoTestSupport(
         _githubWorkflowEventListenerOptions.Value.Returns(
             new GithubWorkflowEventListenerOptions { QueueUrl = "http://localhost" });
 
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
 
         var loggerFactory = new NullLoggerFactory();
         var envLookup = new MockEnvironmentLookup();

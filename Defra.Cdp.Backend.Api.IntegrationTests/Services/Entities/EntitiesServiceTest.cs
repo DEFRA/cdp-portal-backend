@@ -17,7 +17,7 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
     {
         var ct = CancellationToken.None;
         var logger = new NullLoggerFactory();
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var entitiesService = new EntitiesService(mongoFactory, logger);
         var entity = new Entity
         {
@@ -44,7 +44,7 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
     public async Task WillRefreshTeams()
     {
         var logger = new NullLoggerFactory();
-        var mongoFactory = CreateConnectionFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var repositoryService = new RepositoryService(mongoFactory, logger);
         var entitiesService = new EntitiesService(mongoFactory, logger);
 
