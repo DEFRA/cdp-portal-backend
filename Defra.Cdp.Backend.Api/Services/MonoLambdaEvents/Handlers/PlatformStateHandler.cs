@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using JsonException = System.Text.Json.JsonException;
 
@@ -15,7 +16,7 @@ internal class Header
     public string? Compression { get; init; }
 }
 
-public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
+public class PlatformStateHandler(IEntitiesService entitiesService, IUserServiceFetcher userServiceFetcher, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
 {
     public string EventType => "platform_state";
     public bool PersistEvents => true;
@@ -62,7 +63,9 @@ public class PlatformStateHandler(IEntitiesService entitiesService, ILoggerFacto
         _logger.LogInformation("VanityUrls serial {Serial}", state.TerraformSerials.Tfvanityurl);
         _logger.LogInformation("WAF serial {Serial}", state.TerraformSerials.Tfwaf);
 
-        await entitiesService.UpdateEnvironmentState(state, cancellationToken);
+        var cdpTeams = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
+        await entitiesService.UpdateEnvironmentState(state, userServiceTeams, cancellationToken);
         await entitiesService.BulkUpdateTenantConfigStatus(cancellationToken);
     }
 

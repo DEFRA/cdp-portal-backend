@@ -9,7 +9,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-[Obsolete("Use EntityService")]
+
 public interface IShutteredUrlsService : IEventsPersistenceService<ShutteredUrlsPayload>
 {
     public Task<List<ShutteredUrlRecord>> FindShutteredUrls(string environment, CancellationToken cancellationToken);

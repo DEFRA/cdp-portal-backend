@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 

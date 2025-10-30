@@ -1,10 +1,13 @@
+using System.Collections;
 using System.Globalization;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Logging.Abstractions;
+using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
@@ -51,8 +54,10 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
+        
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
 
-        await service.UpdateEnvironmentState(state, TestContext.Current.CancellationToken);
+        await service.UpdateEnvironmentState(state, userServiceTeams, TestContext.Current.CancellationToken);
 
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
@@ -61,6 +66,41 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
         Assert.Equal(Status.Creating, result.TenantConfigStatus);
         Assert.True(result.Environments.ContainsKey("test"));
         Assert.Equivalent(_serviceA.Tenant, result.Environments["test"]);
+    }
+    
+    [Fact]
+    public async Task Update_entity_team_name()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
+
+        Assert.Null(await service.GetEntity("service-a", CancellationToken.None));
+
+
+        var state = new PlatformStatePayload
+        {
+            Version = 1,
+            TerraformSerials = new Serials(),
+            Environment = "test",
+            Tenants = new Dictionary<string, CdpTenantAndMetadata>
+            {
+                { "service-a", _serviceA }
+            }
+        };
+        
+        
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>{ ["platform"] = new("The Platform Team", "The Platform Team", null, "", "", "platform", []) };
+
+        await service.UpdateEnvironmentState(state, userServiceTeams, CancellationToken.None);
+
+        var result = await service.GetEntity("service-a", CancellationToken.None);
+        Assert.NotNull(result);
+        Assert.Equal(Type.Microservice, result.Type);
+        Assert.Equal(SubType.Backend, result.SubType);
+        Assert.Equal(Status.Creating, result.TenantConfigStatus);
+        Assert.True(result.Environments.ContainsKey("test"));
+        Assert.Equivalent(_serviceA.Tenant, result.Environments["test"]);
+        Assert.Equivalent(new ArrayList { new Team { TeamId = "platform", Name = "The Platform Team" } }, result.Teams);
     }
 
     [Fact]
@@ -84,8 +124,8 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-
-        await service.UpdateEnvironmentState(state, TestContext.Current.CancellationToken);
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
+        await service.UpdateEnvironmentState(state, userServiceTeams, TestContext.Current.CancellationToken);
 
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
@@ -111,8 +151,8 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-
-        await service.UpdateEnvironmentState(state, TestContext.Current.CancellationToken);
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
+        await service.UpdateEnvironmentState(state, userServiceTeams, TestContext.Current.CancellationToken);
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.True(result.Environments.ContainsKey("test"));
@@ -125,7 +165,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
             Tenants = new Dictionary<string, CdpTenantAndMetadata>()
         };
 
-        await service.UpdateEnvironmentState(nextState, TestContext.Current.CancellationToken);
+        await service.UpdateEnvironmentState(nextState, userServiceTeams, TestContext.Current.CancellationToken);
         result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(result.Environments.ContainsKey("test"));
@@ -148,7 +188,8 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-        await service.UpdateEnvironmentState(testState, TestContext.Current.CancellationToken);
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();        
+        await service.UpdateEnvironmentState(testState, userServiceTeams, TestContext.Current.CancellationToken);
 
         var devState = new PlatformStatePayload
         {
@@ -159,7 +200,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-        await service.UpdateEnvironmentState(devState, TestContext.Current.CancellationToken);
+        await service.UpdateEnvironmentState(devState, userServiceTeams, TestContext.Current.CancellationToken);
 
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
@@ -199,7 +240,8 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 }
             }
         };
-        await service.UpdateEnvironmentState(testState, TestContext.Current.CancellationToken);
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
+        await service.UpdateEnvironmentState(testState, userServiceTeams, TestContext.Current.CancellationToken);
         await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
