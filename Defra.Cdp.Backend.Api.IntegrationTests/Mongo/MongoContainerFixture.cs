@@ -1,6 +1,7 @@
 using Testcontainers.MongoDb;
 using Testcontainers.Xunit;
-using Xunit.Abstractions;
+using Xunit.Sdk;
+
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 
