@@ -8,8 +8,8 @@ namespace Defra.Cdp.Backend.Api.Services.Shuttering;
 public interface IShutteringService
 {
     public Task Register(ShutteringRecord shutteringRecord, CancellationToken cancellationToken);
-    Task<List<ShutteringUrlState>> ShutteringStatesForService(string serviceName, CancellationToken cancellationToken);
-    Task<ShutteringUrlState?> ShutteringStatesForService(string entity, string url, CancellationToken cancellationToken);
+    Task<List<ShutteringUrlState>> ShutteringStatesForService(string name, CancellationToken cancellationToken);
+    Task<ShutteringUrlState?> ShutteringStatesForService(string name, string url, CancellationToken cancellationToken);
 }
 
 public class ShutteringService(
@@ -42,7 +42,7 @@ public class ShutteringService(
         CancellationToken cancellationToken)
     {
         var output = new List<ShutteringUrlState>();
-        
+
         var requestedStates = await Collection
             .Find(s => s.ServiceName == name)
             .ToListAsync(cancellationToken);
@@ -67,24 +67,24 @@ public class ShutteringService(
                 Status = status
             });
         }
+
         return output;
     }
 
-    public async Task<ShutteringUrlState?> ShutteringStatesForService(string name, string url, CancellationToken cancellationToken)
+    public async Task<ShutteringUrlState?> ShutteringStatesForService(string name, string url,
+        CancellationToken cancellationToken)
     {
         var requestedState = await Collection
             .Find(s => s.ServiceName == name && s.Url == url)
             .FirstOrDefaultAsync(cancellationToken);
 
         var entity = await entitiesService.GetEntity(name, cancellationToken);
-
         if (requestedState == null || entity == null) return null;
-        
         if (!entity.Environments.TryGetValue(requestedState.Environment, out var config)) return null;
         if (!config.Urls.TryGetValue(url, out var tenantUrl)) return null;
 
         var status = ShutteringStatus(requestedState.Shuttered, tenantUrl.Shuttered);
-                
+
         return new ShutteringUrlState
         {
             Environment = requestedState.Environment,
@@ -108,7 +108,7 @@ public class ShutteringService(
             (false, false) => Models.ShutteringStatus.Active
         };
     }
-    
+
     protected override List<CreateIndexModel<ShutteringRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<ShutteringRecord> builder)
     {
