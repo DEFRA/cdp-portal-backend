@@ -9,10 +9,9 @@ public static class ShutteringEndpoint
     {
         app.MapPost("/shuttering/register", Register);
         app.MapGet("/shuttering/{serviceName}", ShutteringStatesForService);
-        app.MapGet("/shuttering/url/{url}", ShutteringStateForUrl);
+        app.MapGet("/shuttering/{serviceName}/{url}", ShutteringStateForUrl);
     }
 
-    [Obsolete("Use entities")]
     private static async Task<IResult> ShutteringStatesForService(
         IShutteringService shutteringService, string serviceName,
         CancellationToken cancellationToken)
@@ -21,12 +20,13 @@ public static class ShutteringEndpoint
         return Results.Ok(shutteringRecords);
     }
 
-    [Obsolete("Use entities")]
     private static async Task<IResult> ShutteringStateForUrl(
-        IShutteringService shutteringService, string url,
+        IShutteringService shutteringService, 
+        string serviceName,
+        string url,
         CancellationToken cancellationToken)
     {
-        var shutteringState = await shutteringService.ShutteringStateForUrl(url, cancellationToken);
+        var shutteringState = await shutteringService.ShutteringStatesForService(serviceName, url, cancellationToken);
         return shutteringState == null ? Results.NotFound(new ApiError("Shuttering record not found")) : Results.Ok(shutteringState);
     }
 

@@ -1,5 +1,4 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Shuttering;
@@ -7,63 +6,26 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Shuttering;
 public class ShutteringServiceTest
 {
     [Fact]
-    public void ShutteringStatusIsShutteredWhenVanityUrlIsShutteredAndNoMatchingShutteringRecord()
+    public void active_when_request_is_unshuttered_and_actual_is_unshuttered()
     {
-        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
-        var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, null);
-
-        Assert.Equal(ShutteringStatus.Shuttered, shutteringStatus);
+        Assert.Equal(ShutteringStatus.Active, ShutteringService.ShutteringStatus(false, false));
     }
-
+    
     [Fact]
-    public void ShutteringStatusIsActiveWhenVanityUrlIsNotShutteredAndNoMatchingShutteringRecord()
+    public void pending_active_when_requested_is_active_and_actual_is_shuttered()
     {
-        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
-        var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, null);
-
-        Assert.Equal(ShutteringStatus.Active, shutteringStatus);
+        Assert.Equal(ShutteringStatus.PendingActive, ShutteringService.ShutteringStatus(false, true));
     }
-
+    
     [Fact]
-    public void ShutteringStatusIsShutteredWhenVanityUrlIsShutteredAndShutteringRecordIsShuttered()
+    public void pending_shuttering_when_request_is_shuttered_and_actual_is_unshuttered()
     {
-        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
-        var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", true,
-            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" },
-            DateTime.UtcNow));
-
-        Assert.Equal(ShutteringStatus.Shuttered, shutteringStatus);
+        Assert.Equal(ShutteringStatus.PendingShuttered, ShutteringService.ShutteringStatus(true, false));
     }
-
-
+    
     [Fact]
-    public void ShutteringStatusIsPendingActiveWhenVanityUrlIsShutteredAndShutteringRecordIsNotShuttered()
+    public void shuttered_when_request_is_shuttered_and_actual_is_shuttered()
     {
-        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, true);
-        var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", false,
-            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
-
-        Assert.Equal(ShutteringStatus.PendingActive, shutteringStatus);
+        Assert.Equal(ShutteringStatus.Shuttered, ShutteringService.ShutteringStatus(true, true));
     }
-
-    [Fact]
-    public void ShutteringStatusIsActiveWhenVanityUrlIsNotShutteredAndShutteringRecordIsNotShuttered()
-    {
-        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
-        var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", false,
-            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
-
-        Assert.Equal(ShutteringStatus.Active, shutteringStatus);
-    }
-
-    [Fact]
-    public void ShutteringStatusIsPendingShutteredWhenVanityUrlIsNotShutteredAndShutteringRecordIsShuttered()
-    {
-        var vanity = new VanityUrlRecord("https://test-url.com", "test-env", "test-service", false, false);
-        var shutteringStatus = ShutteringService.ShutteringStatus(vanity.Shuttered, new ShutteringRecord("test-env", "test-service", "https://test-url.com", "waf", true,
-            new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }, DateTime.UtcNow));
-
-        Assert.Equal(ShutteringStatus.PendingShuttered, shutteringStatus);
-    }
-
 }
