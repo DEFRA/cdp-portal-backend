@@ -117,3 +117,12 @@ public class ShutteringService(
         return [service];
     }
 }
+
+[Obsolete("Remove later")]
+public record ShutterableUrl(
+    string ServiceName,
+    string Environment,
+    string Url,
+    bool Enabled,
+    bool Shuttered,
+    bool isVanity);
