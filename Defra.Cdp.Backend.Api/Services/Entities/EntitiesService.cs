@@ -333,7 +333,7 @@ public class EntitiesService(
                 var teams = kv.Value.Metadata?.Teams?.Select(t =>
                         userServiceTeams.TryGetValue(t, out var userServiceTeam)
                             ? new Team { TeamId = t, Name = userServiceTeam.name }
-                            : new Team { TeamId = t })
+                            : new Team { TeamId = t, Name = t })
                     .ToList() ?? [];
                 update = update.Set(e => e.Teams, teams);
             }
