@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Shuttering;
@@ -42,30 +43,33 @@ public class ShutteringService(
         CancellationToken cancellationToken)
     {
         var output = new List<ShutteringUrlState>();
-
-        var requestedStates = await Collection
-            .Find(s => s.ServiceName == name)
-            .ToListAsync(cancellationToken);
-
         var entity = await entitiesService.GetEntity(name, cancellationToken);
-        if (requestedStates == null || entity == null) return output;
+        if (entity == null) return output;
 
-        foreach (var requestedState in requestedStates)
+        foreach (var (env, envConfig) in entity.Environments)
         {
-            if (!entity.Environments.TryGetValue(requestedState.Environment, out var config)) continue;
-            if (!config.Urls.TryGetValue(requestedState.Url, out var tenantUrl)) continue;
-            var status = ShutteringStatus(requestedState.Shuttered, tenantUrl.Shuttered);
-            output.Add(new ShutteringUrlState
+            foreach (var (url, urlData) in envConfig.Urls)
             {
-                Environment = requestedState.Environment,
-                Internal = tenantUrl.Type == "internal",
-                ServiceName = name,
-                Url = requestedState.Url,
-                Waf = requestedState.Waf,
-                LastActionedAt = requestedState.ActionedAt,
-                LastActionedBy = requestedState.ActionedBy,
-                Status = status
-            });
+                if (urlData.Type != "vanity") continue;
+                var requestedState = await Collection
+                    .Find(s => s.ServiceName == name && s.Url == url && s.Environment == env)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered);
+                var waf = UrlToWaf(url, envConfig);
+                
+                output.Add(new ShutteringUrlState
+                {
+                    Environment = env,
+                    Internal = false,
+                    ServiceName = name,
+                    Url = url,
+                    Waf = waf,
+                    LastActionedAt = requestedState?.ActionedAt,
+                    LastActionedBy = requestedState?.ActionedBy,
+                    Status = status
+                });
+            }
         }
 
         return output;
@@ -74,34 +78,16 @@ public class ShutteringService(
     public async Task<ShutteringUrlState?> ShutteringStatesForService(string name, string url,
         CancellationToken cancellationToken)
     {
-        var requestedState = await Collection
-            .Find(s => s.ServiceName == name && s.Url == url)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var entity = await entitiesService.GetEntity(name, cancellationToken);
-        if (requestedState == null || entity == null) return null;
-        if (!entity.Environments.TryGetValue(requestedState.Environment, out var config)) return null;
-        if (!config.Urls.TryGetValue(url, out var tenantUrl)) return null;
-
-        var status = ShutteringStatus(requestedState.Shuttered, tenantUrl.Shuttered);
-
-        return new ShutteringUrlState
-        {
-            Environment = requestedState.Environment,
-            Internal = tenantUrl.Type == "internal",
-            ServiceName = name,
-            Url = url,
-            Waf = requestedState.Waf,
-            LastActionedAt = requestedState.ActionedAt,
-            LastActionedBy = requestedState.ActionedBy,
-            Status = status
-        };
+        var urls = await ShutteringStatesForService(name, cancellationToken);
+        return urls.FirstOrDefault(u => u.Url.Equals(url, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static ShutteringStatus ShutteringStatus(bool request, bool actual)
+    public static ShutteringStatus ShutteringStatus(bool? request, bool actual)
     {
         return (request, actual) switch
         {
+            (null, true) => Models.ShutteringStatus.Shuttered,
+            (null, false) => Models.ShutteringStatus.Active,
             (true, true) => Models.ShutteringStatus.Shuttered,
             (true, false) => Models.ShutteringStatus.PendingShuttered,
             (false, true) => Models.ShutteringStatus.PendingActive,
@@ -109,6 +95,33 @@ public class ShutteringService(
         };
     }
 
+
+    /// <summary>
+    /// See: https://github.com/DEFRA/cdp-platform-documentation/blob/main/infrastructure/shuttering.md
+    /// This will only be needed in the short-term. Shuttering is going to be reworked so we dont need
+    /// to explicitly pass the WAF as a parameter.
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="envConfig"></param>
+    /// <returns></returns>
+    public static string UrlToWaf(string url, CdpTenant envConfig)
+    {
+        var isPublic = envConfig.TenantConfig?.Zone == "public";
+        var isNginx = envConfig.Nginx?.Servers.ContainsKey(url);
+        var isInternal = url.EndsWith(".defra.cloud");
+
+        return (isPublic, isNginx, isInternal) switch
+        {
+            (true, true, false) => "external_public",
+            (true, true, true) => "internal_public",
+            (false, true, true) => "internal_protected",
+
+            (true, false, false) => "api_public",
+            (false, false, false) => "api_private",
+            _ => "external_public"
+        };
+    }
+    
     protected override List<CreateIndexModel<ShutteringRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<ShutteringRecord> builder)
     {

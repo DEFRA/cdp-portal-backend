@@ -330,7 +330,16 @@ public class EntitiesService(
                     update = update.Set(e => e.SubType, entitySubType);
                 }
 
-                var teams = kv.Value.Metadata?.Teams?.Select(t =>
+                if (!string.IsNullOrEmpty(kv.Value.Metadata?.Created))
+                {
+                    update = DateTime.TryParse(kv.Value.Metadata?.Created, out var created) 
+                        ? update.SetOnInsert(e => e.Created, created) 
+                        : update.SetOnInsert(e => e.Created, DateTime.UtcNow);
+                }
+                
+                var teams = kv.Value.Metadata?.Teams?
+                    .Where(t => t != null!)
+                    .Select(t =>
                         userServiceTeams.TryGetValue(t, out var userServiceTeam)
                             ? new Team { TeamId = t, Name = userServiceTeam.name }
                             : new Team { TeamId = t })
