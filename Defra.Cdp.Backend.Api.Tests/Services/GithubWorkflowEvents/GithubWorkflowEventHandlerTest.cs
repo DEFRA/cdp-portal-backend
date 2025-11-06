@@ -21,7 +21,6 @@ public class GithubWorkflowEventHandlerTest
     private readonly IGrafanaDashboardsService grafanaDashboardsService = Substitute.For<IGrafanaDashboardsService>();
     private readonly IAppConfigsService appConfigsService = Substitute.For<IAppConfigsService>();
     private readonly INginxUpstreamsService nginxUpstreamsService = Substitute.For<INginxUpstreamsService>();
-    private readonly IEntityStatusService entityStatusService = Substitute.For<IEntityStatusService>();
     private readonly ITenantRdsDatabasesService _rdsDatabasesService = Substitute.For<ITenantRdsDatabasesService>();
 
     private GithubWorkflowEventHandler createHandler()
@@ -38,7 +37,6 @@ public class GithubWorkflowEventHandlerTest
             tfVanityUrlsService,
             grafanaDashboardsService,
             nginxUpstreamsService,
-            entityStatusService,
             _rdsDatabasesService,
             ConsoleLogger.CreateLogger<GithubWorkflowEventHandler>());
     }
@@ -90,8 +88,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -140,8 +136,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -190,8 +184,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -225,8 +217,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -262,8 +252,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -320,8 +308,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -416,8 +402,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
 
@@ -474,8 +458,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -524,8 +506,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -570,8 +550,6 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -612,7 +590,5 @@ public class GithubWorkflowEventHandlerTest
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
         await grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
-        await entityStatusService.Received(1)
-            .UpdatePendingEntityStatuses(Arg.Any<CancellationToken>());
     }
 }

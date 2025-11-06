@@ -57,7 +57,7 @@ public class ShutteringService(
 
                 var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered);
                 var waf = UrlToWaf(url, envConfig);
-                
+
                 output.Add(new ShutteringUrlState
                 {
                     Environment = env,
@@ -121,7 +121,7 @@ public class ShutteringService(
             _ => "external_public"
         };
     }
-    
+
     protected override List<CreateIndexModel<ShutteringRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<ShutteringRecord> builder)
     {

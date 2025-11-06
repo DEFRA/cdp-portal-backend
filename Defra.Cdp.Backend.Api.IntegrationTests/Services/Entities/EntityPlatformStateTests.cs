@@ -32,6 +32,11 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
             },
             Logs = new OpensearchDashboard { Name = "logs", Url = "http://logs/tenant" },
             TenantConfig = new RequestedConfig { Zone = "protected", Mongo = true, Redis = false }
+        },
+        Progress = new CreationProgress
+        {
+            Complete = false,
+            Steps = new Dictionary<string, bool>()
         }
     };
 
@@ -54,7 +59,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-        
+
         var userServiceTeams = new Dictionary<string, UserServiceTeam>();
 
         await service.UpdateEnvironmentState(state, userServiceTeams, TestContext.Current.CancellationToken);
@@ -63,11 +68,11 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
         Assert.NotNull(result);
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Backend, result.SubType);
-        Assert.Equal(Status.Creating, result.TenantConfigStatus);
+        Assert.Equal(Status.Creating, result.Status);
         Assert.True(result.Environments.ContainsKey("test"));
         Assert.Equivalent(_serviceA.Tenant, result.Environments["test"]);
     }
-    
+
     [Fact]
     public async Task Update_entity_team_name()
     {
@@ -87,9 +92,9 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-        
-        
-        var userServiceTeams = new Dictionary<string, UserServiceTeam>{ ["platform"] = new("The Platform Team", "The Platform Team", null, "", "", "platform", []) };
+
+
+        var userServiceTeams = new Dictionary<string, UserServiceTeam> { ["platform"] = new("The Platform Team", "The Platform Team", null, "", "", "platform", []) };
 
         await service.UpdateEnvironmentState(state, userServiceTeams, CancellationToken.None);
 
@@ -97,7 +102,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
         Assert.NotNull(result);
         Assert.Equal(Type.Microservice, result.Type);
         Assert.Equal(SubType.Backend, result.SubType);
-        Assert.Equal(Status.Creating, result.TenantConfigStatus);
+        Assert.Equal(Status.Creating, result.Status);
         Assert.True(result.Environments.ContainsKey("test"));
         Assert.Equivalent(_serviceA.Tenant, result.Environments["test"]);
         Assert.Equivalent(new ArrayList { new Team { TeamId = "platform", Name = "The Platform Team" } }, result.Teams);
@@ -175,7 +180,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Updates_multiple_environments()
     {
-                var mongoFactory = CreateMongoDbClientFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var testState = new PlatformStatePayload
@@ -188,7 +193,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
                 { "service-a", _serviceA }
             }
         };
-        var userServiceTeams = new Dictionary<string, UserServiceTeam>();        
+        var userServiceTeams = new Dictionary<string, UserServiceTeam>();
         await service.UpdateEnvironmentState(testState, userServiceTeams, TestContext.Current.CancellationToken);
 
         var devState = new PlatformStatePayload
@@ -211,7 +216,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
     [Fact]
     public async Task Tenant_with_limited_environments_has_correct_status()
     {
-                var mongoFactory = CreateMongoDbClientFactory();
+        var mongoFactory = CreateMongoDbClientFactory();
         var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
         var testState = new PlatformStatePayload
@@ -242,11 +247,11 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
         };
         var userServiceTeams = new Dictionary<string, UserServiceTeam>();
         await service.UpdateEnvironmentState(testState, userServiceTeams, TestContext.Current.CancellationToken);
-        await service.BulkUpdateTenantConfigStatus(TestContext.Current.CancellationToken);
+        await service.BulkUpdateEntityStatus(TestContext.Current.CancellationToken);
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal(CdpEnvironments.EnvironmentExcludingInfraDev.Length, result.Progress.Count);
         Assert.True(result.Progress.Values.All(v => v.Complete));
-        Assert.Equal(Status.Created, result.TenantConfigStatus);
+        Assert.Equal(Status.Created, result.Status);
     }
 }

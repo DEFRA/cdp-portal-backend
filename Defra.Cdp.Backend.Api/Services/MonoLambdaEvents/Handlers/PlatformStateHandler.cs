@@ -66,7 +66,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, IUserService
         var cdpTeams = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
         await entitiesService.UpdateEnvironmentState(state, userServiceTeams, cancellationToken);
-        await entitiesService.BulkUpdateTenantConfigStatus(cancellationToken);
+        await entitiesService.BulkUpdateEntityStatus(cancellationToken);
     }
 
     public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData)

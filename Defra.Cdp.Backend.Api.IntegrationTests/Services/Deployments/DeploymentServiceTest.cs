@@ -20,13 +20,13 @@ public class DeploymentServiceTest : ServiceTest
 {
     private readonly IUserServiceFetcher _userServiceFetcher = Substitute.For<IUserServiceFetcher>();
     private readonly MongoDbClientFactory _mongoFactory;
-        
+
     public DeploymentServiceTest(MongoContainerFixture fixture) : base(fixture)
     {
-        _mongoFactory = CreateMongoDbClientFactory();;
+        _mongoFactory = CreateMongoDbClientFactory(); ;
     }
 
-    
+
     [Fact]
     public async Task RegisterDeploymentWithAuditSection()
     {

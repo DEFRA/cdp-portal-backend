@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
@@ -26,7 +25,6 @@ public class GithubWorkflowEventHandler(
     ITfVanityUrlsService tfVanityUrlsService,
     IGrafanaDashboardsService grafanaDashboardsService,
     INginxUpstreamsService nginxUpstreamsService,
-    IEntityStatusService entityStatusService,
     ITenantRdsDatabasesService tenantRdsService,
     ILogger<GithubWorkflowEventHandler> logger)
     : IGithubWorkflowEventHandler
@@ -75,7 +73,6 @@ public class GithubWorkflowEventHandler(
                 logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);
                 break;
         }
-        await entityStatusService.UpdatePendingEntityStatuses(cancellationToken);
     }
 
     private async Task HandleEvent<T>(CommonEventWrapper eventWrapper, string messageBody, IEventsPersistenceService<T> service,

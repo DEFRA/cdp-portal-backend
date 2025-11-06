@@ -19,7 +19,6 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 public class EntitiesEndpointTestSupport : MongoTestSupport
 {
     private readonly IEntitiesService _entitiesService;
-    private readonly IEntityStatusService _entityStatusService;
 
     // Create Server
     private readonly TestServer _server;
@@ -27,14 +26,12 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
     public EntitiesEndpointTestSupport(MongoContainerFixture fixture) : base(fixture)
     {
         _entitiesService = new EntitiesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
-        _entityStatusService = NSubstitute.Substitute.For<IEntityStatusService>();
 
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
                 services.AddRouting();
                 services.AddSingleton(_entitiesService);
-                services.AddSingleton(_entityStatusService);
             })
             .Configure(app =>
             {
@@ -64,10 +61,10 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
         var result = await client.GetAsync("/entities/foo-frontend", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        var entity = JsonSerializer.Deserialize<Entity>(await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var resultAsString = await result.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var entity = JsonSerializer.Deserialize<Entity>(resultAsString);
         Assert.Equal("foo-frontend", entity?.Name);
     }
-
 
     [Fact]
     public async Task Should_return_filters_for_everything()
@@ -114,7 +111,6 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
         expected.Sort();
         Assert.Equal(expected, filters?.Entities);
     }
-
 
     [Fact]
     public async Task Should_list_all_entities()
@@ -194,7 +190,7 @@ public class EntitiesEndpointTestSupport : MongoTestSupport
                 Teams = [new Team { Name = "Platform", TeamId = "platform" }],
                 Status = Status.Created,
                 Type = Type.Microservice,
-                SubType = SubType.Frontend
+                SubType = SubType.Frontend,
             },
             new()
             {

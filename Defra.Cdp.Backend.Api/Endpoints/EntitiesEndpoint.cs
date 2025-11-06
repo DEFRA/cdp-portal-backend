@@ -15,7 +15,6 @@ public static class EntitiesEndpoint
         app.MapGet("/entities", GetEntities);
         app.MapGet("/entities/filters", GetFilters);
         app.MapGet("/entities/{repositoryName}", GetEntity);
-        app.MapGet("/entities/{repositoryName}/status", GetEntityStatus);
         app.MapPost("/entities/{repositoryName}/decommission", StartDecommissioning);
         app.MapPost("/entities/{repositoryName}/tags", TagEntity);
         app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
@@ -29,17 +28,9 @@ public static class EntitiesEndpoint
         CancellationToken cancellationToken)
     {
         await entitiesService.SetDecommissionDetail(repositoryName, userId, userDisplayName, cancellationToken);
-        await entitiesService.UpdateStatus(Status.Decommissioning, repositoryName, cancellationToken);
         await selfServiceOpsClient.ScaleEcsToZero(repositoryName,
             new UserDetails { Id = userId, DisplayName = userDisplayName }, cancellationToken);
         return Results.Ok();
-    }
-
-    private static async Task<IResult> GetEntityStatus(IEntityStatusService entityStatusService, string repositoryName,
-        CancellationToken cancellationToken)
-    {
-        var status = await entityStatusService.GetEntityStatus(repositoryName, cancellationToken);
-        return status != null ? Results.Ok(status) : Results.NotFound();
     }
 
     private static async Task<IResult> GetEntities(

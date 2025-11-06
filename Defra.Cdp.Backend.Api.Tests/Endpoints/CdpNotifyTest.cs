@@ -30,11 +30,10 @@ public class CdpNotifyTest
      * If this test has broken it probably means you've also broken CDP-Notify!
      */
     [Fact]
-    public async Task TestCdpNotifyHasntBeenBroken()
+    public async Task TestCdpNotifyHasNotBeenBroken()
     {
         // Run just the Deployables API Endpoints
         var entitiesService = Substitute.For<IEntitiesService>();
-        var entityStatusService = Substitute.For<IEntityStatusService>();
         var layerService = Substitute.For<ILayerService>();
         var userServiceFetcher = Substitute.For<IUserServiceFetcher>();
 
@@ -43,7 +42,6 @@ public class CdpNotifyTest
             {
                 services.AddRouting();
                 services.AddSingleton(entitiesService);
-                services.AddSingleton(entityStatusService);
                 services.AddSingleton(layerService);
                 services.AddSingleton(userServiceFetcher);
                 services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
@@ -51,17 +49,12 @@ public class CdpNotifyTest
             .Configure(app =>
             {
                 app.UseRouting();
-                app.UseEndpoints(endpoints =>
-                {
-                    endpoints.MapEntitiesEndpoint();
-                });
+                app.UseEndpoints(endpoints => { endpoints.MapEntitiesEndpoint(); });
             });
 
-        // Create Server
         var server = new TestServer(builder);
         var client = server.CreateClient();
 
-        // Setup Mocks.
         var service = new Entity
         {
             Name = "foo",
@@ -75,18 +68,20 @@ public class CdpNotifyTest
         entitiesService.GetEntity(Arg.Is("foo"), Arg.Any<CancellationToken>()).Returns(service);
         entitiesService.GetEntity(Arg.Is("missing-service"), Arg.Any<CancellationToken>()).ReturnsNull();
 
-        var response = await client.GetAsync("entities/foo");
+        var response = await client.GetAsync("entities/foo", TestContext.Current.CancellationToken);
 
         Assert.True(response.IsSuccessStatusCode);
 
-        var body = await JsonSerializer.DeserializeAsync<CdpNotifyService>(await response.Content.ReadAsStreamAsync());
+        var body = await JsonSerializer.DeserializeAsync<CdpNotifyService>(
+            await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(body);
         Assert.Single(body.teams);
         Assert.Equal("team-id-abc-123-456", body.teams[0].TeamId);
         Assert.Equal("teamA", body.teams[0].Name);
 
 
-        var missingResponse = await client.GetAsync("entites/unknown-service");
+        var missingResponse = await client.GetAsync("entites/unknown-service", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
     }
 
@@ -95,16 +90,13 @@ public class CdpNotifyTest
      */
     record CdpNotifyTeam
     {
-        [JsonPropertyName("teamId")]
-        public string TeamId { get; init; }
+        [JsonPropertyName("teamId")] public string TeamId { get; init; }
 
-        [JsonPropertyName("name")]
-        public string Name { get; init; }
-
+        [JsonPropertyName("name")] public string Name { get; init; }
     }
+
     record CdpNotifyService
     {
-        [JsonPropertyName("teams")]
-        public List<CdpNotifyTeam> teams { get; init; }
+        [JsonPropertyName("teams")] public List<CdpNotifyTeam> teams { get; init; }
     }
 }

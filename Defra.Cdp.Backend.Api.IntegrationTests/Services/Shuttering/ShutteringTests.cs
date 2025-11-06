@@ -20,7 +20,7 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
         var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, new NullLoggerFactory());
         var ct = TestContext.Current.CancellationToken;
-        
+
         await entityService.Create(_entity, ct);
         await shutteringService.Register(new ShutteringRecord("prod", _entity.Name, "foo.com", "", true, new UserDetails(),
             DateTime.Now), ct);
@@ -32,11 +32,11 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var stateByUrl = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(stateByUrl);
         Assert.Equal(ShutteringStatus.PendingShuttered, stateByUrl.Status);
-        
+
         var missingState = await shutteringService.ShutteringStatesForService(_entity.Name, "bar.com", ct);
         Assert.Null(missingState);
     }
-    
+
     [Fact]
     public async Task TestShutteringStatusIsDrivenFromEntity()
     {
@@ -46,29 +46,29 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
         var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, new NullLoggerFactory());
         var ct = TestContext.Current.CancellationToken;
-        
+
         await entityService.Create(_entity, ct);
         await shutteringService.Register(new ShutteringRecord("prod", _entity.Name, "foo.com", "", true, new UserDetails(),
             DateTime.Now), ct);
 
-        
+
         // requested true, actual false
         var status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.PendingShuttered, status.Status);
-        
+
         // Update entity so that shuttering is complete
         var updatedEntity = await entityService.GetEntity(_entity.Name, ct);
         Assert.NotNull(updatedEntity);
 
         updatedEntity.Environments["prod"].Urls["foo.com"].Shuttered = true;
-        await entitiesCollection.ReplaceOneAsync(e => e.Name == _entity.Name, updatedEntity, cancellationToken:ct);
-        
+        await entitiesCollection.ReplaceOneAsync(e => e.Name == _entity.Name, updatedEntity, cancellationToken: ct);
+
         // requested true, actual true
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.Shuttered, status.Status);
-        
+
         // Unshutter the service 
         await shutteringService.Register(new ShutteringRecord("prod", _entity.Name, "foo.com", "", false, new UserDetails(),
             DateTime.Now), ct);
@@ -77,10 +77,10 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.PendingActive, status.Status);
-        
+
         // Entity updates with the new status
         updatedEntity.Environments["prod"].Urls["foo.com"].Shuttered = false;
-        await entitiesCollection.ReplaceOneAsync(e => e.Name == _entity.Name, updatedEntity, cancellationToken:ct);
+        await entitiesCollection.ReplaceOneAsync(e => e.Name == _entity.Name, updatedEntity, cancellationToken: ct);
 
         // requested false, actual false
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
@@ -106,6 +106,6 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
             }}
         }
     };
-    
-    
+
+
 }
