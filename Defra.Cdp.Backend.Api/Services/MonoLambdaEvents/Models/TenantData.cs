@@ -130,6 +130,7 @@ public class CdpTenant
 
     [property: JsonPropertyName("squid")]
     public Squid? Squid { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -142,7 +143,8 @@ public class CdpTenantAndMetadata
     public TenantMetadata? Metadata { get; set; }
 
     [property: JsonPropertyName("progress")]
-    public CreationProgress Progress { get; set; }
+    public CreationProgress? Progress { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -150,16 +152,18 @@ public class CdpTenantNginx
 {
     [property: JsonPropertyName("servers")]
     public Dictionary<string, NginxServer> Servers { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
 public class CreationProgress
 {
     [property: JsonPropertyName("steps")]
-    public Dictionary<string, bool> Steps { get; set; }
+    public Dictionary<string, bool>? Steps { get; set; }
 
     [property: JsonPropertyName("complete")]
     public bool Complete { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -422,7 +426,7 @@ public class TenantMetadata
     public string Type { get; set; }
 
     [property: JsonPropertyName("teams")]
-    public List<string>? Teams { get; set; }
+    public List<string> Teams { get; set; }
 
     [property: JsonPropertyName("environments")]
     public List<string>? Environments { get; set; }
@@ -534,7 +538,6 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "2ac3e38cb47b91dbb40d88316c10083dffd09708451ec2e3a522fb450d01d60d";
+    public static readonly string Version = "4195d371cf3212fabc3bf93f49500c01a26944c51f88c02c51233591316b6951";
 }
-
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
