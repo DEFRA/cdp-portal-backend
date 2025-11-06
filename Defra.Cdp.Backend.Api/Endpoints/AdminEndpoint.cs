@@ -22,7 +22,7 @@ public static class AdminEndpoint
     /// <returns></returns>
     private static async Task<IResult> UpdateStatus(IEntitiesService entitiesService)
     {
-        await entitiesService.BulkUpdateTenantConfigStatus(CancellationToken.None);
+        await entitiesService.BulkUpdateEntityStatus(CancellationToken.None);
         return Results.Ok();
     }
 

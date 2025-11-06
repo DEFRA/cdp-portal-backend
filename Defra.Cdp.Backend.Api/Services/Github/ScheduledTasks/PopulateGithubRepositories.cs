@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
@@ -21,7 +20,6 @@ public sealed class PopulateGithubRepositories(
     IUserServiceFetcher userServiceFetcher,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues,
-    IEntityStatusService entityStatusService,
     ITenantServicesService tenantService)
     : IJob
 {
@@ -57,8 +55,6 @@ public sealed class PopulateGithubRepositories(
             finally
             {
                 await mongoLock.Unlock(LockName);
-                // TODO: remove this when we switch over to the new state status
-                await entityStatusService.UpdatePendingEntityStatuses(context.CancellationToken);
             }
         }
     }

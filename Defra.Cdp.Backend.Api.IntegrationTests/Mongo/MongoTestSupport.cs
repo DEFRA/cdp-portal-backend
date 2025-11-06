@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.Mongo;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 
-public class MongoTestSupport(MongoContainerFixture fixture) 
+public class MongoTestSupport(MongoContainerFixture fixture)
 {
     /// <summary>
     /// Creates a MongoDBClientFactory. By default, it will generate a random database name, which will keep the

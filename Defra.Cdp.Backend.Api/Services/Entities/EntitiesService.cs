@@ -13,22 +13,27 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 public interface IEntitiesService
 {
     Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
-    Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
+    Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken); //Used for tests
     Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options, CancellationToken cancellationToken);
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
+
     Task<EntitiesService.EntityFilters>
         GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
+
     Task Create(Entity entity, CancellationToken cancellationToken);
-    Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken);
     Task AddTag(string entityName, string tag, CancellationToken cancellationToken);
     Task RemoveTag(string entityName, string tag, CancellationToken cancellationToken);
+
     Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
         CancellationToken cancellationToken);
+
     Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken);
-    Task DecommissionFinished(string entityName, CancellationToken contextCancellationToken);
-    Task UpdateEnvironmentState(PlatformStatePayload state, Dictionary<string, UserServiceTeam> userServiceTeams, CancellationToken cancellationToken);
-    Task BulkUpdateTenantConfigStatus(CancellationToken cancellationToken);
+
+    Task UpdateEnvironmentState(PlatformStatePayload state, Dictionary<string, UserServiceTeam> userServiceTeams,
+        CancellationToken cancellationToken);
+
+    Task BulkUpdateEntityStatus(CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -59,8 +64,12 @@ public class EntitiesService(
     /// <returns></returns>
     public async Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken)
     {
-        return await Collection.Find(e => e.Name == entityName)
+        var entity = await Collection.Find(e => e.Name == entityName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+
+        entity?.CalculateOverallProgress();
+
+        return entity;
     }
 
     /// <summary>
@@ -89,11 +98,9 @@ public class EntitiesService(
         var sortBuilder = Builders<Entity>.Sort;
         var projectionBuilder = Builders<Entity>.Projection;
 
-        var sortDefinition = sortBuilder.Ascending(e => e.Name);
-        if (options.SortBy == EntitySortBy.Team)
-        {
-            sortDefinition = sortBuilder.Ascending(e => e.Teams);
-        }
+        var sortDefinition = options.SortBy == EntitySortBy.Team
+            ? sortBuilder.Ascending(e => e.Teams)
+            : sortBuilder.Ascending(e => e.Name);
 
         ProjectionDefinition<Entity, Entity> projectDefinition = projectionBuilder.Exclude(e => e.Id);
         if (options.Summary)
@@ -167,14 +174,6 @@ public class EntitiesService(
         await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
     }
 
-    [Obsolete("Now handled by BulkUpdateEntityStatus")]
-    public async Task UpdateStatus(Status overallStatus, string entityName, CancellationToken cancellationToken)
-    {
-        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
-        var update = Builders<Entity>.Update.Set(e => e.Status, overallStatus);
-        await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
-    }
-
     public async Task SetDecommissionDetail(string entityName, string userId, string userDisplayName,
         CancellationToken cancellationToken)
     {
@@ -186,7 +185,8 @@ public class EntitiesService(
                 Started = DateTime.UtcNow,
                 Finished = null,
                 WorkflowsTriggered = false
-            });
+            })
+            .Set(e => e.Status, Status.Decommissioning);
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
@@ -221,23 +221,12 @@ public class EntitiesService(
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 
-    [Obsolete("Now handled by BulkUpdateEntityStatus")]
-    public async Task DecommissionFinished(string entityName, CancellationToken cancellationToken)
-    {
-        var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
-        var update = Builders<Entity>.Update.Combine(
-            Builders<Entity>.Update.Set(e => e.Decommissioned!.Finished, DateTime.UtcNow),
-            Builders<Entity>.Update.Set(e => e.Status, Status.Decommissioned));
-        await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
-    }
-
-
     /// <summary>
     /// Updates the status of all entities based on their 'Progress' data for each env.
     /// Takes into account decommissioned services as well. 
     /// </summary>
     /// <param name="cancellationToken"></param>
-    public async Task BulkUpdateTenantConfigStatus(CancellationToken cancellationToken)
+    public async Task BulkUpdateEntityStatus(CancellationToken cancellationToken)
     {
         var fb = new FilterDefinitionBuilder<Entity>();
         var ub = new UpdateDefinitionBuilder<Entity>();
@@ -257,25 +246,25 @@ public class EntitiesService(
         );
 
         var hasComplete = fb.And(
-            fb.Ne(e => e.TenantConfigStatus, Status.Created),
+            fb.Ne(e => e.Status, Status.Created),
             hasDecommissionNotStarted,
             isCompleteInAllEnvs
         );
 
         var isInProgress = fb.And(
-            fb.Ne(e => e.TenantConfigStatus, Status.Creating),
+            fb.Ne(e => e.Status, Status.Creating),
             hasDecommissionNotStarted,
             fb.Not(isCompleteInAllEnvs)
         );
 
         var hasBeenDecommissioned = fb.And(
-            fb.Ne(e => e.TenantConfigStatus, Status.Decommissioned),
+            fb.Ne(e => e.Status, Status.Decommissioned),
             hasDecommissionStarted,
             isRemovedFromAllEnvs
         );
 
         var isDecommissioning = fb.And(
-            fb.Ne(e => e.TenantConfigStatus, Status.Decommissioning),
+            fb.Ne(e => e.Status, Status.Decommissioning),
             hasDecommissionStarted,
             fb.Not(isRemovedFromAllEnvs)
         );
@@ -283,11 +272,11 @@ public class EntitiesService(
         // Bulk update all the statuses that need to change
         var models = new List<WriteModel<Entity>>
         {
-            new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.TenantConfigStatus, Status.Created)),
-            new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.TenantConfigStatus, Status.Creating)),
-            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.TenantConfigStatus, Status.Decommissioning)),
+            new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.Status, Status.Created)),
+            new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.Status, Status.Creating)),
+            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.Status, Status.Decommissioning)),
             new UpdateManyModel<Entity>(hasBeenDecommissioned, ub
-                .Set(e => e.TenantConfigStatus, Status.Decommissioned)
+                .Set(e => e.Status, Status.Decommissioned)
                 .Set(e => e.Decommissioned!.Finished, DateTime.UtcNow)
                 .Unset(e => e.Metadata)
             )
@@ -303,7 +292,8 @@ public class EntitiesService(
     /// <param name="state"></param>
     /// <param name="userServiceTeams"></param>
     /// <param name="cancellationToken"></param>
-    public async Task UpdateEnvironmentState(PlatformStatePayload state, Dictionary<string, UserServiceTeam> userServiceTeams, CancellationToken cancellationToken)
+    public async Task UpdateEnvironmentState(PlatformStatePayload state,
+        Dictionary<string, UserServiceTeam> userServiceTeams, CancellationToken cancellationToken)
     {
         var env = state.Environment;
         var models = new List<WriteModel<Entity>>();
@@ -332,11 +322,11 @@ public class EntitiesService(
 
                 if (!string.IsNullOrEmpty(kv.Value.Metadata?.Created))
                 {
-                    update = DateTime.TryParse(kv.Value.Metadata?.Created, out var created) 
-                        ? update.SetOnInsert(e => e.Created, created) 
+                    update = DateTime.TryParse(kv.Value.Metadata?.Created, out var created)
+                        ? update.SetOnInsert(e => e.Created, created)
                         : update.SetOnInsert(e => e.Created, DateTime.UtcNow);
                 }
-                
+
                 var teams = kv.Value.Metadata?.Teams?
                     .Where(t => t != null!)
                     .Select(t =>
@@ -371,7 +361,7 @@ public class EntitiesService(
             Builders<Entity>.Update
                 .Unset(e => e.Environments[env])
                 .Unset(e => e.Progress[env])
-            )
+        )
         { IsUpsert = false };
 
         models.Add(removeMissing);

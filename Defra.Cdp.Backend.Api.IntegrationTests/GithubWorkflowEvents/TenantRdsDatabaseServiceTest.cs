@@ -52,7 +52,7 @@ public class TenantRdsDatabasesServiceTest(MongoContainerFixture fixture) : Serv
     [Fact]
     public async Task WillUpdateDatabases()
     {
-        
+
         var databaseService = new TenantRdsDatabasesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
         var sampleEvent = TestData();

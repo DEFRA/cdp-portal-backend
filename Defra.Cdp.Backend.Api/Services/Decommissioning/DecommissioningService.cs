@@ -12,10 +12,7 @@ public sealed class DecommissioningService(
     ILoggerFactory loggerFactory,
     IEntitiesService entitiesService,
     IDeploymentsService deploymentsService,
-    IEntityStatusService entityStatusService,
-    SelfServiceOpsClient selfServiceOpsClient,
-    IRepositoryService repositoryService,
-    IDeployableArtifactsService deployableArtifactsService
+    SelfServiceOpsClient selfServiceOpsClient
 ) : IJob
 {
     private readonly ILogger<DecommissioningService> _logger = loggerFactory.CreateLogger<DecommissioningService>();
@@ -36,19 +33,10 @@ public sealed class DecommissioningService(
                 continue;
             }
 
-            var entityStatus = await entityStatusService.GetEntityStatus(entity.Name, context.CancellationToken);
-            if (entityStatus!.Entity.Decommissioned is not { WorkflowsTriggered: true })
+            if (entity.Decommissioned is not { WorkflowsTriggered: true })
             {
                 await selfServiceOpsClient.TriggerDecommissionWorkflow(entity.Name, context.CancellationToken);
                 await entitiesService.DecommissioningWorkflowTriggered(entity.Name, context.CancellationToken);
-            }
-            else if (entityStatus.Resources.All(r => !r.Value)
-                     && (await repositoryService.FindRepositoryById(entity.Name, context.CancellationToken))!.IsArchived
-                     && await deployableArtifactsService.FindAllTagsForRepo(entity.Name, context.CancellationToken) is
-                     { Count: 0 }
-                    )
-            {
-                await entitiesService.DecommissionFinished(entity.Name, context.CancellationToken);
             }
             else
             {

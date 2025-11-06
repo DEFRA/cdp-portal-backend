@@ -115,7 +115,7 @@ public class CodeBuildStateChangeHandlerTest(MongoContainerFixture fixture) : Se
             Version = "0.1.0"
         }, cancellationToken);
 
-        await service.Link(cdpMigrationId, buildId,cancellationToken);
+        await service.Link(cdpMigrationId, buildId, cancellationToken);
 
         await handler.Handle("1", inProgressEvent, cancellationToken);
 

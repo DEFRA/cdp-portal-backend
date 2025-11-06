@@ -21,7 +21,7 @@ public static class ShutteringEndpoint
     }
 
     private static async Task<IResult> ShutteringStateForUrl(
-        IShutteringService shutteringService, 
+        IShutteringService shutteringService,
         string serviceName,
         string url,
         CancellationToken cancellationToken)

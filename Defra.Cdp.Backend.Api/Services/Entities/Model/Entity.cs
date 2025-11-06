@@ -39,10 +39,6 @@ public record Entity
     [property: JsonPropertyName("status")]
     public Status Status { get; set; }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    [property: JsonPropertyName("tenantConfigStatus")]
-    public Status TenantConfigStatus { get; set; }
-
     [property: JsonPropertyName("decommissioned")]
     public Decommission? Decommissioned { get; set; }
 
@@ -58,6 +54,36 @@ public record Entity
     [property: JsonPropertyName("progress")]
     public Dictionary<string, CreationProgress> Progress { get; init; } = new();
 
+    [property: JsonPropertyName("overallProgress")]
+    public OverallProgress? OverallProgress { get; set; }
+
+    public void CalculateOverallProgress()
+    {
+        OverallProgress = new OverallProgress
+        {
+
+            IsComplete = Progress.Values
+                .Where(p => p.Steps != null)
+                .All(p => p.Complete),
+            Steps = Progress.Values
+                .Where(p => p?.Steps != null)
+                .SelectMany(env => env.Steps)
+                .GroupBy(step => step.Key)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.All(step => step.Value)
+                )
+        };
+    }
+}
+
+public sealed class OverallProgress
+{
+    [property: JsonPropertyName("isComplete")]
+    public required bool IsComplete { get; init; }
+
+    [property: JsonPropertyName("steps")]
+    public required Dictionary<string, bool> Steps { get; init; }
 }
 
 public record Decommission
