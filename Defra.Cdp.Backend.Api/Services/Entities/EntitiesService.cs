@@ -281,7 +281,12 @@ public class EntitiesService(
                 .Unset(e => e.Metadata)
             )
         };
-        var result = await Collection.BulkWriteAsync(models, cancellationToken: cancellationToken);
+
+        var result = await Collection
+            .WithReadPreference(ReadPreference.Primary)
+            .WithWriteConcern(WriteConcern.WMajority)
+            .WithReadConcern(ReadConcern.Majority)
+            .BulkWriteAsync(models, cancellationToken: cancellationToken);
         _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
     }
 
@@ -368,7 +373,11 @@ public class EntitiesService(
 
         if (models.Count > 0)
         {
-            var result = await Collection.BulkWriteAsync(models, cancellationToken: cancellationToken);
+            var result = await Collection
+                .WithReadPreference(ReadPreference.Primary)
+                .WithWriteConcern(WriteConcern.WMajority)
+                .WithReadConcern(ReadConcern.Majority)
+                .BulkWriteAsync(models, cancellationToken: cancellationToken);
             _logger.LogInformation("Updated {Updated}, inserted {Inserted}, removed {Removed} tenants in {Env}",
                 result.ModifiedCount, result.InsertedCount, result.DeletedCount, env);
         }
