@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Schedulers;
 using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
@@ -39,7 +40,8 @@ using Microsoft.Identity.Web;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
-using Quartz;
+using Quartz.Simpl;
+using Quartz.Spi;
 using Serilog;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -139,35 +141,13 @@ else
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
 
-// Quartz setup for Github scheduler
-builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Github:Scheduler"));
-builder.Services.Configure<QuartzOptions>(builder.Configuration.GetSection("Decommission:Scheduler"));
-builder.Services.AddQuartz(q =>
-{
-    var githubJobKey = new JobKey("FetchGithubRepositories");
-    q.AddJob<PopulateGithubRepositories>(opts => opts.WithIdentity(githubJobKey));
 
-    var githubInterval = builder.Configuration.GetValue<int>("Github:PollIntervalSecs");
-    q.AddTrigger(opts => opts
-        .ForJob(githubJobKey)
-        .WithIdentity("FetchGithubRepositories-trigger")
-        .WithSimpleSchedule(d => d.WithIntervalInSeconds(githubInterval).RepeatForever().Build()));
+builder.Services.AddTransient<PopulateGithubRepositories>();
+builder.Services.AddTransient<DecommissioningService>();
+builder.Services.AddSingleton<IJobFactory, MicrosoftDependencyInjectionJobFactory>();
 
-    var decommissionJobKey = new JobKey("DecommissionEntities");
-    q.AddJob<DecommissioningService>(opts => opts.WithIdentity(decommissionJobKey));
-
-    var decommissionInterval = builder.Configuration.GetValue<int>("Decommission:PollIntervalSecs");
-    q.AddTrigger(opts => opts
-        .ForJob(decommissionJobKey)
-        .WithIdentity("DecommissionEntities-trigger")
-        .WithSimpleSchedule(d => d.WithIntervalInSeconds(decommissionInterval).RepeatForever().Build()));
-});
-builder.Services.AddQuartzHostedService(options =>
-{
-    // when shutting down we want jobs to complete gracefully
-    options.WaitForJobsToComplete = true;
-});
-
+// Quartz setup for GitHub schedulers
+builder.Services.AddHostedService<QuartzSchedulersHostedService>();
 
 // Setting up our services
 builder.Services.AddSingleton<IDockerClient, DockerClient>();
@@ -270,6 +250,7 @@ builder.Services.AddAuthorization();
 
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
+var serviceProvider = app.Services;
 
 app.UseRouting();
 app.UseHeaderPropagation();
