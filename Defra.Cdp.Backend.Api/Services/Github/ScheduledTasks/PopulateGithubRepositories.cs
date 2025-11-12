@@ -10,7 +10,6 @@ using Quartz;
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 // ReSharper disable once ClassNeverInstantiated.Global
-[Obsolete("This information is now retrieved from PlatformStatePayload")]
 public sealed class PopulateGithubRepositories(
     IConfiguration configuration,
     ILoggerFactory loggerFactory,

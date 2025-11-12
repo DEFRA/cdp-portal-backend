@@ -22,20 +22,11 @@ public interface IDeployableArtifactsService
 
     Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
 
-    Task<UpdateResult> AddAnnotation(string repo, string tag, string title, string description,
-        CancellationToken ct);
-
-    Task<UpdateResult> RemoveAnnotation(string repo, string tag, string title, CancellationToken ct);
-
-    Task<UpdateResult> RemoveAnnotations(string repo, string tag, CancellationToken ct);
-
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
 
     Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
-
-    Task Decommission(string serviceName, CancellationToken cancellationToken);
 }
 
 public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -99,17 +90,6 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         return res.Where(t => SemVer.IsSemVer(t.Tag)).ToList();
     }
 
-    public async Task<List<TagInfo>> FindLatestTagsForRepo(string repo, int limit, CancellationToken cancellationToken)
-    {
-        var sort = Builders<DeployableArtifact>.Sort.Descending(d => d.Created);
-        return await Collection
-            .Find(d => d.Repo == repo)
-            .Project(d => new TagInfo(d.Tag, d.Created))
-            .Sort(sort)
-            .Limit(limit)
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task CreateAsync(DeployableArtifact artifact, CancellationToken cancellationToken)
     {
         await Collection.ReplaceOneAsync(
@@ -131,12 +111,7 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
             .FirstOrDefaultAsync(cancellationToken);
     }
-
-    public async Task Decommission(string serviceName, CancellationToken cancellationToken)
-    {
-        await Collection.DeleteManyAsync(da => da.ServiceName == serviceName, cancellationToken: cancellationToken);
-    }
-
+    
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(
         IndexKeysDefinitionBuilder<DeployableArtifact> builder)
     {
@@ -149,49 +124,5 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
             builder.Ascending(d => d.Teams.Select(t => t.TeamId)),
             new CreateIndexOptions { Sparse = true });
         return [githubUrlIndex, repoAndTagIndex, hashIndex, teamIdIndex];
-    }
-
-    public async Task<UpdateResult> AddAnnotation(string repo, string tag,
-        string title, string description, CancellationToken ct)
-    {
-        var filter = Builders<DeployableArtifact>.Filter.Where(d =>
-            d.Repo == repo && d.Tag == tag);
-
-        var update = new BsonDocumentUpdateDefinition<DeployableArtifact>(new BsonDocument("$set",
-            new BsonDocument("annotations." + title, description)));
-
-
-        var options = new UpdateOptions { IsUpsert = true };
-
-
-        return await Collection.UpdateOneAsync(filter, update, options, ct);
-    }
-
-    public async Task<UpdateResult> RemoveAnnotation(string repo, string tag, string title, CancellationToken ct)
-    {
-        var filter = Builders<DeployableArtifact>.Filter.Where(d =>
-            d.Repo == repo && d.Tag == tag);
-
-        var update = new BsonDocumentUpdateDefinition<DeployableArtifact>(new BsonDocument("$unset",
-            new BsonDocument("annotations." + title, "")));
-
-
-        var options = new UpdateOptions { IsUpsert = false };
-
-
-        return await Collection.UpdateOneAsync(filter, update, options, ct);
-    }
-
-    public async Task<UpdateResult> RemoveAnnotations(string repo, string tag, CancellationToken ct)
-    {
-        var filter = Builders<DeployableArtifact>.Filter.Where(d =>
-            d.Repo == repo && d.Tag == tag);
-
-        var update = Builders<DeployableArtifact>.Update.Unset(d => d.Annotations);
-
-        var options = new UpdateOptions { IsUpsert = false };
-
-
-        return await Collection.UpdateOneAsync(filter, update, options, ct);
     }
 }
