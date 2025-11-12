@@ -1,12 +1,3 @@
-using System.Text.Json.Serialization;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
-using Defra.Cdp.Backend.Api.Models;
-using MongoDB.Driver.Core.WireProtocol.Messages;
-using Amazon.Util.Internal.PlatformServices;
-
 namespace Defra.Cdp.Backend.Api.Models;
 
 public enum CostReportType

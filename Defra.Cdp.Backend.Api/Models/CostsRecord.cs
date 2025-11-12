@@ -3,8 +3,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Model;
-using Defra.Cdp.Backend.Api.Models;
-using MongoDB.Driver.Core.WireProtocol.Messages;
 
 namespace Defra.Cdp.Backend.Api.Models;
 

@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Microsoft.AspNetCore.Mvc;
 using Defra.Cdp.Backend.Api.Models;
-using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
