@@ -11,13 +11,15 @@ public class QuartzSchedulersHostedService : IHostedService
 {
     private readonly IServiceProvider _services;
     private readonly IConfiguration _config;
+    private readonly ILoggerFactory _loggerFactory;
     private IScheduler? _githubScheduler;
     private IScheduler? _decommissionScheduler;
 
-    public QuartzSchedulersHostedService(IServiceProvider services, IConfiguration config)
+    public QuartzSchedulersHostedService(IServiceProvider services, IConfiguration config, ILoggerFactory loggerFactory)
     {
         _services = services;
         _config = config;
+        _loggerFactory = loggerFactory;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -27,6 +29,7 @@ public class QuartzSchedulersHostedService : IHostedService
         var githubFactory = new StdSchedulerFactory(githubProps);
         _githubScheduler = await githubFactory.GetScheduler(cancellationToken);
         _githubScheduler.JobFactory = _services.GetRequiredService<IJobFactory>();
+        _githubScheduler.ListenerManager.AddTriggerListener(new QuartzMisfireLogger(_loggerFactory));
 
         await _githubScheduler.Start(cancellationToken);
 
@@ -46,12 +49,12 @@ public class QuartzSchedulersHostedService : IHostedService
 
         await _githubScheduler.ScheduleJob(githubJob, githubTrigger, cancellationToken);
 
-
         // Decommission Scheduler
         var decommissionProps = ToQuartzProperties(_config.GetSection("Decommission:Scheduler"));
         var decommissionFactory = new StdSchedulerFactory(decommissionProps);
         _decommissionScheduler = await decommissionFactory.GetScheduler(cancellationToken);
         _decommissionScheduler.JobFactory = _services.GetRequiredService<IJobFactory>();
+        _decommissionScheduler.ListenerManager.AddTriggerListener(new QuartzMisfireLogger(_loggerFactory));
 
         await _decommissionScheduler.Start(cancellationToken);
 
@@ -80,7 +83,7 @@ public class QuartzSchedulersHostedService : IHostedService
         if (_decommissionScheduler != null)
             await _decommissionScheduler.Shutdown(waitForJobsToComplete: true, cancellationToken);
     }
-    
+
     private static NameValueCollection ToQuartzProperties(IConfigurationSection section)
     {
         var props = new NameValueCollection();
