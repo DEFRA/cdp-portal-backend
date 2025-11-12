@@ -24,7 +24,7 @@ public class MongoLock : MongoService<Lock>
         // This lets us have a TTL per lock rather than a fixed on at a collection level.
         var expiresAfter = new CreateIndexOptions { ExpireAfter = TimeSpan.FromSeconds(0) };
         var ttlIndex = new CreateIndexModel<Lock>(builder.Ascending(l => l.ExpiresAt), expiresAfter);
-        return new List<CreateIndexModel<Lock>>() { ttlIndex };
+        return [ttlIndex];
     }
 
     public MongoLock(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, "locks", loggerFactory)

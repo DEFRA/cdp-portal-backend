@@ -1,6 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Services.Github;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using FluentValidation;
@@ -24,7 +24,7 @@ public static class DeploymentsEndpoint
     }
 
     // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
-    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService, IRepositoryService repositoryService,
+    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "favourites")] string[]? favourites,
         [FromQuery(Name = "environment")] string? environment,
         [FromQuery(Name = "service")] string? service,
@@ -39,7 +39,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (!string.IsNullOrWhiteSpace(team))
         {
-            servicesForTeam = (await repositoryService.FindRepositoriesByTeamId(team, true, cancellationToken)).Select(r => r.Id).ToArray();
+            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
         var query = new DeploymentMatchers
@@ -62,7 +62,7 @@ public static class DeploymentsEndpoint
         return Results.Ok(deploymentsPage);
     }
 
-    private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService, IRepositoryService repositoryService,
+    private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "favourites")] string[]? favourites,
         [FromQuery(Name = "environment")] string? environment,
         [FromQuery(Name = "service")] string? service,
@@ -78,7 +78,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (!string.IsNullOrWhiteSpace(team))
         {
-            servicesForTeam = (await repositoryService.FindRepositoriesByTeamId(team, true, cancellationToken)).Select(r => r.Id).ToArray();
+            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
         var query = new DeploymentMatchers
@@ -113,7 +113,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
         {
-            deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
+            deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
         }
         return Results.Ok(new { Filters = deploymentFilters });
     }
@@ -131,7 +131,7 @@ public static class DeploymentsEndpoint
     }
 
     // GET /running-services or with query params GET /running-services?environments=dev&service=forms-runner&status=running
-    private static async Task<IResult> RunningServices(IDeploymentsService deploymentsService, IRepositoryService repositoryService,
+    private static async Task<IResult> RunningServices(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "environments")] string[]? environments,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "team")] string? team,
@@ -142,7 +142,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (!string.IsNullOrWhiteSpace(team))
         {
-            servicesForTeam = (await repositoryService.FindRepositoriesByTeamId(team, true, cancellationToken)).Select(r => r.Id).ToArray();
+            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
         var deployments = await deploymentsService.RunningDeploymentsForService(
@@ -176,7 +176,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
             whatsRunningWhereFilters.Teams =
-                teamRecord.Select(t => new RepositoryTeam(t.github, t.teamId, t.name)).ToList();
+                teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
         return Results.Ok(new { Filters = whatsRunningWhereFilters });
     }
 

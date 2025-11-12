@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
-using Defra.Cdp.Backend.Api.Services.PlatformEvents.Model;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 
 namespace Defra.Cdp.Backend.Api.Services.PlatformEvents;

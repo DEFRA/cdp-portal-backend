@@ -43,7 +43,6 @@ public class CdpNotifyTest
                 services.AddSingleton(entitiesService);
                 services.AddSingleton(layerService);
                 services.AddSingleton(userServiceFetcher);
-                services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
             })
             .Configure(app =>
             {

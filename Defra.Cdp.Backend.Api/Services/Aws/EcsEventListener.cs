@@ -49,7 +49,7 @@ public class EcsEventListener(
     {
         var unknownEvent = JsonSerializer.Deserialize<EcsEventHeader>(messageBody);
 
-        logger.LogInformation(unknownEvent?.DetailType);
+        logger.LogInformation("Unknown event: {EventType}", unknownEvent?.DetailType);
         switch (unknownEvent?.DetailType)
         {
             case "ECS Task State Change":

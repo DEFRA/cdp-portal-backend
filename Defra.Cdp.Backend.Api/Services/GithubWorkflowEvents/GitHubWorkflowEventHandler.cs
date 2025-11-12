@@ -16,16 +16,6 @@ public interface IGithubWorkflowEventHandler
 public class GithubWorkflowEventHandler(
     IAppConfigVersionsService appConfigVersionsService,
     IAppConfigsService appConfigsService,
-    INginxVanityUrlsService nginxVanityUrlsService,
-    ISquidProxyConfigService squidProxyConfigService,
-    ITenantServicesService tenantServicesService,
-    IShutteredUrlsService shutteredUrlsService,
-    IEnabledVanityUrlsService enabledVanityUrlsService,
-    IEnabledApisService enabledApisService,
-    ITfVanityUrlsService tfVanityUrlsService,
-    IGrafanaDashboardsService grafanaDashboardsService,
-    INginxUpstreamsService nginxUpstreamsService,
-    ITenantRdsDatabasesService tenantRdsService,
     ILogger<GithubWorkflowEventHandler> logger)
     : IGithubWorkflowEventHandler
 {
@@ -38,36 +28,6 @@ public class GithubWorkflowEventHandler(
                 break;
             case "app-config":
                 await HandleEvent(eventWrapper, messageBody, appConfigsService, cancellationToken);
-                break;
-            case "nginx-vanity-urls":
-                await HandleEvent(eventWrapper, messageBody, nginxVanityUrlsService, cancellationToken);
-                break;
-            case "squid-proxy-config":
-                await HandleEvent(eventWrapper, messageBody, squidProxyConfigService, cancellationToken);
-                break;
-            case "tenant-rds":
-                await HandleEvent(eventWrapper, messageBody, tenantRdsService, cancellationToken);
-                break;
-            case "tenant-services":
-                await HandleEvent(eventWrapper, messageBody, tenantServicesService, cancellationToken);
-                break;
-            case "shuttered-urls":
-                await HandleEvent(eventWrapper, messageBody, shutteredUrlsService, cancellationToken);
-                break;
-            case "enabled-urls":
-                await HandleEvent(eventWrapper, messageBody, enabledVanityUrlsService, cancellationToken);
-                break;
-            case "enabled-apis":
-                await HandleEvent(eventWrapper, messageBody, enabledApisService, cancellationToken);
-                break;
-            case "tf-vanity-urls":
-                await HandleEvent(eventWrapper, messageBody, tfVanityUrlsService, cancellationToken);
-                break;
-            case "grafana-dashboard":
-                await HandleEvent(eventWrapper, messageBody, grafanaDashboardsService, cancellationToken);
-                break;
-            case "nginx-upstreams":
-                await HandleEvent(eventWrapper, messageBody, nginxUpstreamsService, cancellationToken);
                 break;
             default:
                 logger.LogInformation("Ignoring event: {EventType} not handled {Message}", eventWrapper.EventType, messageBody);

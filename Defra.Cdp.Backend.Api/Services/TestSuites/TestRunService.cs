@@ -7,22 +7,23 @@ namespace Defra.Cdp.Backend.Api.Services.TestSuites;
 
 public interface ITestRunService
 {
+    public Task<bool> AnyTestRunExists(string suite, string environment, string deploymentId, CancellationToken ct);
+    
+    public Task CreateTestRun(TestRun testRun, CancellationToken ct);
+    
     public Task<TestRun?> FindTestRun(string runId, CancellationToken ct);
-
+    
     public Task<Paginated<TestRun>> FindTestRunsForTestSuite(string suite, int offset = 0, int page = 0, int size = 0,
         CancellationToken ct = new());
-
-    public Task<Dictionary<string, TestRun>> FindLatestTestRuns(CancellationToken ct);
+    
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct);
-    public Task CreateTestRun(TestRun testRun, CancellationToken ct);
-    public Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken ct);
-
-    public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
-        List<FailureReason> failureReasons, CancellationToken ct);
 
     public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
-
-    public Task<bool> AnyTestRunExists(string suite, string environment, string deploymentId, CancellationToken ct);
+    
+    public Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken ct);
+    
+    public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
+        List<FailureReason> failureReasons, CancellationToken ct);
 }
 
 public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -74,16 +75,6 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalTestRuns / size));
 
         return new Paginated<TestRun>(testRuns, page, size, totalPages);
-    }
-
-    public async Task<Dictionary<string, TestRun>> FindLatestTestRuns(CancellationToken ct)
-    {
-        var pipeline = new EmptyPipelineDefinition<TestRun>()
-            .Sort(new SortDefinitionBuilder<TestRun>().Descending(d => d.Created)).Group(t => t.TestSuite,
-                grp => new { Root = grp.First() }).Project(grp => grp.Root);
-
-        var runs = await Collection.AggregateAsync(pipeline, cancellationToken: ct);
-        return runs.ToEnumerable(ct).ToDictionary(d => d.TestSuite, d => d);
     }
 
     public async Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct)

@@ -1,10 +1,6 @@
-using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Model;
 using Defra.Cdp.Backend.Api.Models;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 

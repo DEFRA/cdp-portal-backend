@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
-using MongoDB.Bson.Serialization.Options;
 
 namespace Defra.Cdp.Backend.Api.Models;
 

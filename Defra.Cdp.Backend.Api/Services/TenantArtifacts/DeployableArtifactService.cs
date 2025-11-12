@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Utils;
-using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.TenantArtifacts;
@@ -25,8 +24,6 @@ public interface IDeployableArtifactsService
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
-
-    Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken);
 }
 
 public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -98,18 +95,6 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
             new ReplaceOptions { IsUpsert = true },
             cancellationToken
         );
-    }
-
-    public async Task<ServiceInfo?> FindServices(string service, CancellationToken cancellationToken)
-    {
-        var pipeline = new EmptyPipelineDefinition<DeployableArtifact>()
-            .Match(d => d.ServiceName == service)
-            .Group(d => d.ServiceName,
-                grp => new { DeployedAt = grp.Max(d => d.Created), Root = grp.Last() })
-            .Project(grp => new ServiceInfo(grp.Root.ServiceName!, grp.Root.GithubUrl, grp.Root.Repo, grp.Root.Teams))
-            .Limit(1);
-        return await Collection.Aggregate(pipeline, cancellationToken: cancellationToken)
-            .FirstOrDefaultAsync(cancellationToken);
     }
     
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(

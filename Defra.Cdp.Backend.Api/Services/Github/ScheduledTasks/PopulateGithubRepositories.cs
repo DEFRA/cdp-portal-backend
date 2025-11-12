@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
 using Quartz;
@@ -18,8 +17,7 @@ public sealed class PopulateGithubRepositories(
     IHttpClientFactory clientFactory,
     IUserServiceFetcher userServiceFetcher,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
-    HeaderPropagationValues headerPropagationValues,
-    ITenantServicesService tenantService)
+    HeaderPropagationValues headerPropagationValues)
     : IJob
 {
     private const string LockName = "repopulateGithub";
@@ -43,9 +41,6 @@ public sealed class PopulateGithubRepositories(
                 headerPropagationValues.Headers ??=
                     new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
                 await RepopulateGithubRepos(context);
-
-                var repos = await repositoryService.AllRepositories(true, context.CancellationToken);
-                await tenantService.RefreshTeams(repos, context.CancellationToken);
             }
             catch (Exception e)
             {
@@ -115,7 +110,7 @@ public sealed class PopulateGithubRepositories(
                         Teams = [],
                         Topics = repo.repositoryTopics.nodes.Select(t => t.topic.name)
                     };
-                    ;
+                    
                     repoMap[repo.name] = existingRepo;
                 }
 

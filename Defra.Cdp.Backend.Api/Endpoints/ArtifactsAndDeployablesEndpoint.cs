@@ -1,7 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -9,26 +7,14 @@ public static class ArtifactsAndDeployablesEndpoint
 {
     private const string ArtifactsBaseRoute = "artifacts";
     private const string DeployablesBaseRoute = "deployables";
-    private const string FilesBaseRoute = "files";
-
+    
     public static void MapArtifactsAndDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet(ArtifactsBaseRoute, ListRepos);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}", ListImagesForRepo);
         app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage);
-        app.MapGet($"{FilesBaseRoute}/{{layer}}", GetFileContent);
-        app.MapGet(DeployablesBaseRoute, ListDeployables);
         app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
     }
 
-    // GET /artifacts
-    [Obsolete("Use entities")]
-    private static async Task<IResult> ListRepos(IDeployableArtifactsService deployableArtifactsService,
-        CancellationToken cancellationToken)
-    {
-        var allRepos = await deployableArtifactsService.FindAll(cancellationToken);
-        return Results.Ok(allRepos);
-    }
 
     // GET /artifacts/{repo}
     private static async Task<IResult> ListImagesForRepo(IDeployableArtifactsService deployableArtifactsService, string repo,
@@ -52,41 +38,6 @@ public static class ArtifactsAndDeployablesEndpoint
             image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
         }
         return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
-    }
-
-    // GET /files/{layer}
-    [Obsolete("Not used")]
-    private static async Task<IResult> GetFileContent(ILayerService layerService, string layer, string path,
-        CancellationToken cancellationToken)
-    {
-        var image = await layerService.FindFileAsync(layer, path, cancellationToken);
-        return image?.Content == null
-            ? Results.NotFound(new ApiError($"{layer}/{path} was not found"))
-            : Results.Ok(image.Content);
-    }
-
-
-    // GET /deployables
-    private static async Task<IResult> ListDeployables(
-        IDeployableArtifactsService deployableArtifactsService,
-        IConfiguration configuration,
-        HttpContext httpContext,
-        ILoggerFactory loggerFactory,
-        [FromQuery] string? runMode,
-        CancellationToken cancellationToken)
-    {
-        List<string> groups = httpContext.Request.Query["groups"].Where(g => g != null).ToList()!;
-        var adminGroup = configuration.GetValue<string>("AzureAdminGroupId")!;
-
-        if (!Enum.TryParse(runMode ?? ArtifactRunMode.Service.ToString(), true, out ArtifactRunMode artifactRunMode))
-        {
-            return Results.BadRequest("Invalid type parameter, requires either: [service, job]");
-        }
-
-        var repoNames = groups.Contains(adminGroup)
-            ? await deployableArtifactsService.FindAllRepoNames(artifactRunMode, cancellationToken)
-            : await deployableArtifactsService.FindAllRepoNames(artifactRunMode, groups, cancellationToken);
-        return Results.Ok(repoNames);
     }
 
     // GET deployables/{repo}

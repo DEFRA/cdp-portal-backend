@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -85,7 +84,7 @@ public class Deployment
             Environment = req.Environment,
             Service = req.ContainerImage,
             Version = req.ContainerVersion,
-            User = new UserDetails()
+            User = new UserDetails
             {
                 DisplayName = req.DeployedBy.display_name,
                 Id = req.DeployedBy.user_id

@@ -4,7 +4,6 @@ using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
-using Defra.Cdp.Backend.Api.Services.PlatformEvents.Model;
 using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.PlatformEvents;
