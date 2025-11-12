@@ -10,6 +10,15 @@ public interface IGithubCredentialAndConnectionFactory
     Task<string?> GetToken(CancellationToken cancellationToken = new());
 }
 
+public class MockGithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
+{
+    public Task<string?> GetToken(CancellationToken cancellationToken = new())
+    {
+        return Task.FromResult("local-token")!;
+    }
+}
+
+
 public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnectionFactory
 {
     private readonly int _appInstallationId;
@@ -27,7 +36,7 @@ public class GithubCredentialAndConnectionFactory : IGithubCredentialAndConnecti
         var encodedPem = configuration.GetValue<string>("Github:AppKey")!;
         var keySource = new Base64StringPrivateKeySource(encodedPem);
         _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
-        var appId = configuration.GetValue<int>("Github:AppId")!;
+        var appId = configuration.GetValue<int>("Github:AppId");
         _appInstallationId = configuration.GetValue<int>("Github:AppInstallationId");
         _generator = new GitHubJwtFactory(
             keySource,

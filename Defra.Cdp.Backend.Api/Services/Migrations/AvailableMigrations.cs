@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.Entities;
 
 namespace Defra.Cdp.Backend.Api.Services.Migrations;
 
@@ -27,7 +27,7 @@ public interface IAvailableMigrations
     public Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct);
 }
 
-public class AvailableMigrations(IAmazonS3 client, ITenantServicesService tenantServices, IConfiguration configuration) : IAvailableMigrations
+public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityService, IConfiguration configuration) : IAvailableMigrations
 {
     private readonly string? _bucketName = configuration.GetValue<string>("MigrationsBucket");
 
@@ -112,10 +112,10 @@ public class AvailableMigrations(IAmazonS3 client, ITenantServicesService tenant
 
         foreach (var teamsId in teamIds)
         {
-            var tenants = await tenantServices.Find(new TenantServiceFilter(TeamId: teamsId, HasPostgres: true), ct);
+            var tenants = await entityService.GetEntities(new EntityMatcher(TeamId: teamsId, HasPostgres: true), ct);
             foreach (var tenant in tenants)
             {
-                servicesForTeams.Add(tenant.ServiceName);
+                servicesForTeams.Add(tenant.Name);
             }
         }
 

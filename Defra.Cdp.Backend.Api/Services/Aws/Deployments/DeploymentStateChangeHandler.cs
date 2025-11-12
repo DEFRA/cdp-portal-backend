@@ -1,6 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
-using Defra.Cdp.Backend.Api.Services.TestSuites;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 

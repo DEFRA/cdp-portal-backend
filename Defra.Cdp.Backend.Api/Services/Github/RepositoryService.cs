@@ -7,8 +7,6 @@ namespace Defra.Cdp.Backend.Api.Services.Github;
 
 public interface IRepositoryService : IResourceService
 {
-    Task Upsert(Repository repository, CancellationToken cancellationToken);
-
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
 
     Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken);
@@ -17,10 +15,6 @@ public interface IRepositoryService : IResourceService
 
     [Obsolete("Use entities")]
     Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
-        CancellationToken cancellationToken);
-
-    [Obsolete("Use entities")]
-    Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
         CancellationToken cancellationToken);
 
     [Obsolete("Use entities type/subtype")]
@@ -56,7 +50,7 @@ public class RepositoryService(
                 return new ReplaceOneModel<Repository>(filter, repository) { IsUpsert = true };
             }).ToList();
 
-        if (replaceOneModels.Any())
+        if (replaceOneModels.Count > 0)
             // BulkWrite fails if it's called with a zero length array
             await Collection.BulkWriteAsync(replaceOneModels, new BulkWriteOptions(), cancellationToken);
     }
@@ -108,38 +102,11 @@ public class RepositoryService(
         return repositories;
     }
 
-    [Obsolete("Use entity to lookup team ownership")]
-    public async Task<List<Repository>> FindRepositoriesByTeamId(string id, bool excludeTemplates,
-        CancellationToken cancellationToken)
-    {
-        var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.TeamId == id);
-
-        var findDefinition = excludeTemplates
-            ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))
-            : baseFilter;
-
-        var repositories =
-            await Collection
-                .Find(findDefinition)
-                .SortBy(r => r.Id)
-                .ToListAsync(cancellationToken);
-        return repositories;
-    }
-
     public async Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken)
     {
         var excludingIdsList = knownReposIds.ToList();
         if (excludingIdsList.Count == 0) throw new ArgumentException("excluded repositories cannot be empty");
         await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id), cancellationToken);
-    }
-
-
-    public async Task Upsert(Repository repository, CancellationToken cancellationToken)
-    {
-        // because we constantly refresh the database, we are looking to upsert the record here
-        var filter = Builders<Repository>.Filter
-            .Eq(r => r.Id, repository.Id);
-        await Collection.ReplaceOneAsync(filter, repository, new ReplaceOptions { IsUpsert = true }, cancellationToken);
     }
 
     public async Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,

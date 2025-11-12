@@ -1,5 +1,3 @@
-using Microsoft.IdentityModel.Tokens;
-
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public class Helpers

@@ -123,20 +123,20 @@ builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.Configure<CloudWatchMetricsOptions>(builder.Configuration.GetSection(CloudWatchMetricsOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
-builder.Services.AddScoped<IValidator<RequestedAnnotation>, RequestedAnnotationValidator>();
+
 
 // AWS Clients
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 
 // GitHub credential factory for the cron job
-builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
-
 if (builder.IsDevMode())
 {
+    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, MockGithubCredentialAndConnectionFactory>();
     builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
 }
 else
 {
+    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
     builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
@@ -165,21 +165,9 @@ builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<EcrEventHandler>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
-builder.Services.AddSingleton<IGrafanaDashboardsService, GrafanaDashboardsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
-builder.Services.AddSingleton<INginxVanityUrlsService, NginxVanityUrlsService>();
-builder.Services.AddSingleton<INginxUpstreamsService, NginxUpstreamsService>();
 builder.Services.AddSingleton<IServiceCodeCostsService, ServiceCodeCostsService>();
-builder.Services.AddSingleton<ISquidProxyConfigService, SquidProxyConfigService>();
-builder.Services.AddSingleton<ITenantServicesService, TenantServicesService>();
-builder.Services.AddSingleton<IShutteredUrlsService, ShutteredUrlsService>();
-builder.Services.AddSingleton<IEnabledVanityUrlsService, EnabledVanityUrlsService>();
-builder.Services.AddSingleton<IEnabledApisService, EnabledApisService>();
-builder.Services.AddSingleton<ITfVanityUrlsService, TfVanityUrlsService>();
 builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
-builder.Services.AddSingleton<IVanityUrlsService, VanityUrlsService>();
-builder.Services.AddSingleton<IApiGatewaysService, ApiGatewaysService>();
-builder.Services.AddSingleton<ITenantRdsDatabasesService, TenantRdsDatabasesService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -259,16 +247,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Add endpoints
-app.MapTenantServicesEndpoint();
-app.MapTenantDatabasesEndpoint();
 app.MapConfigEndpoint();
-app.MapSquidProxyConfigEndpoint();
 app.MapCostsEndpoint();
-app.MapVanityUrlsEndpoint();
-app.MapApiGatewaysEndpoint();
 app.MapArtifactsAndDeployablesEndpoint();
 app.MapDeploymentsEndpoint();
-app.MapRepositoriesEndpoint();
 app.MapEntitiesEndpoint();
 app.MapTestSuiteEndpoint();
 app.MapTenantSecretsEndpoint();
