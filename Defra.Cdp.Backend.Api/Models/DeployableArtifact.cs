@@ -37,9 +37,6 @@ public sealed class DeployableArtifact
 
     // Is it a microservice or a test job
     public string? RunMode { get; init; } = default;
-
-    [BsonDictionaryOptions(DictionaryRepresentation.Document)]
-    public Dictionary<string, string> Annotations { get; init; } = [];
 }
 
 public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);

@@ -1,42 +1,40 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Model;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using NSubstitute;
-using NSubstitute.ReceivedExtensions;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.GithubWorkflowEvents;
 
 public class GithubWorkflowEventHandlerTest
 {
-    private readonly IAppConfigVersionsService appConfigVersionsService = Substitute.For<IAppConfigVersionsService>();
-    private readonly INginxVanityUrlsService vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
-    private readonly ISquidProxyConfigService squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
-    private readonly ITenantServicesService tenantServicesService = Substitute.For<ITenantServicesService>();
-    private readonly IShutteredUrlsService shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
-    private readonly IEnabledVanityUrlsService enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
-    private readonly IEnabledApisService enabledApisService = Substitute.For<IEnabledApisService>();
-    private readonly ITfVanityUrlsService tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
-    private readonly IGrafanaDashboardsService grafanaDashboardsService = Substitute.For<IGrafanaDashboardsService>();
-    private readonly IAppConfigsService appConfigsService = Substitute.For<IAppConfigsService>();
-    private readonly INginxUpstreamsService nginxUpstreamsService = Substitute.For<INginxUpstreamsService>();
+    private readonly IAppConfigVersionsService _appConfigVersionsService = Substitute.For<IAppConfigVersionsService>();
+    private readonly INginxVanityUrlsService _vanityUrlsService = Substitute.For<INginxVanityUrlsService>();
+    private readonly ISquidProxyConfigService _squidProxyConfigService = Substitute.For<ISquidProxyConfigService>();
+    private readonly ITenantServicesService _tenantServicesService = Substitute.For<ITenantServicesService>();
+    private readonly IShutteredUrlsService _shutteredUrlsService = Substitute.For<IShutteredUrlsService>();
+    private readonly IEnabledVanityUrlsService _enabledUrlsService = Substitute.For<IEnabledVanityUrlsService>();
+    private readonly IEnabledApisService _enabledApisService = Substitute.For<IEnabledApisService>();
+    private readonly ITfVanityUrlsService _tfVanityUrlsService = Substitute.For<ITfVanityUrlsService>();
+    private readonly IGrafanaDashboardsService _grafanaDashboardsService = Substitute.For<IGrafanaDashboardsService>();
+    private readonly IAppConfigsService _appConfigsService = Substitute.For<IAppConfigsService>();
+    private readonly INginxUpstreamsService _nginxUpstreamsService = Substitute.For<INginxUpstreamsService>();
     private readonly ITenantRdsDatabasesService _rdsDatabasesService = Substitute.For<ITenantRdsDatabasesService>();
 
-    private GithubWorkflowEventHandler createHandler()
+    private GithubWorkflowEventHandler CreateHandler()
     {
         return new GithubWorkflowEventHandler(
-            appConfigVersionsService,
-            appConfigsService,
-            vanityUrlsService,
-            squidProxyConfigService,
-            tenantServicesService,
-            shutteredUrlsService,
-            enabledUrlsService,
-            enabledApisService,
-            tfVanityUrlsService,
-            grafanaDashboardsService,
-            nginxUpstreamsService,
+            _appConfigVersionsService,
+            _appConfigsService,
+            _vanityUrlsService,
+            _squidProxyConfigService,
+            _tenantServicesService,
+            _shutteredUrlsService,
+            _enabledUrlsService,
+            _enabledApisService,
+            _tfVanityUrlsService,
+            _grafanaDashboardsService,
+            _nginxUpstreamsService,
             _rdsDatabasesService,
             ConsoleLogger.CreateLogger<GithubWorkflowEventHandler>());
     }
@@ -44,7 +42,7 @@ public class GithubWorkflowEventHandlerTest
     [Fact]
     public async Task WillProcessAppConfigVersionEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "app-config-version" };
         var messageBody =
@@ -60,40 +58,40 @@ public class GithubWorkflowEventHandlerTest
             }
             """;
 
-        await eventHandler.Handle(eventType, messageBody, new CancellationToken());
+        await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
 
-        await appConfigVersionsService.Received(1).PersistEvent(
+        await _appConfigVersionsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<AppConfigVersionPayload>>(e =>
                 e.EventType == "app-config-version" && e.Payload.CommitSha == "abc123" &&
                 e.Payload.Environment == "infra-dev"),
             Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await shutteredUrlsService.DidNotReceive()
+        await _shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledUrlsService.DidNotReceive()
+        await _enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessVanityUrlsEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "nginx-vanity-urls" };
         var messageBody =
@@ -112,36 +110,36 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await vanityUrlsService.Received(1).PersistEvent(
+        await _vanityUrlsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<NginxVanityUrlsPayload>>(e =>
                 e.EventType == "nginx-vanity-urls" && e.Payload.Environment == "test" && e.Payload.Services.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await shutteredUrlsService.DidNotReceive()
+        await _shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledUrlsService.DidNotReceive()
+        await _enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessSquidProxyConfigEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "squid-proxy-config" };
         const string messageBody = """
@@ -161,35 +159,35 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await squidProxyConfigService.Received(1).PersistEvent(
+        await _squidProxyConfigService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<SquidProxyConfigPayload>>(e =>
                 e.EventType == "squid-proxy-config" && e.Payload.Environment == "test" &&
                 e.Payload.Services.Count == 3),
             Arg.Any<CancellationToken>());
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await shutteredUrlsService.DidNotReceive()
+        await _shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledUrlsService.DidNotReceive()
+        await _enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessShutteredUrlEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "shuttered-urls" };
         var messageBody =
@@ -197,32 +195,32 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await shutteredUrlsService.Received(1).PersistEvent(
+        await _shutteredUrlsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<ShutteredUrlsPayload>>(e =>
                 e.EventType == "shuttered-urls" && e.Payload.Environment == "prod" && e.Payload.Urls.Count == 1),
             Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await enabledUrlsService.DidNotReceive()
+        await _enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessEnabledUrlEvents()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "enabled-urls" };
         var messageBody =
@@ -230,34 +228,34 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await enabledUrlsService.Received(1).PersistEvent(
+        await _enabledUrlsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<EnabledVanityUrlsPayload>>(e =>
                 e.EventType == "enabled-urls" && e.Payload.Environment == "prod" && e.Payload.Urls.Count == 1),
             Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await shutteredUrlsService.DidNotReceive()
+        await _shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessTenantBucketsEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "tenant-buckets" };
         const string messageBody = """
@@ -290,30 +288,30 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessTenantServicesEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "tenant-services" };
         const string messageBody = """
@@ -381,26 +379,26 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await tenantServicesService.Received(1).PersistEvent(
+        await _tenantServicesService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<TenantServicesPayload>>(e =>
                 e.EventType == "tenant-services" && e.Payload.Environment == "test" && e.Payload.Services.Count == 2 &&
                 e.Payload.Services[0].Postgres == false && e.Payload.Services[1].Postgres == true),
             Arg.Any<CancellationToken>());
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
@@ -408,7 +406,7 @@ public class GithubWorkflowEventHandlerTest
     [Fact]
     public async Task WillProcessTfVanityUrlsEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "tf-vanity-urls" };
         const string messageBody = """
@@ -437,33 +435,33 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await tfVanityUrlsService.Received(1).PersistEvent(
+        await _tfVanityUrlsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<TfVanityUrlsPayload>>(e =>
                 e.EventType == "tf-vanity-urls" && e.Payload.Environment == "ext-test" &&
                 e.Payload.VanityUrls.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessEnabledApisEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "enabled-apis" };
         const string messageBody = """
@@ -485,33 +483,33 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await enabledApisService.Received(1).PersistEvent(
+        await _enabledApisService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<EnabledApisPayload>>(e =>
                 e.EventType == "enabled-apis" && e.Payload.Environment == "ext-test" &&
                 e.Payload.Apis.Count == 1),
             Arg.Any<CancellationToken>());
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task WillProcessAppConfigEventAndUpdateEntityWithCreatingStatus()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "app-config" };
         const string messageBody = """
@@ -529,33 +527,33 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await appConfigsService.Received(1).PersistEvent(
+        await _appConfigsService.Received(1).PersistEvent(
             Arg.Is<CommonEvent<AppConfigPayload>>(e =>
                 e.EventType == "app-config" && e.Payload.Environment == "infra-dev" &&
                 e.Payload.Entities.Count == 2),
             Arg.Any<CancellationToken>());
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tfVanityUrlsService.DidNotReceive()
+        await _tfVanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TfVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task UnrecognizedGithubWorkflowEvent()
     {
-        var eventHandler = createHandler();
+        var eventHandler = CreateHandler();
 
         var eventType = new CommonEventWrapper { EventType = "unrecognized-github-workflow-event" };
         var messageBody =
@@ -570,25 +568,25 @@ public class GithubWorkflowEventHandlerTest
 
         await eventHandler.Handle(eventType, messageBody, CancellationToken.None);
 
-        await appConfigVersionsService.DidNotReceive()
+        await _appConfigVersionsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigVersionPayload>>(), Arg.Any<CancellationToken>());
-        await vanityUrlsService.DidNotReceive()
+        await _vanityUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await squidProxyConfigService.DidNotReceive()
+        await _squidProxyConfigService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<SquidProxyConfigPayload>>(), Arg.Any<CancellationToken>());
-        await tenantServicesService.DidNotReceive()
+        await _tenantServicesService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<TenantServicesPayload>>(), Arg.Any<CancellationToken>());
-        await shutteredUrlsService.DidNotReceive()
+        await _shutteredUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<ShutteredUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledUrlsService.DidNotReceive()
+        await _enabledUrlsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledVanityUrlsPayload>>(), Arg.Any<CancellationToken>());
-        await enabledApisService.DidNotReceive()
+        await _enabledApisService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<EnabledApisPayload>>(), Arg.Any<CancellationToken>());
-        await appConfigsService.DidNotReceive()
+        await _appConfigsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<AppConfigPayload>>(), Arg.Any<CancellationToken>());
-        await nginxUpstreamsService.DidNotReceive()
+        await _nginxUpstreamsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<NginxUpstreamsPayload>>(), Arg.Any<CancellationToken>());
-        await grafanaDashboardsService.DidNotReceive()
+        await _grafanaDashboardsService.DidNotReceive()
             .PersistEvent(Arg.Any<CommonEvent<GrafanaDashboardPayload>>(), Arg.Any<CancellationToken>());
     }
 }

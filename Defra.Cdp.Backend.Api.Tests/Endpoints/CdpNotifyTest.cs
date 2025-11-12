@@ -32,7 +32,6 @@ public class CdpNotifyTest
     [Fact]
     public async Task TestCdpNotifyHasNotBeenBroken()
     {
-        // Run just the Deployables API Endpoints
         var entitiesService = Substitute.For<IEntitiesService>();
         var layerService = Substitute.For<ILayerService>();
         var userServiceFetcher = Substitute.For<IUserServiceFetcher>();
