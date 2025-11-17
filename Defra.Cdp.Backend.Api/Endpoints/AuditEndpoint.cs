@@ -4,12 +4,10 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class AuditEndpoint
 {
-    private const string AuditBaseRoute = "audit";
-
     public static void MapAuditEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost($"{AuditBaseRoute}", RecordAudit);
-        app.MapGet($"{AuditBaseRoute}", FindAudits);
+        app.MapPost("/audit", RecordAudit);
+        app.MapGet("/audit", FindAudits);
     }
 
     private static async Task<IResult> FindAudits(IAuditService auditService, CancellationToken cancellationToken)

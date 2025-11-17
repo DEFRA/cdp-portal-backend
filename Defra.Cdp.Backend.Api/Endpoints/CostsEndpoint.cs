@@ -6,8 +6,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class CostsEndpoint
 {
-    private static ILogger? _logger;
-
     public static void MapCostsEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/costs/total", FindTotalCosts);

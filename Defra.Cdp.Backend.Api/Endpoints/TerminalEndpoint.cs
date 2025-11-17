@@ -11,7 +11,7 @@ public static class TerminalEndpoint
 
     public static void MapTerminalEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost("terminals", RecordTerminalSession);
+        app.MapPost("/terminals", RecordTerminalSession);
     }
 
     private static async Task<IResult> RecordTerminalSession(

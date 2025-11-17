@@ -8,9 +8,9 @@ public static class TestSuiteEndpoint
 {
     public static void MapTestSuiteEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet("test-run/{runId}", FindTestRun);
-        app.MapGet("test-run", FindTestRunsForSuite); // filter by test e.g. /test-run?name=foo-tests 
-        app.MapPost("test-run", CreateTestRun);
+        app.MapGet("/test-run/{runId}", FindTestRun);
+        app.MapGet("/test-run", FindTestRunsForSuite); // filter by test e.g. /test-run?name=foo-tests 
+        app.MapPost("/test-run", CreateTestRun);
     }
 
     private static async Task<IResult> FindTestRun([FromServices] ITestRunService testRunService, string runId,
