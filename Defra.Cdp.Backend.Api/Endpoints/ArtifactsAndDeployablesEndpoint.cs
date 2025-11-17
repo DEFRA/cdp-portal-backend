@@ -5,14 +5,12 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class ArtifactsAndDeployablesEndpoint
 {
-    private const string ArtifactsBaseRoute = "artifacts";
-    private const string DeployablesBaseRoute = "deployables";
-    
+   
     public static void MapArtifactsAndDeployablesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet($"{ArtifactsBaseRoute}/{{repo}}", ListImagesForRepo);
-        app.MapGet($"{ArtifactsBaseRoute}/{{repo}}/{{tag}}", ListImage);
-        app.MapGet($"{DeployablesBaseRoute}/{{repo}}", ListAvailableTagsForRepo);
+        app.MapGet("/artifacts/{repo}", ListImagesForRepo);
+        app.MapGet("/artifacts/{repo}/{tag}", ListImage);
+        app.MapGet("/deployables/{repo}", ListAvailableTagsForRepo);
     }
 
 

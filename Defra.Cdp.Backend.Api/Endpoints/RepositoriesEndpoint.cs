@@ -11,60 +11,60 @@ public static class RepositoriesEndpoint
     [Obsolete("Use entities")]
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet(RepositoriesBaseRoute,
+        app.MapGet("/repositories",
                 async (IRepositoryService repositoryService, [FromQuery(Name = "team")] string? team,
                         [FromQuery(Name = "excludeTemplates")] bool? excludeTemplates,
                         CancellationToken cancellationToken) =>
                     await GetAllRepositories(repositoryService, team, excludeTemplates, cancellationToken));
 
         // Service repositories
-        app.MapGet($"{RepositoriesBaseRoute}/services",
+        app.MapGet("/repositories/services",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
                     await GetRepositoriesByTopic(repositoryService, CdpTopic.Service,
                         cancellationToken));
 
         // Service repository
-        app.MapGet($"{RepositoriesBaseRoute}/services/{{id}}",
+        app.MapGet("/repositories/services/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
                     await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Service, cancellationToken));
 
         // Test repositories
-        app.MapGet($"{RepositoriesBaseRoute}/tests",
+        app.MapGet("/repositories/tests",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
                     await GetRepositoriesByTopic(repositoryService, CdpTopic.Test, cancellationToken));
 
         // Test repository
-        app.MapGet($"{RepositoriesBaseRoute}/tests/{{id}}",
+        app.MapGet("/repositories/tests/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
                     await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Test, cancellationToken));
 
         // Template repositories
-        app.MapGet($"{RepositoriesBaseRoute}/templates",
+        app.MapGet("/repositories/templates",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
                     await GetRepositoriesByTopic(repositoryService, CdpTopic.Template, cancellationToken));
 
         // Template repository
-        app.MapGet($"{RepositoriesBaseRoute}/templates/{{id}}",
+        app.MapGet("/repositories/templates/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
                     await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Template, cancellationToken));
 
         // Library repositories
-        app.MapGet($"{RepositoriesBaseRoute}/libraries",
+        app.MapGet("/repositories/libraries",
                 async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
                     await GetRepositoriesByTopic(repositoryService, CdpTopic.Library, cancellationToken));
 
         // Library repository
-        app.MapGet($"{RepositoriesBaseRoute}/libraries/{{id}}",
+        app.MapGet("/repositories/libraries/{id}",
                 async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
                     await GetRepositoryWithTopicById(repositoryService, id, CdpTopic.Library, cancellationToken));
 
         // Get a Teams repositories
-        app.MapGet($"{RepositoriesBaseRoute}/all/{{teamId}}", GetTeamRepositories);
+        app.MapGet("/repositories/all/{teamId}", GetTeamRepositories);
 
         // Get a Teams Test repositories
-        app.MapGet($"{RepositoriesBaseRoute}/all/tests/{{teamId}}", GetTeamTestRepositories);
+        app.MapGet("/repositories/all/tests/{teamId}", GetTeamTestRepositories);
 
-        app.MapGet($"{RepositoriesBaseRoute}/{{id}}", GetRepositoryById);
+        app.MapGet("/repositories/{id}", GetRepositoryById);
     }
 
     private static async Task<IResult> GetRepositoryById(IRepositoryService repositoryService, string id,
