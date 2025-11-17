@@ -131,17 +131,15 @@ builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 // GitHub credential factory for the cron job
 if (builder.IsDevMode())
 {
-    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, MockGithubCredentialAndConnectionFactory>();
     builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
 }
 else
 {
-    builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
     builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
     builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
 }
 
-
+builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 builder.Services.AddTransient<PopulateGithubRepositories>();
 builder.Services.AddTransient<DecommissioningService>();
 builder.Services.AddSingleton<IJobFactory, MicrosoftDependencyInjectionJobFactory>();
@@ -247,6 +245,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Add endpoints
+app.MapRepositoriesEndpoint();
 app.MapConfigEndpoint();
 app.MapCostsEndpoint();
 app.MapArtifactsAndDeployablesEndpoint();
