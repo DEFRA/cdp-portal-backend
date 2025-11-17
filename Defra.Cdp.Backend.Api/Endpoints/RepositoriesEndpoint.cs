@@ -6,7 +6,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class RepositoriesEndpoint
 {
-    private const string RepositoriesBaseRoute = "repositories";
 
     [Obsolete("Use entities")]
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
