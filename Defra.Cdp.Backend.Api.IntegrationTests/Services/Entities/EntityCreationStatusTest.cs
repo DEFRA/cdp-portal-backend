@@ -264,4 +264,68 @@ public partial class EntityPlatformStateTests
         Assert.DoesNotContain("management", entity!.Progress.Keys);
         Assert.Contains("prod", entity.Progress.Keys);
     }
+    
+    [Fact]
+    public async Task Cannot_revert_to_creating_from_created()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
+
+        var completedEntityWithSomethingMissing = new Entity
+        {
+            Name = "completeWithSomethingMissing",
+            Status = Status.Created,
+            Type = Type.Microservice,
+            Progress = new Dictionary<string, CreationProgress>
+            {
+                { "dev", new CreationProgress { Complete = false } },
+                { "test", new CreationProgress { Complete = true } },
+                { "perf-test", new CreationProgress { Complete = true } },
+                { "ext-test", new CreationProgress { Complete = true } },
+                { "prod", new CreationProgress { Complete = true } },
+                { "management", new CreationProgress { Complete = true } },
+                { "infra-dev", new CreationProgress { Complete = true } }
+            }
+        };
+        
+        await service.Create(completedEntityWithSomethingMissing, TestContext.Current.CancellationToken);
+        await service.BulkUpdateEntityStatus(TestContext.Current.CancellationToken);
+
+        var complete = await service.GetEntity(completedEntityWithSomethingMissing.Name, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Status.Created, complete?.Status);
+    }
+    
+    [Fact]
+    public async Task Cannot_revert_to_decommissioning_from_decommissioned()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
+
+        var completedEntityWithSomethingMissing = new Entity
+        {
+            Name = "decommissionedButItsStillGotSomething",
+            Status = Status.Decommissioned,
+            Type = Type.Microservice,
+            Decommissioned = new Decommission
+            {
+                Started = DateTime.Now,
+                Finished = DateTime.Now,
+                DecommissionedBy = new UserDetails { DisplayName = "bob", Id = "123"},
+                WorkflowsTriggered = true
+            },
+            Progress = new Dictionary<string, CreationProgress>
+            {
+                { "dev", new CreationProgress { Complete = false } }
+            }
+        };
+        
+        await service.Create(completedEntityWithSomethingMissing, TestContext.Current.CancellationToken);
+        await service.BulkUpdateEntityStatus(TestContext.Current.CancellationToken);
+
+        var entity = await service.GetEntity(completedEntityWithSomethingMissing.Name, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Status.Decommissioned, entity?.Status);
+    }
+
 }

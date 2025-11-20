@@ -253,6 +253,7 @@ public class EntitiesService(
 
         var isInProgress = fb.And(
             fb.Ne(e => e.Status, Status.Creating),
+            fb.Ne(e => e.Status, Status.Created),
             hasDecommissionNotStarted,
             fb.Not(isCompleteInAllEnvs)
         );
@@ -265,6 +266,7 @@ public class EntitiesService(
 
         var isDecommissioning = fb.And(
             fb.Ne(e => e.Status, Status.Decommissioning),
+            fb.Ne(e => e.Status, Status.Decommissioned),
             hasDecommissionStarted,
             fb.Not(isRemovedFromAllEnvs)
         );
