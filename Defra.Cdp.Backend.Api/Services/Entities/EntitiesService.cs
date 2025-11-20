@@ -245,26 +245,28 @@ public class EntitiesService(
             environmentsToCheck.Select(env => fb.Exists(e => e.Progress[env], false))
         );
 
-        var hasComplete = fb.And(
-            fb.Ne(e => e.Status, Status.Created),
+        // Filters to find records that should change state.
+        // The filters exclude anything already in the target state to reduce the number of redundant updates.
+        var shouldBeSetToCreated = fb.And(
+            fb.Ne(e => e.Status, Status.Created), 
             hasDecommissionNotStarted,
             isCompleteInAllEnvs
         );
 
-        var isInProgress = fb.And(
+        var shouldBeSetToCreating = fb.And(
             fb.Ne(e => e.Status, Status.Creating),
             fb.Ne(e => e.Status, Status.Created),
             hasDecommissionNotStarted,
             fb.Not(isCompleteInAllEnvs)
         );
 
-        var hasBeenDecommissioned = fb.And(
+        var shouldBeSetToDecommissioned = fb.And(
             fb.Ne(e => e.Status, Status.Decommissioned),
             hasDecommissionStarted,
             isRemovedFromAllEnvs
         );
 
-        var isDecommissioning = fb.And(
+        var shouldBeSetToDecommissioning = fb.And(
             fb.Ne(e => e.Status, Status.Decommissioning),
             fb.Ne(e => e.Status, Status.Decommissioned),
             hasDecommissionStarted,
@@ -274,10 +276,10 @@ public class EntitiesService(
         // Bulk update all the statuses that need to change
         var models = new List<WriteModel<Entity>>
         {
-            new UpdateManyModel<Entity>(hasComplete, ub.Set(e => e.Status, Status.Created)),
-            new UpdateManyModel<Entity>(isInProgress, ub.Set(e => e.Status, Status.Creating)),
-            new UpdateManyModel<Entity>(isDecommissioning, ub.Set(e => e.Status, Status.Decommissioning)),
-            new UpdateManyModel<Entity>(hasBeenDecommissioned, ub
+            new UpdateManyModel<Entity>(shouldBeSetToCreated, ub.Set(e => e.Status, Status.Created)),
+            new UpdateManyModel<Entity>(shouldBeSetToCreating, ub.Set(e => e.Status, Status.Creating)),
+            new UpdateManyModel<Entity>(shouldBeSetToDecommissioning, ub.Set(e => e.Status, Status.Decommissioning)),
+            new UpdateManyModel<Entity>(shouldBeSetToDecommissioned, ub
                 .Set(e => e.Status, Status.Decommissioned)
                 .Set(e => e.Decommissioned!.Finished, DateTime.UtcNow)
                 .Unset(e => e.Metadata)
