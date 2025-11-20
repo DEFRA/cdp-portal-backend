@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
+[BsonIgnoreExtraElements]
 public sealed class DeployableArtifact
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
