@@ -56,14 +56,16 @@ public class ShutteringService(
                     .FirstOrDefaultAsync(cancellationToken);
 
                 var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered);
+                var urlType = UrlToWafUrlType(url, envConfig);
                 var waf = UrlToWaf(url, envConfig);
-
+                
                 output.Add(new ShutteringUrlState
                 {
                     Environment = env,
                     Internal = false,
                     ServiceName = name,
                     Url = url,
+                    UrlType = urlType,
                     Waf = waf,
                     LastActionedAt = requestedState?.ActionedAt,
                     LastActionedBy = requestedState?.ActionedBy,
@@ -94,8 +96,7 @@ public class ShutteringService(
             (false, false) => Models.ShutteringStatus.Active
         };
     }
-
-
+    
     /// <summary>
     /// See: https://github.com/DEFRA/cdp-platform-documentation/blob/main/infrastructure/shuttering.md
     /// This will only be needed in the short-term. Shuttering is going to be reworked so we dont need
@@ -122,6 +123,20 @@ public class ShutteringService(
         };
     }
 
+    
+    /// <summary>
+    /// Required by the shuttering workflows.
+    /// If the url is present in the nginx config then it's a vanity url, else its a WAF
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="envConfig"></param>
+    /// <returns></returns>
+    public static string UrlToWafUrlType(string url, CdpTenant envConfig)
+    {
+        var isNginx = envConfig.Nginx?.Servers.ContainsKey(url) ?? false;
+        return isNginx ? ShutterUrlType.FrontendVanityUrl : ShutterUrlType.ApiGatewayVanityUrl;
+    }
+
     protected override List<CreateIndexModel<ShutteringRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<ShutteringRecord> builder)
     {
@@ -130,12 +145,3 @@ public class ShutteringService(
         return [service];
     }
 }
-
-[Obsolete("Remove later")]
-public record ShutterableUrl(
-    string ServiceName,
-    string Environment,
-    string Url,
-    bool Enabled,
-    bool Shuttered,
-    bool isVanity);
