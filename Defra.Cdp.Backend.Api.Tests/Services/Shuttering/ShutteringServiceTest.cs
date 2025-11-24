@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Shuttering;
@@ -28,4 +29,23 @@ public class ShutteringServiceTest
     {
         Assert.Equal(ShutteringStatus.Shuttered, ShutteringService.ShutteringStatus(true, true));
     }
+
+    [Fact]
+    public void correctly_detects_waf_type()
+    {
+        const string urlFrontend = "vanity.url";
+        const string urlApi = "apigateway.url";
+        
+        var tenant = new CdpTenant { 
+            Nginx = new CdpTenantNginx { 
+                Servers = new Dictionary<string, NginxServer> {
+                    { urlFrontend, new NginxServer() }
+                } 
+            }
+        };
+        
+        Assert.Equal(ShutterUrlType.FrontendVanityUrl, ShutteringService.UrlToWafUrlType(urlFrontend, tenant));
+        Assert.Equal(ShutterUrlType.ApiGatewayVanityUrl, ShutteringService.UrlToWafUrlType(urlApi, tenant));
+    }
+    
 }
