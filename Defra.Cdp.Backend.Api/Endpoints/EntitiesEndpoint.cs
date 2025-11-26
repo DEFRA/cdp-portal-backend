@@ -48,11 +48,13 @@ public static class EntitiesEndpoint
         return Results.Ok(await entitiesService.GetEntities(matcher, options, cancellationToken));
     }
 
-    private static async Task<IResult> GetFilters([FromQuery(Name = "type")] Type[] types,
+    private static async Task<IResult> GetFilters(
+        [FromQuery(Name = "teamIds")] string[] teamIds,
+        [FromQuery(Name = "type")] Type[] types,
         [FromQuery(Name = "status")] Status[] statuses,
         IEntitiesService entitiesService, CancellationToken cancellationToken)
     {
-        var filters = await entitiesService.GetFilters(types, statuses, cancellationToken);
+        var filters = await entitiesService.GetFilters(teamIds, types, statuses, cancellationToken);
         return Results.Ok(filters);
     }
 

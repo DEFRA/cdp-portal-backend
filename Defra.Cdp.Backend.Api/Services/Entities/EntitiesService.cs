@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Driver;
@@ -19,7 +19,7 @@ public interface IEntitiesService
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters>
-        GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken);
+        GetFilters(string[] teamIds, Type[] types, Status[] statuses, CancellationToken cancellationToken);
 
     Task Create(Entity entity, CancellationToken cancellationToken);
     Task AddTag(string entityName, string tag, CancellationToken cancellationToken);
@@ -122,13 +122,15 @@ public class EntitiesService(
     /// Performance wise there's not a massive difference between doing it as a find/project
     /// and grouping in code, while improving readability.
     /// </summary>
+    /// <param name="teamIds"></param>
     /// <param name="types"></param>
     /// <param name="statuses"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<EntityFilters> GetFilters(Type[] types, Status[] statuses, CancellationToken cancellationToken)
+    public async Task<EntityFilters> GetFilters(string[] teamIds, Type[] types, Status[] statuses,
+        CancellationToken cancellationToken)
     {
-        var matcher = new EntityMatcher { Types = types, Statuses = statuses };
+        var matcher = new EntityMatcher { Types = types, Statuses = statuses, TeamIds = teamIds };
         var pb = Builders<Entity>.Projection;
         var projection = pb.Combine(
             pb.Include(e => e.Name),
