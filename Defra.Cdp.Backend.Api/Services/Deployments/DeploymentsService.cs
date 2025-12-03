@@ -7,6 +7,7 @@ using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -164,7 +165,10 @@ public class DeploymentsService(
 
     public async Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct)
     {
-        return await Collection.Find(d => d.LambdaId == lambdaId).FirstOrDefaultAsync(ct);
+        return await Collection
+            .WithReadPreference(ReadPreference.Primary)
+            .Find(d => d.LambdaId == lambdaId)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
@@ -200,11 +204,14 @@ public class DeploymentsService(
         var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.Eq(d => d.TaskDefinitionArn, taskArn);
         var latestFirst = new SortDefinitionBuilder<Deployment>().Descending(d => d.Created);
-        return await Collection.Find(filter).Sort(latestFirst).FirstOrDefaultAsync(ct);
+        return await Collection
+            .WithReadPreference(ReadPreference.Primary)
+            .Find(filter)
+            .Sort(latestFirst)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<List<Deployment>> RunningDeploymentsForService(DeploymentMatchers query, CancellationToken ct)
-
     {
         var builder = Builders<Deployment>.Filter;
         var filter = builder.In(d => d.Status, [Running, Pending, Undeployed]);
@@ -214,28 +221,28 @@ public class DeploymentsService(
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
             .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.Updated))
-            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.First() })
+            .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.FirstN(e => e, 2) })
             .Project(grp => grp.Root);
 
+        var results = await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct) ?? [];
 
-        return await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct);
+        /*
+         * We pull down the TWO most recently updated deployments and take the most recently created one.
+         * The reason for this is there's a mismatch between how ECS sends events for 'stopping' a zero instance
+         * services and how we interpret what's running.
+         * Going forward it might be useful to surface the two most recent deployments so the running services
+         * page can show the switch-over as the deployment rolls out/back.
+         */
+        return results
+            .Where(r => r != null)
+            .Select(result => result.OrderByDescending(r => r.Created).FirstOrDefault())
+            .ToList()!;
+        
     }
 
     public async Task<List<Deployment>> RunningDeploymentsForService(string serviceName, CancellationToken ct)
     {
-        var fb = new FilterDefinitionBuilder<Deployment>();
-        var filter = fb.And(
-            fb.Eq(d => d.Service, serviceName),
-            fb.In(d => d.Status, [Running, Pending, Undeployed])
-        );
-        var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Match(filter)
-            .Sort(new SortDefinitionBuilder<Deployment>().Descending(d => d.Updated))
-            .Group(d => new { d.Environment }, grp => new { Root = grp.First() })
-            .Project(grp => grp.Root);
-
-        return await Collection.Aggregate(pipeline, cancellationToken: ct)
-            .ToListAsync(ct);
+        return await RunningDeploymentsForService(new DeploymentMatchers { ServiceExact = serviceName }, ct);
     }
 
     public async Task<Paginated<Deployment>> FindLatest(DeploymentMatchers query,
@@ -336,7 +343,10 @@ public class DeploymentsService(
 
     public async Task<Deployment?> FindDeployment(string deploymentId, CancellationToken ct)
     {
-        return await Collection.Find(d => d.CdpDeploymentId == deploymentId).FirstOrDefaultAsync(ct);
+        return await Collection
+            .WithReadPreference(ReadPreference.Primary)
+            .Find(d => d.CdpDeploymentId == deploymentId)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct)
@@ -439,6 +449,7 @@ public class DeploymentsService(
 
 public record DeploymentMatchers(
     string? Service = null,
+    string? ServiceExact = null,
     string? Environment = null,
     string[]? Environments = null,
     string? Status = null,
@@ -453,6 +464,11 @@ public record DeploymentMatchers(
         var builder = Builders<Deployment>.Filter;
         var filter = builder.Empty;
 
+        if (!string.IsNullOrWhiteSpace(ServiceExact))
+        {
+            filter &= builder.Eq(d => d.Service, ServiceExact);
+        }
+        
         if (!string.IsNullOrWhiteSpace(Service))
         {
             filter &= builder.Regex(d => d.Service, new BsonRegularExpression(Service, "i"));
