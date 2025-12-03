@@ -491,6 +491,9 @@ public class TenantSqlDatabase
     [property: JsonPropertyName("engine")]
     public string Engine { get; set; }
 
+    [property: JsonPropertyName("deletion_protection")]
+    public bool DeletionProtection { get; set; }
+
     [property: JsonPropertyName("database_name")]
     public string DatabaseName { get; set; }
 
