@@ -224,7 +224,7 @@ public class DeploymentsService(
             .Group(d => new { d.Service, d.Environment }, grp => new { Root = grp.FirstN(e => e, 2) })
             .Project(grp => grp.Root);
 
-        var results = await Collection.Aggregate(pipeline, cancellationToken: ct).ToListAsync(ct) ?? [];
+        var results = await Collection.AggregateAsync(pipeline, cancellationToken: ct);
 
         /*
          * We pull down the TWO most recently updated deployments and take the most recently created one.
@@ -234,6 +234,7 @@ public class DeploymentsService(
          * page can show the switch-over as the deployment rolls out/back.
          */
         return results
+            .ToEnumerable(cancellationToken: ct)
             .Where(r => r != null)
             .Select(result => result.OrderByDescending(r => r.Created).FirstOrDefault())
             .ToList()!;
