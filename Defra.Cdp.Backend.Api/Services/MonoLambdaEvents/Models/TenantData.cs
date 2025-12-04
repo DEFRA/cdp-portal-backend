@@ -543,3 +543,4 @@ public static class TenantDataVersion
 {
     public static readonly string Version = "6cad79f4e908b3df3ffc71fe58369bd22a5ece2174cbee5c6c73ede079e2689a";
 }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
