@@ -491,11 +491,11 @@ public class TenantSqlDatabase
     [property: JsonPropertyName("engine")]
     public string Engine { get; set; }
 
-    [property: JsonPropertyName("deletion_protection")]
-    public bool DeletionProtection { get; set; }
-
     [property: JsonPropertyName("database_name")]
     public string DatabaseName { get; set; }
+
+    [property: JsonPropertyName("deletion_protection")]
+    public bool DeletionProtection { get; set; }
 
 }
 
@@ -541,6 +541,5 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "4195d371cf3212fabc3bf93f49500c01a26944c51f88c02c51233591316b6951";
+    public static readonly string Version = "6cad79f4e908b3df3ffc71fe58369bd22a5ece2174cbee5c6c73ede079e2689a";
 }
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
