@@ -13,7 +13,7 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 public interface IGithubWorkflowEventHandler
 {
     public string EventType { get; }
-    public Task Handle(string message, CancellationToken cancellation);
+    public Task Handle(string message, CancellationToken cancellationToken);
 }
 
 /**
@@ -61,7 +61,7 @@ public class GithubWorkflowEventListener : SqsListener {
         }
         catch (Exception e)
         {
-            _logger.LogError("Failed to process message {Id} {Exception}", message.MessageId, e.Message);
+            _logger.LogError("Failed to process message {Id}: {Exception}", message.MessageId, e);
         }
     }
 

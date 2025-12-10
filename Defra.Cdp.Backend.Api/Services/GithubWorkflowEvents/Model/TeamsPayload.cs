@@ -41,7 +41,7 @@ public record TeamPayload
             Name = Name,
             Description = Description,
             Github = Github,
-            ServiceCodes = ServiceCode != null ? [ServiceCode] : null,
+            ServiceCodes = ServiceCode != null ? [ServiceCode] : null
         };
     }
 }

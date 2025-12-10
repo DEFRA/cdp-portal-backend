@@ -11,12 +11,12 @@ public interface ITeamsEventHandler : IGithubWorkflowEventHandler;
 public class TeamsEventHandler(ITeamsService teamsService, IUserServiceBackendClient usbClient, ILogger<TeamsEventHandler> logger) : ITeamsEventHandler
 {
 
-    public async Task Handle(string messageBody, CancellationToken cancellationToken)
+    public async Task Handle(string message, CancellationToken cancellationToken)
     {
-        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TeamsPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<TeamsPayload>>(message);
         if (workflowEvent == null)
         {
-            logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
+            logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", message);
             return;
         }
         var teams = workflowEvent.Payload.Teams.Select(t => t.ToTeam()).ToList();

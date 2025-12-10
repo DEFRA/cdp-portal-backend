@@ -19,7 +19,7 @@ public interface ITeamsService
 /// </summary>
 /// <param name="connectionFactory"></param>
 /// <param name="loggerFactory"></param>
-public partial class TeamsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+public class TeamsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<Team>(connectionFactory, CollectionName, loggerFactory), ITeamsService
 {
     public const string CollectionName = "teams";
@@ -95,11 +95,6 @@ public partial class TeamsService(IMongoDbClientFactory connectionFactory, ILogg
     /// <exception cref="ArgumentException"></exception>
     public async Task SyncTeams(IList<Team> teams, CancellationToken cancellationToken = default)
     {
-        // Prevent issues in the message payload etc blanket-deleting the teams.
-        if (teams.Count == 0)
-        {
-            throw new ArgumentException("refusing to sync an empty team list.");
-        }
         
         var existingTeams = await Collection.Find(FilterDefinition<Team>.Empty)
             .ToListAsync(cancellationToken);
@@ -118,10 +113,13 @@ public partial class TeamsService(IMongoDbClientFactory connectionFactory, ILogg
             return new ReplaceOneModel<Team>(filter, team) { IsUpsert = true };
         }).ToList();
 
-        if (upserts.Count > 0)
+        // Prevent issues in the message payload etc blanket-deleting the teams.
+        if (upserts.Count == 0)
         {
-            await Collection.BulkWriteAsync(upserts, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
+            throw new ArgumentException("refusing to sync an empty team list.");
         }
+        
+        await Collection.BulkWriteAsync(upserts, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
 
         var removedIds = existingTeams.Select(t => t.TeamId)
             .Where(id => !incomingIds.Contains(id))

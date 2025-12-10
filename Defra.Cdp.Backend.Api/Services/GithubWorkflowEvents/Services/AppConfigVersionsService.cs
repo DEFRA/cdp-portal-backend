@@ -31,19 +31,17 @@ public class AppConfigVersionsService(IMongoDbClientFactory connectionFactory, I
     protected override List<CreateIndexModel<AppConfigVersion>> DefineIndexes(
         IndexKeysDefinitionBuilder<AppConfigVersion> builder)
     {
-        return new List<CreateIndexModel<AppConfigVersion>>();
+        return [];
     }
 
-    public async Task Handle(string messageBody, CancellationToken cancellationToken)
+    public async Task Handle(string message, CancellationToken cancellationToken)
     {
-        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigVersionPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigVersionPayload>>(message);
         if (workflowEvent == null)
         {
-            _logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
+            _logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", message);
             return;
         }
-        
-        _logger.LogInformation(messageBody);
         
         var payload = workflowEvent.Payload;
         var commitSha = payload.CommitSha;
@@ -65,5 +63,5 @@ public record AppConfigVersion(string CommitSha, DateTime CommitTimestamp, strin
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-    public ObjectId? Id { get; init; } = default!;
+    public ObjectId? Id { get; init; } = null;
 }

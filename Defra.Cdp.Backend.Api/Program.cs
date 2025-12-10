@@ -45,7 +45,6 @@ using MongoDB.Bson.Serialization.Serializers;
 using Quartz.Simpl;
 using Quartz.Spi;
 using Serilog;
-using Team = Defra.Cdp.Backend.Api.Services.Teams.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 //-------- Configure the WebApplication builder------------------//
