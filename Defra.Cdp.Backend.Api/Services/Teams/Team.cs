@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Defra.Cdp.Backend.Api.Services.Users;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Defra.Cdp.Backend.Api.Services.Teams;
@@ -13,4 +12,4 @@ public record Team
     [JsonPropertyName("serviceCode")] public string? ServiceCode { get; init; }
     [JsonPropertyName("github")] public string? Github { get; init; }
     [JsonPropertyName("created")] public DateTime? Created { get; init; }
-};
+}

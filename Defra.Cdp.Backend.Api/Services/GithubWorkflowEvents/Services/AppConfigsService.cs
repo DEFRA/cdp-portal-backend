@@ -53,14 +53,14 @@ public class AppConfigsService(IMongoDbClientFactory connectionFactory, ILoggerF
         return await Collection.Find(config => config.RepositoryName == repositoryName).AnyAsync(cancellationToken);
     }
 
-    public async Task Handle(string messageBody, CancellationToken cancellationToken)
+    public async Task Handle(string message, CancellationToken cancellationToken)
     {
         var logger = _loggerFactory.CreateLogger<AppConfigsService>();
        
-        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigPayload>>(message);
         if (workflowEvent == null)
         {
-            logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
+            logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", message);
             return;
         }
         

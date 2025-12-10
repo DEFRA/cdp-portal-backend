@@ -10,7 +10,7 @@ public class UsersPayload
 
 public record UserPayload
 {
-    [JsonPropertyName("user_id")] public required string UserID { get; init; }
+    [JsonPropertyName("user_id")] public required string UserId { get; init; }
 
     [JsonPropertyName("name")] public required string Name { get; init; }
 
@@ -22,7 +22,7 @@ public record UserPayload
     {
         return new User
         {
-            UserId = UserID,
+            UserId = UserId,
             Name = Name,
             Email = Email,
             Github = Github

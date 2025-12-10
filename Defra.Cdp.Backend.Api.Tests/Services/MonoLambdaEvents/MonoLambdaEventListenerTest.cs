@@ -2,7 +2,6 @@ using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
-using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.EventHistory;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,12 +12,12 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents;
 
 internal class MockHandler : IMonoLambdaEventHandler
 {
-    public int callCount { get; set; }
+    public int CallCount { get; set; }
     public string EventType => "mock";
     public bool PersistEvents => false;
     public Task HandleAsync(JsonElement message, CancellationToken cancellationToken)
     {
-        callCount += 1;
+        CallCount += 1;
         return Task.CompletedTask;
     }
 }
@@ -47,6 +46,23 @@ public class MonoLambdaEventListenerTest
                           { "event_type": "mock"}
                           """;
         await listener.Handle(new Message { MessageId = "1234", Body = messageBody }, CancellationToken.None);
+        Assert.Equal(1, mockHandler.CallCount);
+    }
+    
+    [Fact]
+    public async Task TestUnknownMessagesAreNotHandled()
+    {
+        var mockHandler = new MockHandler();
+
+        var listener = new MonoLambdaEventListener(Sqs, _eventHistoryFactory, config, [mockHandler],
+            new NullLogger<MonoLambdaEventListener>());
+
+
+        var messageBody = """
+                          { "event_type": "unknown"}
+                          """;
+        await listener.Handle(new Message { MessageId = "1234", Body = messageBody }, CancellationToken.None);
+        Assert.Equal(0, mockHandler.CallCount);
     }
 
     [Fact]

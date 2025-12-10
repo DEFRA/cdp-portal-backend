@@ -11,12 +11,12 @@ public class UsersEventHandler(IUsersService usersService, ILogger<IUsersEventHa
 {
     public string EventType => "users";
     
-    public async Task Handle(string messageBody, CancellationToken cancellationToken)
+    public async Task Handle(string message, CancellationToken cancellationToken)
     {
-        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<UsersPayload>>(messageBody);
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<UsersPayload>>(message);
         if (workflowEvent == null)
         {
-            logger.LogError("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
+            logger.LogError("Failed to parse Github workflow event - message: {MessageBody}", message);
             return;
         }
         var users = workflowEvent.Payload.Users.Select(t => t.ToUser()).ToList();
