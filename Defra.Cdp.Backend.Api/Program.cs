@@ -28,6 +28,8 @@ using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Defra.Cdp.Backend.Api.Services.Users;
+using Defra.Cdp.Backend.Api.Services.Teams;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Utils;
@@ -43,6 +45,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using Quartz.Simpl;
 using Quartz.Spi;
 using Serilog;
+using Team = Defra.Cdp.Backend.Api.Services.Teams.Team;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 //-------- Configure the WebApplication builder------------------//
@@ -187,13 +190,16 @@ builder.Services.AddSingleton<SecretEventListener>();
 
 // fetchers
 builder.Services.AddSingleton<SelfServiceOpsClient>();
-builder.Services.AddSingleton<IUserServiceFetcher, UserServiceFetcher>();
+builder.Services.AddSingleton<IUserServiceBackendClient, UserServiceBackendClient>();
 
 // GitHub Workflow Event Handlers
-builder.Services.AddSingleton<IGithubWorkflowEventHandler, GithubWorkflowEventHandler>();
 builder.Services.AddSingleton<GithubWorkflowEventListener>();
 builder.Services.AddSingleton<IPlatformEventHandler, PlatformEventHandler>();
 builder.Services.AddSingleton<PlatformEventListener>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, AppConfigsService>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, AppConfigVersionsService>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, TeamsEventHandler>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, UsersEventHandler>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
@@ -205,6 +211,8 @@ builder.Services.AddSingleton<IAutoDeploymentTriggerService, AutoDeploymentTrigg
 builder.Services.AddSingleton<IAutoTestRunTriggerService, AutoTestRunTriggerService>();
 
 builder.Services.AddSingleton<MongoLock>();
+builder.Services.AddSingleton<ITeamsService, TeamsService>();
+builder.Services.AddSingleton<IUsersService, UsersService>();
 
 // migrations
 builder.Services.AddSingleton<IAvailableMigrations, AvailableMigrations>();
