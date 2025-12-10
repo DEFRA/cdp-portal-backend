@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
@@ -9,7 +10,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface IAppConfigsService : IEventsPersistenceService<AppConfigPayload>, IResourceService
+public interface IAppConfigsService : IGithubWorkflowEventHandler, IResourceService
 {
     Task<AppConfig?> FindLatestAppConfig(string environment, string repositoryName, CancellationToken ct);
 }
@@ -20,28 +21,6 @@ public class AppConfigsService(IMongoDbClientFactory connectionFactory, ILoggerF
 {
     private const string CollectionName = "appconfigs";
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
-
-    public async Task PersistEvent(CommonEvent<AppConfigPayload> workflowEvent, CancellationToken cancellationToken)
-    {
-        var logger = _loggerFactory.CreateLogger("AppConfigService");
-        var payload = workflowEvent.Payload;
-        var commitSha = payload.CommitSha;
-        var commitTimestamp = payload.CommitTimestamp;
-        var environment = payload.Environment;
-        var entities = payload.Entities;
-
-        logger.LogInformation("HandleAppConfig: Persisting message {CommitSha} {CommitTimestamp} {Environment}",
-            commitSha, commitTimestamp, environment);
-
-        var filter = Builders<AppConfig>.Filter.Eq(e => e.Environment, environment);
-        await Collection.DeleteManyAsync(filter, cancellationToken: cancellationToken);
-
-        var appConfigs = entities.Select(repositoryName =>
-                new AppConfig(commitSha, commitTimestamp, environment, repositoryName))
-            .ToList();
-
-        await Collection.InsertManyAsync(appConfigs, cancellationToken: cancellationToken);
-    }
 
     public async Task<AppConfig?> FindLatestAppConfig(string environment, string repositoryName, CancellationToken ct)
     {
@@ -73,6 +52,39 @@ public class AppConfigsService(IMongoDbClientFactory connectionFactory, ILoggerF
     {
         return await Collection.Find(config => config.RepositoryName == repositoryName).AnyAsync(cancellationToken);
     }
+
+    public async Task Handle(string messageBody, CancellationToken cancellationToken)
+    {
+        var logger = _loggerFactory.CreateLogger<AppConfigsService>();
+       
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigPayload>>(messageBody);
+        if (workflowEvent == null)
+        {
+            logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
+            return;
+        }
+        
+
+        var payload = workflowEvent.Payload;
+        var commitSha = payload.CommitSha;
+        var commitTimestamp = payload.CommitTimestamp;
+        var environment = payload.Environment;
+        var entities = payload.Entities;
+
+        logger.LogInformation("HandleAppConfig: Persisting message {CommitSha} {CommitTimestamp} {Environment}",
+            commitSha, commitTimestamp, environment);
+
+        var filter = Builders<AppConfig>.Filter.Eq(e => e.Environment, environment);
+        await Collection.DeleteManyAsync(filter, cancellationToken: cancellationToken);
+
+        var appConfigs = entities.Select(repositoryName =>
+                new AppConfig(commitSha, commitTimestamp, environment, repositoryName))
+            .ToList();
+
+        await Collection.InsertManyAsync(appConfigs, cancellationToken: cancellationToken);
+    }
+
+    public string EventType => "app-config";
 }
 
 [BsonIgnoreExtraElements]

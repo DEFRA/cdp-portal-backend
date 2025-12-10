@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
@@ -9,7 +10,7 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
-public interface IAppConfigVersionsService : IEventsPersistenceService<AppConfigVersionPayload>
+public interface IAppConfigVersionsService : IGithubWorkflowEventHandler
 {
     Task<AppConfigVersion?> FindLatestAppConfigVersion(string environment, CancellationToken ct);
 }
@@ -19,21 +20,7 @@ public class AppConfigVersionsService(IMongoDbClientFactory connectionFactory, I
         CollectionName, loggerFactory), IAppConfigVersionsService
 {
     private const string CollectionName = "appconfigversions";
-    private readonly ILoggerFactory _loggerFactory = loggerFactory;
-
-    public async Task PersistEvent(CommonEvent<AppConfigVersionPayload> workflowEvent, CancellationToken cancellationToken)
-    {
-        var logger = _loggerFactory.CreateLogger("AppConfigVersionService");
-        var payload = workflowEvent.Payload;
-        var commitSha = payload.CommitSha;
-        var commitTimestamp = payload.CommitTimestamp;
-        var environment = payload.Environment;
-
-        logger.LogInformation("HandleAppConfigVersion: Persisting message {CommitSha} {CommitTimestamp} {Environment}",
-            commitSha, commitTimestamp, environment);
-        await Collection.InsertOneAsync(new AppConfigVersion(commitSha, commitTimestamp, environment),
-            cancellationToken: cancellationToken);
-    }
+    private readonly ILogger _logger = loggerFactory.CreateLogger<AppConfigVersionsService>();
 
     public async Task<AppConfigVersion?> FindLatestAppConfigVersion(string environment, CancellationToken ct)
     {
@@ -46,6 +33,31 @@ public class AppConfigVersionsService(IMongoDbClientFactory connectionFactory, I
     {
         return new List<CreateIndexModel<AppConfigVersion>>();
     }
+
+    public async Task Handle(string messageBody, CancellationToken cancellationToken)
+    {
+        var workflowEvent = JsonSerializer.Deserialize<CommonEvent<AppConfigVersionPayload>>(messageBody);
+        if (workflowEvent == null)
+        {
+            _logger.LogWarning("Failed to parse Github workflow event - message: {MessageBody}", messageBody);
+            return;
+        }
+        
+        _logger.LogInformation(messageBody);
+        
+        var payload = workflowEvent.Payload;
+        var commitSha = payload.CommitSha;
+        var commitTimestamp = payload.CommitTimestamp;
+        var environment = payload.Environment;
+
+        _logger.LogInformation("HandleAppConfigVersion: Persisting message {CommitSha} {CommitTimestamp} {Environment}",
+            commitSha, commitTimestamp, environment);
+        
+        await Collection.InsertOneAsync(new AppConfigVersion(commitSha, commitTimestamp, environment),
+            cancellationToken: cancellationToken);
+    }
+
+    public string EventType => "app-config-version";
 }
 
 [BsonIgnoreExtraElements]
