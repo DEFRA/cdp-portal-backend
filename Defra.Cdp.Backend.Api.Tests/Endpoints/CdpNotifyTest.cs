@@ -34,7 +34,7 @@ public class CdpNotifyTest
     {
         var entitiesService = Substitute.For<IEntitiesService>();
         var layerService = Substitute.For<ILayerService>();
-        var userServiceFetcher = Substitute.For<IUserServiceFetcher>();
+        var userServiceFetcher = Substitute.For<IUserServiceBackendClient>();
 
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>

@@ -51,7 +51,7 @@ public interface IDeploymentsService
 public class DeploymentsService(
     IMongoDbClientFactory connectionFactory,
     IEntitiesService entitiesService,
-    IUserServiceFetcher userServiceFetcher,
+    IUserServiceBackendClient userServiceBackendClient,
     ILoggerFactory loggerFactory)
     : MongoService<Deployment>(connectionFactory, CollectionName, loggerFactory), IDeploymentsService
 {
@@ -143,7 +143,7 @@ public class DeploymentsService(
         {
             try
             {
-                deployment.Audit.User = await userServiceFetcher.GetUser(deployment.User.Id, ct);
+                deployment.Audit.User = await userServiceBackendClient.GetUser(deployment.User.Id, ct);
             }
             catch (Exception ex)
             {

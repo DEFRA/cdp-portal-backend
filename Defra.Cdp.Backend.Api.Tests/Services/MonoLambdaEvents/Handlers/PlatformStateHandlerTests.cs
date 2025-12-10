@@ -18,7 +18,7 @@ internal record TestPayload
 public class PlatformStateHandlerTests
 {
     private readonly IEntitiesService _entitiesService = Substitute.For<IEntitiesService>();
-    private readonly IUserServiceFetcher _userServiceFetcher = Substitute.For<IUserServiceFetcher>();
+    private readonly IUserServiceBackendClient _userServiceBackendClient = Substitute.For<IUserServiceBackendClient>();
 
     private const string MinimalPayload = """
                                           { 
@@ -63,7 +63,7 @@ public class PlatformStateHandlerTests
     [Fact]
     public async Task TestUncompressedHandleMessage()
     {
-        var handler = new PlatformStateHandler(_entitiesService, _userServiceFetcher, new NullLoggerFactory());
+        var handler = new PlatformStateHandler(_entitiesService, _userServiceBackendClient, new NullLoggerFactory());
         var payload = JsonSerializer.Deserialize<JsonElement>(MinimalPayload);
         await handler.HandleAsync(payload, CancellationToken.None);
         await _entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(),
@@ -75,7 +75,7 @@ public class PlatformStateHandlerTests
     [Fact]
     public async Task TestCompressedPayload()
     {
-        var handler = new PlatformStateHandler(_entitiesService, _userServiceFetcher, new NullLoggerFactory());
+        var handler = new PlatformStateHandler(_entitiesService, _userServiceBackendClient, new NullLoggerFactory());
         var payload = JsonSerializer.Deserialize<JsonElement>(MinimalPayloadCompressed);
         await handler.HandleAsync(payload, CancellationToken.None);
         await _entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(),
