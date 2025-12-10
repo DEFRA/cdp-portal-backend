@@ -76,10 +76,14 @@ public class UsersService(IMongoDbClientFactory connectionFactory, ILoggerFactor
             return new ReplaceOneModel<User>(filter, user) { IsUpsert = true };
         }).ToList();
 
-        if (upserts.Count > 0)
+        
+        if (upserts.Count == 0)
         {
-            await Collection.BulkWriteAsync(upserts, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
+            throw new ArgumentException("refusing to sync an empty user list");
         }
+        
+        await Collection.BulkWriteAsync(upserts, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
+    
 
         var removedIds = existingUsers.Select(u => u.UserId)
             .Where(id => !incomingIds.Contains(id))
