@@ -15,7 +15,7 @@ public sealed class PopulateGithubRepositories(
     IRepositoryService repositoryService,
     MongoLock mongoLock,
     IHttpClientFactory clientFactory,
-    IUserServiceFetcher userServiceFetcher,
+    IUserServiceBackendClient userServiceBackendClient,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues)
     : IJob
@@ -58,7 +58,7 @@ public sealed class PopulateGithubRepositories(
         _logger.LogInformation("Repopulating Github repositories");
         var cancellationToken = context.CancellationToken;
 
-        var cdpTeams = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var cdpTeams = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
 
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");

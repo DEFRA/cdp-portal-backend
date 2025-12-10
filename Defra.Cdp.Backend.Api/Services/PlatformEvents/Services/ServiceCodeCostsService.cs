@@ -25,6 +25,8 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
         return [];
     }
 
+    public string EventType => "last-30-days-costs-by-service-code";
+
     public async Task PersistEvent(CommonEvent<ServiceCodeCostsPayload> workflowEvent, CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("ServiceCodeCostsService");

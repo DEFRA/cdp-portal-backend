@@ -29,7 +29,7 @@ public class UserServiceTests
                 "User, Test",
                 "test.user@defra.gov.uk",
                 "b474e8e6-5990-4944-8a03-a3bdb054ea43",
-                [new Team("test", "Test")]
+                [new TeamIdAndName("test", "Test")]
             ),
             output);
     }

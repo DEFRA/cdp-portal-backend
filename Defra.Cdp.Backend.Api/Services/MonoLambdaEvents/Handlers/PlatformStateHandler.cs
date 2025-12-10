@@ -16,7 +16,7 @@ internal class Header
     public string? Compression { get; init; }
 }
 
-public class PlatformStateHandler(IEntitiesService entitiesService, IUserServiceFetcher userServiceFetcher, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
+public class PlatformStateHandler(IEntitiesService entitiesService, IUserServiceBackendClient userServiceBackendClient, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
 {
     public string EventType => "platform_state";
     public bool PersistEvents => true;
@@ -63,7 +63,7 @@ public class PlatformStateHandler(IEntitiesService entitiesService, IUserService
         _logger.LogInformation("VanityUrls serial {Serial}", state.TerraformSerials.Tfvanityurl);
         _logger.LogInformation("WAF serial {Serial}", state.TerraformSerials.Tfwaf);
 
-        var cdpTeams = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var cdpTeams = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
         var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
         await entitiesService.UpdateEnvironmentState(state, userServiceTeams, cancellationToken);
         await entitiesService.BulkUpdateEntityStatus(cancellationToken);

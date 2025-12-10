@@ -106,11 +106,11 @@ public static class DeploymentsEndpoint
     // GET /deployments/filters
     private static async Task<IResult> GetDeploymentsFilters(
         IDeploymentsService deploymentsService,
-        IUserServiceFetcher userServiceFetcher,
+        IUserServiceBackendClient userServiceBackendClient,
         CancellationToken cancellationToken)
     {
         var deploymentFilters = await deploymentsService.GetDeploymentsFilters(cancellationToken);
-        var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var teamRecord = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
         {
             deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
@@ -169,11 +169,11 @@ public static class DeploymentsEndpoint
     // GET /running-services/filters
     private static async Task<IResult> RunningServicesFilters(
         IDeploymentsService deploymentsService,
-        IUserServiceFetcher userServiceFetcher,
+        IUserServiceBackendClient userServiceBackendClient,
         CancellationToken cancellationToken)
     {
         var whatsRunningWhereFilters = await deploymentsService.GetWhatsRunningWhereFilters(cancellationToken);
-        var teamRecord = await userServiceFetcher.GetLatestCdpTeamsInformation(cancellationToken);
+        var teamRecord = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
             whatsRunningWhereFilters.Teams =
                 teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
