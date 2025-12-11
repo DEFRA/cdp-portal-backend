@@ -26,5 +26,5 @@ public class TeamsEventHandler(ITeamsService teamsService, IUserServiceBackendCl
         await usbClient.SyncTeams(usbTeams, cancellationToken);
     }
 
-    public string EventType => "team";
+    public string EventType => "teams";
 }
