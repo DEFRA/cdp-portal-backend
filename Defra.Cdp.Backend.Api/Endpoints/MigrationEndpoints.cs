@@ -21,7 +21,7 @@ public static class MigrationEndpoints
     */
     static async Task<IResult> ListServicesWithMigrations(IAvailableMigrations availableMigrations, string[]? teamIds, CancellationToken cancellationToken)
     {
-        if (teamIds != null)
+        if (teamIds is { Length: > 0 })
         {
             var migrationsByTeam =
                 await availableMigrations.FindServicesWithMigrationsByTeam(teamIds.ToList(), cancellationToken);
