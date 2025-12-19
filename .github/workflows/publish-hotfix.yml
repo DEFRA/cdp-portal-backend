@@ -28,7 +28,7 @@ jobs:
       - run: dotnet build
       - run: dotnet test
       - name: Publish Hot Fix
-        uses: DEFRA/cdp-build-action/build-hotfix@build-stage
+        uses: DEFRA/cdp-build-action/build-hotfix@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-build-stages: true
