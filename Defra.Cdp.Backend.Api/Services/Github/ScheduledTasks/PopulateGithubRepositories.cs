@@ -64,7 +64,7 @@ public sealed class PopulateGithubRepositories(
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
         _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cancellationToken, cdpTeams ?? []);
+        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cdpTeams ?? [], cancellationToken);
 
         var repositories = GroupRepositoriesByTeam(repositoryNodesByTeam, _logger);
 
@@ -125,8 +125,7 @@ public sealed class PopulateGithubRepositories(
     }
 
     private async Task<Dictionary<UserServiceTeam, List<RepositoryNode>>> GetReposFromGithubByTeam(
-        CancellationToken cancellationToken,
-        List<UserServiceTeam> cdpTeams)
+        List<UserServiceTeam> cdpTeams, CancellationToken cancellationToken)
     {
         var repositoriesByTeam = new Dictionary<UserServiceTeam, List<RepositoryNode>>();
 
@@ -152,7 +151,7 @@ public sealed class PopulateGithubRepositories(
                 var result = await jsonResponseRepos.Content.ReadFromJsonAsync<RepoQueryResponse>(cancellationToken);
                 if (result is null)
                 {
-                    var jsonString = jsonResponseRepos.Content.ReadAsStringAsync(cancellationToken);
+                    var jsonString = await jsonResponseRepos.Content.ReadAsStringAsync(cancellationToken);
                     _logger.LogError("The following was invalid json: {@JsonString}", jsonString);
                     throw new ApplicationException("response must be parsed correct");
                 }
