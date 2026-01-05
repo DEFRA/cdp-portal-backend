@@ -34,6 +34,8 @@ public interface IEntitiesService
         CancellationToken cancellationToken);
 
     Task BulkUpdateEntityStatus(CancellationToken cancellationToken);
+
+    Task UpdateEntityStatusToCreated(List<Entity> entities, CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -295,6 +297,33 @@ public class EntitiesService(
             .BulkWriteAsync(models, cancellationToken: cancellationToken);
         _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
     }
+    
+    public async Task UpdateEntityStatusToCreated(
+        List<Entity> entities,
+        CancellationToken cancellationToken)
+    {
+        if (entities.Count == 0) return;
+
+        var fb = new FilterDefinitionBuilder<Entity>();
+        var ub = new UpdateDefinitionBuilder<Entity>();
+        
+        var entityNames = entities.Select(e => e.Name).ToList();
+        var filter = fb.And(
+            fb.In(e => e.Name, entityNames),
+            fb.Eq(e => e.Status, Status.Creating),// strictly not necessary
+            fb.Eq(e => e.Type, Type.Repository) // strictly not necessary  
+        );
+        
+        var update = ub.Set(e => e.Status, Status.Created);
+
+        var result = await Collection
+            .WithReadPreference(ReadPreference.Primary)
+            .WithWriteConcern(WriteConcern.WMajority)
+            .WithReadConcern(ReadConcern.Majority)
+            .UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
+
+        _logger.LogInformation("Updated status to Created for {Count} repository type entities", result.ModifiedCount);
+    }    
 
     /// <summary>
     /// Updates entities based on a PlatformStatePayload for a given environment.
