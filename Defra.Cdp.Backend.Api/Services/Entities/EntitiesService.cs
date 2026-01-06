@@ -14,7 +14,10 @@ public interface IEntitiesService
 {
     Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken); //Used for tests
-    Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options, CancellationToken cancellationToken);
+
+    Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options,
+        CancellationToken cancellationToken);
+
     Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
     Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
 
@@ -35,7 +38,7 @@ public interface IEntitiesService
 
     Task BulkUpdateEntityStatus(CancellationToken cancellationToken);
 
-    Task UpdateEntityStatusToCreated(List<Entity> entities, CancellationToken cancellationToken);
+    Task UpdateRepositoryStatusToCreated(List<Entity> entities, CancellationToken cancellationToken);
 }
 
 public class EntitiesService(
@@ -183,13 +186,13 @@ public class EntitiesService(
     {
         var filter = Builders<Entity>.Filter.Eq(entity => entity.Name, entityName);
         var update = Builders<Entity>.Update.Set(e => e.Decommissioned,
-            new Decommission
-            {
-                DecommissionedBy = new UserDetails { Id = userId, DisplayName = userDisplayName },
-                Started = DateTime.UtcNow,
-                Finished = null,
-                WorkflowsTriggered = false
-            })
+                new Decommission
+                {
+                    DecommissionedBy = new UserDetails { Id = userId, DisplayName = userDisplayName },
+                    Started = DateTime.UtcNow,
+                    Finished = null,
+                    WorkflowsTriggered = false
+                })
             .Set(e => e.Status, Status.Decommissioning);
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
@@ -252,7 +255,7 @@ public class EntitiesService(
         // Filters to find records that should change state.
         // The filters exclude anything already in the target state to reduce the number of redundant updates.
         var shouldBeSetToCreated = fb.And(
-            fb.Ne(e => e.Status, Status.Created), 
+            fb.Ne(e => e.Status, Status.Created),
             hasDecommissionNotStarted,
             isCompleteInAllEnvs
         );
@@ -297,8 +300,8 @@ public class EntitiesService(
             .BulkWriteAsync(models, cancellationToken: cancellationToken);
         _logger.LogInformation("Updated status for {Updated} entities", result.ModifiedCount);
     }
-    
-    public async Task UpdateEntityStatusToCreated(
+
+    public async Task UpdateRepositoryStatusToCreated(
         List<Entity> entities,
         CancellationToken cancellationToken)
     {
@@ -306,14 +309,14 @@ public class EntitiesService(
 
         var fb = new FilterDefinitionBuilder<Entity>();
         var ub = new UpdateDefinitionBuilder<Entity>();
-        
+
         var entityNames = entities.Select(e => e.Name).ToList();
         var filter = fb.And(
             fb.In(e => e.Name, entityNames),
-            fb.Eq(e => e.Status, Status.Creating),// strictly not necessary
+            fb.Eq(e => e.Status, Status.Creating), // strictly not necessary
             fb.Eq(e => e.Type, Type.Repository) // strictly not necessary  
         );
-        
+
         var update = ub.Set(e => e.Status, Status.Created);
 
         var result = await Collection
@@ -323,7 +326,7 @@ public class EntitiesService(
             .UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
 
         _logger.LogInformation("Updated status to Created for {Count} repository type entities", result.ModifiedCount);
-    }    
+    }
 
     /// <summary>
     /// Updates entities based on a PlatformStatePayload for a given environment.
@@ -401,8 +404,7 @@ public class EntitiesService(
             Builders<Entity>.Update
                 .Unset(e => e.Environments[env])
                 .Unset(e => e.Progress[env])
-        )
-        { IsUpsert = false };
+        ) { IsUpsert = false };
 
         models.Add(removeMissing);
 

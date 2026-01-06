@@ -143,6 +143,7 @@ else
 
 builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 builder.Services.AddTransient<PopulateGithubRepositories>();
+builder.Services.AddTransient<RepositoryCreationPoller>();
 builder.Services.AddTransient<DecommissioningService>();
 builder.Services.AddSingleton<IJobFactory, MicrosoftDependencyInjectionJobFactory>();
 

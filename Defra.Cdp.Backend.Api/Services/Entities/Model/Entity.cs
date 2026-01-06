@@ -67,7 +67,7 @@ public record Entity
                 .All(p => p.Complete),
             Steps = Progress.Values
                 .Where(p => p?.Steps != null)
-                .SelectMany(env => env.Steps)
+                .SelectMany(env => env.Steps!)
                 .GroupBy(step => step.Key)
                 .ToDictionary(
                     group => group.Key,
