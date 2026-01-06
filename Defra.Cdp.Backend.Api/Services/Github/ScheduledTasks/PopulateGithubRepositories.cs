@@ -1,7 +1,9 @@
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Teams;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
 using Quartz;
@@ -15,7 +17,7 @@ public sealed class PopulateGithubRepositories(
     IRepositoryService repositoryService,
     MongoLock mongoLock,
     IHttpClientFactory clientFactory,
-    IUserServiceBackendClient userServiceBackendClient,
+    ITeamsService teamsService,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues)
     : IJob
@@ -58,15 +60,15 @@ public sealed class PopulateGithubRepositories(
         _logger.LogInformation("Repopulating Github repositories");
         var cancellationToken = context.CancellationToken;
 
-        var cdpTeams = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
+        var teams = await GetRepositoryTeams(cancellationToken);
 
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         if (token is null) throw new ArgumentNullException("token", "Installation token cannot be null");
-        _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var repositoryNodesByTeam = await GetReposFromGithubByTeam(cdpTeams ?? [], cancellationToken);
+        var repositoryNodesByTeam = await GetReposFromGithubByTeam(teams ?? [], cancellationToken);
 
-        var repositories = GroupRepositoriesByTeam(repositoryNodesByTeam, _logger);
+        var repositories = GroupRepositoriesByTeam(repositoryNodesByTeam);
 
         await repositoryService.UpsertMany(repositories, cancellationToken);
         await repositoryService.DeleteUnknownRepos(repositories.Select(r => r.Id), cancellationToken);
@@ -74,25 +76,12 @@ public sealed class PopulateGithubRepositories(
     }
 
     public static List<Repository> GroupRepositoriesByTeam(
-        Dictionary<UserServiceTeam, List<RepositoryNode>> repositoryNodesByTeam, ILogger<PopulateGithubRepositories> logger)
+        Dictionary<RepositoryTeam, List<RepositoryNode>> repositoryNodesByTeam)
     {
         var repoMap = new Dictionary<string, Repository>();
 
-        foreach (var (userServiceTeam, repos) in repositoryNodesByTeam)
+        foreach (var (team, repos) in repositoryNodesByTeam)
         {
-            if (userServiceTeam.github is null)
-            {
-                logger.LogWarning("Skipping team with no GitHub slug: {@UserServiceTeam}", userServiceTeam);
-                continue;
-            }
-
-            var team = new RepositoryTeam
-            (
-                userServiceTeam.github,
-                userServiceTeam.teamId,
-                userServiceTeam.name
-            );
-
             foreach (var repo in repos)
             {
                 if (!repoMap.TryGetValue(repo.name, out var existingRepo))
@@ -124,14 +113,35 @@ public sealed class PopulateGithubRepositories(
         return repoMap.Values.ToList();
     }
 
-    private async Task<Dictionary<UserServiceTeam, List<RepositoryNode>>> GetReposFromGithubByTeam(
-        List<UserServiceTeam> cdpTeams, CancellationToken cancellationToken)
+    private async Task<List<RepositoryTeam>> GetRepositoryTeams(CancellationToken cancellationToken)
     {
-        var repositoriesByTeam = new Dictionary<UserServiceTeam, List<RepositoryNode>>();
+        var cdpTeams = await teamsService.FindAll(cancellationToken);
 
-        foreach (var team in cdpTeams)
+        return cdpTeams 
+            .Where(t =>
+            {
+                if (t.Github is not null)
+                {
+                    return true;
+                }
+
+                _logger.LogWarning("Skipping team with no GitHub slug: {@UserServiceTeam}", t);
+                return false;
+            })
+            .Select(
+                t => new RepositoryTeam(t.Github!, t.TeamId, t.TeamName)
+            )
+            .ToList();
+    }
+
+    private async Task<Dictionary<RepositoryTeam, List<RepositoryNode>>> GetReposFromGithubByTeam(
+        List<RepositoryTeam> teams, CancellationToken cancellationToken)
+    {
+        var repositoriesByTeam = new Dictionary<RepositoryTeam, List<RepositoryNode>>();
+
+        foreach (var team in teams)
         {
-            var teamSlug = team.github;
+            var teamSlug = team.Github;
             if (string.IsNullOrEmpty(teamSlug)) continue;
 
             _logger.LogInformation("Processing team: {TeamSlug}", teamSlug);
@@ -184,7 +194,7 @@ public sealed class PopulateGithubRepositories(
         return repositoriesByTeam;
     }
 
-    // To test queries, you can login to Github and try it here: https://docs.github.com/en/graphql/overview/explorer
+    // To test queries, you can login to GitHub and try it here: https://docs.github.com/en/graphql/overview/explorer
     private static StringContent BuildReposQuery(string githubOrgName, string teamSlug, string? repoCursor)
     {
         var reposQuery = new
