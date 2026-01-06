@@ -13,6 +13,7 @@ public class QuartzSchedulersHostedService : IHostedService
     private readonly IConfiguration _config;
     private readonly ILoggerFactory _loggerFactory;
     private IScheduler? _githubScheduler;
+    private IScheduler? _repoCreationScheduler;
     private IScheduler? _decommissionScheduler;
 
     public QuartzSchedulersHostedService(IServiceProvider services, IConfiguration config, ILoggerFactory loggerFactory)
@@ -24,7 +25,7 @@ public class QuartzSchedulersHostedService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // GitHub Scheduler
+        // GitHub Populate All Scheduler
         var githubProps = ToQuartzProperties(_config.GetSection("Github:Scheduler"));
         var githubFactory = new StdSchedulerFactory(githubProps);
         _githubScheduler = await githubFactory.GetScheduler(cancellationToken);
@@ -48,6 +49,31 @@ public class QuartzSchedulersHostedService : IHostedService
             .Build();
 
         await _githubScheduler.ScheduleJob(githubJob, githubTrigger, cancellationToken);
+        
+        // Repository Creation Poller Scheduler
+        var repoCreationProps = ToQuartzProperties(_config.GetSection("RepositoriesCreation:Scheduler"));
+        var repoCreationFactory = new StdSchedulerFactory(repoCreationProps);
+        _repoCreationScheduler = await repoCreationFactory.GetScheduler(cancellationToken);
+        _repoCreationScheduler.JobFactory = _services.GetRequiredService<IJobFactory>();
+        _repoCreationScheduler.ListenerManager.AddTriggerListener(new QuartzMisfireLogger(_loggerFactory));
+
+        await _repoCreationScheduler.Start(cancellationToken);
+
+        var repoCreationJobKey = new JobKey("RepositoriesCreationPoller");
+        var repoCreationJob = JobBuilder.Create<RepositoryCreationPoller>()
+            .WithIdentity(repoCreationJobKey)
+            .Build();
+
+        var repoCreationInterval = _config.GetValue<int>("RepositoriesCreation:PollIntervalSecs");
+        var repoCreationTrigger = TriggerBuilder.Create()
+            .ForJob(repoCreationJob)
+            .WithIdentity("RepositoriesCreationPoller-trigger")
+            .WithSimpleSchedule(x => x
+                .WithIntervalInSeconds(repoCreationInterval)
+                .RepeatForever())
+            .Build();
+
+        await _repoCreationScheduler.ScheduleJob(repoCreationJob, repoCreationTrigger, cancellationToken);
 
         // Decommission Scheduler
         var decommissionProps = ToQuartzProperties(_config.GetSection("Decommission:Scheduler"));

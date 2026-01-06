@@ -13,10 +13,10 @@ public class PopulateGithubRepositoriesTest
         var topics = Topics.CreateMockTopics();
         var dateTimeNow = DateTimeOffset.Now;
         var repositories = PopulateGithubRepositories.GroupRepositoriesByTeam(
-            new Dictionary<UserServiceTeam, List<RepositoryNode>>
+            new Dictionary<RepositoryTeam, List<RepositoryNode>>
             {
                 {
-                    new UserServiceTeam("Platform", "PlatformTeam", "cdp-platform", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "platform-team-id", []),
+                    new RepositoryTeam("cdp-platform", "platform-team-id", "Platform"),
                     [
                         new RepositoryNode("repo1", topics, "desc1", new PrimaryLanguage("Javascript"),
                             "https://url1", false, false, true, dateTimeNow),
@@ -26,7 +26,7 @@ public class PopulateGithubRepositoriesTest
                     ]
                 },
                 {
-                    new UserServiceTeam("Fisheries", "The fisheries team", "fisheries", "2022-01-01T00:00:00Z", "2023-01-01T00:00:00Z", "fisheries-team-id", []),
+                    new RepositoryTeam("fisheries", "fisheries-team-id", "Fisheries"),
                     [
 
                         new RepositoryNode("repo2", topics, "desc2", new PrimaryLanguage("C#"),
@@ -35,7 +35,7 @@ public class PopulateGithubRepositoriesTest
                             "https://url3", false, true, false, dateTimeNow)
                     ]
                 }
-            }, new LoggerFactory().CreateLogger<PopulateGithubRepositories>());
+            });
 
         var topicNames = topics.nodes.Select(t => t.topic.name).ToList();
         var expected = new List<Repository>

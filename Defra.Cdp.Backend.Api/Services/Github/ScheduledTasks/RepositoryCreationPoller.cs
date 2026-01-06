@@ -5,21 +5,23 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Teams;
 using Microsoft.AspNetCore.HeaderPropagation;
+using Microsoft.Extensions.Primitives;
 using Quartz;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public sealed class PopulateCreatingRepositories(
+public sealed class RepositoryCreationPoller(
     IConfiguration configuration,
     ILoggerFactory loggerFactory,
     IRepositoryService repositoryService,
     IEntitiesService entitiesService,
     MongoLock mongoLock,
     IHttpClientFactory clientFactory,
-    IUserServiceBackendClient userServiceBackendClient,
+    ITeamsService teamsService,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues)
     : IJob
@@ -32,8 +34,8 @@ public sealed class PopulateCreatingRepositories(
 
     private readonly string _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
 
-    private readonly ILogger<PopulateGithubRepositories> _logger =
-        loggerFactory.CreateLogger<PopulateGithubRepositories>();
+    private readonly ILogger<RepositoryCreationPoller> _logger =
+        loggerFactory.CreateLogger<RepositoryCreationPoller>();
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -46,6 +48,9 @@ public sealed class PopulateCreatingRepositories(
 
                 if (entities.Count != 0)
                 {
+                    // Workaround mentioned in https://github.com/alefranz/HeaderPropagation/issues/5
+                    headerPropagationValues.Headers ??=
+                        new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
                     var githubRepos = await GetGithubRepos(entities.Select(e => e.Name).ToList(), cancellationToken);
                     var repositoryTeams = await GetRepositoryTeams(cancellationToken);
                     var repositories = BuildRepositories(entities, githubRepos, repositoryTeams);
@@ -55,13 +60,11 @@ public sealed class PopulateCreatingRepositories(
 
                     var repositoryTypeEntities = entities
                         .Where(e =>
-                            githubRepos.TryGetValue(e.Name,
-                                out var repoNode) && repoNode is not null // GitHub repos contains alias and value is not null (repo exists)
-                                                  && e.Type == Type.Repository)
+                            e.Type == Type.Repository &&
+                            githubRepos.ContainsKey(e.Name))
                         .ToList();
 
-                    await entitiesService.UpdateEntityStatusToCreated(repositoryTypeEntities, cancellationToken);
-                    
+                    await entitiesService.UpdateRepositoryStatusToCreated(repositoryTypeEntities, cancellationToken);
                 }
             }
             catch (Exception e)
@@ -77,12 +80,12 @@ public sealed class PopulateCreatingRepositories(
 
     private async Task<Dictionary<string, RepositoryTeam>> GetRepositoryTeams(CancellationToken cancellationToken)
     {
-        var cdpTeams = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
+        var cdpTeams = await teamsService.FindAll(cancellationToken);
 
-        return (cdpTeams ?? [])
+        return cdpTeams
             .Where(t =>
             {
-                if (t.github is not null)
+                if (t.Github is not null)
                 {
                     return true;
                 }
@@ -91,22 +94,20 @@ public sealed class PopulateCreatingRepositories(
                 return false;
             })
             .ToDictionary(
-                t => t.teamId,
-                t => new RepositoryTeam(t.github!, t.teamId, t.name)
+                t => t.TeamId,
+                t => new RepositoryTeam(t.Github!, t.TeamId, t.TeamName)
             );
     }
 
     private static List<Repository> BuildRepositories(
         List<Entity> entities,
-        Dictionary<string, RepositoryNode?> repositoryNodes,
+        Dictionary<string, RepositoryNode>? repositoryNodes,
         Dictionary<string, RepositoryTeam> repositoryTeams)
     {
         return entities
-            .Where(e => repositoryNodes.TryGetValue(e.Name, out var repo) && repo is not null)
             .Select(e =>
             {
-                var repo = repositoryNodes[e.Name];
-
+                if (repositoryNodes is null || !repositoryNodes.TryGetValue(e.Name, out var repo)) return null;
                 var teams = e.Teams?
                     .Where(t => t.TeamId is not null &&
                                 repositoryTeams.TryGetValue(t.TeamId, out _))
@@ -128,11 +129,12 @@ public sealed class PopulateCreatingRepositories(
                     Topics = repo.repositoryTopics.nodes.Select(t => t.topic.name)
                 };
             })
+            .OfType<Repository>()
             .ToList();
     }
 
 
-    private async Task<Dictionary<string, RepositoryNode?>> GetGithubRepos(
+    private async Task<Dictionary<string, RepositoryNode>> GetGithubRepos(
         List<string> repos, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching new creating repositories");
@@ -151,7 +153,11 @@ public sealed class PopulateCreatingRepositories(
         var result = await jsonResponseRepos.Content.ReadFromJsonAsync<RepoAliasQueryResponse>(cancellationToken);
         if (result is not null)
         {
-            return result.data;
+            return result
+                .data
+                .Values
+                .OfType<RepositoryNode>()
+                .ToDictionary(r => r.name, r => r);
         }
 
         var jsonString = await jsonResponseRepos.Content.ReadAsStringAsync(cancellationToken);
@@ -159,8 +165,7 @@ public sealed class PopulateCreatingRepositories(
         throw new ApplicationException("response must be parsed correct");
     }
 
-
-    StringContent BuildRepoQuery(IEnumerable<string> repoNames)
+    private StringContent BuildRepoQuery(IEnumerable<string> repoNames)
     {
         var sb = new StringBuilder();
         sb.AppendLine("query {");
@@ -191,7 +196,7 @@ public sealed class PopulateCreatingRepositories(
         }
 
         sb.AppendLine("}");
-        
+
         return new StringContent(
             JsonSerializer.Serialize(new { query = sb.ToString() }),
             Encoding.UTF8,
@@ -202,3 +207,4 @@ public sealed class PopulateCreatingRepositories(
     private record RepoAliasQueryResponse(
         Dictionary<string, RepositoryNode?> data
     );
+}
