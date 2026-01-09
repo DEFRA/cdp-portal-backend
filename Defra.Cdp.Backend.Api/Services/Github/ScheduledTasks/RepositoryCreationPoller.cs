@@ -44,10 +44,14 @@ public sealed class RepositoryCreationPoller(
             try
             {
                 var cancellationToken = context.CancellationToken;
-                var entities = await entitiesService.GetCreatingEntities(cancellationToken);
+
+                var entities = (await entitiesService.GetCreatingEntities(cancellationToken))
+                    .Where(e => e.Created?.Date == DateTime.Today)
+                    .ToList();
 
                 if (entities.Count != 0)
                 {
+                    _logger.LogInformation("Attempting to add repositories: {repos}", string.Join(", ", entities.Select(x => x.Name)));
                     // Workaround mentioned in https://github.com/alefranz/HeaderPropagation/issues/5
                     headerPropagationValues.Headers ??=
                         new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
@@ -56,7 +60,11 @@ public sealed class RepositoryCreationPoller(
                     var repositories = BuildRepositories(entities, githubRepos, repositoryTeams);
 
                     await repositoryService.UpsertMany(repositories, cancellationToken);
-                    _logger.LogInformation("Successfully upserted repositories and team information");
+                    if (repositories.Count != 0)
+                    {
+                        _logger.LogInformation("Successfully upserted {count} repositories", repositories.Count);
+                    }
+                    
 
                     var repositoryTypeEntities = entities
                         .Where(e =>

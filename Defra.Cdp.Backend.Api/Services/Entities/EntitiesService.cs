@@ -325,7 +325,7 @@ public class EntitiesService(
             .WithReadConcern(ReadConcern.Majority)
             .UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
 
-        _logger.LogInformation("Updated status to Created for {Count} repository type entities", result.ModifiedCount);
+        _logger.LogInformation("Updated {Count} Repository status to Created", result.ModifiedCount);
     }
 
     /// <summary>
