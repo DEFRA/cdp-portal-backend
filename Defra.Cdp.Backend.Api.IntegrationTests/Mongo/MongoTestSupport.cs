@@ -12,10 +12,7 @@ public class MongoTestSupport(MongoContainerFixture fixture)
     /// <returns></returns>
     protected MongoDbClientFactory CreateMongoDbClientFactory(string? dbName = null)
     {
-        if (dbName == null)
-        {
-            dbName = $"t{Guid.NewGuid():N}";
-        }
+        dbName ??= $"t{Guid.NewGuid():N}";
         return new MongoDbClientFactory(fixture.Container.GetConnectionString(), dbName);
     }
 }
