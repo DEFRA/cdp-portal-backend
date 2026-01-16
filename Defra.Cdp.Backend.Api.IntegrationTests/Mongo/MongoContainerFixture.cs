@@ -10,7 +10,7 @@ public sealed class MongoContainerFixture(IMessageSink messageSink) : ContainerF
     protected override MongoDbBuilder Configure(MongoDbBuilder builder)
     {
         return builder
-            .WithImage("mongo:6.0");
+            .WithImage("mongo:7.0");
     }
 
 }
