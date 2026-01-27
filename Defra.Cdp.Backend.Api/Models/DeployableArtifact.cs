@@ -47,4 +47,7 @@ public sealed record ServiceInfo(
     string ImageName,
     IEnumerable<RepositoryTeam> Teams);
 
+
+public sealed record ArtifactVersion(string Name, string Version);
+
 public sealed record TagInfo(string Tag, DateTime Created);

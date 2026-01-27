@@ -22,6 +22,8 @@ public interface IDeployableArtifactsService
     Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
 
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
+    
+    Task<List<ArtifactVersion>> FindLatestForAll(CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
 }
@@ -40,6 +42,15 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     {
         return await Collection.Find(d => d.Repo == repo).SortByDescending(d => d.SemVer)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<List<ArtifactVersion>> FindLatestForAll(CancellationToken cancellationToken)
+    {
+        return await Collection.Aggregate()
+            .SortBy(a => a.Repo)
+            .ThenByDescending(a => a.SemVer)
+            .Group(a => a.Repo, g => new ArtifactVersion(g.Key, g.First().Tag))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<bool> RemoveAsync(string service, string tag, CancellationToken cancellationToken)
