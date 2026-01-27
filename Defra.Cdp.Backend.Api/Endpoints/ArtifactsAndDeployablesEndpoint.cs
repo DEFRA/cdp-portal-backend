@@ -10,7 +10,9 @@ public static class ArtifactsAndDeployablesEndpoint
     {
         app.MapGet("/artifacts/{repo}", ListImagesForRepo);
         app.MapGet("/artifacts/{repo}/{tag}", ListImage);
+        app.MapGet("/latest-artifacts", ListLatestArtifacts);
         app.MapGet("/deployables/{repo}", ListAvailableTagsForRepo);
+        
     }
 
 
@@ -46,6 +48,16 @@ public static class ArtifactsAndDeployablesEndpoint
         CancellationToken cancellationToken)
     {
         var tags = await deployableArtifactsService.FindAllTagsForRepo(repo, cancellationToken);
+        return Results.Ok(tags);
+    }
+    
+    
+    // GET latest-artifacts
+    private static async Task<IResult> ListLatestArtifacts(
+        IDeployableArtifactsService deployableArtifactsService,
+        CancellationToken cancellationToken)
+    {
+        var tags = await deployableArtifactsService.FindLatestForAll(cancellationToken);
         return Results.Ok(tags);
     }
 }
