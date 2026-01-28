@@ -24,7 +24,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventNotLinkable()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -56,7 +56,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventLinkedByService()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -97,7 +97,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEvenStarting()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-starting.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -133,7 +133,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventRunning()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-running.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-start-running.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -170,7 +170,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventUpdateTestSuitePassed()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-test-suite-pass.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-test-suite-pass.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -207,7 +207,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventUpdateTestSuiteFailed()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-test-suite-fail.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-test-suite-fail.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -244,7 +244,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventUpdateFailsWithOomError()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-out-of-memory.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-out-of-memory.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -283,7 +283,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventUpdateFailsWithTimeout()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-timeout-sidecar.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-timeout-sidecar.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
@@ -320,7 +320,7 @@ public class UpdateTestSuiteTests
     [Fact]
     public async Task TestEventUpdateFailsWithEcsTaskError()
     {
-        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-missing-secret.json");
+        var json = await File.ReadAllTextAsync("Resources/ecs/tests/task-stop-missing-secret.json", TestContext.Current.CancellationToken);
         var ecsEvent = JsonSerializer.Deserialize<EcsTaskStateChangeEvent>(json);
         Assert.NotNull(ecsEvent);
         var entity = new Entity
