@@ -26,8 +26,7 @@ public class SbomDeploymentEventHandler(ISbomExplorerClient client, IDeployments
             var deployments =
                 await dependencyService.RunningDeploymentsForService(new DeploymentMatchers { Environment = env }, ct);
             await client.PushRunningServices(env, deployments, ct);
-            logger.LogWarning("Pushed {Size} deployments for {Env} to cdp-sbom-explorer-backend", env,
-                deployments.Count);
+            logger.LogWarning("Pushed {Size} deployments for {Env} to cdp-sbom-explorer-backend", deployments.Count, env);
         }
         catch (Exception e)
         {
