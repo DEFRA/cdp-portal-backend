@@ -36,7 +36,7 @@ public class SbomExplorerClient : ISbomExplorerClient
     {
         _baseUrl = configuration.GetValue<string>("SbomExplorerBackendUrl")!;
         if (string.IsNullOrWhiteSpace(_baseUrl))
-            throw new Exception("SbomExplorerBackendUrl cannot be null");
+            throw new ArgumentException("SbomExplorerBackendUrl cannot be null");
         _client = httpClientFactory.CreateClient("ServiceClient");
     }
     
