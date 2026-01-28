@@ -3,6 +3,7 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.Dependencies;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Options;
@@ -45,6 +46,7 @@ public class EcrEventHandler(
         IArtifactScanner artifactScanner,
         IDeployableArtifactsService artifactsService,
         IAutoDeploymentTriggerExecutor autoDeploymentTriggerExecutor,
+        ISbomEcrEventHandler sbomEcrEventHandler,
         ILogger<EcrEventListener> logger)
 {
     public async Task Handle(string id, string body, CancellationToken cancellationToken)
@@ -74,6 +76,7 @@ public class EcrEventHandler(
             case "PUSH":
                 var scanResult = await artifactScanner.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
                 logger.LogInformation("Scanned {Sha256} ({Repo}:{Tag}) {Result}", scanResult.Artifact?.Sha256, scanResult.Artifact?.Repo, scanResult.Artifact?.Tag, scanResult.Success ? "OK" : "FAILED");
+                await sbomEcrEventHandler.Handle(cancellationToken);
                 await autoDeploymentTriggerExecutor.Handle(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
                 break;
             case "DELETE":

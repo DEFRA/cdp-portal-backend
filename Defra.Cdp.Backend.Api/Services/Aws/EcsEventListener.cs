@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.Dependencies;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
@@ -19,6 +20,7 @@ public class EcsEventListener(
     DeploymentStateChangeEventHandler deploymentStateChangeEventHandler,
     AutoTestRunTriggerEventHandler autoTestRunTriggerEventHandler,
     CodeBuildStateChangeHandler codeBuildStateChangeHandler,
+    ISbomDeploymentEventHandler sbomDeploymentEventHandler,
     ILogger<EcsEventListener> logger)
     : SqsListener(sqs, config.Value.QueueUrl, logger)
 {
@@ -33,7 +35,6 @@ public class EcsEventListener(
         logger.LogError("'Timestamp' attribute missing: {MessageMessageId}", message.MessageId);
         return DateTime.Now;
     }
-
 
     protected override async Task HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
@@ -80,6 +81,7 @@ public class EcsEventListener(
                 }
 
                 await deploymentStateChangeEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
+                await sbomDeploymentEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 await autoTestRunTriggerEventHandler.Handle(id, ecsDeploymentEvent, cancellationToken);
                 break;
 
