@@ -17,7 +17,7 @@ public record AutoTestRunTriggerDto
     public string ServiceName { get; init; } = null!;
 
     [property: JsonPropertyName("profile")]
-    public string? Profile { get; init; }
+    public string Profile { get; init; } = "";
 
     [property: JsonPropertyName("testSuite")]
     public string TestSuite { get; init; } = null!;
