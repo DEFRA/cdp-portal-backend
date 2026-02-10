@@ -51,7 +51,7 @@ public class AuoTestRunTriggerEventHandlerTests
             .AnyTestRunExists(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        await handler.Handle("", _deploymentEvent, CancellationToken.None);
+        await handler.Handle("", _deploymentEvent, TestContext.Current.CancellationToken);
 
         await _selfServiceOpsClient.Received(1).TriggerTestSuite(
             Arg.Is("foo-tests"),
@@ -88,7 +88,72 @@ public class AuoTestRunTriggerEventHandlerTests
             .AnyTestRunExists(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        await handler.Handle("", _deploymentEvent, CancellationToken.None);
+        await handler.Handle("", _deploymentEvent, TestContext.Current.CancellationToken);
+
+        await _selfServiceOpsClient.DidNotReceiveWithAnyArgs()
+            .TriggerTestSuite(
+                Arg.Any<string>(),
+                Arg.Any<UserDetails>(),
+                Arg.Any<Deployment>(),
+                Arg.Any<TestRunSettings>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>());
+    }
+    
+    [Fact]
+    public async Task Test_it_doesnt_triggers_testsuite_for_non_complete_messages()
+    {
+        var handler = new AutoTestRunTriggerEventHandler(_deploymentsService, _autoTestRunTriggerService,
+            _testRunService,
+            _selfServiceOpsClient, new NullLogger<AutoTestRunTriggerEventHandler>());
+
+        var inProgressDeploymentEvent = new EcsDeploymentStateChangeEvent(
+            "ECS Deployment State Change",
+            "0000000000",
+            new EcsDeploymentStateChangeDetail("INFO", DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED, "ecs/1234",
+                new DateTime(), "")
+        );
+
+        await handler.Handle("", inProgressDeploymentEvent, TestContext.Current.CancellationToken);
+
+        await _selfServiceOpsClient.DidNotReceiveWithAnyArgs()
+            .TriggerTestSuite(
+                Arg.Any<string>(),
+                Arg.Any<UserDetails>(),
+                Arg.Any<Deployment>(),
+                Arg.Any<TestRunSettings>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>());
+    }
+    
+    [Fact]
+    public async Task Test_it_doesnt_triggers_testsuite_if_service_was_undeployed() 
+    {
+        var handler = new AutoTestRunTriggerEventHandler(_deploymentsService, _autoTestRunTriggerService,
+            _testRunService,
+            _selfServiceOpsClient, new NullLogger<AutoTestRunTriggerEventHandler>());
+
+        
+        var undeployment = new Deployment() { Environment = "dev", Status = DeploymentStatus.Undeployed };
+        _deploymentsService
+            .FindDeploymentByLambdaId(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(undeployment);
+
+        _autoTestRunTriggerService.FindForService(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(
+            new AutoTestRunTrigger
+            {
+                ServiceName = "foo",
+                TestSuites = new Dictionary<string, List<TestSuiteRunConfig>>
+                {
+                    { "foo-tests", [new TestSuiteRunConfig { Environments = ["dev"] }] }
+                }
+            });
+
+        _testRunService
+            .AnyTestRunExists(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        await handler.Handle("", _deploymentEvent, TestContext.Current.CancellationToken);
 
         await _selfServiceOpsClient.DidNotReceiveWithAnyArgs()
             .TriggerTestSuite(
