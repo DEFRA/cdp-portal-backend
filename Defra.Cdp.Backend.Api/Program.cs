@@ -11,6 +11,7 @@ using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Decommissioning;
+using Defra.Cdp.Backend.Api.Services.Dependencies;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -231,6 +232,17 @@ builder.Services.AddSingleton<MonoLambdaEventListener>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();
 
+// SBOM deployment pusher
+if (builder.IsDevMode())
+{
+    builder.Services.AddSingleton<ISbomExplorerClient, NoOpSbomExplorerClient>();   
+}
+else
+{
+    builder.Services.AddSingleton<ISbomExplorerClient, SbomExplorerClient>();
+}
+builder.Services.AddSingleton<ISbomEcrEventHandler, SbomEcrEventHandler>();
+builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHandler>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
