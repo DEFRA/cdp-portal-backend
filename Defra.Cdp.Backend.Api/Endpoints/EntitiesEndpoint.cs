@@ -21,7 +21,7 @@ public static class EntitiesEndpoint
     }
 
     private static async Task<IResult> StartDecommissioning(IEntitiesService entitiesService,
-        SelfServiceOpsClient selfServiceOpsClient,
+        ISelfServiceOpsClient selfServiceOpsClient,
         string repositoryName,
         [FromQuery(Name = "id")] string userId,
         [FromQuery(Name = "displayName")] string userDisplayName,

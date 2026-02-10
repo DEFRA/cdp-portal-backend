@@ -10,7 +10,7 @@ public sealed class DecommissioningService(
     ILoggerFactory loggerFactory,
     IEntitiesService entitiesService,
     IDeploymentsService deploymentsService,
-    SelfServiceOpsClient selfServiceOpsClient
+    ISelfServiceOpsClient selfServiceOpsClient
 ) : IJob
 {
     private readonly ILogger<DecommissioningService> _logger = loggerFactory.CreateLogger<DecommissioningService>();

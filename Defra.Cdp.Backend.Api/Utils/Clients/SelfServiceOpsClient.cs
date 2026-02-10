@@ -5,7 +5,22 @@ using Defra.Cdp.Backend.Api.Models;
 
 namespace Defra.Cdp.Backend.Api.Utils.Clients;
 
-public class SelfServiceOpsClient
+public interface ISelfServiceOpsClient
+{
+    Task TriggerTestSuite(string testSuite, UserDetails user, Deployment deployment,
+        TestRunSettings? testRunSettings, string? profile, CancellationToken cancellationToken);
+
+    Task AutoDeployService(string imageName, string version, string environment,
+        UserDetails user,
+        DeploymentSettings deploymentSettings,
+        string configVersion,
+        CancellationToken cancellationToken);
+
+    Task TriggerDecommissionWorkflow(string entityName, CancellationToken cancellationToken);
+    Task ScaleEcsToZero(string entityName, UserDetails user, CancellationToken cancellationToken);
+}
+
+public class SelfServiceOpsClient : ISelfServiceOpsClient
 {
     private readonly string _baseUrl;
     private readonly HttpClient _client;
