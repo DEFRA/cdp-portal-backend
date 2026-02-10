@@ -9,7 +9,7 @@ using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.AutoTestRunTriggers;
 
-public class AuoTestRunTriggerEventHandlerTests
+public class AutoTestRunTriggerEventHandlerTests
 {
     private IDeploymentsService _deploymentsService = Substitute.For<IDeploymentsService>();
     private IAutoTestRunTriggerService _autoTestRunTriggerService = Substitute.For<IAutoTestRunTriggerService>();
