@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using InsertOneOptions = MongoDB.Driver.InsertOneOptions;
 
@@ -13,8 +14,7 @@ public interface ITestRunService
     
     public Task<TestRun?> FindTestRun(string runId, CancellationToken ct);
     
-    public Task<Paginated<TestRun>> FindTestRunsForTestSuite(string suite, int offset = 0, int page = 0, int size = 0,
-        CancellationToken ct = new());
+    public Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset = 0, int page = 0, int size = 0, CancellationToken ct = default);
     
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct);
 
@@ -48,29 +48,17 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
         return await Collection.Find(t => t.RunId == runId).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<Paginated<TestRun>> FindTestRunsForTestSuite(
-        string suite,
-        int offset,
-        int page,
-        int size,
-        CancellationToken ct)
+    public async Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct)
     {
-        var builder = Builders<TestRun>.Filter;
-        var filter = builder.Empty;
-
-        if (!string.IsNullOrWhiteSpace(suite))
-        {
-            var testRunFilter = builder.Where(t => t.TestSuite == suite);
-            filter &= testRunFilter;
-        }
-
+        var filter = matcher.Match();
+        Console.WriteLine(filter.ToBsonDocument());
         var testRuns = await Collection
-            .Find(t => t.TestSuite == suite)
+            .Find(filter)
             .Skip(offset + size * (page - DefaultPage))
             .Limit(size)
             .SortByDescending(t => t.Created)
             .ToListAsync(ct);
-
+        
         var totalTestRuns = await Collection.CountDocumentsAsync(filter, cancellationToken: ct);
         var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalTestRuns / size));
 
