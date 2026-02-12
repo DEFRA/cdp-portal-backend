@@ -26,13 +26,28 @@ public static class TestSuiteEndpoint
     }
 
     private static async Task<IResult> FindTestRunsForSuite([FromServices] ITestRunService testRunService,
-        string name,
+        [FromQuery(Name = "name")] string? name,
+        [FromQuery(Name = "environment")] string? environment,
+        [FromQuery(Name = "testStatus")] string[]? testStatus,
+        [FromQuery(Name = "taskStatus")] string[]? taskStatus,
+        [FromQuery(Name = "start")] DateTime? start,
+        [FromQuery(Name = "end")] DateTime? end,
         [FromQuery(Name = "offset")] int? offset,
         [FromQuery(Name = "page")] int? page,
         [FromQuery(Name = "size")] int? size,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
-        var result = await testRunService.FindTestRunsForTestSuite(name, offset ?? 0,
+        var matcher = new TestRunMatcher
+        {
+            Name = name,
+            Environment = environment,
+            TaskStatus = taskStatus,
+            TestStatus = testStatus,
+            Start = start,
+            End = end,
+        };
+
+        var result = await testRunService.FindTestRuns(matcher, offset ?? 0,
             page ?? TestRunService.DefaultPage,
             size ?? TestRunService.DefaultPageSize, cancellationToken);
         return Results.Ok(result);
@@ -44,5 +59,4 @@ public static class TestSuiteEndpoint
         await testRunService.CreateTestRun(testRun, cancellationToken);
         return Results.Created($"test-run/{testRun.RunId}", null);
     }
-
 }

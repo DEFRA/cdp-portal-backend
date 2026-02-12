@@ -8,10 +8,10 @@ namespace Defra.Cdp.Backend.Api.Models;
 public class FailureReason(string containerName, string reason)
 {
     [property: JsonPropertyName("containerName")]
-    public string ContainerName { get; set; } = containerName;
+    public string ContainerName { get; init; } = containerName;
 
     [property: JsonPropertyName("reason")]
-    public string Reason { get; set; } = reason;
+    public string Reason { get; init; } = reason;
 
     protected bool Equals(FailureReason other)
     {
