@@ -109,6 +109,8 @@ public class TestSuiteEndpointTests : MongoTestSupport
             Environment = "prod",
             ConfigVersion = "00000000",
             TestSuite = "my-test-suite",
+            TaskStatus = "starting",
+            TestStatus = "failed",
             User = new UserDetails { DisplayName = "user1", Id = "1" }
         };
         var resp = await client.PostAsJsonAsync("/test-run", createTestProd,
@@ -121,18 +123,41 @@ public class TestSuiteEndpointTests : MongoTestSupport
             Environment = "dev",
             ConfigVersion = "00000000",
             TestSuite = "my-test-suite",
+            TaskStatus = "starting",
+            TestStatus = "passed",
             User = new UserDetails { DisplayName = "user1", Id = "1" }
         };
         resp = await client.PostAsJsonAsync("/test-run", createTestDev,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
 
-        var search = await client.GetAsync("/test-run?name=my-test-suite&environment=prod",
-            TestContext.Current.CancellationToken);
-        var run = await search.Content.ReadFromJsonAsync<Paginated<TestRun>>(TestContext.Current.CancellationToken);
-
-        Assert.NotNull(run);
-        Assert.Single(run.Data);
-        Assert.Equal("prod", run.Data[0].Environment);
+        {
+            // Environment
+            var search = await client.GetAsync("/test-run?name=my-test-suite&environment=prod",
+                TestContext.Current.CancellationToken);
+            var run = await search.Content.ReadFromJsonAsync<Paginated<TestRun>>(TestContext.Current.CancellationToken);
+            Assert.NotNull(run);
+            Assert.Single(run.Data);
+            Assert.Equal("prod", run.Data[0].Environment);
+        }
+        
+        {
+            // Test Status
+            var search = await client.GetAsync("/test-run?name=my-test-suite&testStatus=passed",
+                TestContext.Current.CancellationToken);
+            var run = await search.Content.ReadFromJsonAsync<Paginated<TestRun>>(TestContext.Current.CancellationToken);
+            Assert.NotNull(run);
+            Assert.Single(run.Data);
+            Assert.Equal("5432", run.Data[0].RunId);
+        }
+        
+        {
+            // Task Status
+            var search = await client.GetAsync("/test-run?taskStatus=starting",
+                TestContext.Current.CancellationToken);
+            var run = await search.Content.ReadFromJsonAsync<Paginated<TestRun>>(TestContext.Current.CancellationToken);
+            Assert.NotNull(run);
+            Assert.Equal(2, run.Data.Count);
+        }
     }
 }

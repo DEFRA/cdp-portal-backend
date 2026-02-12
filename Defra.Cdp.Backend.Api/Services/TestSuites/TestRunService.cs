@@ -14,7 +14,7 @@ public interface ITestRunService
     
     public Task<TestRun?> FindTestRun(string runId, CancellationToken ct);
     
-    public Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset = 0, int page = 0, int size = 0, CancellationToken ct = default);
+    public Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct = default);
     
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct);
 
@@ -51,7 +51,6 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
     public async Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct)
     {
         var filter = matcher.Match();
-        Console.WriteLine(filter.ToBsonDocument());
         var testRuns = await Collection
             .Find(filter)
             .Skip(offset + size * (page - DefaultPage))
