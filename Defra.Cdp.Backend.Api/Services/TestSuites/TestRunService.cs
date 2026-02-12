@@ -14,7 +14,7 @@ public interface ITestRunService
     
     public Task<TestRun?> FindTestRun(string runId, CancellationToken ct);
     
-    public Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct = default);
+    public Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct);
     
     public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct);
 
