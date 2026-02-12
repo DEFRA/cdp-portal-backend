@@ -22,5 +22,6 @@ public class Paginated<T>
         pageSize = PageSize;
         totalPages = TotalPages;
     }
-
 }
+
+public record Pagination(int? Offset, int? Page, int? Size);
