@@ -43,7 +43,6 @@ public class EcrEventListener(
 }
 
 public class EcrEventHandler(
-        IArtifactScanner artifactScanner,
         IDeployableArtifactsService artifactsService,
         IAutoDeploymentTriggerExecutor autoDeploymentTriggerExecutor,
         ISbomEcrEventHandler sbomEcrEventHandler,
@@ -52,10 +51,9 @@ public class EcrEventHandler(
     public async Task Handle(string id, string body, CancellationToken cancellationToken)
     {
         logger.LogInformation("Starting processing ECR Event {Id}", id);
-        // AWS JSON messages are sent in with their " escaped (\"), in order to parse, they must be unescaped
+        
         var ecrEvent = JsonSerializer.Deserialize<SqsEcrEvent>(body);
-
-        // Only scan push event for images that have a semver tag (i.e. ignore latest and anything else)
+        
         if (ecrEvent?.Detail == null)
         {
             logger.LogInformation("Not processing {Id}, failed to process json", id);
@@ -64,18 +62,19 @@ public class EcrEventHandler(
 
         if (ecrEvent.Detail.Result != "SUCCESS")
         {
-            logger.LogInformation("Processing ECR Event {Id}, failed to process json", id);
+            logger.LogInformation("Skipping non-success ECR message");
             return;
         }
 
         switch (ecrEvent.Detail.ActionType)
         {
             case "PUSH" when !SemVer.IsSemVer(ecrEvent.Detail.ImageTag):
+                // Portal only accepts semver tagged artifacts
                 logger.LogInformation("Not processing {Id}, tag [{ImageTag}] is not semver", id, ecrEvent.Detail.ImageTag);
                 break;
             case "PUSH":
-                var scanResult = await artifactScanner.ScanImage(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
-                logger.LogInformation("Scanned {Sha256} ({Repo}:{Tag}) {Result}", scanResult.Artifact?.Sha256, scanResult.Artifact?.Repo, scanResult.Artifact?.Tag, scanResult.Success ? "OK" : "FAILED");
+                logger.LogInformation("Processing {Sha256} ({Repo}:{Tag})", ecrEvent.Detail.ImageDigest, ecrEvent.Detail.RepositoryName,ecrEvent.Detail.ImageTag);
+                await PersistArtifact(ecrEvent, cancellationToken);
                 await sbomEcrEventHandler.Handle(cancellationToken);
                 await autoDeploymentTriggerExecutor.Handle(ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, cancellationToken);
                 break;
@@ -86,6 +85,21 @@ public class EcrEventHandler(
             default:
                 logger.LogInformation("Not processing {id}, message is not a PUSH or DELETE event", id);
                 break;
+        }
+    }
+
+    private async Task PersistArtifact(SqsEcrEvent ecrEvent, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var artifact = DeployableArtifact.FromEcrEvent(ecrEvent);
+            await artifactsService.CreateAsync(artifact, cancellationToken);
+            logger.LogInformation("Persisted artifact {Repo}:{Tag}", ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            // Currently we only store sem-ver artifacts, we may reconsider thing going forward 
+            logger.LogWarning("{Repo}:{Tag} is not semver, skipping ({Msg})", ecrEvent.Detail.RepositoryName, ecrEvent.Detail.ImageTag, ex.Message);
         }
     }
 }

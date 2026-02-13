@@ -41,12 +41,11 @@ public static partial class SemVer
                 case 'v': // skip v prefixes
                     break;
                 default:
-                    throw new Exception($"Invalid SemVer {input}");
+                    throw new ArgumentOutOfRangeException(nameof(input), input, "Is not valid semver");
             }
 
         result |= (long)part << shift;
 
         return result;
     }
-
 }

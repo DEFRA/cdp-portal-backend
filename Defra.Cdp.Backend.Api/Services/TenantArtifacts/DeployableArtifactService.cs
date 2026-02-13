@@ -11,13 +11,7 @@ public interface IDeployableArtifactsService
 
     Task<bool> RemoveAsync(string service, string tag, CancellationToken cancellationToken);
 
-    Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken);
     Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken);
-
-    Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, CancellationToken cancellationToken);
-
-    Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, IEnumerable<string> groups,
-        CancellationToken cancellationToken);
 
     Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
 
@@ -59,31 +53,9 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         return result.DeletedCount == 1;
     }
 
-    public async Task<List<DeployableArtifact>> FindAll(CancellationToken cancellationToken)
-    {
-        return await Collection.Find(FilterDefinition<DeployableArtifact>.Empty).ToListAsync(cancellationToken);
-    }
-
     public async Task<List<DeployableArtifact>> FindAll(string repo, CancellationToken cancellationToken)
     {
         return await Collection.Find(a => a.Repo == repo).ToListAsync(cancellationToken);
-    }
-
-    public async Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, CancellationToken cancellationToken)
-    {
-        return await Collection
-            .Distinct(d => d.Repo, d => d.RunMode == runMode.ToString().ToLower(), cancellationToken: cancellationToken)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<List<string>> FindAllRepoNames(ArtifactRunMode runMode, IEnumerable<string> groups,
-        CancellationToken cancellationToken)
-    {
-        return await Collection
-            .Distinct(d => d.Repo,
-                d => d.RunMode == runMode.ToString().ToLower() && d.Teams.Any(t => groups.Contains(t.TeamId)),
-                cancellationToken: cancellationToken)
-            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken)
@@ -111,14 +83,10 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(
         IndexKeysDefinitionBuilder<DeployableArtifact> builder)
     {
-        var githubUrlIndex = new CreateIndexModel<DeployableArtifact>(builder.Ascending(r => r.GithubUrl));
         var repoAndTagIndex =
             new CreateIndexModel<DeployableArtifact>(builder.Combine(builder.Ascending(r => r.Repo),
                 builder.Ascending(r => r.Tag)));
         var hashIndex = new CreateIndexModel<DeployableArtifact>(builder.Ascending(r => r.Sha256));
-        var teamIdIndex = new CreateIndexModel<DeployableArtifact>(
-            builder.Ascending(d => d.Teams.Select(t => t.TeamId)),
-            new CreateIndexOptions { Sparse = true });
-        return [githubUrlIndex, repoAndTagIndex, hashIndex, teamIdIndex];
+        return [repoAndTagIndex, hashIndex];
     }
 }

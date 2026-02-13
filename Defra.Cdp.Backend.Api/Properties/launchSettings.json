@@ -19,7 +19,6 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "AWS_EMF_ENVIRONMENT": "Local",
-        "Docker__RegistryUrl": "http://localhost:3939",
         "Mongo__DatabaseUri": "mongodb://127.0.0.1:27017",
         "AzureAd__Instance": "http://localhost:3939/",
         "AzureAd__RequireHttpsMetadata": "false",

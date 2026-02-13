@@ -1,6 +1,3 @@
-using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Aws;
-using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
 namespace Defra.Cdp.Backend.Api.Services.Dependencies;

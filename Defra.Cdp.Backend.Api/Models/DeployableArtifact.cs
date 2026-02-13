@@ -21,32 +21,27 @@ public sealed class DeployableArtifact
 
     public string Sha256 { get; init; } = default!;
 
-    public string? GithubUrl { get; init; } = default!;
-
     public string? ServiceName { get; init; } = default!;
 
     public int ScannerVersion { get; init; } = default!;
 
-    public IEnumerable<RepositoryTeam> Teams { get; init; } = default!;
-
-    // TODO: replace this with references to the layers, maybe something like: {filename: layer}?  
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public List<DeployableArtifactFile> Files { get; init; } = [];
-
     public long? SemVer { get; init; }
 
-    // Is it a microservice or a test job
-    public string? RunMode { get; init; } = default;
+    public static DeployableArtifact FromEcrEvent(SqsEcrEvent ecrEvent)
+    {
+        var semver =  Defra.Cdp.Backend.Api.Utils.SemVer.SemVerAsLong(ecrEvent.Detail.ImageTag);
+
+        return new DeployableArtifact
+        {
+            ScannerVersion = 1,
+            ServiceName = ecrEvent.Detail.RepositoryName,
+            Repo = ecrEvent.Detail.RepositoryName,
+            Tag = ecrEvent.Detail.ImageTag,
+            SemVer = semver,
+            Sha256 = ecrEvent.Detail.ImageDigest,
+        };
+    }
 }
-
-public sealed record DeployableArtifactFile(string FileName, string Path, string LayerSha256);
-
-public sealed record ServiceInfo(
-    string ServiceName,
-    string? GithubUrl,
-    string ImageName,
-    IEnumerable<RepositoryTeam> Teams);
-
 
 public sealed record ArtifactVersion(string Name, string Version);
 

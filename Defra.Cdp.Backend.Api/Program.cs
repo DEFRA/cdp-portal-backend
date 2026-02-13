@@ -122,7 +122,6 @@ builder.Services.Configure<GithubWorkflowEventListenerOptions>(
     builder.Configuration.GetSection(GithubWorkflowEventListenerOptions.Prefix));
 builder.Services.Configure<PlatformEventListenerOptions>(
     builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
-builder.Services.Configure<DockerServiceOptions>(builder.Configuration.GetSection(DockerServiceOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.Configure<CloudWatchMetricsOptions>(builder.Configuration.GetSection(CloudWatchMetricsOptions.Prefix));
 builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
@@ -131,17 +130,7 @@ builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentV
 // AWS Clients
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 
-// GitHub credential factory for the cron job
-if (builder.IsDevMode())
-{
-    builder.Services.AddSingleton<IDockerCredentialProvider, EmptyDockerCredentialProvider>();
-}
-else
-{
-    builder.Services.AddSingleton<IAmazonECR, AmazonECRClient>();
-    builder.Services.AddSingleton<IDockerCredentialProvider, EcrCredentialProvider>();
-}
-
+// GitHub related services
 builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
 builder.Services.AddTransient<PopulateGithubRepositories>();
 builder.Services.AddTransient<RepositoryCreationPoller>();
@@ -152,13 +141,10 @@ builder.Services.AddSingleton<IJobFactory, MicrosoftDependencyInjectionJobFactor
 builder.Services.AddHostedService<QuartzSchedulersHostedService>();
 
 // Setting up our services
-builder.Services.AddSingleton<IDockerClient, DockerClient>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
-builder.Services.AddSingleton<ILayerService, LayerService>();
-builder.Services.AddSingleton<IArtifactScanner, ArtifactScanAndStore>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
 builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
 builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();
