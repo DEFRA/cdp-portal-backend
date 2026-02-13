@@ -5,26 +5,25 @@ using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Dependencies;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Aws;
 
 public class EcrEventListenerTest
 {
-    private readonly IArtifactScanner _docker = Substitute.For<IArtifactScanner>();
+    private static readonly ILogger<EcrEventListener> s_logger = NullLogger<EcrEventListener>.Instance;
     private readonly IDeployableArtifactsService _artifacts = Substitute.For<IDeployableArtifactsService>();
-    private static readonly ILogger<EcrEventListener> s_logger = ConsoleLogger.CreateLogger<EcrEventListener>();
     private readonly IAutoDeploymentTriggerExecutor _autoDeploymentTriggerExecutor = Substitute.For<IAutoDeploymentTriggerExecutor>();
     private readonly ISbomEcrEventHandler _sbomEventHandler = Substitute.For<ISbomEcrEventHandler>();
     
     [Fact]
     public async Task TestInvalidMessage()
     {
-        var handler = new EcrEventHandler(_docker, _artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
-        var act = () => handler.Handle("123", "invalid", CancellationToken.None);
+        var handler = new EcrEventHandler(_artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
+        Task Act() => handler.Handle("123", "invalid", CancellationToken.None);
+        await Assert.ThrowsAsync<JsonException>(Act);
 
-        await Assert.ThrowsAsync<JsonException>(act);
-        await _docker.DidNotReceive().ScanImage(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _artifacts.DidNotReceive()
             .RemoveAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _autoDeploymentTriggerExecutor.DidNotReceive()
@@ -53,16 +52,14 @@ public class EcrEventListenerTest
                           }
                       }
                       """;
-        _docker.ScanImage("my-repository-name", "0.1.0", Arg.Any<CancellationToken>()).Returns(
-            new ArtifactScannerResult(new DeployableArtifact()
-            {
-                Repo = "my-repository-name",
-                Tag = "0.1.0",
-                Sha256 = "sha256:7f5b2640fe6fb4f46592dfd3410c4a79dac4f89e4782432e0378abcd1234"
-            }));
-        var handler = new EcrEventHandler(_docker, _artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
+
+        var handler = new EcrEventHandler(_artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
         await handler.Handle("123", message, CancellationToken.None);
-        await _docker.Received().ScanImage(Arg.Is("my-repository-name"), Arg.Is("0.1.0"), Arg.Any<CancellationToken>());
+
+        await _artifacts
+            .Received()
+            .CreateAsync(
+                Arg.Is<DeployableArtifact>(d => d.Repo ==  "my-repository-name" && d.Tag == "0.1.0" && d.Sha256 == "sha256:7f5b2640fe6fb4f46592dfd3410c4a79dac4f89e4782432e0378abcd1234"), Arg.Any<CancellationToken>());
         await _artifacts.DidNotReceive()
             .RemoveAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _autoDeploymentTriggerExecutor.Received()
@@ -92,10 +89,11 @@ public class EcrEventListenerTest
                           }
                       }
                       """;
-        var handler = new EcrEventHandler(_docker, _artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
+        var handler = new EcrEventHandler(_artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
         await handler.Handle("123", message, CancellationToken.None);
-        await _docker.DidNotReceive()
-            .ScanImage(Arg.Is("my-repository-name"), Arg.Is("0.1.0"), Arg.Any<CancellationToken>());
+       
+        await _artifacts.DidNotReceive()
+            .CreateAsync(Arg.Any<DeployableArtifact>(), Arg.Any<CancellationToken>());
         await _artifacts.DidNotReceive()
             .RemoveAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _autoDeploymentTriggerExecutor.DidNotReceive()
@@ -126,9 +124,11 @@ public class EcrEventListenerTest
                       }
                       """;
 
-        var handler = new EcrEventHandler(_docker, _artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
+        var handler = new EcrEventHandler(_artifacts, _autoDeploymentTriggerExecutor, _sbomEventHandler, s_logger);
         await handler.Handle("123", message, CancellationToken.None);
-        await _docker.DidNotReceive().ScanImage(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        
+        await _artifacts.DidNotReceive()
+            .CreateAsync(Arg.Any<DeployableArtifact>(), Arg.Any<CancellationToken>());
         await _artifacts.Received()
             .RemoveAsync(Arg.Is("my-repository-name"), Arg.Is("0.1.0"), Arg.Any<CancellationToken>());
         await _autoDeploymentTriggerExecutor.DidNotReceive()

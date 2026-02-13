@@ -2,13 +2,9 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Endpoints;
-using Defra.Cdp.Backend.Api.Endpoints.Validators;
-using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -33,7 +29,6 @@ public class CdpNotifyTest
     public async Task TestCdpNotifyHasNotBeenBroken()
     {
         var entitiesService = Substitute.For<IEntitiesService>();
-        var layerService = Substitute.For<ILayerService>();
         var userServiceFetcher = Substitute.For<IUserServiceBackendClient>();
 
         var builder = new WebHostBuilder()
@@ -41,7 +36,6 @@ public class CdpNotifyTest
             {
                 services.AddRouting();
                 services.AddSingleton(entitiesService);
-                services.AddSingleton(layerService);
                 services.AddSingleton(userServiceFetcher);
             })
             .Configure(app =>
