@@ -3,6 +3,7 @@ using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
+using Defra.Cdp.Backend.Api.Services.Teams;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,7 +40,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (!string.IsNullOrWhiteSpace(team))
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntityIds(new EntityMatcher { TeamId = team }, cancellationToken)).ToArray();
         }
 
         var query = new DeploymentMatchers
@@ -69,6 +70,7 @@ public static class DeploymentsEndpoint
         [FromQuery(Name = "user")] string? user,
         [FromQuery(Name = "status")] string? status,
         [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "teams")] string[]? teams,
         [FromQuery(Name = "kind")] string? kind,
         [FromQuery(Name = "offset")] int? offset,
         [FromQuery(Name = "page")] int? page,
@@ -78,7 +80,12 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (!string.IsNullOrWhiteSpace(team))
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamId = team }, cancellationToken)).ToArray();
+        }
+        
+        if (teams is { Length: > 0 })
+        {
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamIds = teams }, cancellationToken)).ToArray();
         }
 
         var query = new DeploymentMatchers
@@ -106,15 +113,12 @@ public static class DeploymentsEndpoint
     // GET /deployments/filters
     private static async Task<IResult> GetDeploymentsFilters(
         IDeploymentsService deploymentsService,
-        IUserServiceBackendClient userServiceBackendClient,
+        ITeamsService teamsService,
         CancellationToken cancellationToken)
     {
         var deploymentFilters = await deploymentsService.GetDeploymentsFilters(cancellationToken);
-        var teamRecord = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
-        if (teamRecord != null)
-        {
-            deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
-        }
+        var teamRecord = await teamsService.FindAll(cancellationToken);
+        deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.Github, t.TeamId, t.TeamName)).ToList();
         return Results.Ok(new { Filters = deploymentFilters });
     }
 
@@ -135,6 +139,7 @@ public static class DeploymentsEndpoint
         [FromQuery(Name = "environments")] string[]? environments,
         [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "teams")] string[]? teams,
         [FromQuery(Name = "user")] string? user,
         [FromQuery(Name = "status")] string? status,
         CancellationToken cancellationToken)
@@ -142,7 +147,12 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (!string.IsNullOrWhiteSpace(team))
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamId = team }, cancellationToken)).ToArray();
+        }
+        
+        if (teams is { Length: > 0 })
+        {
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamIds = teams }, cancellationToken)).ToArray();
         }
 
         var deployments = await deploymentsService.RunningDeploymentsForService(

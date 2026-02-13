@@ -13,6 +13,7 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 public interface IEntitiesService
 {
     Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
+    Task<List<string>> GetEntityIds(EntityMatcher matcher, CancellationToken cancellationToken);
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken); //Used for tests
 
     Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options,
@@ -75,6 +76,28 @@ public class EntitiesService(
         entity?.CalculateOverallProgress();
 
         return entity;
+    }
+
+    /// <summary>
+    /// Returns a list of entity names (ids) that match a given matcher.
+    /// Useful when you don't want to pull back the rest of the entity to perform a check/lookup etc.
+    /// </summary>
+    /// <param name="matcher"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<List<string>> GetEntityIds(EntityMatcher matcher, CancellationToken cancellationToken)
+    {
+        var sortBuilder = Builders<Entity>.Sort;
+        var projectionBuilder = Builders<Entity>.Projection;
+        ProjectionDefinition<Entity, Entity> projectDefinition = projectionBuilder.Include(e => e.Name);
+
+        var entityNames = await Collection
+            .Find(matcher.Match())
+            .Sort(sortBuilder.Ascending(e => e.Name))
+            .Project(projectDefinition)
+            .ToListAsync(cancellationToken);
+
+        return entityNames.Select(e => e.Name).ToList();
     }
 
     /// <summary>

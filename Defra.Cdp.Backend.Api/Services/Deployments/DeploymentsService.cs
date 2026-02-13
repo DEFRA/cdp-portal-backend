@@ -264,11 +264,9 @@ public class DeploymentsService(
 
         if (query.Favourites?.Length > 0)
         {
-            var entities = await entitiesService.GetEntities(
+            var servicesOwnedByTeam = await entitiesService.GetEntityIds(
                 new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites },
-                new EntitySearchOptions { Summary = true },
                 ct);
-            var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.Service)).ToList();
         }
 
@@ -325,13 +323,12 @@ public class DeploymentsService(
         //  we may be able to do this in an easier way in the UI
         if (query.Favourites?.Length > 0)
         {
-            var entities = await entitiesService.GetEntities(
+            var servicesOwnedByTeam = await entitiesService.GetEntityIds(
                 new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites },
-                new EntitySearchOptions { Summary = true },
                 ct);
-            var servicesOwnedByTeam = entities.Select(r => r.Name);
+            
             deployments = deployments.OrderByDescending(d =>
-                servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service)
+                servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service ?? "")
             ).ToList();
         }
 

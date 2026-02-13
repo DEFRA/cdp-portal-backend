@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public record RepositoryTeam(string Github, string? TeamId, string? Name);
+public record RepositoryTeam(string? Github, string? TeamId, string? Name);
 
 public sealed class Repository : IEquatable<Repository>
 {
