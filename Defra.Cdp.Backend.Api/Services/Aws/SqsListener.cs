@@ -54,6 +54,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             try
             {
                 receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
+                if (receiveMessageResponse.Messages == null) continue;
                 if (receiveMessageResponse.Messages.Count == 0) continue;
 
                 foreach (var message in receiveMessageResponse.Messages)
