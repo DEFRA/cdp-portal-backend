@@ -42,6 +42,8 @@ using Microsoft.Identity.Web;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Driver;
+using MongoDB.Driver.Authentication.AWS;
 using Quartz.Simpl;
 using Quartz.Spi;
 using Serilog;
@@ -107,6 +109,10 @@ BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<S
 
 
 // Mongo
+
+MongoClientSettings.Extensions.AddAWSAuthentication();
+builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
+builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
 builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
     new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri"),
         builder.Configuration.GetValue<string>("Mongo:DatabaseName")));
