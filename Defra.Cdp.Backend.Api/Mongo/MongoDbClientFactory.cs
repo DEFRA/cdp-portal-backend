@@ -7,7 +7,6 @@ namespace Defra.Cdp.Backend.Api.Mongo;
 
 public class MongoDbClientFactory : IMongoDbClientFactory
 {
-    private readonly string _connectionString;
     private readonly IMongoDatabase _mongoDatabase;
     private IMongoClient _client;
 
@@ -22,13 +21,7 @@ public class MongoDbClientFactory : IMongoDbClientFactory
         if (string.IsNullOrWhiteSpace(databaseName))
             throw new ArgumentException("MongoDB database name cannot be empty");
 
-        var settings = MongoClientSettings.FromConnectionString(uri);
-        _client = new MongoClient(settings);
-
-        var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
-        // convention must be registered before initialising collection
-        ConventionRegistry.Register("CamelCase", camelCaseConvention, _ => true);
-        _connectionString = uri;
+        _client = CreateClient(uri);
         _mongoDatabase = _client.GetDatabase(databaseName);
     }
     
@@ -36,14 +29,13 @@ public class MongoDbClientFactory : IMongoDbClientFactory
     {
         if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(databaseName))
             throw new ArgumentException("MongoDB connection string and database name cannot be empty");
-        _connectionString = connectionString;
-        _client = CreateClient();
+        _client = CreateClient(connectionString);
         _mongoDatabase = _client.GetDatabase(databaseName);
     }
 
-    public IMongoClient CreateClient()
+    private IMongoClient CreateClient(string connectionString)
     {
-        var settings = MongoClientSettings.FromConnectionString(_connectionString);
+        var settings = MongoClientSettings.FromConnectionString(connectionString);
         _client = new MongoClient(settings);
         var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
         // convention must be registered before initialising collection

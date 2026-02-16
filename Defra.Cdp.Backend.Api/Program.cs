@@ -113,10 +113,6 @@ BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<S
 MongoClientSettings.Extensions.AddAWSAuthentication();
 builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
 builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
-builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
-    new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri"),
-        builder.Configuration.GetValue<string>("Mongo:DatabaseName")));
-
 
 // Setup the services
 builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSection(EcsEventListenerOptions.Prefix));
