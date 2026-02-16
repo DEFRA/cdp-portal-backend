@@ -17,7 +17,6 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
     CollectionName,
     loggerFactory), IServiceCodeCostsService
 {
-    private ILogger _logger = loggerFactory.CreateLogger("ServiceCodeCostsService");
     public const string CollectionName = "servicecodecosts";
 
     protected override List<CreateIndexModel<ServiceCodeCostsRecord>> DefineIndexes(IndexKeysDefinitionBuilder<ServiceCodeCostsRecord> builder)
@@ -29,13 +28,12 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
 
     public async Task PersistEvent(CommonEvent<ServiceCodeCostsPayload> workflowEvent, CancellationToken cancellationToken)
     {
-        var logger = loggerFactory.CreateLogger("ServiceCodeCostsService");
         var payload = workflowEvent.Payload;
         var eventType = workflowEvent.EventType;
         var eventTimestamp = workflowEvent.Timestamp;
         var environment = payload.Environment;
 
-        logger.LogInformation("Service code cost reports for eventType {eventType} received", eventType);
+        Logger.LogInformation("Service code cost reports for eventType {eventType} received", eventType);
 
         var records = payload.CostReports.Select(rep =>
           ServiceCodeCostsRecord.FromPayloads(eventType, eventTimestamp, environment, rep)).ToList();
@@ -71,11 +69,11 @@ public class ServiceCodeCostsService(IMongoDbClientFactory connectionFactory, IL
     private List<ServiceCodeCostsRecord> onlyLatestReports(List<ServiceCodeCostsRecord> costsRecords)
     {
         return costsRecords.GroupBy(r => r.Environment)
-                           .SelectMany(r => r.GroupBy(r => r.ServiceCode))
-                           .SelectMany(r => r.GroupBy(r => r.AwsService))
-                           .SelectMany(r => r.GroupBy(r => r.CostReport.DateFrom))
-                           .Select(r => r.OrderByDescending(r => r.EventTimestamp)
-                                         .OrderByDescending(r => r.CreatedAt)
+                           .SelectMany(r => r.GroupBy(g => g.ServiceCode))
+                           .SelectMany(r => r.GroupBy(g => g.AwsService))
+                           .SelectMany(r => r.GroupBy(g => g.CostReport.DateFrom))
+                           .Select(r => r.OrderByDescending(g => g.EventTimestamp)
+                                         .ThenByDescending(g => g.CreatedAt)
                                          .First())
                            .ToList();
     }

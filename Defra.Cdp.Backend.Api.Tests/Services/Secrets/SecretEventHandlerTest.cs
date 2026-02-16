@@ -17,7 +17,7 @@ public class SecretEventHandlerTest
         var eventHandler = new SecretEventHandler(service, pendingSecretsService,
             ConsoleLogger.CreateLogger<SecretEventHandler>());
 
-        var mockPayload = SecretEventHandler.TryParseMessage(await File.ReadAllTextAsync("Resources/payload-get-all-secrets.json"));
+        var mockPayload = SecretEventHandler.TryParseMessage(await File.ReadAllTextAsync("Resources/payload-get-all-secrets.json", TestContext.Current.CancellationToken));
 
         Assert.NotNull(mockPayload);
         service

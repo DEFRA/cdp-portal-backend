@@ -75,14 +75,14 @@ public class FeatureTogglesService(
 public class FeatureToggle
 {
     [property: JsonPropertyName("id")]
-    public string Id { get; init; } = default;
+    public required string Id { get; init; }
 
     [property: JsonPropertyName("name")]
-    public string Name { get; init; } = default!;
+    public string Name { get; init; } = "";
 
     [property: JsonPropertyName("url")]
-    public string Url { get; init; } = default!;
+    public string Url { get; init; } = "";
 
     [property: JsonPropertyName("active")]
-    public bool Active { get; init; } = default!;
+    public bool Active { get; init; }
 }

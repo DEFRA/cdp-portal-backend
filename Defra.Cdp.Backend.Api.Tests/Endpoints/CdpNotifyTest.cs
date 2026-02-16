@@ -82,13 +82,13 @@ public class CdpNotifyTest
      */
     record CdpNotifyTeam
     {
-        [JsonPropertyName("teamId")] public string TeamId { get; init; }
+        [JsonPropertyName("teamId")] public required string TeamId { get; init; }
 
-        [JsonPropertyName("name")] public string Name { get; init; }
+        [JsonPropertyName("name")] public required string Name { get; init; }
     }
 
     record CdpNotifyService
     {
-        [JsonPropertyName("teams")] public List<CdpNotifyTeam> teams { get; init; }
+        [JsonPropertyName("teams")] public required List<CdpNotifyTeam> teams { get; init; }
     }
 }

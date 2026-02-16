@@ -17,12 +17,7 @@ public static class TestSuiteEndpoint
         CancellationToken cancellationToken)
     {
         var result = await testRunService.FindTestRun(runId, cancellationToken);
-        if (result == null)
-        {
-            return Results.NotFound();
-        }
-
-        return Results.Ok(result);
+        return result == null ? Results.NotFound() : Results.Ok(result);
     }
 
     private static async Task<IResult> FindTestRunsForSuite(

@@ -25,15 +25,9 @@ public static class DeploymentsEndpoint
 
     // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
     private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
-        [FromQuery(Name = "favourites")] string[]? favourites,
-        [FromQuery(Name = "environment")] string? environment,
-        [FromQuery(Name = "service")] string? service,
-        [FromQuery(Name = "user")] string? user,
-        [FromQuery(Name = "status")] string? status,
         [FromQuery(Name = "team")] string? team,
-        [FromQuery(Name = "offset")] int? offset,
-        [FromQuery(Name = "page")] int? page,
-        [FromQuery(Name = "size")] int? size,
+        [AsParameters] DeploymentMatchers matchers,
+        [AsParameters] Pagination pagination,
         CancellationToken cancellationToken)
     {
         string[]? servicesForTeam = null;
@@ -42,37 +36,22 @@ public static class DeploymentsEndpoint
             servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
-        var query = new DeploymentMatchers
-        {
-            Favourites = favourites,
-            Environment = environment,
-            Service = service,
-            User = user,
-            Status = status,
-            Services = servicesForTeam,
-        };
+        var query = matchers with { Services = servicesForTeam };
 
         var deploymentsPage = await deploymentsService.FindLatest(
             query,
-            offset ?? 0,
-            page ?? DeploymentsService.DefaultPage,
-            size ?? DeploymentsService.DefaultPageSize,
+            pagination.Offset ?? 0,
+            pagination.Page ?? DeploymentsService.DefaultPage,
+            pagination.Size ?? DeploymentsService.DefaultPageSize,
             cancellationToken
         );
         return Results.Ok(deploymentsPage);
     }
 
     private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
-        [FromQuery(Name = "favourites")] string[]? favourites,
-        [FromQuery(Name = "environment")] string? environment,
-        [FromQuery(Name = "service")] string? service,
-        [FromQuery(Name = "user")] string? user,
-        [FromQuery(Name = "status")] string? status,
         [FromQuery(Name = "team")] string? team,
-        [FromQuery(Name = "kind")] string? kind,
-        [FromQuery(Name = "offset")] int? offset,
-        [FromQuery(Name = "page")] int? page,
-        [FromQuery(Name = "size")] int? size,
+        [AsParameters] DeploymentMatchers matchers,
+        [AsParameters] Pagination pagination,
         CancellationToken cancellationToken)
     {
         string[]? servicesForTeam = null;
@@ -81,23 +60,13 @@ public static class DeploymentsEndpoint
             servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
-        var query = new DeploymentMatchers
-        {
-            Favourites = favourites,
-            Environment = environment,
-            Service = service,
-            User = user,
-            Status = status,
-            Services = servicesForTeam,
-            Kind = kind
-        };
-
+        var query = matchers with { Services = servicesForTeam };
 
         var deploymentsPage = await deploymentsService.FindLatestWithMigrations(
             query,
-            offset ?? 0,
-            page ?? DeploymentsService.DefaultPage,
-            size ?? DeploymentsService.DefaultPageSize,
+            pagination.Offset ?? 0,
+            pagination.Page ?? DeploymentsService.DefaultPage,
+            pagination.Size ?? DeploymentsService.DefaultPageSize,
             cancellationToken
         );
         return Results.Ok(deploymentsPage);
@@ -132,11 +101,8 @@ public static class DeploymentsEndpoint
 
     // GET /running-services or with query params GET /running-services?environments=dev&service=forms-runner&status=running
     private static async Task<IResult> RunningServices(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
-        [FromQuery(Name = "environments")] string[]? environments,
-        [FromQuery(Name = "service")] string? service,
         [FromQuery(Name = "team")] string? team,
-        [FromQuery(Name = "user")] string? user,
-        [FromQuery(Name = "status")] string? status,
+        [AsParameters] DeploymentMatchers matchers,
         CancellationToken cancellationToken)
     {
         string[]? servicesForTeam = null;
@@ -146,14 +112,7 @@ public static class DeploymentsEndpoint
         }
 
         var deployments = await deploymentsService.RunningDeploymentsForService(
-            new DeploymentMatchers
-            {
-                Environments = environments,
-                Service = service,
-                User = user,
-                Services = servicesForTeam,
-                Status = status
-            },
+            matchers with { Services = servicesForTeam },
             cancellationToken);
         return Results.Ok(deployments);
     }
