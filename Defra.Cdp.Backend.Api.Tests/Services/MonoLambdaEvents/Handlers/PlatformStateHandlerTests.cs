@@ -12,7 +12,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents.Handlers;
 
 internal record TestPayload
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
 }
 
 public class PlatformStateHandlerTests

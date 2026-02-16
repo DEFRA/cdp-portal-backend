@@ -5,32 +5,18 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Github;
 
-public interface IRepositoryService : IResourceService
+public interface IRepositoryService
 {
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
 
     Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken);
 
-    Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken);
-
-    [Obsolete("Use entities")]
-    Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
-        CancellationToken cancellationToken);
-
-    [Obsolete("Use entities type/subtype")]
     Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
         CancellationToken cancellationToken);
 
-    [Obsolete("Use entities type/subtype")]
     Task<List<Repository>> FindRepositoriesByTopic(CdpTopic topic, CancellationToken cancellationToken);
 
-    [Obsolete("Use entities type/subtype")]
-    Task<Repository?> FindRepositoryWithTopicById(CdpTopic topic, string id, CancellationToken cancellationToken);
-
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
-
-    [Obsolete("Use entities")]
-    Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken);
 }
 
 public class RepositoryService(
@@ -84,24 +70,6 @@ public class RepositoryService(
         return repositories;
     }
 
-    [Obsolete("Use entity to lookup team ownership")]
-    public async Task<List<Repository>> FindRepositoriesByGitHubTeam(string team, bool excludeTemplates,
-        CancellationToken cancellationToken)
-    {
-        var baseFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.Github == team);
-
-        var findDefinition = excludeTemplates
-            ? Builders<Repository>.Filter.And(baseFilter, Builders<Repository>.Filter.Eq(r => r.IsTemplate, false))
-            : baseFilter;
-
-        var repositories =
-            await Collection
-                .Find(findDefinition)
-                .SortBy(r => r.Id)
-                .ToListAsync(cancellationToken);
-        return repositories;
-    }
-
     public async Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken)
     {
         var excludingIdsList = knownReposIds.ToList();
@@ -144,13 +112,6 @@ public class RepositoryService(
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<ILookup<string, List<RepositoryTeam>>> TeamsLookup(CancellationToken cancellationToken)
-    {
-        var filter = Builders<Repository>.Filter.Empty;
-        var results = await Collection.Find(filter).ToCursorAsync(cancellationToken);
-        return results.ToEnumerable(cancellationToken).ToLookup(r => r.Id, r => r.Teams.ToList());
-    }
-
     private List<string> ProvideCdpTopics(CdpTopic topic)
     {
         return new List<CdpTopic> { CdpTopic.Cdp, topic }.ConvertAll<string>(t => t.ToString().ToLower());
@@ -176,15 +137,5 @@ public class RepositoryService(
             isArchivedIndex,
             teamIdIndex
         ];
-    }
-
-    public string ResourceName()
-    {
-        return "Repository";
-    }
-
-    public async Task<bool> ExistsForRepositoryName(string repositoryName, CancellationToken cancellationToken)
-    {
-        return await Collection.Find(r => r.Id == repositoryName && !r.IsArchived).AnyAsync(cancellationToken);
     }
 }

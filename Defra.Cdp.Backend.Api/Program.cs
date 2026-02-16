@@ -1,4 +1,3 @@
-using Amazon.ECR;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Endpoints.Validators;

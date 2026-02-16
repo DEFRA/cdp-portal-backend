@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.Terminal;
@@ -30,18 +31,20 @@ public static class TerminalEndpoint
 
     private static AuditDto CreateAuditDto(TerminalSession session)
     {
+        var sessionJson = new JsonObject
+        {
+            ["environment"] = session.Environment,
+            ["service"] = session.Service,
+            ["token"] = session.Token
+        };
+
         return new AuditDto
         (
             "breakGlass",
             "TerminalAccess",
             session.User,
             DateTime.UtcNow,
-            JsonDocument.Parse($$"""
-                                 {
-                                     "environment": "{{session.Environment}}",
-                                     "service": "{{session.Service}}"
-                                 }
-                                 """).RootElement
-            );
+            sessionJson.Deserialize<JsonElement>()
+        );
     }
 }

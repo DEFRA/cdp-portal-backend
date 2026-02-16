@@ -16,7 +16,7 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
     CollectionName,
     loggerFactory), ITotalCostsService
 {
-    private ILogger _logger = loggerFactory.CreateLogger("TotalCostsService");
+
     public const string CollectionName = "totalcosts";
 
     protected override List<CreateIndexModel<TotalCostsRecord>> DefineIndexes(IndexKeysDefinitionBuilder<TotalCostsRecord> builder)
@@ -28,14 +28,13 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
     {
         var env = workflowEvent.Payload.Environment;
 
-        var logger = loggerFactory.CreateLogger("ServiceCodeCostsService");
         var eventType = workflowEvent.EventType;
         var eventTimestamp = workflowEvent.Timestamp;
         var payload = workflowEvent.Payload;
         var environment = payload.Environment;
         var costReport = payload.CostReports;
 
-        logger.LogInformation("Total cost reports for eventType {eventType} received", eventType);
+        Logger.LogInformation("Total cost reports for eventType {eventType} received", eventType);
 
         var record = TotalCostsRecord.FromPayloads(eventType, eventTimestamp, environment, costReport);
 
@@ -65,9 +64,9 @@ public class TotalCostsService(IMongoDbClientFactory connectionFactory, ILoggerF
     private List<TotalCostsRecord> onlyLatestReports(List<TotalCostsRecord> costsRecords)
     {
         return costsRecords.GroupBy(r => r.Environment)
-                           .SelectMany(r => r.GroupBy(r => r.CostReport.DateFrom))
-                           .Select(r => r.OrderByDescending(r => r.EventTimestamp)
-                                         .OrderByDescending(r => r.CreatedAt)
+                           .SelectMany(r => r.GroupBy(g => g.CostReport.DateFrom))
+                           .Select(r => r.OrderByDescending(g => g.EventTimestamp)
+                                         .ThenByDescending(g => g.CreatedAt)
                                          .First())
                            .ToList();
     }

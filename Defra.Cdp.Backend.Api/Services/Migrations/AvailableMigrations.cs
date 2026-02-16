@@ -60,7 +60,7 @@ public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityServic
                 {
                     migrations.Add(new MigrationVersion
                     {
-                        Created = s3Object.LastModified,
+                        Created = s3Object.LastModified ?? DateTime.Now,
                         Version = version,
                         Path = s3Object.Key
                     });
@@ -69,7 +69,7 @@ public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityServic
 
             request.ContinuationToken = response.NextContinuationToken;
         }
-        while (response.IsTruncated);
+        while (response.IsTruncated ?? false);
 
         return migrations.OrderByDescending(d => d.Created).ToList();
     }
@@ -97,7 +97,7 @@ public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityServic
             services.AddRange(response.CommonPrefixes);
             request.ContinuationToken = response.NextContinuationToken;
         }
-        while (response.IsTruncated);
+        while (response.IsTruncated ?? false);
 
         return services.Distinct().Select(s => s.Replace("/", "")).ToList();
     }

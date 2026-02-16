@@ -185,7 +185,7 @@ public class SecretEventHandler(
             var header = JsonSerializer.Deserialize<SecretMessage>(body);
             return header?.Source != "cdp-secret-manager-lambda" ? null : header;
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return null;
         }
