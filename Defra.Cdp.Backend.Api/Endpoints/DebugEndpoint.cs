@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Diagnostics.Runtime;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -9,6 +10,7 @@ public static class DebugEndpoint
     {
         app.MapGet("/debug/memory", Memory);
         app.MapGet("/debug/threads", Threads);
+        app.MapGet("/debug/log", Log);
     }
 
 
@@ -54,4 +56,12 @@ public static class DebugEndpoint
         return Results.Ok(threads);
     }
 
+    // GET /debug/log?size=16
+    private static IResult Log(ILoggerFactory loggerFactory, [FromQuery] int? size )
+    {
+        var logger = loggerFactory.CreateLogger("debug.logging");
+        
+        logger.LogInformation("/debug/log: {BigString}", new string('A', (size ?? 1) * 1024));
+        return Results.Ok($"Logged ${size}k bytes");
+    }
 }
