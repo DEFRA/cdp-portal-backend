@@ -37,14 +37,9 @@ public record TestRunMatcher(
             filter &= builder.In(t => t.TaskStatus, TaskStatus);
         }
 
-        if (Start != null)
+        if (Start != null && End != null)
         {
-            filter &= builder.Gte(t => t.Created, Start);
-        }
-
-        if (End != null)
-        {
-            filter &= builder.Lte(t => t.Created, End);
+            filter &= builder.And(builder.Lte(t => t.Created, End), builder.Gte(t => t.TaskLastUpdate, Start));
         }
 
         return filter;
