@@ -86,8 +86,8 @@ public class AutoTestRunTriggerEventHandler(
                         "Triggering test suite {Name} in {Environment} from from deployment {DeployEnv}/{DeploymentId}",
                         testSuite, deployment.Environment, deployment.Environment, deployment.CdpDeploymentId);
 
-                    await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment, testRunSettings,
-                        autoTestConfig.Profile, cancellationToken);
+                    await selfServiceOpsClient.TriggerTestSuite(testSuite, userDetails, deployment.Environment,
+                        testRunSettings, autoTestConfig.Profile, deployment, cancellationToken);
                 }
             }
         }

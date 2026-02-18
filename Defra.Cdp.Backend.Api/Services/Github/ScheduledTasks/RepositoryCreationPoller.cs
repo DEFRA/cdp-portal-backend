@@ -19,7 +19,7 @@ public sealed class RepositoryCreationPoller(
     ILoggerFactory loggerFactory,
     IRepositoryService repositoryService,
     IEntitiesService entitiesService,
-    MongoLock mongoLock,
+    IMongoLock mongoLock,
     IHttpClientFactory clientFactory,
     ITeamsService teamsService,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,

@@ -25,13 +25,15 @@ using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
+using Defra.Cdp.Backend.Api.Services.scheduler;
+using Defra.Cdp.Backend.Api.Services.scheduler.TestSuiteDeployment;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
-using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
-using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Services.Teams;
+using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
+using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Defra.Cdp.Backend.Api.Utils.Logging;
@@ -47,7 +49,15 @@ using MongoDB.Driver.Authentication.AWS;
 using Quartz.Simpl;
 using Quartz.Spi;
 using Serilog;
+using CronRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.CronRecurringConfig;
+using DailyRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.DailyRecurringConfig;
+using IntervalRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.IntervalRecurringConfig;
+using OnceConfig = Defra.Cdp.Backend.Api.Services.scheduler.OnceConfig;
+using ScheduleConfig = Defra.Cdp.Backend.Api.Services.scheduler.ScheduleConfig;
+using ScheduleTask = Defra.Cdp.Backend.Api.Services.scheduler.ScheduleTask;
+using TestSuiteScheduleTask = Defra.Cdp.Backend.Api.Services.scheduler.TestSuiteScheduleTask;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
+using WeeklyRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.WeeklyRecurringConfig;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -108,6 +118,30 @@ BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(Bso
 BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<ShutteringStatus>(BsonType.String));
 
 
+if (!BsonClassMap.IsClassMapRegistered(typeof(ScheduleTask)))
+{
+    BsonClassMap.RegisterClassMap<ScheduleTask>(cm =>
+    {
+        cm.AutoMap();
+        cm.SetIsRootClass(true);
+        cm.AddKnownType(typeof(TestSuiteScheduleTask));
+    });
+}
+
+if (!BsonClassMap.IsClassMapRegistered(typeof(ScheduleConfig)))
+{
+    BsonClassMap.RegisterClassMap<ScheduleConfig>(cm =>
+    {
+        cm.AutoMap();
+        cm.SetIsRootClass(true);
+        cm.AddKnownType(typeof(OnceConfig));
+        cm.AddKnownType(typeof(DailyRecurringConfig));
+        cm.AddKnownType(typeof(WeeklyRecurringConfig));
+        cm.AddKnownType(typeof(IntervalRecurringConfig));
+        cm.AddKnownType(typeof(CronRecurringConfig));
+    });
+}
+
 // Mongo
 
 MongoClientSettings.Extensions.AddAWSAuthentication();
@@ -157,6 +191,9 @@ builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<IServiceCodeCostsService, ServiceCodeCostsService>();
 builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
+builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
+builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
+
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -198,7 +235,7 @@ builder.Services.AddSingleton<IShutteringArchiveService, ShutteringArchiveServic
 builder.Services.AddSingleton<IAutoDeploymentTriggerService, AutoDeploymentTriggerService>();
 builder.Services.AddSingleton<IAutoTestRunTriggerService, AutoTestRunTriggerService>();
 
-builder.Services.AddSingleton<MongoLock>();
+builder.Services.AddSingleton<IMongoLock, MongoLock>();
 builder.Services.AddSingleton<ITeamsService, TeamsService>();
 builder.Services.AddSingleton<IUsersService, UsersService>();
 
@@ -214,7 +251,8 @@ builder.Services.AddSingleton<IAuditService, AuditService>();
 builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsService>();
 
 // New Tenant state stuff
-builder.Services.Configure<LambdaEventListenerOptions>(builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
+builder.Services.Configure<LambdaEventListenerOptions>(
+    builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();
@@ -244,6 +282,7 @@ builder.Services.AddAuthorization();
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
+app.UseJsonExceptionHandler();
 app.UseRouting();
 app.UseHeaderPropagation();
 
@@ -270,6 +309,7 @@ app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
 app.MapAuditEndpoint();
+app.MapSchedulingEndpoint();
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

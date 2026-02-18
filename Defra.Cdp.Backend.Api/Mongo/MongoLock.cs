@@ -2,21 +2,22 @@ using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Mongo;
 
-public class Lock
+public class Lock(string id, DateTime expiresAt)
 {
-    public string Id { get; set; }
-    public DateTime ExpiresAt { get; set; }
-
-    public Lock(string id, DateTime expiresAt)
-    {
-        Id = id;
-        ExpiresAt = expiresAt;
-    }
+    public string Id { get; set; } = id;
+    public DateTime ExpiresAt { get; set; } = expiresAt;
 }
 
-public class MongoLock : MongoService<Lock>
+public interface IMongoLock
 {
-    private readonly ILogger<MongoLock> _logger;
+    Task<bool> Lock(string lockId, TimeSpan duration, CancellationToken ct = new());
+    Task Unlock(string lockId, CancellationToken c = new());
+}
+
+public class MongoLock(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+    : MongoService<Lock>(connectionFactory, "locks", loggerFactory), IMongoLock
+{
+    private readonly ILogger<MongoLock> _logger = loggerFactory.CreateLogger<MongoLock>();
 
     protected override List<CreateIndexModel<Lock>> DefineIndexes(IndexKeysDefinitionBuilder<Lock> builder)
     {
@@ -25,11 +26,6 @@ public class MongoLock : MongoService<Lock>
         var expiresAfter = new CreateIndexOptions { ExpireAfter = TimeSpan.FromSeconds(0) };
         var ttlIndex = new CreateIndexModel<Lock>(builder.Ascending(l => l.ExpiresAt), expiresAfter);
         return [ttlIndex];
-    }
-
-    public MongoLock(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : base(connectionFactory, "locks", loggerFactory)
-    {
-        _logger = loggerFactory.CreateLogger<MongoLock>();
     }
 
     public async Task<bool> Lock(string lockId, TimeSpan duration, CancellationToken ct = new())

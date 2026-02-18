@@ -15,7 +15,7 @@ public sealed class PopulateGithubRepositories(
     IConfiguration configuration,
     ILoggerFactory loggerFactory,
     IRepositoryService repositoryService,
-    MongoLock mongoLock,
+    IMongoLock mongoLock,
     IHttpClientFactory clientFactory,
     ITeamsService teamsService,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
