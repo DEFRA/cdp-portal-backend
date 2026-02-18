@@ -55,7 +55,7 @@ public sealed class TestRun
     public UserDetails User { get; init; } = default!;
 
     [property: JsonPropertyName("deployment")]
-    public DeploymentDetails Deployment { get; init; } = default!;
+    public DeploymentDetails? Deployment { get; init; } = default!;
 
     [property: JsonPropertyName("created")]
     public DateTime Created { get; init; } = DateTime.Now;

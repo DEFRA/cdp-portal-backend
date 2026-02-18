@@ -56,9 +56,10 @@ public class AutoTestRunTriggerEventHandlerTests
         await _selfServiceOpsClient.Received(1).TriggerTestSuite(
             Arg.Is("foo-tests"),
             Arg.Any<UserDetails>(),
-            Arg.Is(_deployment),
+            Arg.Is(_deployment.Environment),
             Arg.Any<TestRunSettings>(),
             Arg.Any<string>(),
+            Arg.Is(_deployment),
             Arg.Any<CancellationToken>()
         );
     }
@@ -94,12 +95,13 @@ public class AutoTestRunTriggerEventHandlerTests
             .TriggerTestSuite(
                 Arg.Any<string>(),
                 Arg.Any<UserDetails>(),
-                Arg.Any<Deployment>(),
+                Arg.Any<string?>(),
                 Arg.Any<TestRunSettings>(),
                 Arg.Any<string?>(),
+                Arg.Any<Deployment>(),
                 Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
     public async Task Test_it_doesnt_triggers_testsuite_for_non_complete_messages()
     {
@@ -120,20 +122,21 @@ public class AutoTestRunTriggerEventHandlerTests
             .TriggerTestSuite(
                 Arg.Any<string>(),
                 Arg.Any<UserDetails>(),
-                Arg.Any<Deployment>(),
+                Arg.Any<string?>(),
                 Arg.Any<TestRunSettings>(),
                 Arg.Any<string?>(),
+                Arg.Any<Deployment>(),
                 Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
-    public async Task Test_it_doesnt_triggers_testsuite_if_service_was_undeployed() 
+    public async Task Test_it_doesnt_triggers_testsuite_if_service_was_undeployed()
     {
         var handler = new AutoTestRunTriggerEventHandler(_deploymentsService, _autoTestRunTriggerService,
             _testRunService,
             _selfServiceOpsClient, new NullLogger<AutoTestRunTriggerEventHandler>());
 
-        
+
         var undeployment = new Deployment() { Environment = "dev", Status = DeploymentStatus.Undeployed };
         _deploymentsService
             .FindDeploymentByLambdaId(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -159,9 +162,10 @@ public class AutoTestRunTriggerEventHandlerTests
             .TriggerTestSuite(
                 Arg.Any<string>(),
                 Arg.Any<UserDetails>(),
-                Arg.Any<Deployment>(),
+                Arg.Any<string?>(),
                 Arg.Any<TestRunSettings>(),
                 Arg.Any<string?>(),
+                Arg.Any<Deployment>(),
                 Arg.Any<CancellationToken>());
     }
 }
