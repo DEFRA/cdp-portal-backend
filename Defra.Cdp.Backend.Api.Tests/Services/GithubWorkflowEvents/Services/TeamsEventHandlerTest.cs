@@ -26,7 +26,8 @@ public class TeamsEventHandlerTest
             TeamName = "Foo",
             Description = "Foo Team",
             Github = "ghfoo",
-            ServiceCode = "FOO"
+            ServiceCode = "FOO",
+            SlackChannels = new SlackChannels(),
         }];
         
         var msg = """
