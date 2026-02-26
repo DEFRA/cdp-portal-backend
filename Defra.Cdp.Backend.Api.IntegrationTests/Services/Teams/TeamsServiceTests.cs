@@ -18,6 +18,7 @@ public class TeamsServiceTests(MongoContainerFixture fixture) : MongoTestSupport
             Description = "Bar Team",
             Github = "ghbar",
             ServiceCode = "BAR",
+            SlackChannels = new SlackChannels { Prod = "bar-prod-alerts", NonProd = "bar-non-prod-alerts", Team = "bar-team" },
             Created = new DateTime()
         };
 
@@ -61,7 +62,8 @@ public class TeamsServiceTests(MongoContainerFixture fixture) : MongoTestSupport
                 TeamName = "Bar",
                 Description = "Bar Team",
                 Github = "ghbar",
-                ServiceCode = "BAR"
+                ServiceCode = "BAR",
+                SlackChannels = new SlackChannels { Prod = "bar-prod-alerts", NonProd = "bar-non-prod-alerts", Team = "bar-team" },
             },
             new()
             {
