@@ -19,6 +19,7 @@ public record UserServiceTeamSync
     [property: JsonPropertyName("description")] public string? Description { get; init; }
     [property: JsonPropertyName("github")] public string? Github { get; init; }
     [property: JsonPropertyName("serviceCodes")] public IReadOnlyList<string>? ServiceCodes { get; init; }
+    [property: JsonPropertyName("slackChannels")] public UserServiceSlackChannels? SlackChannels { get; init; }
 }
 
 public record UserId(
@@ -37,3 +38,10 @@ public record UserServiceUser(
     [property: JsonPropertyName("userId")] string userId,
     [property: JsonPropertyName("teams")] List<TeamIdAndName> teams
 );
+
+public record UserServiceSlackChannels
+{
+    [JsonPropertyName("team")] public string? Team { get; init; }
+    [JsonPropertyName("prod")] public string? Prod { get; init; }
+    [JsonPropertyName("nonProd")] public string? NonProd { get; init; }
+}

@@ -20,6 +20,8 @@ public record TeamPayload
     [JsonPropertyName("github")] public string? Github { get; init; }
 
     [JsonPropertyName("service_code")] public string? ServiceCode { get; init; }
+    
+    [JsonPropertyName("slack_channels")] public TeamSlackPayload? SlackChannels { get; init; }
 
     public Team ToTeam()
     {
@@ -29,7 +31,12 @@ public record TeamPayload
             TeamName = Name,
             Description = Description,
             Github = Github,
-            ServiceCode = ServiceCode
+            ServiceCode = ServiceCode,
+            SlackChannels = new SlackChannels {
+                NonProd = SlackChannels?.NonProd,
+                Prod = SlackChannels?.Prod,
+                Team = SlackChannels?.Team
+            } 
         };
     }
     
@@ -41,7 +48,20 @@ public record TeamPayload
             Name = Name,
             Description = Description,
             Github = Github,
-            ServiceCodes = ServiceCode != null ? [ServiceCode] : null
+            ServiceCodes = ServiceCode != null ? [ServiceCode] : null,
+            SlackChannels = new UserServiceSlackChannels
+            {
+                NonProd = SlackChannels?.NonProd,
+                Prod = SlackChannels?.Prod,
+                Team = SlackChannels?.Team
+            }
         };
     }
+}
+
+public record TeamSlackPayload
+{
+    [JsonPropertyName("prod")] public string? Prod { get; init; }
+    [JsonPropertyName("non_prod")] public string? NonProd { get; init; }
+    [JsonPropertyName("team")] public string? Team { get; init; }
 }
