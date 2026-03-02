@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.scheduler;
+using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Spi;

@@ -1,8 +1,9 @@
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using MongoDB.Driver;
 using Quartz;
 
-namespace Defra.Cdp.Backend.Api.Services.scheduler;
+namespace Defra.Cdp.Backend.Api.Services.Scheduler;
 
 public class SchedulerPoller(
     ILoggerFactory loggerFactory,
@@ -34,8 +35,8 @@ public class SchedulerPoller(
 
             foreach (var schedule in dueSchedules)
             {
-                _logger.LogInformation("Processing schedule {id} for team {teamId} and description {description}",
-                    schedule.Id, schedule.TeamId, schedule.Description);
+                _logger.LogInformation("Processing schedule {id} for entity {entityId} and description {description}",
+                    schedule.Id, schedule.Task.EntityId, schedule.Description);
                 var shouldExecute =
                     schedule.NextRunAt.HasValue &&
                     schedule.NextRunAt.Value >= now - tolerance;
@@ -51,8 +52,8 @@ public class SchedulerPoller(
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,
-                            "Error executing schedule {id} for team {team} with schedule {description}", schedule.Id,
-                            schedule.TeamId, schedule.Description);
+                            "Error executing schedule {id} for entity {team} with schedule {description}", schedule.Id,
+                            schedule.Task.EntityId, schedule.Description);
                         // this will cause us to retry up to 5 times
                         continue;
                     }
@@ -62,7 +63,7 @@ public class SchedulerPoller(
                 schedule.RecalculateNextRun(now.AddMinutes(1));
 
                 await schedulerService.UpdateAsync(schedule.Id,
-                    Builders<Schedule>.Update.Set(s => s.NextRunAt, schedule.NextRunAt), ct);
+                    Builders<MongoSchedule>.Update.Set(s => s.NextRunAt, schedule.NextRunAt), ct);
             }
         }
         finally

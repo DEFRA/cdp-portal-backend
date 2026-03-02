@@ -1,7 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 
-namespace Defra.Cdp.Backend.Api.Services.scheduler.TestSuiteDeployment;
+namespace Defra.Cdp.Backend.Api.Services.Scheduler.TestSuiteDeployment;
 
 public interface ITestSuiteDeployer
 {
