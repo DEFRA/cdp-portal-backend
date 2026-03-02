@@ -20,7 +20,9 @@ public interface IDeploymentsService
     Task UpdateOverallTaskStatus(Deployment deployment, CancellationToken ct);
     Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
     Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
-    Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus, CancellationToken ct);
+
+    Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus,
+        CancellationToken ct);
 
     Task<Paginated<Deployment>> FindLatest(DeploymentMatchers query,
         int offset = 0,
@@ -150,6 +152,7 @@ public class DeploymentsService(
                 Logger.LogError("Failed to lookup user for {userId}, {ex}", deployment.User?.Id, ex);
             }
         }
+
         return deployment;
     }
 
@@ -171,7 +174,8 @@ public class DeploymentsService(
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct)
+    public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason,
+        CancellationToken ct)
     {
         var deployment = await FindDeploymentByLambdaId(lambdaId, ct);
 
@@ -238,7 +242,6 @@ public class DeploymentsService(
             .Where(r => r != null)
             .Select(result => result.OrderByDescending(r => r.Created).FirstOrDefault())
             .ToList()!;
-        
     }
 
     public async Task<List<Deployment>> RunningDeploymentsForService(string serviceName, CancellationToken ct)
@@ -305,11 +308,7 @@ public class DeploymentsService(
         var migrationCollection = Collection.Database.GetCollection<DatabaseMigration>("migrations");
         var migrationPipeline = new EmptyPipelineDefinition<DatabaseMigration>()
             .Match(migrationFilter)
-            .Project(m => new DeploymentOrMigration
-            {
-                Migration = m,
-                Created = m.Created
-            });
+            .Project(m => new DeploymentOrMigration { Migration = m, Created = m.Created });
 
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Match(filter)
@@ -350,7 +349,8 @@ public class DeploymentsService(
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment, CancellationToken ct)
+    public async Task<DeploymentSettings?> FindDeploymentSettings(string service, string environment,
+        CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<Deployment>();
         var filter = fb.And(fb.Eq(d => d.Service, service), fb.Eq(d => d.Environment, environment));
@@ -469,7 +469,7 @@ public record DeploymentMatchers(
         {
             filter &= builder.Eq(d => d.Service, ServiceExact);
         }
-        
+
         if (!string.IsNullOrWhiteSpace(Service))
         {
             filter &= builder.Regex(d => d.Service, new BsonRegularExpression(Service, "i"));

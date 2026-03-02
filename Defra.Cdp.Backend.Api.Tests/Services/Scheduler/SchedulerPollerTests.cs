@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.scheduler;
+using Defra.Cdp.Backend.Api.Services.Scheduler;
+using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -56,18 +57,17 @@ public class SchedulerPollerTests
         scopeFactory.CreateScope().Returns(scope);
         scope.ServiceProvider.Returns(serviceProvider);
 
-        var task = Substitute.For<ScheduleTask>();
+        var task = Substitute.For<MongoScheduleTask>();
         task.ExecuteAsync(Arg.Any<IServiceProvider>(), Arg.Any<DateTime?>(),
                 Arg.Any<ILogger<object>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        var schedule = new Schedule(
-            teamId: "team-1",
+        var schedule = new MongoSchedule(
             enabled: true,
             cron: "0 0 * * *", // dummy cron
             description: "desc",
             task: task,
-            config: new OnceConfig { RunAt = DateTime.UtcNow },
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow },
             new MongoUserDetails { DisplayName = "name", Id = "id" }
         ) { NextRunAt = DateTime.UtcNow };
 
@@ -93,7 +93,7 @@ public class SchedulerPollerTests
 
         await schedulerService.Received(1).UpdateAsync(
             id,
-            Arg.Any<UpdateDefinition<Schedule>>(),
+            Arg.Any<UpdateDefinition<MongoSchedule>>(),
             Arg.Any<CancellationToken>());
 
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
@@ -116,18 +116,17 @@ public class SchedulerPollerTests
         scopeFactory.CreateScope().Returns(scope);
         scope.ServiceProvider.Returns(serviceProvider);
 
-        var task = Substitute.For<ScheduleTask>();
+        var task = Substitute.For<MongoScheduleTask>();
         task.ExecuteAsync(Arg.Any<IServiceProvider>(), Arg.Any<DateTime?>(),
                 Arg.Any<ILogger<object>>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new Exception("boom"));
 
-        var schedule = new Schedule(
-            teamId: "team-1",
+        var schedule = new MongoSchedule(
             enabled: true,
             cron: "0 0 * * *", // dummy cron
             description: "desc",
             task: task,
-            config: new OnceConfig { RunAt = DateTime.UtcNow },
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow },
             new MongoUserDetails { DisplayName = "name", Id = "id" }
         ) { NextRunAt = DateTime.UtcNow };
 
@@ -144,7 +143,7 @@ public class SchedulerPollerTests
 
         await schedulerService.DidNotReceive().UpdateAsync(
             Arg.Any<string>(),
-            Arg.Any<UpdateDefinition<Schedule>>(),
+            Arg.Any<UpdateDefinition<MongoSchedule>>(),
             Arg.Any<CancellationToken>());
 
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
@@ -165,18 +164,17 @@ public class SchedulerPollerTests
         scopeFactory.CreateScope().Returns(scope);
         scope.ServiceProvider.Returns(serviceProvider);
 
-        var task = Substitute.For<ScheduleTask>();
+        var task = Substitute.For<MongoScheduleTask>();
         task.ExecuteAsync(Arg.Any<IServiceProvider>(), Arg.Any<DateTime?>(), Arg.Any<ILogger<object>>(),
                 Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        var schedule = new Schedule(
-            teamId: "team-1",
+        var schedule = new MongoSchedule(
             enabled: true,
             cron: "0 0 * * *",
             description: "desc",
             task: task,
-            config: new OnceConfig { RunAt = DateTime.UtcNow.AddHours(-2) },
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow.AddHours(-2) },
             new MongoUserDetails { DisplayName = "name", Id = "id" }
         ) { NextRunAt = DateTime.UtcNow.AddHours(-2) };
 
@@ -190,7 +188,7 @@ public class SchedulerPollerTests
 
         await schedulerService.Received(1).UpdateAsync(
             schedule.Id,
-            Arg.Any<UpdateDefinition<Schedule>>(),
+            Arg.Any<UpdateDefinition<MongoSchedule>>(),
             Arg.Any<CancellationToken>());
 
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());

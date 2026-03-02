@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Models.Schedules;
 
 namespace Defra.Cdp.Backend.Api.Tests.Models;
 
@@ -14,13 +14,10 @@ public class ScheduleTests
         var runAt = DateTime.UtcNow.AddHours(1);
 
         var json = $$"""
-                     
                              {
-                               "teamId": "team-1",
                                "enabled": true,
                                "task": {
                                  "type": "DeployTestSuite",
-                                 "testSuite": "smoke",
                                  "environment": "dev",
                                  "cpu": 256,
                                  "memory": 512,
@@ -36,10 +33,8 @@ public class ScheduleTests
         var result = JsonSerializer.Deserialize<ScheduleRequest>(json, _options);
 
         Assert.NotNull(result);
-        Assert.Equal("team-1", result!.TeamId);
 
-        var task = Assert.IsType<TestSuiteScheduleTask>(result.Task);
-        Assert.Equal("smoke", task.TestSuite);
+        var task = Assert.IsType<TestSuiteTask>(result.Task);
         Assert.Equal("dev", task.Environment);
         Assert.Equal(256, task.Cpu);
         Assert.Equal(512, task.Memory);
