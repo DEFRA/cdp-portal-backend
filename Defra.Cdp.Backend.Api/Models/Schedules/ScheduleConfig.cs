@@ -3,44 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CronExpressionDescriptor;
 
-namespace Defra.Cdp.Backend.Api.Models;
-
-public class ScheduleRequest
-{
-    [JsonPropertyName("teamId")] public string TeamId { get; init; } = default!;
-
-    [JsonPropertyName("enabled")] public bool Enabled { get; init; } = true;
-
-    [JsonPropertyName("task")] public ScheduleTask Task { get; init; } = default!;
-
-    [JsonPropertyName("config")] public ScheduleConfig Config { get; init; } = default!;
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum TaskTypeEnum
-{
-    DeployTestSuite
-}
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(TestSuiteScheduleTask), "DeployTestSuite")]
-public abstract class ScheduleTask
-{
-    [JsonPropertyName("type")] public TaskTypeEnum Type { get; protected set; }
-}
-
-public class TestSuiteScheduleTask : ScheduleTask
-{
-    [JsonPropertyName("testSuite")] public string TestSuite { get; init; } = default!;
-
-    [JsonPropertyName("environment")] public string Environment { get; init; } = default!;
-
-    [JsonPropertyName("cpu")] public int Cpu { get; init; }
-
-    [JsonPropertyName("memory")] public int Memory { get; init; }
-
-    [JsonPropertyName("profile")] public string? Profile { get; init; }
-}
+namespace Defra.Cdp.Backend.Api.Models.Schedules;
 
 [JsonConverter(typeof(ScheduleConfigConverter))]
 public abstract class ScheduleConfig
@@ -139,21 +102,6 @@ public class IntervalRecurringConfig : RecurringConfig
     }
 }
 
-public class Interval
-{
-    [JsonPropertyName("value")] public int Value { get; init; }
-
-    [JsonPropertyName("unit")] public IntervalUnit Unit { get; init; } = default!;
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum IntervalUnit
-{
-    Minutes,
-    Hours,
-    Days
-}
-
 public class CronRecurringConfig : RecurringConfig
 {
     [JsonPropertyName("expression")] public string Expression { get; init; } = default!;
@@ -186,61 +134,23 @@ public class ScheduleConfigConverter : JsonConverter<ScheduleConfig>
     }
 }
 
-public class CronBuilder
+public class Interval
 {
-    private string _minute = "0";
-    private string _hour = "0";
-    private string _dayOfMonth = "*";
-    private string _month = "*";
-    private string _dayOfWeek = "*";
+    [JsonPropertyName("value")] public int Value { get; init; }
 
-    private CronBuilder()
-    {
-    }
+    [JsonPropertyName("unit")] public IntervalUnit Unit { get; init; } = default!;
+}
 
-    public static CronBuilder Daily() => new();
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum IntervalUnit
+{
+    Minutes,
+    Hours,
+    Days
+}
 
-    public CronBuilder AtHour(int h)
-    {
-        if (h is < 0 or > 23) throw new ArgumentOutOfRangeException(nameof(h));
-        _hour = h.ToString();
-        return this;
-    }
-
-    public CronBuilder AtMinute(int m)
-    {
-        if (m is < 0 or > 59) throw new ArgumentOutOfRangeException(nameof(m));
-        _minute = m.ToString();
-        return this;
-    }
-
-    public CronBuilder OnDayOfWeek(params DayOfWeek[] days)
-    {
-        if (days == null || days.Length == 0) throw new ArgumentException("At least one day must be provided");
-        _dayOfWeek = string.Join(",", days.Select(d => ((int)d + 0) % 7));
-        return this;
-    }
-
-    public CronBuilder EveryNHours(int n)
-    {
-        if (n is <= 0 or > 23) throw new ArgumentOutOfRangeException(nameof(n));
-        _hour = $"*/{n}";
-        return this;
-    }
-
-    public CronBuilder EveryNMinutes(int n)
-    {
-        if (n is <= 0 or > 59) throw new ArgumentOutOfRangeException(nameof(n));
-        _minute = $"*/{n}";
-        return this;
-    }
-
-    public CronBuilder EveryNDays(int n)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(n);
-        _dayOfMonth = $"*/{n}";
-        return this;
-    }
-
-    public string Build() => $"{_minute} {_hour} {_dayOfMonth} {_month} {_dayOfWeek}";
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum TaskTypeEnum
+{
+    DeployTestSuite
 }
