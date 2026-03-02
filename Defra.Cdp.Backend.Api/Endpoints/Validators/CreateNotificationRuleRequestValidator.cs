@@ -16,6 +16,11 @@ public class CreateNotificationRuleRequestValidator: AbstractValidator<CreateNot
         RuleFor(x => x.Environment)
             .Must(x => x == null || CdpEnvironments.Environments.Contains(x))
             .WithMessage(x => $"Invalid environment: {x.Environment}");
+
+        RuleFor(x => x.SlackChannel)
+            .Must(x => x == null || !string.IsNullOrWhiteSpace(x))
+            .WithMessage("Invalid slack channel");
+
         RuleFor(x => x.Entity).NotEmpty();
     }
 }

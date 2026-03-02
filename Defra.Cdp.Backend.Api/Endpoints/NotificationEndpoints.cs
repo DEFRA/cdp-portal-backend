@@ -16,6 +16,7 @@ public static class NotificationEndpoints
     private static async Task<IResult> CreateNotification(
         IValidator<CreateNotificationRuleRequest> validator,
         [FromServices] INotificationRuleService notificationRuleService, 
+        [FromRoute] string entity,
         [FromBody] CreateNotificationRuleRequest request,
         CancellationToken cancellationToken)
     {
@@ -24,6 +25,11 @@ public static class NotificationEndpoints
         if (!validationResult.IsValid) 
         {
             return Results.ValidationProblem(validationResult.ToDictionary());
+        }
+
+        if (!string.Equals(entity, request.Entity, StringComparison.Ordinal))
+        {
+            return Results.BadRequest(new { error = "Route entity and payload entity must match." });
         }
         
         var rule = request.ToRule();
