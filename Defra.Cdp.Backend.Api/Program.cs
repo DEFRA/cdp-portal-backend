@@ -306,6 +306,7 @@ app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
 app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
+app.MapNotificationEndpoints();
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

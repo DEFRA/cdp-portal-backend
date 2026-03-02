@@ -5,18 +5,21 @@ using MongoDB.Bson.Serialization.IdGenerators;
 namespace Defra.Cdp.Backend.Api.Services.Notifications;
 
 [BsonIgnoreExtraElements]
-public class NotificationRule
+public record NotificationRule
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]
     public ObjectId? MongoId { get; init; }
     
     public string RuleId { get; init; } = Guid.NewGuid().ToString();
-    
-    public required string Entity { get; init; } 
     public required string EventType { get; init; }
-    public Dictionary<string, string> Conditions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public required string Entity { get; init; } 
+   
+    [BsonIgnoreIfNull]
+    public string? Environment { get; init; }
     
-    public string? SlackChannel { get; init; }
+    [BsonIgnoreIfNull]
+    public string? SlackChannel { get; init; } // TODO: we could either store the exact channel #foo-bar or as a ref to the team/slack, e.g. @platform:nonProd and look it up
+    
     public bool IsEnabled { get; init; } = true;
 }
