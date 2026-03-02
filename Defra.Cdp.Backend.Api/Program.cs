@@ -23,6 +23,8 @@ using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
+using Defra.Cdp.Backend.Api.Services.Notifications;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
@@ -262,6 +264,14 @@ else
 
 builder.Services.AddSingleton<ISbomEcrEventHandler, SbomEcrEventHandler>();
 builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHandler>();
+
+// Notifications
+builder.Services.Configure<SlackLambdaOptions>(builder.Configuration.GetSection(SlackLambdaOptions.Prefix));
+builder.Services.AddScoped<IValidator<CreateNotificationRuleRequest>, CreateNotificationRuleRequestValidator>();
+builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
+builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
+builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();
+
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program

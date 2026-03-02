@@ -1,4 +1,5 @@
 using Amazon.S3;
+using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using LocalStack.Client.Extensions;
 
@@ -14,13 +15,16 @@ public static class AwsClients
             service.AddLocalStack(configuration);
             service.AddDefaultAWSOptions(configuration.GetAWSOptions());
             service.AddAwsService<IAmazonSQS>();
+            service.AddAwsService<IAmazonSimpleNotificationService>();
             service.AddAwsService<IAmazonS3>();
         }
         else
         {
             var sqsClient = new AmazonSQSClient();
+            var snsClient = new AmazonSimpleNotificationServiceClient();
             var s3Client = new AmazonS3Client();
             service.AddSingleton<IAmazonSQS>(sqsClient);
+            service.AddSingleton<IAmazonSimpleNotificationService>(snsClient);
             service.AddSingleton<IAmazonS3>(s3Client);
         }
     }

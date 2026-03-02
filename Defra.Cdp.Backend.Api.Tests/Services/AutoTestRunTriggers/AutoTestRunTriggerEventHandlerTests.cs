@@ -95,7 +95,7 @@ public class AutoTestRunTriggerEventHandlerTests
             .TriggerTestSuite(
                 Arg.Any<string>(),
                 Arg.Any<UserDetails>(),
-                Arg.Any<string?>(),
+                Arg.Any<string>(),
                 Arg.Any<TestRunSettings>(),
                 Arg.Any<string?>(),
                 Arg.Any<Deployment>(),
@@ -122,7 +122,7 @@ public class AutoTestRunTriggerEventHandlerTests
             .TriggerTestSuite(
                 Arg.Any<string>(),
                 Arg.Any<UserDetails>(),
-                Arg.Any<string?>(),
+                Arg.Any<string>(),
                 Arg.Any<TestRunSettings>(),
                 Arg.Any<string?>(),
                 Arg.Any<Deployment>(),
@@ -162,7 +162,7 @@ public class AutoTestRunTriggerEventHandlerTests
             .TriggerTestSuite(
                 Arg.Any<string>(),
                 Arg.Any<UserDetails>(),
-                Arg.Any<string?>(),
+                Arg.Any<string>(),
                 Arg.Any<TestRunSettings>(),
                 Arg.Any<string?>(),
                 Arg.Any<Deployment>(),

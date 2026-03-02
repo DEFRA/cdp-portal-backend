@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -13,6 +15,7 @@ public class TaskStateChangeEventHandler(
     IDeploymentsService deploymentsService,
     IEntitiesService entitiesService,
     ITestRunService testRunService,
+    INotificationDispatcher notificationDispatcher,
     ILogger<TaskStateChangeEventHandler> logger)
 {
     private static readonly ISet<string> s_failureReasonsToIgnore = ImmutableHashSet.Create("UserInitiated", "EssentialContainerExited", "ServiceSchedulerInitiated");
@@ -187,6 +190,7 @@ public class TaskStateChangeEventHandler(
                 testRun.RunId, taskStatus, testResults);
             await testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp,
                 failureReasons, cancellationToken);
+            await TriggerTestRunNotification(testRun, testResults, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -224,41 +228,72 @@ public class TaskStateChangeEventHandler(
         return failureReasons;
     }
 
-    /**
-     * Interpret the status of the test suit based on the exit code of the test container
-     */
+    /// <summary>
+    /// Interpret the status of the test suit based on the exit code of the test container.
+    /// </summary>
+    /// <param name="container"></param>
+    /// <returns></returns>
     public static string? GenerateTestSuiteStatus(EcsContainer? container)
     {
         return container?.ExitCode switch
         {
             null => null,
-            0 => "passed",
-            _ => "failed"
+            0 => TestRunStatuses.TestPassed,
+            _ => TestRunStatuses.TestFailed
         };
     }
 
-    /**
-  * Interpret the overall status of the test run's ECS task
-  */
+    /// <summary>
+    /// Maps ECS status to a portal displayable string.
+    /// </summary>
+    /// <param name="desired"></param>
+    /// <param name="last"></param>
+    /// <param name="hasFailures"></param>
+    /// <returns></returns>
     public static string GenerateTestSuiteTaskStatus(string desired, string last, bool hasFailures)
     {
-        if (hasFailures) return "failed";
+        if (hasFailures) return TestRunTaskStatus.Failed;
         return desired switch
         {
             "RUNNING" => last switch
             {
-                "PROVISIONING" => "starting",
-                "PENDING" => "starting",
-                "STOPPED" => "failed",
-                _ => "in-progress"
+                "PROVISIONING" => TestRunTaskStatus.Starting,
+                "PENDING" => TestRunTaskStatus.Starting,
+                "STOPPED" => TestRunTaskStatus.Failed,
+                _ => TestRunTaskStatus.InProgress
             },
             "STOPPED" => last switch
             {
-                "DEPROVISIONING" => "finished",
-                "STOPPED" => "finished",
-                _ => "stopping"
+                "DEPROVISIONING" => TestRunTaskStatus.Finished,
+                "STOPPED" => TestRunTaskStatus.Finished,
+                _ => TestRunTaskStatus.Stopping
             },
-            _ => "unknown"
+            _ => TestRunTaskStatus.Unknown
         };
+    }
+
+    public async Task TriggerTestRunNotification(TestRun run, string? latestStatus, CancellationToken ct)
+    {
+        if (run.TestStatus == null)
+        {
+            INotificationEvent? msg = latestStatus switch
+            {
+                TestRunStatuses.TestPassed => new TestRunPassedEvent { Entity = run.TestSuite, Environment = run.Environment, RunId = run.RunId },
+                TestRunStatuses.TestFailed => new TestRunFailedEvent { Entity = run.TestSuite, Environment = run.Environment, RunId = run.RunId },
+                _ => null
+            };
+            
+            if (msg != null)
+            {
+                try
+                {
+                    await notificationDispatcher.Dispatch(msg, ct);
+                }
+                catch
+                {
+                    logger.LogError("Failed to trigger notification for {TestSuite} run {RunId}", run.TestSuite, run.RunId);
+                }
+            }
+        }
     }
 }
