@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -20,7 +21,20 @@ public class UpdateTestSuiteTests
     private readonly IEntitiesService _entitiesService = Substitute.For<IEntitiesService>();
     private readonly IDeploymentsService _deploymentsService = Substitute.For<IDeploymentsService>();
     private readonly ITestRunService _testRunService = Substitute.For<ITestRunService>();
+    private readonly INotificationDispatcher _notificationDispatcher = Substitute.For<INotificationDispatcher>();
 
+
+    TaskStateChangeEventHandler buildHandler()
+    {
+        return new TaskStateChangeEventHandler(
+            new MockEnvironmentLookup(),
+            _deploymentsService,
+            _entitiesService,
+            _testRunService,
+            _notificationDispatcher,
+            new NullLogger<TaskStateChangeEventHandler>());
+    }
+    
     [Fact]
     public async Task TestEventNotLinkable()
     {
@@ -33,12 +47,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
 
@@ -65,12 +74,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
         _testRunService.Link(
@@ -105,13 +109,8 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
-
+        var handler = buildHandler();
+        
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
             {
@@ -141,13 +140,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = new TaskStateChangeEventHandler(
-
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -178,13 +171,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -216,12 +203,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -252,12 +234,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -292,12 +269,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -329,12 +301,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = new TaskStateChangeEventHandler(
-            new MockEnvironmentLookup(),
-            _deploymentsService,
-            _entitiesService,
-            _testRunService,
-            new NullLogger<TaskStateChangeEventHandler>());
+        var handler = buildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun

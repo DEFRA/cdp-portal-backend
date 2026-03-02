@@ -96,3 +96,19 @@ public sealed class DeploymentDetails
     [property: JsonPropertyName("service")]
     public string? Service { get; init; }
 }
+
+public static class TestRunStatuses
+{
+    public const string TestPassed = "passed";
+    public const string TestFailed = "failed";
+}
+
+public static class TestRunTaskStatus
+{
+    public const string Starting = "starting";
+    public const string Failed = "failed";
+    public const string InProgress = "in-progress";
+    public const string Finished = "finished";
+    public const string Stopping = "stopping";
+    public const string Unknown = "unknown";
+}
