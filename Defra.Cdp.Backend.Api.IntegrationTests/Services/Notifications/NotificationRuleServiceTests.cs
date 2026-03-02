@@ -1,5 +1,5 @@
+using Amazon.S3;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
-using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -17,28 +17,28 @@ public class NotificationRuleServiceTests(MongoContainerFixture fixture) : Mongo
         var rule1 = new NotificationRule
         {
             Entity = "foo",
-            EventType = NotificationEventTypes.TestRunPassed.Type,
-            Conditions = new Dictionary<string, string> { { "Environment", "dev" } }
+            EventType = NotificationTypes.TestPassed,
+            Environment = "dev"
         };
 
         var rule2 = new NotificationRule
         {
             Entity = "foo",
-            EventType = NotificationEventTypes.TestRunFailed.Type,
-            Conditions = new Dictionary<string, string> { { "Environment", "test" } }
+            EventType = NotificationTypes.TestFailed,
+            Environment = "test"
         };
 
         await rulesService.SaveAsync(rule1, ct);
         await rulesService.SaveAsync(rule2, ct);
 
-        var rulesPassed = await rulesService.FindByEntityAndTypeAsync("foo", NotificationEventTypes.TestRunPassed.Type, ct);
-        var rulesFailed = await rulesService.FindByEntityAndTypeAsync("foo", NotificationEventTypes.TestRunFailed.Type, ct);
+        var rulesPassed = await rulesService.FindRule(rule1.RuleId , ct);
+        var rulesFailed = await rulesService.FindRule(rule2.RuleId, ct);
         
-        Assert.NotEmpty(rulesPassed);
-        Assert.Equivalent(rule1, rulesPassed[0]);
-        
-        Assert.NotEmpty(rulesFailed);
-        Assert.Equivalent(rule2, rulesFailed[0]);
+        Assert.NotNull(rulesPassed);
+        Assert.Equivalent(rulesPassed, rule1);
+       
+        Assert.NotNull(rulesFailed);
+        Assert.Equivalent(rule2, rulesFailed);
     }
     
     [Fact]
@@ -51,29 +51,45 @@ public class NotificationRuleServiceTests(MongoContainerFixture fixture) : Mongo
         var rule1 = new NotificationRule
         {
             Entity = "foo",
-            EventType = NotificationEventTypes.TestRunPassed.Type,
-            Conditions = new Dictionary<string, string> { { "Environment", "dev" } }
+            EventType = NotificationTypes.TestPassed,
+            Environment = "dev"
         };
 
         // Create the rule
         await rulesService.SaveAsync(rule1, ct);
-        var savedRule = await rulesService.FindByEntity("foo", ct);
-        Assert.NotEmpty(savedRule);
-        Assert.Equivalent(rule1, savedRule[0]);
+        var savedRule = await rulesService.FindRule(rule1.RuleId, ct);
+        Assert.NotNull(savedRule);
+        Assert.Equivalent(rule1, savedRule);
+        
+        // Find the rule by entity
+        var byEntity = await rulesService.FindByEntity(rule1.Entity, ct);
+        Assert.Single(byEntity);
+        
+        // Match the rule to an alert
+        var matched = await rulesService.FindMatchingRules(
+            new TestRunPassedEvent { Entity = rule1.Entity, Environment = rule1.Environment, RunId = "123" }, ct);
+        Assert.Single(matched);
+        Assert.Equivalent(rule1, matched[0]);
+        
+        // Dont match unrelated events 
+        var notMatched = await rulesService.FindMatchingRules(
+            new TestRunPassedEvent { Entity = "bar-backend", Environment = rule1.Environment, RunId = "444" }, ct);
+        Assert.Empty(notMatched);
+
 
         // Update the rule
-        rule1.Conditions["Profile"] = "smokeTest";
-        await rulesService.UpdateAsync(rule1, ct);
-        var updatedRule = await rulesService.FindByEntity("foo", ct);
-        Assert.NotEmpty(updatedRule);
-        Assert.Equivalent(rule1, updatedRule[0]);
+        rule1 = rule1 with { Environment = "test" };
         
+        await rulesService.UpdateAsync(rule1, ct);
+        var updatedRule = await rulesService.FindRule(rule1.RuleId, ct);
+        Assert.NotNull(updatedRule);
+        Assert.Equivalent(rule1, updatedRule);
+
         // Delete rule
-        await rulesService.DeleteAsync(rule1.RuleId, ct);
         var deletedOk = await rulesService.DeleteAsync(rule1.RuleId, ct);
         Assert.True(deletedOk);
         
-        var deletedRule = await rulesService.FindByEntity("foo", ct);
-        Assert.Empty(deletedRule);
+        var deletedRule = await rulesService.FindRule(rule1.RuleId, ct);
+        Assert.Null(deletedRule);
     }
 }

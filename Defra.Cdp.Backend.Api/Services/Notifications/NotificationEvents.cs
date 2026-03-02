@@ -1,27 +1,34 @@
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Defra.Cdp.Backend.Api.Services.Notifications;
+
+public static class NotificationTypes
+{
+    public const string TestFailed = "testfailed";
+    public const string TestPassed = "testpassed";
+    public const string DeploymentFailed = "deploymentfailed";
+
+    public static readonly string[] All = [TestPassed, TestFailed, DeploymentFailed];
+}
 
 public interface INotificationEvent 
 {
+    [BsonRepresentation(MongoDB.Bson.BsonType.String)]
     string EventType { get; }
-    string Entity { get; } 
-    Dictionary<string, string> Context { get; }
-    public string Message(); // TODO: This assumes we're generating a slack message. we can extend this for other kinds
+    string? Entity { get; }
+    string? Environment { get; } 
+    public string SlackMessage();
 }
 
 public class TestRunFailedEvent : INotificationEvent
 {
-    public string EventType => NotificationEventTypes.TestRunFailed.Type;
-    public required string Entity { get; set; }
-    public required string Environment { get; set; }
-    public required string RunId { get; set; }
-
-    public Dictionary<string, string> Context => new()
-    {
-        { "environment", Environment },
-        { "runid", RunId },
-    };
+    public string EventType => NotificationTypes.TestFailed;
+    public required string Entity { get; init; }
+    public string? Environment { get; init; }
     
-    public string Message()
+    public required string RunId { get; init; }
+
+    public string SlackMessage()
     {
         // TODO: generate some nicer slack block messages
         return $"Test {Entity} failed in {Environment}";
@@ -30,18 +37,13 @@ public class TestRunFailedEvent : INotificationEvent
 
 public class TestRunPassedEvent : INotificationEvent
 {
-    public string EventType => NotificationEventTypes.TestRunPassed.Type;
-    public required string Entity { get; set; }
-    public required string Environment { get; set; }
-    public required string RunId { get; set; }
+    public string EventType => NotificationTypes.TestPassed;
+    public required string Entity { get; init; }
+    public string? Environment { get; init; }
     
-    public Dictionary<string, string> Context => new()
-    {
-        { "environment", Environment },
-        { "runid", RunId }
-    };
-    
-    public string Message()
+    public required string RunId { get; init; }
+
+    public string SlackMessage()
     {
         return $"Test: {Entity} passed in {Environment}";
     }
@@ -49,20 +51,13 @@ public class TestRunPassedEvent : INotificationEvent
 
 public class DeploymentFailed : INotificationEvent
 {
-    public string EventType => NotificationEventTypes.DeploymentFailed.Type;
-    public required string Entity { get; set; }
-    public required string Version { get; set; }
-    public required string Environment { get; set; }
-    public required string DeploymentId { get; set; }
-    
-    public Dictionary<string, string> Context => new()
-    {
-        { "environment", Environment },
-        { "deploymentid", DeploymentId },
-        { "version", Version }
-    };
-    
-    public string Message()
+    public string EventType => NotificationTypes.DeploymentFailed;
+    public required string Entity { get; init; }
+    public required string? Environment { get; init; }
+    public required string Version { get; init; }
+    public required string DeploymentId { get; init; }
+
+    public string SlackMessage()
     {
         return $"{Entity} failed to deploy in {Environment}";
     }

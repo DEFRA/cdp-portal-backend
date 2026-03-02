@@ -13,8 +13,8 @@ public class CreateNotificationRuleRequestValidatorTest
         var res = validator.Validate(new CreateNotificationRuleRequest
         {
             Entity = "foo",
-            EventType = NotificationEventTypes.TestRunPassed.Type,
-            Conditions = new Dictionary<string, string> { { "Environment", "dev" } }
+            EventType = NotificationTypes.TestFailed,
+            Environment = "dev"
         });
         
         Assert.True(res.IsValid);
@@ -27,8 +27,7 @@ public class CreateNotificationRuleRequestValidatorTest
         var res = validator.Validate(new CreateNotificationRuleRequest
         {
             Entity = "foo",
-            EventType = NotificationEventTypes.TestRunPassed.Type,
-            Conditions = new Dictionary<string, string>() 
+            EventType = NotificationTypes.TestPassed
         });
         
         Assert.True(res.IsValid);
@@ -40,9 +39,8 @@ public class CreateNotificationRuleRequestValidatorTest
         var validator = new CreateNotificationRuleRequestValidator();
         var res = validator.Validate(new CreateNotificationRuleRequest
         {
-            Entity = "foo",
-            EventType = NotificationEventTypes.TestRunPassed.Type,
-            Conditions = new Dictionary<string, string> { {"Pigeon", "rock-dove"}} 
+            Entity = null!,
+            EventType = NotificationTypes.TestPassed
         });
         
         Assert.False(res.IsValid);
