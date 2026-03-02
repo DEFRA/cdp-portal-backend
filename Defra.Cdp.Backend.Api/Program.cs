@@ -26,6 +26,8 @@ using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.scheduler;
+using Defra.Cdp.Backend.Api.Services.scheduler.Model;
+using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Defra.Cdp.Backend.Api.Services.scheduler.TestSuiteDeployment;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
@@ -49,15 +51,7 @@ using MongoDB.Driver.Authentication.AWS;
 using Quartz.Simpl;
 using Quartz.Spi;
 using Serilog;
-using CronRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.CronRecurringConfig;
-using DailyRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.DailyRecurringConfig;
-using IntervalRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.IntervalRecurringConfig;
-using OnceConfig = Defra.Cdp.Backend.Api.Services.scheduler.OnceConfig;
-using ScheduleConfig = Defra.Cdp.Backend.Api.Services.scheduler.ScheduleConfig;
-using ScheduleTask = Defra.Cdp.Backend.Api.Services.scheduler.ScheduleTask;
-using TestSuiteScheduleTask = Defra.Cdp.Backend.Api.Services.scheduler.TestSuiteScheduleTask;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
-using WeeklyRecurringConfig = Defra.Cdp.Backend.Api.Services.scheduler.WeeklyRecurringConfig;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -118,27 +112,27 @@ BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(Bso
 BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<ShutteringStatus>(BsonType.String));
 
 
-if (!BsonClassMap.IsClassMapRegistered(typeof(ScheduleTask)))
+if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleTask)))
 {
-    BsonClassMap.RegisterClassMap<ScheduleTask>(cm =>
+    BsonClassMap.RegisterClassMap<MongoScheduleTask>(cm =>
     {
         cm.AutoMap();
         cm.SetIsRootClass(true);
-        cm.AddKnownType(typeof(TestSuiteScheduleTask));
+        cm.AddKnownType(typeof(MongoTestSuiteScheduleTask));
     });
 }
 
-if (!BsonClassMap.IsClassMapRegistered(typeof(ScheduleConfig)))
+if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleConfig)))
 {
-    BsonClassMap.RegisterClassMap<ScheduleConfig>(cm =>
+    BsonClassMap.RegisterClassMap<MongoScheduleConfig>(cm =>
     {
         cm.AutoMap();
         cm.SetIsRootClass(true);
-        cm.AddKnownType(typeof(OnceConfig));
-        cm.AddKnownType(typeof(DailyRecurringConfig));
-        cm.AddKnownType(typeof(WeeklyRecurringConfig));
-        cm.AddKnownType(typeof(IntervalRecurringConfig));
-        cm.AddKnownType(typeof(CronRecurringConfig));
+        cm.AddKnownType(typeof(MongoOnceConfig));
+        cm.AddKnownType(typeof(MongoDailyRecurringConfig));
+        cm.AddKnownType(typeof(MongoWeeklyRecurringConfig));
+        cm.AddKnownType(typeof(MongoIntervalRecurringConfig));
+        cm.AddKnownType(typeof(MongoCronRecurringConfig));
     });
 }
 
@@ -260,12 +254,13 @@ builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();
 // SBOM deployment pusher
 if (builder.IsDevMode())
 {
-    builder.Services.AddSingleton<ISbomExplorerClient, NoOpSbomExplorerClient>();   
+    builder.Services.AddSingleton<ISbomExplorerClient, NoOpSbomExplorerClient>();
 }
 else
 {
     builder.Services.AddSingleton<ISbomExplorerClient, SbomExplorerClient>();
 }
+
 builder.Services.AddSingleton<ISbomEcrEventHandler, SbomEcrEventHandler>();
 builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHandler>();
 
@@ -309,7 +304,7 @@ app.MapShutteringEndpoint();
 app.MapTerminalEndpoint();
 app.MapDebugEndpoint();
 app.MapAuditEndpoint();
-app.MapSchedulingEndpoint();
+app.MapSchedulesEndpoint();
 
 var logger = app.Services.GetService<ILogger<Program>>();
 

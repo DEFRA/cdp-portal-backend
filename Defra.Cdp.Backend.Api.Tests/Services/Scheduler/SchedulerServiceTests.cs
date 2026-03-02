@@ -1,4 +1,6 @@
 using Defra.Cdp.Backend.Api.Services.scheduler;
+using Defra.Cdp.Backend.Api.Services.scheduler.Model;
+using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Defra.Cdp.Backend.Api.Services.scheduler.TestSuiteDeployment;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -10,10 +12,10 @@ public class SchedulerDomainTests
     [Fact]
     public void RecalculateNextRun_SetsNextRunAt_WhenNextExists()
     {
-        var task = new TestSuiteScheduleTask { TestSuite = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
+        var task = new MongoTestSuiteScheduleTask { EntityId = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
 
-        var config = new CronRecurringConfig { Expression = "*/1 * * * *" }; // every minute
-        var schedule = new Schedule("team-1", true, config.Expression, "desc", task, config,
+        var config = new MongoCronRecurringConfig { Expression = "*/1 * * * *" }; // every minute
+        var schedule = new MongoSchedule(true, config.Expression, "desc", task, config,
             new MongoUserDetails { Id = "u", DisplayName = "n" });
 
         var baseTime = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -28,13 +30,13 @@ public class SchedulerDomainTests
     [Fact]
     public void RecalculateNextRun_ReturnsNull_WhenNextAfterEndDate()
     {
-        var task = new TestSuiteScheduleTask { TestSuite = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
+        var task = new MongoTestSuiteScheduleTask { EntityId = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
 
-        var config = new CronRecurringConfig
+        var config = new MongoCronRecurringConfig
         {
             Expression = "*/1 * * * *", EndDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(-1)
         };
-        var schedule = new Schedule("team-1", true, config.Expression, "desc", task, config,
+        var schedule = new MongoSchedule(true, config.Expression, "desc", task, config,
             new MongoUserDetails { Id = "u", DisplayName = "n" });
 
         var baseTime = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -53,9 +55,9 @@ public class SchedulerDomainTests
 
         var logger = Substitute.For<ILogger<object>>();
 
-        var task = new TestSuiteScheduleTask
+        var task = new MongoTestSuiteScheduleTask
         {
-            TestSuite = "suite-1",
+            EntityId = "suite-1",
             Environment = "dev",
             Cpu = 2,
             Memory = 512,
@@ -85,9 +87,9 @@ public class SchedulerDomainTests
 
         var logger = Substitute.For<ILogger<object>>();
 
-        var task = new TestSuiteScheduleTask
+        var task = new MongoTestSuiteScheduleTask
         {
-            TestSuite = "suite-1",
+            EntityId = "suite-1",
             Environment = "dev",
             Cpu = 2,
             Memory = 512,
