@@ -22,12 +22,13 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
         var uniqueRuleIdIdx = new CreateIndexModel<NotificationRule>(builder.Ascending(r => r.RuleId),
             new CreateIndexOptions { Unique = true });
         
-        var entityAndTypeIdx = new CreateIndexModel<NotificationRule>(
+        var matchLookupIdx = new CreateIndexModel<NotificationRule>(
             builder.Combine(
+                builder.Ascending(r => r.EventType),
                 builder.Ascending(r => r.Entity),
-                builder.Ascending(r => r.EventType)),
-            new CreateIndexOptions { Unique = true });
-        return [uniqueRuleIdIdx, entityAndTypeIdx];
+                builder.Ascending(r => r.Environment),
+                builder.Ascending(r => r.IsEnabled)));
+        return [uniqueRuleIdIdx, matchLookupIdx];
     }
 
     public async Task SaveAsync(NotificationRule rule, CancellationToken ct)
@@ -59,7 +60,8 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
     public async Task<List<NotificationRule>> FindMatchingRules(INotificationEvent notification, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<NotificationRule>();
-        var filter = fb.Eq(r => r.EventType, notification.EventType);
+        var filter = fb.Eq(r => r.EventType, notification.EventType) &
+                     fb.Eq(r => r.IsEnabled, true);
         
         if (notification.Entity != null)
         {
@@ -68,7 +70,15 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
         
         if (notification.Environment != null)
         {
-            filter &= fb.Eq(r => r.Entity, notification.Entity);    
+            var environmentFilter =
+                fb.Eq(r => r.Environment, notification.Environment) |
+                fb.Eq(r => r.Environment, null);
+            filter &= environmentFilter;
+        }
+        else
+        {
+            // A null rule environment is a wildcard; null event environment should not fan out to env-specific rules.
+            filter &= fb.Eq(r => r.Environment, null);
         }
 
         return await Collection.Find(filter).ToListAsync(ct);

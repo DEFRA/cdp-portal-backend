@@ -46,5 +46,19 @@ public class CreateNotificationRuleRequestValidatorTest
         Assert.False(res.IsValid);
     }
 
+    [Fact]
+    public void TestInvalidSlackChannel()
+    {
+        var validator = new CreateNotificationRuleRequestValidator();
+        var res = validator.Validate(new CreateNotificationRuleRequest
+        {
+            Entity = "foo",
+            EventType = NotificationTypes.TestPassed,
+            SlackChannel = " "
+        });
+
+        Assert.False(res.IsValid);
+    }
+
 
 }
