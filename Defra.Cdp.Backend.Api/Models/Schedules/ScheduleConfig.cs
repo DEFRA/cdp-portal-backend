@@ -18,6 +18,7 @@ public abstract class ScheduleConfig
     [JsonPropertyName("endDate")] public virtual DateTime? EndDate { get; protected set; }
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class OnceConfig : ScheduleConfig, IValidatableObject
 {
     [JsonPropertyName("runAt")] public DateTime RunAt { get; init; }
@@ -50,6 +51,7 @@ public abstract class RecurringConfig : ScheduleConfig
         ExpressionDescriptor.GetDescription(GetCronExpression());
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class DailyRecurringConfig : RecurringConfig
 {
     [JsonPropertyName("time")] public string Time { get; init; } = default!;
@@ -65,6 +67,7 @@ public class DailyRecurringConfig : RecurringConfig
     }
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class WeeklyRecurringConfig : RecurringConfig
 {
     [JsonPropertyName("time")] public string Time { get; init; } = default!;
@@ -86,6 +89,7 @@ public class WeeklyRecurringConfig : RecurringConfig
         Enum.Parse<DayOfWeek>(day, ignoreCase: true);
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class IntervalRecurringConfig : RecurringConfig
 {
     [JsonPropertyName("every")] public Interval Every { get; init; } = default!;
@@ -102,6 +106,7 @@ public class IntervalRecurringConfig : RecurringConfig
     }
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class CronRecurringConfig : RecurringConfig
 {
     [JsonPropertyName("expression")] public string Expression { get; init; } = default!;

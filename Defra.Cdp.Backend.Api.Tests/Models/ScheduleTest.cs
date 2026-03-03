@@ -18,6 +18,7 @@ public class ScheduleTests
                                "enabled": true,
                                "task": {
                                  "type": "DeployTestSuite",
+                                 "entityId":"my-test-entity",
                                  "environment": "dev",
                                  "cpu": 256,
                                  "memory": 512,

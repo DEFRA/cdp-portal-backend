@@ -4,49 +4,56 @@ using System.Text;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
-public class SchedulesEndpointTestSupport: MongoTestSupport
+public class SchedulesEndpointTestSupport : MongoTestSupport
 {
-    // Create Server
     private readonly TestServer _server;
 
     public SchedulesEndpointTestSupport(MongoContainerFixture fixture) : base(fixture)
     {
+        IEntitiesService entitiesService = new EntitiesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
             {
                 services.AddRouting();
                 services.AddSingleton<ISchedulerService, SchedulerService>();
+                services.AddSingleton(entitiesService);
                 services.AddSingleton<IMongoDbClientFactory>(CreateMongoDbClientFactory());
-                
             })
             .Configure(app =>
             {
                 app.UseRouting();
                 app.UseEndpoints(endpoints => { endpoints.MapSchedulesEndpoint(); });
             });
-        
+
+        var tasks = EntityTestData().Select(e => entitiesService.Create(e, CancellationToken.None));
+        Task.WaitAll(tasks.ToArray(), CancellationToken.None);
+
         _server = new TestServer(builder);
     }
-    
+
     [Fact]
     public async Task Should_create_test_suite_task_schedule()
     {
         var client = _server.CreateClient();
-        
+
         var json = """
                    {
                      "task": {
                        "type": "DeployTestSuite",
-                       "entityId": "cdp-example-tests",
+                       "entityId": "my-test-entity",
                        "environment": "dev",
                        "cpu": 512,
                        "memory": 1024
@@ -58,7 +65,7 @@ public class SchedulesEndpointTestSupport: MongoTestSupport
                      }
                    }
                    """;
-        
+
         var request = new HttpRequestMessage(HttpMethod.Post, "/schedules")
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
@@ -67,16 +74,28 @@ public class SchedulesEndpointTestSupport: MongoTestSupport
         request.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer",
                 "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiQWRtaW4gVXNlciIsIm9pZCI6IjkwNTUyNzk0LTA2MTMtNDAyMy04MTlhLTUxMmFhOWQ0MDAyMyJ9.");
-        
+
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
         var body = await response.Content.ReadAsStringAsync();
         Console.WriteLine(body);
-        Assert.True(response.StatusCode == HttpStatusCode.Created, $"Expected 201 Created but got {response.StatusCode}. json: {body}");
-    }
-    
-    private static string[] TestData()
-    {
-        return [];
+        Assert.True(response.StatusCode == HttpStatusCode.Created,
+            $"Expected 201 Created but got {response.StatusCode}. json: {body}");
     }
 
+    private static Entity[] EntityTestData()
+    {
+        return
+        [
+            new Entity
+            {
+                Name = "my-test-entity",
+                Teams =
+                [
+                    new Team { Name = "Platform", TeamId = "platform" }, new Team { Name = "Tenant", TeamId = "tenant" }
+                ],
+                Status = Status.Created,
+                Type = Type.TestSuite
+            }
+        ];
+    }
 }
