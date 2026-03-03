@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications;
@@ -30,8 +31,7 @@ public class TestRunFailedEvent : INotificationEvent
 
     public string SlackMessage()
     {
-        // TODO: generate some nicer slack block messages
-        return $"Test {Entity} failed in {Environment}";
+        return SlackMessageTemplates.TestFailedTemplate(this);
     }
 }
 
@@ -45,11 +45,11 @@ public class TestRunPassedEvent : INotificationEvent
 
     public string SlackMessage()
     {
-        return $"Test: {Entity} passed in {Environment}";
+        return SlackMessageTemplates.TestPassedTemplate(this);
     }
 }
 
-public class DeploymentFailed : INotificationEvent
+public class DeploymentFailedEvent : INotificationEvent
 {
     public string EventType => NotificationTypes.DeploymentFailed;
     public required string Entity { get; init; }
@@ -59,6 +59,6 @@ public class DeploymentFailed : INotificationEvent
 
     public string SlackMessage()
     {
-        return $"{Entity} failed to deploy in {Environment}";
+        return SlackMessageTemplates.DeploymentFailedTemplate(this);
     }
 }

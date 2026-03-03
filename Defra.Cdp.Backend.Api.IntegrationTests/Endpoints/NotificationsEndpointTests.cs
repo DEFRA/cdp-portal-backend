@@ -26,7 +26,8 @@ public class NotificationsEndpointTests : MongoTestSupport
             .ConfigureServices(services =>
             {
                 services.AddRouting();
-                services.AddScoped<IValidator<CreateNotificationRuleRequest>, CreateNotificationRuleRequestValidator>();
+                services.AddScoped<IValidator<CreateRuleRequest>, CreateNotificationRuleRequestValidator>();
+                services.AddScoped<IValidator<UpdateRuleRequest>, UpdateNotificationRuleRequestValidator>();
                 services.AddSingleton(ruleService);
             })
             .Configure(app =>
@@ -42,17 +43,16 @@ public class NotificationsEndpointTests : MongoTestSupport
     public async Task Should_create_new_rule_with_valid_payload()
     {
         var client = _server.CreateClient();
-        var request = new CreateNotificationRuleRequest { Entity = "foo-bar", EventType = NotificationTypes.TestPassed, Environment = "dev" };
+        var request = new CreateRuleRequest { EventType = NotificationTypes.TestPassed, Environment = "dev" };
         var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, result.StatusCode);
     }
- 
     
     [Fact]
     public async Task Should_reject_new_rule_with_invalid_environment()
     {
         var client = _server.CreateClient();
-        var request = new CreateNotificationRuleRequest { Entity = "foo-bar", EventType = NotificationTypes.TestPassed, Environment = "foo" };
+        var request = new CreateRuleRequest { EventType = NotificationTypes.TestPassed, Environment = "foo" };
         var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
     }
@@ -61,8 +61,43 @@ public class NotificationsEndpointTests : MongoTestSupport
     public async Task Should_reject_new_rule_with_invalid_type()
     {
         var client = _server.CreateClient();
-        var request = new CreateNotificationRuleRequest { Entity = "foo-bar", EventType = "pigeon-alert", Environment = "foo" };
+        var request = new CreateRuleRequest { EventType = "pigeon-alert", Environment = "foo" };
         var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+    }
+    
+    [Fact]
+    public async Task Should_update_and_delete_a_rule()
+    {
+        var client = _server.CreateClient();
+        
+        // Create
+        var request = new CreateRuleRequest { EventType = NotificationTypes.TestPassed, Environment = "dev" };
+        var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Created, result.StatusCode);
+        Assert.NotNull(result.Headers.Location);
+        
+        // Get
+        var rule = await client.GetFromJsonAsync<NotificationRule>(result.Headers.Location, TestContext.Current.CancellationToken);
+        Assert.NotNull(rule);
+        Assert.Equal("dev", rule.Environment);
+        Assert.NotEqual("", rule.RuleId);
+        
+        // Update
+        var updateRequest = new UpdateRuleRequest { EventType = NotificationTypes.TestPassed, Environment = "test", IsEnabled = false };
+        var updateResult = await client.PutAsJsonAsync($"/entities/foo-bar/notifications/{rule.RuleId}", updateRequest, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, updateResult.StatusCode);
+        
+        // Get updated
+        var updatedRule = await client.GetFromJsonAsync<NotificationRule>(result.Headers.Location, TestContext.Current.CancellationToken);
+        Assert.Equal("test", updatedRule?.Environment);
+        
+        // Delete
+        var deleteResult = await client.DeleteAsync(result.Headers.Location, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, deleteResult.StatusCode);
+        
+        var missingRule = await client.GetAsync(result.Headers.Location, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NotFound, missingRule.StatusCode);
     }
 }

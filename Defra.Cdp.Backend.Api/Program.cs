@@ -267,7 +267,8 @@ builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHa
 
 // Notifications
 builder.Services.Configure<SlackLambdaOptions>(builder.Configuration.GetSection(SlackLambdaOptions.Prefix));
-builder.Services.AddScoped<IValidator<CreateNotificationRuleRequest>, CreateNotificationRuleRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateRuleRequest>, CreateNotificationRuleRequestValidator>();
+builder.Services.AddScoped<IValidator<UpdateRuleRequest>, UpdateNotificationRuleRequestValidator>();
 builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
 builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();
