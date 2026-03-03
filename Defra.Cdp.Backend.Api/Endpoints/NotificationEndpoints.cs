@@ -1,5 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using Defra.Cdp.Backend.Api.Services.Notifications;
-using FluentValidation;
+using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -16,16 +17,16 @@ public static class NotificationEndpoints
     }
 
     private static async Task<IResult> CreateNotification(
-        [FromServices] IValidator<CreateRuleRequest> validator,
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         [FromBody] CreateRuleRequest request,
         CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
+        if (!isValid)
         {
-            return Results.ValidationProblem(validationResult.ToDictionary());
+            return Results.BadRequest(results.Select(r => r.ErrorMessage));
         }
 
         var rule = request.ToRule(entityId);
@@ -38,18 +39,19 @@ public static class NotificationEndpoints
     }
 
     private static async Task<IResult> UpdateNotification(
-        [FromServices] IValidator<UpdateRuleRequest> validator,
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         [FromRoute] string ruleId,
         [FromBody] UpdateRuleRequest request,
         CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
+        if (!isValid)
         {
-            return Results.ValidationProblem(validationResult.ToDictionary());
+            return Results.BadRequest(results.Select(r => r.ErrorMessage));
         }
+
         
         var rule = await notificationRuleService.FindRule(ruleId, cancellationToken);
         if (rule == null)
@@ -102,7 +104,7 @@ public static class NotificationEndpoints
     }
 }
 
-public class CreateRuleRequest
+public class CreateRuleRequest : IValidatableObject
 {
     public required string EventType { get; init; }
     public required List<string> Environments { get; init; }
@@ -120,9 +122,28 @@ public class CreateRuleRequest
             IsEnabled = IsEnabled
         };
     }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!NotificationTypes.All.Contains(EventType))
+        {
+            yield return new ValidationResult(
+                $"invalid eventType {EventType}",
+                [nameof(EventType)]
+            );
+        }
+        
+        foreach (var env in Environments.Where(env => !CdpEnvironments.Environments.Contains(env)))
+        {
+            yield return new ValidationResult(
+                $"invalid environment name {env}",
+                [nameof(Environments)]
+            );
+        }
+    }
 }
 
-public class UpdateRuleRequest
+public class UpdateRuleRequest : IValidatableObject
 {
     public required string EventType { get; init; }
     public required List<string> Environments { get; init; }
@@ -139,5 +160,24 @@ public class UpdateRuleRequest
             SlackChannel = SlackChannel,
             IsEnabled = IsEnabled
         };
+    }
+    
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!NotificationTypes.All.Contains(EventType))
+        {
+            yield return new ValidationResult(
+                $"invalid eventType {EventType}",
+                [nameof(EventType)]
+            );
+        }
+        
+        foreach (var env in Environments.Where(env => !CdpEnvironments.Environments.Contains(env)))
+        {
+            yield return new ValidationResult(
+                $"invalid environment name {env}",
+                [nameof(Environments)]
+            );
+        }
     }
 }

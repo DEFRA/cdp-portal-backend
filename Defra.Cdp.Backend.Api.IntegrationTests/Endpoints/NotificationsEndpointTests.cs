@@ -26,8 +26,6 @@ public class NotificationsEndpointTests : MongoTestSupport
             .ConfigureServices(services =>
             {
                 services.AddRouting();
-                services.AddScoped<IValidator<CreateRuleRequest>, CreateNotificationRuleRequestValidator>();
-                services.AddScoped<IValidator<UpdateRuleRequest>, UpdateNotificationRuleRequestValidator>();
                 services.AddSingleton(ruleService);
             })
             .Configure(app =>
