@@ -26,7 +26,7 @@ public static partial class SlackMessageTemplates
                         new TextObject
                         {
                             Type = "mrkdwn",
-                            Text = $"*Test results*:\\n <{reportUrlBuilder.Uri.AbsoluteUri}|Open in portal>"
+                            Text = $"*Test results*:\n <{reportUrlBuilder.Uri.AbsoluteUri}|View in portal>"
                         }
                     ]
                 }
