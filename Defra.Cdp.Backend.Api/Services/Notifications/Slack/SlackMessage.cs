@@ -8,10 +8,15 @@ namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 /// </summary>
 public class SlackMessagePayload
 {
+    
     public class SlackMessage
     {
         [property: JsonPropertyName("channels")] public required string Channel { get; init; }
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [property: JsonPropertyName("text")] public string? Text { get; init; }
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [property: JsonPropertyName("blocks")] public List<Block>? Blocks { get; init; }
     }
 

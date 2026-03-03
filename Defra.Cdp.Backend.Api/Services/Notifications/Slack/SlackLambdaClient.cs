@@ -26,20 +26,6 @@ public class SlackLambdaClient(IAmazonSimpleNotificationService snsClient, IOpti
         await snsClient.PublishAsync(options.Value.TopicArn, messageBody, ct);
     }
 
-    public async Task SendText(string channel, string text, CancellationToken ct)
-    {
-        var msg = new SlackMessagePayload
-        {
-            Message = new SlackMessagePayload.SlackMessage
-            {
-                Channel = channel,
-                Text = text
-            },
-            Team = channel // Not sure if this actually does anything in the lambda anymore aside for logging
-        };
-        await Send(msg, ct);
-    }
-
     public async Task SendToChannel(string channel, SlackMessageBody body, CancellationToken ct)
     {
         var msg = new SlackMessagePayload
