@@ -4,18 +4,18 @@ using FluentValidation;
 
 namespace Defra.Cdp.Backend.Api.Endpoints.Validators;
 
-public class CreateNotificationRuleRequestValidator: AbstractValidator<CreateRuleRequest>
+public class UpdateNotificationRuleRequestValidator: AbstractValidator<UpdateRuleRequest>
 {
-    public CreateNotificationRuleRequestValidator()
+    public UpdateNotificationRuleRequestValidator()
     {
         RuleFor(x => x.EventType)
             .NotEmpty()
             .Must(x => NotificationTypes.All.Contains(x))
-            .WithMessage(x => $"Supported event type {x.EventType}");
+            .WithMessage(x => $"Invalid event type {x.EventType}, valid values: { string.Join(",", NotificationTypes.All) }");
 
         RuleFor(x => x.Environment)
             .Must(x => x == null || CdpEnvironments.Environments.Contains(x))
-            .WithMessage(x => $"Invalid environment: {x.Environment}");
+            .WithMessage(x => $"Invalid environment: {x.Environment}, valid values: {string.Join(",", CdpEnvironments.Environments)} ");
 
         RuleFor(x => x.SlackChannel)
             .Must(x => x == null || !string.IsNullOrWhiteSpace(x))
