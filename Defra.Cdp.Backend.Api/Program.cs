@@ -269,20 +269,12 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-builder.Services.AddAuthorization();
-
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
 app.UseJsonExceptionHandler();
 app.UseRouting();
 app.UseHeaderPropagation();
-
-// enable auth
-app.UseAuthentication();
-app.UseAuthorization();
 
 // Add endpoints
 app.MapRepositoriesEndpoint();
