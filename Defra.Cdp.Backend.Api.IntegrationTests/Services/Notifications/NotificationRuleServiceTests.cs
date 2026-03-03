@@ -127,6 +127,27 @@ public class NotificationRuleServiceTests(MongoContainerFixture fixture) : Mongo
     }
     
     [Fact]
+    public async Task test_multi_environment_rule_not_matching()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var connectionFactory = CreateMongoDbClientFactory();
+        var rulesService = new NotificationRuleService(connectionFactory, new NullLoggerFactory());
+        var multiEnvRule = new NotificationRule
+        {
+            Entity = "foo",
+            EventType = NotificationTypes.TestPassed,
+            Environments = ["dev", "test"]
+        };
+        
+        await rulesService.SaveAsync(multiEnvRule, ct);
+
+
+        var matched = await rulesService.FindMatchingRules(
+            new TestRunPassedEvent { Entity = multiEnvRule.Entity, Environment = "prod", RunId = "444" }, ct);
+        Assert.Empty(matched);
+    }
+    
+    [Fact]
     public async Task test_normal_rule_matching()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -33,7 +33,7 @@ public static class NotificationEndpoints
 
         return Results.CreatedAtRoute(
             routeName: "GetNotificationRule",
-            routeValues: new { entity = rule.Entity, ruleId = rule.RuleId }
+            routeValues: new { entityId = rule.Entity, ruleId = rule.RuleId }
         );
     }
 
