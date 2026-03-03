@@ -2,9 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
 using Microsoft.AspNetCore.Mvc;
+using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -19,7 +21,9 @@ public static class SchedulesEndpoint
     }
 
     // POST /schedules
-    private static async Task<IResult> CreateSchedule([FromServices] ISchedulerService schedulerService,
+    private static async Task<IResult> CreateSchedule(
+        [FromServices] ISchedulerService schedulerService,
+        [FromServices] IEntitiesService entitiesService,
         [FromBody] ScheduleRequest scheduleRequest,
         [FromHeader(Name = "Authorization")] string? bearerToken,
         CancellationToken ct)
@@ -39,6 +43,21 @@ public static class SchedulesEndpoint
         if (user == null)
         {
             return Results.Unauthorized();
+        }
+
+        if (scheduleRequest.Task is TestSuiteTask testSuiteTask)
+        {
+            var entity = await entitiesService.GetEntity(testSuiteTask.EntityId, ct);
+
+            if (entity == null)
+            {
+                return Results.NotFound("Entity not found");
+            }
+
+            if (entity.Type != Type.TestSuite)
+            {
+                return Results.Conflict("Entity is not a test suite");
+            }
         }
 
         var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user);
@@ -101,10 +120,12 @@ public static class SchedulesEndpoint
     }
 
     // DELETE /schedules/{id}
-    private static async Task<IResult> DeleteSchedule([FromServices] ISchedulerService schedulerService, string id,
+    private static async Task<IResult> DeleteSchedule(
+        [FromServices] ISchedulerService schedulerService,
+        string scheduleId,
         CancellationToken ct)
     {
-        await schedulerService.DeleteSchedule(id, ct);
+        await schedulerService.DeleteSchedule(scheduleId, ct);
         return Results.NoContent();
     }
 }

@@ -120,6 +120,18 @@ public static class EntitiesEndpoint
             return Results.Unauthorized();
         }
 
+        var entity = await entitiesService.GetEntity(repositoryName, ct);
+
+        if (entity == null)
+        {
+            return Results.NotFound("Entity not found");
+        }
+
+        if (scheduleRequest.Task is EntityTestSuiteTask && entity.Type != Type.TestSuite)
+        {
+            return Results.Conflict("Entity is not a test suite");
+        }
+
         var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user, repositoryName);
         await schedulerService.Schedule(mongoSchedule, ct);
 

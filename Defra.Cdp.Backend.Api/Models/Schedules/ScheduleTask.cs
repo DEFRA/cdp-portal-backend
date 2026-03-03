@@ -9,15 +9,16 @@ public abstract class ScheduleTask
     [JsonPropertyName("type")] public TaskTypeEnum Type { get; protected set; }
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class TestSuiteTask : ScheduleTask
 {
-    [JsonPropertyName("entityId")] public string EntityId { get; init; } = default!;
+    [JsonPropertyName("entityId")] public required string EntityId { get; init; }
 
-    [JsonPropertyName("environment")] public string Environment { get; init; } = default!;
+    [JsonPropertyName("environment")] public required string Environment { get; init; }
 
-    [JsonPropertyName("cpu")] public int Cpu { get; init; }
+    [JsonPropertyName("cpu")] public required int Cpu { get; init; }
 
-    [JsonPropertyName("memory")] public int Memory { get; init; }
+    [JsonPropertyName("memory")] public required int Memory { get; init; }
 
     [JsonPropertyName("profile")] public string? Profile { get; init; }
 }
@@ -27,13 +28,14 @@ public class TestSuiteTask : ScheduleTask
 [JsonDerivedType(typeof(EntityTestSuiteTask), "DeployTestSuite")]
 public abstract class EntityScheduleTask : ScheduleTask;
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class EntityTestSuiteTask : EntityScheduleTask
 {
-    [JsonPropertyName("environment")] public string Environment { get; init; } = default!;
+    [JsonPropertyName("environment")] public required string Environment { get; init; }
 
-    [JsonPropertyName("cpu")] public int Cpu { get; init; }
+    [JsonPropertyName("cpu")] public required int Cpu { get; init; }
 
-    [JsonPropertyName("memory")] public int Memory { get; init; }
+    [JsonPropertyName("memory")] public required int Memory { get; init; }
 
     [JsonPropertyName("profile")] public string? Profile { get; init; }
 }

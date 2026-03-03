@@ -2,7 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Models.Schedules;
 
-// schedule for schedule endpoint
+// request for schedule endpoint
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class ScheduleRequest
 {
     [JsonPropertyName("enabled")] public bool Enabled { get; init; } = true;
@@ -10,7 +11,8 @@ public class ScheduleRequest
     [JsonPropertyName("config")] public ScheduleConfig Config { get; init; } = default!;
 }
 
-// schedule for entity endpoint
+// request for entity endpoint
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class EntityScheduleRequest
 {
     [JsonPropertyName("enabled")] public bool Enabled { get; init; } = true;

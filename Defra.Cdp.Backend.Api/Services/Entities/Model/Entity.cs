@@ -42,8 +42,7 @@ public record Entity
     [property: JsonPropertyName("decommissioned")]
     public Decommission? Decommissioned { get; set; }
 
-    [property: JsonPropertyName("tags")]
-    public List<string> Tags { get; set; } = [];
+    [property: JsonPropertyName("tags")] public List<string> Tags { get; set; } = [];
 
     [property: JsonPropertyName("environments")]
     public Dictionary<string, CdpTenant> Environments { get; init; } = new();
@@ -61,7 +60,6 @@ public record Entity
     {
         OverallProgress = new OverallProgress
         {
-
             IsComplete = Progress.Values
                 .Where(p => p.Steps != null)
                 .All(p => p.Complete),
@@ -82,8 +80,7 @@ public sealed class OverallProgress
     [property: JsonPropertyName("isComplete")]
     public required bool IsComplete { get; init; }
 
-    [property: JsonPropertyName("steps")]
-    public required Dictionary<string, bool> Steps { get; init; }
+    [property: JsonPropertyName("steps")] public required Dictionary<string, bool> Steps { get; init; }
 }
 
 public record Decommission
