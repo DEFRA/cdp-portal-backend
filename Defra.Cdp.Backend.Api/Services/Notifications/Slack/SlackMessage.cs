@@ -11,7 +11,7 @@ public class SlackMessagePayload
     
     public class SlackMessage
     {
-        [property: JsonPropertyName("channels")] public required string Channel { get; init; }
+        [property: JsonPropertyName("channel")] public required string Channel { get; init; }
         
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [property: JsonPropertyName("text")] public string? Text { get; init; }
