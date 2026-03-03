@@ -48,7 +48,7 @@ public class UserServiceBackendClient : IUserServiceBackendClient
     /// <exception cref="NotImplementedException"></exception>
     public async Task SyncTeams(IEnumerable<UserServiceTeamSync> teams, CancellationToken cancellationToken)
     {
-        using var result = await _client.PostAsJsonAsync(_baseUrl + "/sync/teams", new { teams = teams }, cancellationToken);
+        using var result = await _client.PostAsJsonAsync(_baseUrl + "/sync/teams", new { teams }, cancellationToken);
         result.EnsureSuccessStatusCode();
     }
 }

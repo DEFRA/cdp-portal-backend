@@ -1,15 +1,14 @@
-using System.Text.Json;
 using Defra.Cdp.Backend.Api.Utils;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 
 public static partial class SlackMessageTemplates
 {
-    public static string DeploymentFailedTemplate(DeploymentFailedEvent e)
+    public static SlackMessageBody DeploymentFailedTemplate(DeploymentFailedEvent e)
     {
         var deploymentUri = new UriBuilder(PortalPublicUrl.BaseUri()) { Path = $"/deployments/{e.Environment}/{e.DeploymentId}" };
         
-        var payload = new SlackMessageTemplate
+        return new SlackMessageBody
         {
             Blocks =
             [
@@ -33,7 +32,5 @@ public static partial class SlackMessageTemplates
                 }
             ]
         };
-
-        return JsonSerializer.Serialize(payload, s_jsonOptions);
     }
 }

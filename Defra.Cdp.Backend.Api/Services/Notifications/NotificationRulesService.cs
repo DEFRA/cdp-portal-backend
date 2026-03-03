@@ -26,7 +26,7 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
             builder.Combine(
                 builder.Ascending(r => r.EventType),
                 builder.Ascending(r => r.Entity),
-                builder.Ascending(r => r.Environment),
+                builder.Ascending(r => r.Environments),
                 builder.Ascending(r => r.IsEnabled)));
         return [uniqueRuleIdIdx, matchLookupIdx];
     }
@@ -36,20 +36,20 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
         await Collection.InsertOneAsync(rule, new InsertOneOptions(), ct);
     }
 
+    public async Task UpdateAsync(NotificationRule rule, CancellationToken ct)
+    {
+        await Collection.ReplaceOneAsync(r => r.RuleId == rule.RuleId, rule, new ReplaceOptions(), ct);
+    }
+    
     public async Task<bool> DeleteAsync(string ruleId, CancellationToken ct)
     {
         var result = await Collection.DeleteOneAsync(r => r.RuleId == ruleId, ct);
         return result.DeletedCount > 0;
     }
-
+    
     public async Task<NotificationRule?> FindRule(string ruleId, CancellationToken ct)
     {
         return await Collection.Find(r => r.RuleId == ruleId).FirstOrDefaultAsync(ct);
-    }
-
-    public async Task UpdateAsync(NotificationRule rule, CancellationToken ct)
-    {
-        await Collection.ReplaceOneAsync(r => r.RuleId == rule.RuleId, rule, new ReplaceOptions(), ct);
     }
     
     public async Task<List<NotificationRule>> FindByEntity(string entity, CancellationToken ct)
@@ -70,15 +70,7 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
         
         if (notification.Environment != null)
         {
-            var environmentFilter =
-                fb.Eq(r => r.Environment, notification.Environment) |
-                fb.Eq(r => r.Environment, null);
-            filter &= environmentFilter;
-        }
-        else
-        {
-            // A null rule environment is a wildcard; null event environment should not fan out to env-specific rules.
-            filter &= fb.Eq(r => r.Environment, null);
+            filter &= fb.AnyEq(r => r.Environments, notification.Environment);
         }
 
         return await Collection.Find(filter).ToListAsync(ct);

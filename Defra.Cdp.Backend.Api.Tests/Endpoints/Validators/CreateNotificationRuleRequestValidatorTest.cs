@@ -13,22 +13,23 @@ public class CreateNotificationRuleRequestValidatorTest
         var res = validator.Validate(new CreateRuleRequest
         {
             EventType = NotificationTypes.TestFailed,
-            Environment = "dev"
+            Environments = ["dev"]
         });
         
         Assert.True(res.IsValid);
     }
-    
+ 
     [Fact]
-    public void TestValidInputsNoEnv()
+    public void TestValidInputsWrongEnv()
     {
         var validator = new CreateNotificationRuleRequestValidator();
         var res = validator.Validate(new CreateRuleRequest
         {
-            EventType = NotificationTypes.TestPassed
+            EventType = NotificationTypes.TestPassed,
+            Environments = ["dev", "test", "foo"]
         });
         
-        Assert.True(res.IsValid);
+        Assert.False(res.IsValid);
     }
 
     [Fact]
@@ -38,6 +39,7 @@ public class CreateNotificationRuleRequestValidatorTest
         var res = validator.Validate(new CreateRuleRequest
         {
             EventType = NotificationTypes.TestPassed,
+            Environments = ["dev"],
             SlackChannel = " "
         });
 

@@ -28,7 +28,7 @@ public class NotificationDispatcher(
 
             try
             {
-                await slackClient.SendText(rule.SlackChannel, message, ct);
+                await slackClient.SendToChannel(rule.SlackChannel, message, ct);
             }
             catch (Exception ex)
             {

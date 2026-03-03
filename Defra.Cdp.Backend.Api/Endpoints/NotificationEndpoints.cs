@@ -105,7 +105,7 @@ public static class NotificationEndpoints
 public class CreateRuleRequest
 {
     public required string EventType { get; init; }
-    public string? Environment { get; init; }
+    public required List<string> Environments { get; init; }
     public string? SlackChannel { get; init; }
     public bool IsEnabled { get; init; } = true;
 
@@ -115,7 +115,7 @@ public class CreateRuleRequest
         {
             EventType = EventType,
             Entity = entityId,
-            Environment = Environment,
+            Environments = Environments,
             SlackChannel = SlackChannel,
             IsEnabled = IsEnabled
         };
@@ -125,7 +125,7 @@ public class CreateRuleRequest
 public class UpdateRuleRequest
 {
     public required string EventType { get; init; }
-    public string? Environment { get; init; }
+    public required List<string> Environments { get; init; }
     public string? SlackChannel { get; init; }
     public bool IsEnabled { get; init; } = true;
 
@@ -135,7 +135,7 @@ public class UpdateRuleRequest
         {
             EventType = EventType,
             Entity = entityId,
-            Environment = Environment,
+            Environments = Environments,
             SlackChannel = SlackChannel,
             IsEnabled = IsEnabled
         };
