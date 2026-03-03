@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 
@@ -11,7 +12,7 @@ public class SlackMessagePayload
     {
         [property: JsonPropertyName("channels")] public required string Channel { get; init; }
         [property: JsonPropertyName("text")] public string? Text { get; init; }
-        [property: JsonPropertyName("blocks")] public string? Blocks { get; init; }
+        [property: JsonPropertyName("blocks")] public List<Block>? Blocks { get; init; }
     }
 
     [property: JsonPropertyName("team")] public required string Team { get; init; }

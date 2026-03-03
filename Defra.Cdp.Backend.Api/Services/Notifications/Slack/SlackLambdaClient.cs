@@ -1,26 +1,28 @@
 using System.Text.Json;
 using Amazon.SimpleNotificationService;
 using Defra.Cdp.Backend.Api.Config;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 
 public interface ISlackClient
 {
-    Task SendText(string channel, string text, CancellationToken ct); // Plain text message
-    Task SendBlock(string channel, string text, CancellationToken ct); // Richer block style slack messages
+    Task SendToChannel(string channel, SlackMessageBody messageBody,CancellationToken ct); // Richer block style slack messages
 }
 
 public class SlackLambdaClient(IAmazonSimpleNotificationService snsClient, IOptions<SlackLambdaOptions> options, ILogger<SlackLambdaClient> logger) : ISlackClient
 {
     private async Task Send(SlackMessagePayload payload, CancellationToken ct)
     {
+        var messageBody = JsonSerializer.Serialize(payload);
         if (!options.Value.Enabled)
         {
-            logger.LogInformation("Disabled: Would send {Msg} to {Channel}", payload.Message.Blocks ?? payload.Message.Text ?? "", payload.Message.Channel);
+          
+            logger.LogInformation("Disabled: Would send '{Msg}' to {Channel}",  messageBody, payload.Message.Channel);
             return;
         }
-        var messageBody = JsonSerializer.Serialize(payload);
+       
         await snsClient.PublishAsync(options.Value.TopicArn, messageBody, ct);
     }
 
@@ -38,14 +40,15 @@ public class SlackLambdaClient(IAmazonSimpleNotificationService snsClient, IOpti
         await Send(msg, ct);
     }
 
-    public async Task SendBlock(string channel, string block, CancellationToken ct)
+    public async Task SendToChannel(string channel, SlackMessageBody body, CancellationToken ct)
     {
         var msg = new SlackMessagePayload
         {
             Message = new SlackMessagePayload.SlackMessage
             {
                 Channel = channel,
-                Blocks = block
+                Blocks = body.Blocks,
+                Text = body.Text
             },
             Team = channel
         };

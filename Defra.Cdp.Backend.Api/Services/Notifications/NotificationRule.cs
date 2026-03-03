@@ -18,7 +18,7 @@ public record NotificationRule
     public required string Entity { get; init; } 
    
     [BsonIgnoreIfNull]
-    public string? Environment { get; init; }
+    public List<string>? Environments { get; init; }
     
     [BsonIgnoreIfNull]
     public string? SlackChannel { get; init; } // TODO: we could either store the exact channel #foo-bar or as a ref to the team/slack, e.g. @platform:nonProd and look it up

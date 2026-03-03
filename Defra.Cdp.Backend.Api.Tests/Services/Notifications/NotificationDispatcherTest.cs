@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -23,7 +24,7 @@ public class NotificationDispatcherTest
             EventType = NotificationTypes.TestPassed,
             SlackChannel = "foo-non-prod-alerts",
             IsEnabled = true,
-            Environment = "dev"
+            Environments = ["dev"]
         };
 
         var alert = new TestRunPassedEvent { Entity = entityId, Environment = "dev", RunId = "1234" };
@@ -34,7 +35,7 @@ public class NotificationDispatcherTest
 
         var dispatcher = new NotificationDispatcher(_ruleService, _slackClient, _logger);
         await dispatcher.Dispatch(alert, ct);
-        await _slackClient.Received().SendText(Arg.Is(alertInDevRule.SlackChannel), Arg.Any<string>(), ct);
+        await _slackClient.Received().SendToChannel(Arg.Is(alertInDevRule.SlackChannel), Arg.Any<SlackMessageBody>(), ct);
     }
     
     [Fact]
@@ -53,7 +54,7 @@ public class NotificationDispatcherTest
         var dispatcher = new NotificationDispatcher(_ruleService, _slackClient, _logger);
         await dispatcher.Dispatch(new TestRunPassedEvent { Entity = entityId, Environment = "test", RunId = "1234" }, ct);
         await dispatcher.Dispatch(new TestRunPassedEvent { Entity = "anotherEntity", Environment = "dev", RunId = "1234"}, ct);
-        await _slackClient.DidNotReceiveWithAnyArgs().SendText(Arg.Any<string>(), Arg.Any<string>(), ct);
+        await _slackClient.DidNotReceiveWithAnyArgs().SendToChannel(Arg.Any<string>(), Arg.Any<SlackMessageBody>(), ct);
     }
 
     [Fact]
@@ -74,7 +75,7 @@ public class NotificationDispatcherTest
         var dispatcher = new NotificationDispatcher(_ruleService, _slackClient, _logger);
         await dispatcher.Dispatch(alert, ct);
 
-        await _slackClient.DidNotReceiveWithAnyArgs().SendText(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _slackClient.DidNotReceiveWithAnyArgs().SendToChannel(Arg.Any<string>(), Arg.Any<SlackMessageBody>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -99,14 +100,14 @@ public class NotificationDispatcherTest
         };
 
         _ruleService.FindMatchingRules(Arg.Any<INotificationEvent>(), Arg.Any<CancellationToken>()).Returns([badRule, goodRule]);
-        _slackClient.SendText("broken-channel", Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _slackClient.SendToChannel("broken-channel", Arg.Any<SlackMessageBody>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("send failed")));
-        _slackClient.SendText("healthy-channel", Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _slackClient.SendToChannel("healthy-channel", Arg.Any<SlackMessageBody>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var dispatcher = new NotificationDispatcher(_ruleService, _slackClient, _logger);
         await dispatcher.Dispatch(alert, ct);
 
-        await _slackClient.Received(1).SendText("healthy-channel", Arg.Any<string>(), ct);
+        await _slackClient.Received(1).SendToChannel("healthy-channel", Arg.Any<SlackMessageBody>(), ct);
     }
 }

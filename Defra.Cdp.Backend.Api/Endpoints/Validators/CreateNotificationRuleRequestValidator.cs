@@ -11,11 +11,12 @@ public class CreateNotificationRuleRequestValidator: AbstractValidator<CreateRul
         RuleFor(x => x.EventType)
             .NotEmpty()
             .Must(x => NotificationTypes.All.Contains(x))
-            .WithMessage(x => $"Supported event type {x.EventType}");
+            .WithMessage(x => $"Invalid event type {x.EventType}, valid values: { string.Join(",", NotificationTypes.All) }");
 
-        RuleFor(x => x.Environment)
-            .Must(x => x == null || CdpEnvironments.Environments.Contains(x))
-            .WithMessage(x => $"Invalid environment: {x.Environment}");
+        RuleFor(x => x.Environments)
+            .NotNull()
+            .Must(x => x.TrueForAll(env => CdpEnvironments.Environments.Contains(env)))
+            .WithMessage(x => $"Invalid environment(s): {x.Environments.Where(env => !CdpEnvironments.Environments.Contains(env)) }");
 
         RuleFor(x => x.SlackChannel)
             .Must(x => x == null || !string.IsNullOrWhiteSpace(x))

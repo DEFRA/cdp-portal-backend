@@ -18,7 +18,7 @@ public interface INotificationEvent
     string EventType { get; }
     string? Entity { get; }
     string? Environment { get; } 
-    public string SlackMessage();
+    public SlackMessageBody SlackMessage();
 }
 
 public class TestRunFailedEvent : INotificationEvent
@@ -29,7 +29,7 @@ public class TestRunFailedEvent : INotificationEvent
     
     public required string RunId { get; init; }
 
-    public string SlackMessage()
+    public SlackMessageBody SlackMessage()
     {
         return SlackMessageTemplates.TestFailedTemplate(this);
     }
@@ -43,7 +43,7 @@ public class TestRunPassedEvent : INotificationEvent
     
     public required string RunId { get; init; }
 
-    public string SlackMessage()
+    public SlackMessageBody SlackMessage()
     {
         return SlackMessageTemplates.TestPassedTemplate(this);
     }
@@ -57,7 +57,7 @@ public class DeploymentFailedEvent : INotificationEvent
     public required string Version { get; init; }
     public required string DeploymentId { get; init; }
 
-    public string SlackMessage()
+    public SlackMessageBody SlackMessage()
     {
         return SlackMessageTemplates.DeploymentFailedTemplate(this);
     }
