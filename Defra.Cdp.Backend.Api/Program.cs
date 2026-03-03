@@ -41,9 +41,7 @@ using Defra.Cdp.Backend.Api.Utils;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Defra.Cdp.Backend.Api.Utils.Logging;
 using FluentValidation;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Identity.Web;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -267,8 +265,6 @@ builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHa
 
 // Notifications
 builder.Services.Configure<SlackLambdaOptions>(builder.Configuration.GetSection(SlackLambdaOptions.Prefix));
-builder.Services.AddScoped<IValidator<CreateRuleRequest>, CreateNotificationRuleRequestValidator>();
-builder.Services.AddScoped<IValidator<UpdateRuleRequest>, UpdateNotificationRuleRequestValidator>();
 builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
 builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();
