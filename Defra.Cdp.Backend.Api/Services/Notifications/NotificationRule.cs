@@ -1,7 +1,7 @@
+using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
-using Newtonsoft.Json;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications;
 
@@ -10,7 +10,7 @@ public record NotificationRule
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]
-    [JsonIgnore]
+    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public ObjectId? MongoId { get; init; }
     
     public string RuleId { get; init; } = Guid.NewGuid().ToString();

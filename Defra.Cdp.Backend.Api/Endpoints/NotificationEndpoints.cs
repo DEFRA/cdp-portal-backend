@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,7 @@ public static class NotificationEndpoints
     {
         app.MapPost("/entities/{entityId}/notifications", CreateNotification);
         app.MapGet("/entities/{entityId}/notifications", FindNotificationRulesForEntity);
+        app.MapGet("/entities/{entityId}/supported-notifications", FindSupportedNotifications);
         app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule).WithName("GetNotificationRule");
         app.MapPut("/entities/{entityId}/notifications/{ruleId}", UpdateNotification);
         app.MapDelete("/entities/{entityId}/notifications/{ruleId}", DeleteNotification);
@@ -101,6 +103,22 @@ public static class NotificationEndpoints
     {
         var rule = await notificationRuleService.FindRule(ruleId, cancellationToken);
         return rule == null ? Results.NotFound() : Results.Ok(rule);
+    }
+    
+    private static async Task<IResult> FindSupportedNotifications(
+        [FromServices] IEntitiesService entitiesService,
+        [FromRoute] string entityId,
+        CancellationToken cancellationToken)
+    {
+        var entity = await entitiesService.GetEntity(entityId, cancellationToken);
+        
+        if (entity == null)
+        {
+            return Results.NotFound($"entity {entityId} not found");
+        }
+
+        var supportedNotifications = NotificationOptionLookup.FindOptionsForEntity(entity);
+        return Results.Ok(supportedNotifications);
     }
 }
 
