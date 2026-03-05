@@ -21,8 +21,15 @@ public class NotificationDispatcher(
 
         foreach (var rule in rules)
         {
-            if (!rule.IsEnabled || string.IsNullOrWhiteSpace(rule.SlackChannel))
+            if (string.IsNullOrWhiteSpace(rule.SlackChannel))
             {
+                logger.LogWarning("Invalid slack channel {Channel} for ruleId {RuleId}, skipping", rule.SlackChannel, rule.RuleId);
+                continue;
+            }
+            
+            if (!rule.IsEnabled)
+            {
+                logger.LogInformation("{Event} rule for {Entity}, ({RuleId}) is disabled, skipping", rule.EventType, rule.RuleId, rule.Entity);
                 continue;
             }
 

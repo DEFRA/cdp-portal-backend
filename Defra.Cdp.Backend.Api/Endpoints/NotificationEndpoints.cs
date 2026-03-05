@@ -158,6 +158,14 @@ public class CreateRuleRequest : IValidatableObject
                 [nameof(Environments)]
             );
         }
+        
+        if (SlackChannel != null && SlackChannel.StartsWith('#'))
+        {
+            yield return new ValidationResult(
+                "Channels must be provided without a # prefix",
+                [nameof(SlackChannel)]
+            );
+        }
     }
 }
 
@@ -195,6 +203,14 @@ public class UpdateRuleRequest : IValidatableObject
             yield return new ValidationResult(
                 $"invalid environment name {env}",
                 [nameof(Environments)]
+            );
+        }
+
+        if (SlackChannel != null && SlackChannel.StartsWith('#'))
+        {
+            yield return new ValidationResult(
+                "Channels must be provided without a # prefix",
+                [nameof(SlackChannel)]
             );
         }
     }

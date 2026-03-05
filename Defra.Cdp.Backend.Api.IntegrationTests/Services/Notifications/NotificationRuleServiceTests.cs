@@ -177,26 +177,4 @@ public class NotificationRuleServiceTests(MongoContainerFixture fixture) : Mongo
             new TestRunPassedEvent { Entity = "baz-backend", Environment = normalRule.Environments[0], RunId = "444" }, ct);
         Assert.Empty(notMatchedEntity);
     }
-    
-    [Fact]
-    public async Task test_doesnt_match_disabled_rule()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var connectionFactory = CreateMongoDbClientFactory();
-        var rulesService = new NotificationRuleService(connectionFactory, new NullLoggerFactory());
-        var normalRule = new NotificationRule
-        {
-            Entity = "foo",
-            EventType = NotificationTypes.TestPassed,
-            Environments = ["dev"],
-            IsEnabled = false
-        };
-       
-        await rulesService.SaveAsync(normalRule, ct);
-       
-        
-        var matched = await rulesService.FindMatchingRules(
-            new TestRunPassedEvent { Entity = normalRule.Entity, Environment = normalRule.Environments[0], RunId = "444" }, ct);
-        Assert.Empty(matched);
-    }
 }

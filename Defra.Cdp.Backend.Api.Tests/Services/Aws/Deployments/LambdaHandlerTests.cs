@@ -38,8 +38,7 @@ public class LambdaHandlerTests
             .Returns(lookupResult);
         service.LinkDeployment(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
         service.UpdateDeploymentStatus(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
-
+            Arg.Any<CancellationToken>()).Returns(new ServiceStatusChange { DeploymentId = "", EntityId = "", Environment = "", NewStatus = "", Version = "", OldStatus = "" });
         await handler.Handle("1", lambdaEvent, CancellationToken.None);
 
         await service.Received().FindDeploymentByLambdaId("ecs-svc/5730707953135730843", Arg.Any<CancellationToken>());
@@ -76,7 +75,7 @@ public class LambdaHandlerTests
             .Returns(lookupResult);
         service.LinkDeployment(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
         service.UpdateDeploymentStatus(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
+            Arg.Any<CancellationToken>()).Returns(new ServiceStatusChange { DeploymentId = "", EntityId = "", Environment = "", NewStatus = "", Version = "", OldStatus = "" });
 
         await handler.Handle("1", lambdaEvent, CancellationToken.None);
 
@@ -121,8 +120,8 @@ public class LambdaHandlerTests
         service.RegisterDeployment(Arg.Any<Deployment>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         service.UpdateDeploymentStatus(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
-
+            Arg.Any<CancellationToken>()).Returns(new ServiceStatusChange { DeploymentId = "", EntityId = "", Environment = "", NewStatus = "", Version = "", OldStatus = "" });
+        
         await handler.Handle("1", lambdaEvent, CancellationToken.None);
 
         await service.Received().FindDeploymentByLambdaId("ecs-svc/5730707953135730843", Arg.Any<CancellationToken>());
