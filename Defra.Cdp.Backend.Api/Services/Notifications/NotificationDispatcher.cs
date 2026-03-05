@@ -29,7 +29,7 @@ public class NotificationDispatcher(
             
             if (!rule.IsEnabled)
             {
-                logger.LogInformation("{Event} rule for {Entity}, ({RuleId}) is disabled, skipping", rule.EventType, rule.RuleId, rule.Entity);
+                logger.LogInformation("{Event} rule for {Entity}, ({RuleId}) is disabled, skipping", rule.EventType, rule.Entity, rule.RuleId);
                 continue;
             }
 
