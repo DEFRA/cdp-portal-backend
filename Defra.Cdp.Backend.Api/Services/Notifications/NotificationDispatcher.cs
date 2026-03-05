@@ -16,9 +16,6 @@ public class NotificationDispatcher(
     {
         var rules = await notificationRules.FindMatchingRules(notificationEvent, ct);
 
-        if (rules.Count == 0) return;
-        var message = notificationEvent.SlackMessage();
-
         foreach (var rule in rules)
         {
             if (string.IsNullOrWhiteSpace(rule.SlackChannel))
@@ -35,6 +32,7 @@ public class NotificationDispatcher(
 
             try
             {
+                var message = notificationEvent.SlackMessage();
                 await slackClient.SendToChannel(rule.SlackChannel, message, ct);
             }
             catch (Exception ex)
