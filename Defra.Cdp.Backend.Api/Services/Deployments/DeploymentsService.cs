@@ -13,13 +13,23 @@ using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
 namespace Defra.Cdp.Backend.Api.Services.Deployments;
 
+public record ServiceStatusChange
+{
+    public required string DeploymentId { get; init; }
+    public required string Environment { get; init; }
+    public required string? OldStatus { get; init; }
+    public required string NewStatus { get; init; }
+    public required string EntityId { get; init; }
+    public required string Version { get; init; }
+}
+
 public interface IDeploymentsService
 {
     Task RegisterDeployment(Deployment deployment, CancellationToken ct);
     Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
     Task UpdateOverallTaskStatus(Deployment deployment, CancellationToken ct);
     Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
-    Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
+    Task<ServiceStatusChange?> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
 
     Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus,
         CancellationToken ct);
@@ -174,23 +184,30 @@ public class DeploymentsService(
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<bool> UpdateDeploymentStatus(string lambdaId, string eventName, string reason,
+    public async Task<ServiceStatusChange?> UpdateDeploymentStatus(string lambdaId, string eventName, string reason,
         CancellationToken ct)
     {
         var deployment = await FindDeploymentByLambdaId(lambdaId, ct);
+        if (deployment == null) return null;
 
+        var oldStatus = deployment.LastDeploymentStatus;
+        
+        deployment.LastDeploymentStatus = eventName;
         var update = new UpdateDefinitionBuilder<Deployment>()
             .Set(d => d.LastDeploymentStatus, eventName)
-            .Set(d => d.LastDeploymentMessage, reason);
+            .Set(d => d.LastDeploymentMessage, reason)
+            .Set(d => d.Status, CalculateOverallStatus(deployment));
 
-        if (deployment != null)
+        await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
+        return new ServiceStatusChange
         {
-            deployment.LastDeploymentStatus = eventName;
-            update = update.Set(d => d.Status, CalculateOverallStatus(deployment));
-        }
-
-        var result = await Collection.UpdateOneAsync(d => d.LambdaId == lambdaId, update, cancellationToken: ct);
-        return result.ModifiedCount == 1;
+            DeploymentId = deployment.CdpDeploymentId,
+            Environment = deployment.Environment,
+            EntityId = deployment.Service,
+            Version = deployment.Version,
+            NewStatus = deployment.LastDeploymentStatus,
+            OldStatus = oldStatus
+        };
     }
 
     public async Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus,

@@ -60,8 +60,7 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
     public async Task<List<NotificationRule>> FindMatchingRules(INotificationEvent notification, CancellationToken ct)
     {
         var fb = new FilterDefinitionBuilder<NotificationRule>();
-        var filter = fb.Eq(r => r.EventType, notification.EventType) &
-                     fb.Eq(r => r.IsEnabled, true);
+        var filter = fb.Eq(r => r.EventType, notification.EventType);
         
         if (notification.Entity != null)
         {
