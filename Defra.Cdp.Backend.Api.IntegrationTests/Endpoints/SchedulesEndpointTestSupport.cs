@@ -20,6 +20,9 @@ public class SchedulesEndpointTestSupport : MongoTestSupport
 {
     private readonly TestServer _server;
 
+    private const string MockToken =
+        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiQWRtaW4gVXNlciIsIm9pZCI6IjkwNTUyNzk0LTA2MTMtNDAyMy04MTlhLTUxMmFhOWQ0MDAyMyJ9.";
+    
     public SchedulesEndpointTestSupport(MongoContainerFixture fixture) : base(fixture)
     {
         IEntitiesService entitiesService = new EntitiesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
@@ -71,13 +74,11 @@ public class SchedulesEndpointTestSupport : MongoTestSupport
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer",
-                "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiQWRtaW4gVXNlciIsIm9pZCI6IjkwNTUyNzk0LTA2MTMtNDAyMy04MTlhLTUxMmFhOWQ0MDAyMyJ9.");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", MockToken);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-        var body = await response.Content.ReadAsStringAsync();
-        Console.WriteLine(body);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
         Assert.True(response.StatusCode == HttpStatusCode.Created,
             $"Expected 201 Created but got {response.StatusCode}. json: {body}");
     }

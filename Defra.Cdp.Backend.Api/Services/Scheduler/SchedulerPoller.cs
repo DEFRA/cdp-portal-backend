@@ -1,6 +1,4 @@
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
-using MongoDB.Driver;
 using Quartz;
 
 namespace Defra.Cdp.Backend.Api.Services.Scheduler;
@@ -60,10 +58,8 @@ public class SchedulerPoller(
                 }
 
                 // Add a minute so NextRunAt for one-off and minute frequencies get calculated correctly 
-                schedule.RecalculateNextRun(now.AddMinutes(1));
-
-                await schedulerService.UpdateAsync(schedule.Id,
-                    Builders<MongoSchedule>.Update.Set(s => s.NextRunAt, schedule.NextRunAt), ct);
+                var nextRun = schedule.RecalculateNextRun(now.AddMinutes(1));
+                await schedulerService.UpdateNextRunAtAsync(schedule.Id, nextRun, ct);
             }
         }
         finally

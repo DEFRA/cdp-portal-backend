@@ -3,7 +3,6 @@ using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver;
 using NSubstitute;
 using Quartz;
 
@@ -91,9 +90,9 @@ public class SchedulerPollerTests
             Arg.Any<ILogger<object>>(),
             Arg.Any<CancellationToken>());
 
-        await schedulerService.Received(1).UpdateAsync(
+        await schedulerService.Received(1).UpdateNextRunAtAsync(
             id,
-            Arg.Any<UpdateDefinition<MongoSchedule>>(),
+            Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
 
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
@@ -141,11 +140,12 @@ public class SchedulerPollerTests
 
         await poller.Execute(context);
 
-        await schedulerService.DidNotReceive().UpdateAsync(
+        await schedulerService.DidNotReceive().UpdateNextRunAtAsync(
             Arg.Any<string>(),
-            Arg.Any<UpdateDefinition<MongoSchedule>>(),
+            Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
-
+        
+        
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
     }
 
@@ -186,9 +186,9 @@ public class SchedulerPollerTests
 
         await task.DidNotReceiveWithAnyArgs().ExecuteAsync(default, default, default, default);
 
-        await schedulerService.Received(1).UpdateAsync(
+        await schedulerService.Received(1).UpdateNextRunAtAsync(
             schedule.Id,
-            Arg.Any<UpdateDefinition<MongoSchedule>>(),
+            Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
 
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
