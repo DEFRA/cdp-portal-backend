@@ -6,7 +6,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 
-public class MongoSchedule
+public record MongoSchedule
 {
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]

@@ -11,8 +11,10 @@ public interface ISchedulerService
     Task<List<MongoSchedule>> FetchSchedules(ScheduleMatchers query, CancellationToken ct);
 
     Task<List<MongoSchedule>> FetchDueSchedules(CancellationToken ct);
+   
+    Task<bool> UpdateAsync(string id, MongoSchedule updatedSchedule, CancellationToken ct);
 
-    Task<UpdateResult?> UpdateAsync(string? id, UpdateDefinition<MongoSchedule> update, CancellationToken ct);
+    Task<bool> UpdateNextRunAtAsync(string id, DateTime? nextRun, CancellationToken ct);
 
     Task<bool> DeleteSchedule(string scheduleId, CancellationToken ct);
 }
@@ -86,13 +88,23 @@ public class SchedulerService(
             cancellationToken: ct);
     }
 
-    public async Task<UpdateResult> UpdateNextRunAtAsync(MongoSchedule schedule, DateTime now, CancellationToken ct)
+    public async Task<bool> UpdateAsync(string id, MongoSchedule updatedSchedule, CancellationToken ct)
     {
-        return await Collection.UpdateOneAsync(
-            Builders<MongoSchedule>.Filter.Eq(s => s.Id, schedule.Id),
-            Builders<MongoSchedule>.Update.Set(s => s.NextRunAt, schedule.RecalculateNextRun(now)),
+        var result = await Collection.ReplaceOneAsync(
+            Builders<MongoSchedule>.Filter.Eq(s => s.Id, id),
+            updatedSchedule,
+            cancellationToken: ct);
+        return result.ModifiedCount > 0;
+    }
+
+    public async Task<bool> UpdateNextRunAtAsync(string id, DateTime? nextRun, CancellationToken ct)
+    {
+        var result = await Collection.UpdateOneAsync(
+            Builders<MongoSchedule>.Filter.Eq(s => s.Id, id),
+            Builders<MongoSchedule>.Update.Set(s => s.NextRunAt, nextRun),
             cancellationToken: ct
         );
+        return result.ModifiedCount > 0;
     }
 
     public async Task<bool> DeleteSchedule(string scheduleId, CancellationToken ct = default)

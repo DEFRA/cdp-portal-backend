@@ -13,9 +13,9 @@ public abstract class ScheduleConfig
 
     [JsonPropertyName("frequency")] public string Frequency { get; set; } = default!;
 
-    [JsonPropertyName("startDate")] public virtual DateTime StartDate { get; protected set; } = DateTime.UtcNow;
+    [JsonPropertyName("startDate")] public virtual DateTime StartDate { get; set; } = DateTime.UtcNow;
 
-    [JsonPropertyName("endDate")] public virtual DateTime? EndDate { get; protected set; }
+    [JsonPropertyName("endDate")] public virtual DateTime? EndDate { get; set; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

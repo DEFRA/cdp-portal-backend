@@ -26,6 +26,7 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{repositoryName}/schedules", CreateSchedule);
         app.MapGet("/entities/{repositoryName}/schedules", GetSchedules);
         app.MapGet("/entities/{repositoryName}/schedules/{scheduleId}", GetSchedule);
+        app.MapPatch("/entities/{repositoryName}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{repositoryName}/schedules/{scheduleId}", DeleteSchedule);
     }
 
@@ -98,7 +99,7 @@ public static class EntitiesEndpoint
     private static async Task<IResult> CreateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
-        string repositoryName,
+        [FromRoute] string repositoryName,
         [FromBody] EntityScheduleRequest scheduleRequest,
         [FromHeader(Name = "Authorization")] string? bearerToken,
         CancellationToken ct)
@@ -141,6 +142,63 @@ public static class EntitiesEndpoint
             ct)).FirstOrDefault();
 
         return Results.Created($"/entities/{repositoryName}/schedules/{mongoSchedule.Id}", createdSchedule);
+    }
+    
+    private static async Task<IResult> UpdateSchedule(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] ISchedulerService schedulerService,
+        [FromRoute] string repositoryName,
+        [FromRoute] string scheduleId,
+        [FromBody] EntityScheduleRequest scheduleRequest,
+        [FromHeader(Name = "Authorization")] string? bearerToken,
+        CancellationToken ct)
+    {
+        var context = new ValidationContext(scheduleRequest.Config);
+        var results = new List<ValidationResult>();
+        var isValid =
+            Validator.TryValidateObject(scheduleRequest.Config, context, results, validateAllProperties: true);
+
+        if (!isValid)
+        {
+            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+        }
+
+        var user = ExtractedUserDetails(bearerToken);
+
+        if (user == null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var entity = await entitiesService.GetEntity(repositoryName, ct);
+
+        if (entity == null)
+        {
+            return Results.NotFound("Entity not found");
+        }
+        
+        var originalSchedule = (await schedulerService.FetchSchedules(
+            new ScheduleMatchers { Id = scheduleId },
+            ct)).FirstOrDefault();
+
+        if (originalSchedule == null)
+        {
+            return Results.NotFound("Schedule id not found");
+        }
+
+        if (scheduleRequest.Task is EntityTestSuiteTask && entity.Type != Type.TestSuite)
+        {
+            return Results.Conflict("Entity is not a test suite");
+        }
+        
+        var mongoSchedule = ScheduleMapper.ToUpdatedMongo(scheduleRequest, originalSchedule, user, repositoryName);
+        await schedulerService.UpdateAsync(scheduleId, mongoSchedule, ct);
+
+        var updatedSchedule = (await schedulerService.FetchSchedules(
+            new ScheduleMatchers { Id = scheduleId },
+            ct)).FirstOrDefault();
+        
+        return Results.Ok(updatedSchedule);
     }
 
     // temporary until we play auth ticket 
