@@ -283,8 +283,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 
 // API docs
-builder.Services.AddEndpointsApiExplorer();
-
+//builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOpenApi();
 
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
@@ -314,5 +314,7 @@ app.MapDebugEndpoint();
 app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
+
+app.MapOpenApi();
 
 app.Run();
