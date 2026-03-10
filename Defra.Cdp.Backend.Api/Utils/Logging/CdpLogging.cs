@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Defra.Cdp.Backend.Api.Utils.Auditing;
-using Elastic.CommonSchema.Serilog;
+using Elastic.Serilog.Enrichers.Web;
 using Serilog;
 
 namespace Defra.Cdp.Backend.Api.Utils.Logging;
