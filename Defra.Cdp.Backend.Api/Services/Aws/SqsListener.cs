@@ -18,15 +18,12 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             return;
         }
 
-#pragma warning disable CS0618 // Type or member is obsolete        
         var receiveMessageRequest = new ReceiveMessageRequest
         {
-            // Replacing AttributeNames with MessageSystemAttributeNames causes attributes to not return - might just be Localstack
             QueueUrl = QueueUrl,
             WaitTimeSeconds = WaitTimeoutSeconds,
-            AttributeNames = ["All"]
+            MessageSystemAttributeNames = ["All"]
         };
-#pragma warning restore CS0618 // Type or member is obsolete
 
         var deleteRequest = new DeleteMessageRequest
         {
@@ -42,8 +39,7 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             try
             {
                 receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, stoppingToken);
-                if (receiveMessageResponse.Messages == null) continue;
-                if (receiveMessageResponse.Messages.Count == 0) continue;
+                if (receiveMessageResponse.Messages?.Count is null or 0) continue;
 
                 foreach (var message in receiveMessageResponse.Messages)
                 {

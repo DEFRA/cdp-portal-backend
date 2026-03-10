@@ -1,10 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using Defra.Cdp.Backend.Api.Endpoints;
-using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Services.Notifications;
-using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;

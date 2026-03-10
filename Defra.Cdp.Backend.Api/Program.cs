@@ -1,6 +1,5 @@
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
-using Defra.Cdp.Backend.Api.Endpoints.Validators;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Schedulers;
@@ -40,7 +39,6 @@ using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Defra.Cdp.Backend.Api.Utils.Logging;
-using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -105,10 +103,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 // Setup Bson Serializers ahead of any mongo services (This will cause problems if the enum is used in an index)
-BsonSerializer.RegisterSerializer(typeof(Type), new EnumSerializer<Type>(BsonType.String));
-BsonSerializer.RegisterSerializer(typeof(SubType), new EnumSerializer<SubType>(BsonType.String));
-BsonSerializer.RegisterSerializer(typeof(Status), new EnumSerializer<Status>(BsonType.String));
-BsonSerializer.RegisterSerializer(typeof(ShutteringStatus), new EnumSerializer<ShutteringStatus>(BsonType.String));
+BsonSerializer.RegisterSerializer(new EnumSerializer<Type>(BsonType.String));
+BsonSerializer.RegisterSerializer(new EnumSerializer<SubType>(BsonType.String));
+BsonSerializer.RegisterSerializer(new EnumSerializer<Status>(BsonType.String));
+BsonSerializer.RegisterSerializer(new EnumSerializer<ShutteringStatus>(BsonType.String));
 
 
 if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleTask)))
@@ -120,6 +118,7 @@ if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleTask)))
         cm.AddKnownType(typeof(MongoTestSuiteScheduleTask));
     });
 }
+
 
 if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleConfig)))
 {
@@ -136,7 +135,6 @@ if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleConfig)))
 }
 
 // Mongo
-
 MongoClientSettings.Extensions.AddAWSAuthentication();
 builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
 builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
@@ -152,8 +150,6 @@ builder.Services.Configure<PlatformEventListenerOptions>(
     builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.Configure<CloudWatchMetricsOptions>(builder.Configuration.GetSection(CloudWatchMetricsOptions.Prefix));
-builder.Services.AddScoped<IValidator<RequestedDeployment>, RequestedDeploymentValidator>();
-
 
 // AWS Clients
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
@@ -276,11 +272,6 @@ builder.Services.AddHostedService<SecretEventListener>();
 builder.Services.AddHostedService<GithubWorkflowEventListener>();
 builder.Services.AddHostedService<PlatformEventListener>();
 builder.Services.AddHostedService<MonoLambdaEventListener>();
-
-// Validators
-// Add every validator we can find in the assembly that contains this Program
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
 
 // API docs
 //builder.Services.AddEndpointsApiExplorer();

@@ -1,7 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using FluentAssertions;
-using Microsoft.Extensions.Logging;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Github.ScheduledTasks;
 
@@ -84,6 +82,7 @@ public class PopulateGithubRepositoriesTest
                 ]
             }
         };
-        repositories.Should().BeEquivalentTo(expected);
+        
+        Assert.Equivalent(expected, repositories);
     }
 }
