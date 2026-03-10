@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
@@ -36,25 +37,27 @@ public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoT
                 It.IsAny<double>()))
             .Verifiable();
 
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        using var host = new HostBuilder()
+            .ConfigureWebHost(webBuilder =>
             {
-                services.AddRouting();
-                services.AddSingleton<ITerminalService>(terminalService);
-                services.AddSingleton<IAuditService>(auditService);
-            })
-            .Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(endpoints =>
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
                 {
-                    endpoints.MapTerminalEndpoint();
+                    services.AddRouting();
+                    services.AddSingleton<ITerminalService>(terminalService);
+                    services.AddSingleton<IAuditService>(auditService);
                 });
-            });
-
-        // Create Server
-        var server = new TestServer(builder);
-        var client = server.CreateClient();
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapTerminalEndpoint();
+                    });
+                });
+            })
+            .Start();
+        var client = host.GetTestClient();
 
         var prodSession = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
         var prodResponse = await client.PostAsJsonAsync("/terminals", prodSession, cancellationToken: TestContext.Current.CancellationToken);

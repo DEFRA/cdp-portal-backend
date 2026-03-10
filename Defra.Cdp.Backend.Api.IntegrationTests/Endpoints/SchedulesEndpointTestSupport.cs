@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -18,7 +19,7 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
 public class SchedulesEndpointTestSupport : MongoTestSupport
 {
-    private readonly TestServer _server;
+    private readonly IHost _host;
 
     private const string MockToken =
         "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiQWRtaW4gVXNlciIsIm9pZCI6IjkwNTUyNzk0LTA2MTMtNDAyMy04MTlhLTUxMmFhOWQ0MDAyMyJ9.";
@@ -27,30 +28,33 @@ public class SchedulesEndpointTestSupport : MongoTestSupport
     {
         IEntitiesService entitiesService = new EntitiesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        _host = new HostBuilder()
+            .ConfigureWebHost(webBuilder =>
             {
-                services.AddRouting();
-                services.AddSingleton<ISchedulerService, SchedulerService>();
-                services.AddSingleton(entitiesService);
-                services.AddSingleton<IMongoDbClientFactory>(CreateMongoDbClientFactory());
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
+                {
+                    services.AddRouting();
+                    services.AddSingleton<ISchedulerService, SchedulerService>();
+                    services.AddSingleton(entitiesService);
+                    services.AddSingleton<IMongoDbClientFactory>(CreateMongoDbClientFactory());
+                });
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints => { endpoints.MapSchedulesEndpoint(); });
+                });
             })
-            .Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(endpoints => { endpoints.MapSchedulesEndpoint(); });
-            });
+            .Start();
 
         var tasks = EntityTestData().Select(e => entitiesService.Create(e, CancellationToken.None));
         Task.WaitAll(tasks.ToArray(), CancellationToken.None);
-
-        _server = new TestServer(builder);
     }
 
     [Fact]
     public async Task Should_create_test_suite_task_schedule()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
 
         var json = """
                    {
