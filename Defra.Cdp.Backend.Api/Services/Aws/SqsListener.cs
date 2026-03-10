@@ -3,27 +3,15 @@ using Amazon.SQS.Model;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws;
 
-public interface ISqsListener
-{
-    public Task ReadAsync(CancellationToken cancellationToken);
-}
-
 public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logger, bool enabled = true)
-    : ISqsListener, IDisposable
-{
+    : BackgroundService {
+    
     protected readonly string QueueUrl = queueUrl;
     private bool _enabled = enabled;
     private const int WaitTimeoutSeconds = 15;
-
-    public void Dispose()
+    
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _enabled = false;
-        sqs.Dispose();
-    }
-
-    public async Task ReadAsync(CancellationToken cancellationToken)
-    {
-
         if (!_enabled)
         {
             logger.LogInformation("Listener for {QueueUrl} is disabled", QueueUrl);
@@ -50,17 +38,17 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
         var falloff = 1;
         ReceiveMessageResponse receiveMessageResponse;
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
             try
             {
-                receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, cancellationToken);
+                receiveMessageResponse = await sqs.ReceiveMessageAsync(receiveMessageRequest, stoppingToken);
                 if (receiveMessageResponse.Messages == null) continue;
                 if (receiveMessageResponse.Messages.Count == 0) continue;
 
                 foreach (var message in receiveMessageResponse.Messages)
                 {
                     // Ensure we don't cancel the handler mid-request
-                    if (cancellationToken.IsCancellationRequested) break;
+                    if (stoppingToken.IsCancellationRequested) break;
                     var innerCancellationToken = CancellationToken.None;
 
                     try
@@ -83,10 +71,16 @@ public abstract class SqsListener(IAmazonSQS sqs, string queueUrl, ILogger logge
             catch (Exception exception)
             {
                 logger.LogError("{Message}", exception.Message);
-                await Task.Delay(1000 * Math.Min(60, falloff), cancellationToken);
+                await Task.Delay(1000 * Math.Min(60, falloff), stoppingToken);
                 falloff++;
-                // TODO: decide how to handle failures here. what kind of failures are they? AWS connection stuff?
             }
+    }
+
+
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Stopping event listener on {Queue}", QueueUrl);
+        return base.StopAsync(cancellationToken);
     }
 
     protected abstract Task HandleMessageAsync(Message message, CancellationToken cancellationToken);

@@ -269,11 +269,20 @@ builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>()
 builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
 builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();
 
+// Register background SQS listeners
+builder.Services.AddHostedService<EcsEventListener>();
+builder.Services.AddHostedService<EcrEventListener>();
+builder.Services.AddHostedService<SecretEventListener>();
+builder.Services.AddHostedService<GithubWorkflowEventListener>();
+builder.Services.AddHostedService<PlatformEventListener>();
+builder.Services.AddHostedService<MonoLambdaEventListener>();
 
 // Validators
 // Add every validator we can find in the assembly that contains this Program
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
+
+// API docs
 builder.Services.AddEndpointsApiExplorer();
 
 
@@ -305,49 +314,5 @@ app.MapDebugEndpoint();
 app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
-
-
-
-var logger = app.Services.GetService<ILogger<Program>>();
-
-// Start the ecs and ecr services
-#pragma warning disable CS4014
-var ecsSqsEventListener = app.Services.GetService<EcsEventListener>();
-logger?.LogInformation("Starting ECS listener - reading service events from SQS");
-Task.Run(() =>
-    ecsSqsEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-var ecrSqsEventListener = app.Services.GetService<EcrEventListener>();
-logger?.LogInformation("Starting ECR listener - reading image creation events from SQS");
-Task.Run(() =>
-    ecrSqsEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-var secretEventListener = app.Services.GetService<SecretEventListener>();
-logger?.LogInformation("Starting Secret Event listener - reading secret update events from SQS");
-Task.Run(() =>
-    secretEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-var gitHubWorkflowEventListener = app.Services.GetService<GithubWorkflowEventListener>();
-logger?.LogInformation("Starting GitHub Workflow Event listener - reading workflow events from SQS");
-Task.Run(() =>
-    gitHubWorkflowEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-var platformEventListener = app.Services.GetService<PlatformEventListener>();
-logger?.LogInformation("Starting Platform Event listener - reading portal events from SQS");
-Task.Run(() =>
-    platformEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-var lambdaEventListener = app.Services.GetService<MonoLambdaEventListener>();
-logger?.LogInformation("Starting Lambda Event listener - reading portal events from SQS");
-Task.Run(() =>
-    lambdaEventListener?.ReadAsync(app.Lifetime
-        .ApplicationStopping)); // do not await this, we want it to run in the background
-
-#pragma warning restore CS4014
 
 app.Run();
