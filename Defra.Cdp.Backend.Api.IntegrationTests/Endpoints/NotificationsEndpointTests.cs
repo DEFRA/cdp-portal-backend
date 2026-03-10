@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
@@ -16,31 +17,34 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 public class NotificationsEndpointTests : MongoTestSupport
 {
     // Create Server
-    private readonly TestServer _server;
+    private readonly IHost _host;
 
     public NotificationsEndpointTests(MongoContainerFixture fixture) : base(fixture)
     {
         INotificationRuleService ruleService = new NotificationRuleService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        _host = new HostBuilder()
+            .ConfigureWebHost(webBuilder =>
             {
-                services.AddRouting();
-                services.AddSingleton(ruleService);
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
+                {
+                    services.AddRouting();
+                    services.AddSingleton(ruleService);
+                });
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints => { endpoints.MapNotificationEndpoints(); });
+                });
             })
-            .Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(endpoints => { endpoints.MapNotificationEndpoints(); });
-            });
-
-        _server = new TestServer(builder);
+            .Start();
     }
 
     [Fact]
     public async Task Should_create_new_rule_with_valid_payload()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
         var request = new CreateRuleRequest { EventType = NotificationTypes.TestPassed, Environments = ["dev"] };
         var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, result.StatusCode);
@@ -49,7 +53,7 @@ public class NotificationsEndpointTests : MongoTestSupport
     [Fact]
     public async Task Should_reject_new_rule_with_invalid_environment()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
         var request = new CreateRuleRequest { EventType = NotificationTypes.TestPassed, Environments = ["foo"] };
         var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
@@ -58,7 +62,7 @@ public class NotificationsEndpointTests : MongoTestSupport
     [Fact]
     public async Task Should_reject_new_rule_with_invalid_type()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
         var request = new CreateRuleRequest { EventType = "pigeon-alert", Environments = ["foo"] };
         var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
@@ -67,7 +71,7 @@ public class NotificationsEndpointTests : MongoTestSupport
     [Fact]
     public async Task Should_update_and_delete_a_rule()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
         
         // Create
         var request = new CreateRuleRequest { EventType = NotificationTypes.TestPassed, Environments = ["dev"] };

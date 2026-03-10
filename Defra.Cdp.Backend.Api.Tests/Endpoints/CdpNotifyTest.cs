@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
@@ -30,22 +31,26 @@ public class CdpNotifyTest
     {
         var entitiesService = Substitute.For<IEntitiesService>();
         var userServiceFetcher = Substitute.For<IUserServiceBackendClient>();
-
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        
+        using var host = await new HostBuilder()
+            .ConfigureWebHost(webBuilder =>
             {
-                services.AddRouting();
-                services.AddSingleton(entitiesService);
-                services.AddSingleton(userServiceFetcher);
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
+                {
+                    services.AddRouting();
+                    services.AddSingleton(entitiesService);
+                    services.AddSingleton(userServiceFetcher);
+                });
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints => { endpoints.MapEntitiesEndpoint(); });
+                });
             })
-            .Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(endpoints => { endpoints.MapEntitiesEndpoint(); });
-            });
+            .StartAsync(TestContext.Current.CancellationToken);
 
-        var server = new TestServer(builder);
-        var client = server.CreateClient();
+        var client = host.GetTestClient();
 
         var service = new Entity
         {

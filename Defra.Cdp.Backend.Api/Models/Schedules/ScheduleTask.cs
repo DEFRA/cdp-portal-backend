@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Models.Schedules;
 [JsonDerivedType(typeof(TestSuiteTask), "DeployTestSuite")]
 public abstract class ScheduleTask
 {
-    [JsonPropertyName("type")] public TaskTypeEnum Type { get; protected set; }
+    [JsonIgnore] public TaskTypeEnum Type { get; protected set; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

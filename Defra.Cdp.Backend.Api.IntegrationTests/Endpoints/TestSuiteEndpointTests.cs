@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
@@ -15,30 +16,34 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 public class TestSuiteEndpointTests : MongoTestSupport
 {
     private readonly ITestRunService _testRunService;
-    private readonly TestServer _server;
+    private readonly IHost _host;
 
     public TestSuiteEndpointTests(MongoContainerFixture fixture) : base(fixture)
     {
         _testRunService = new TestRunService(CreateMongoDbClientFactory(), new NullLoggerFactory());
 
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        _host = new HostBuilder()
+            .ConfigureWebHost(webBuilder =>
             {
-                services.AddRouting();
-                services.AddSingleton(_testRunService);
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
+                {
+                    services.AddRouting();
+                    services.AddSingleton(_testRunService);
+                });
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints => { endpoints.MapTestSuiteEndpoint(); });
+                });
             })
-            .Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(endpoints => { endpoints.MapTestSuiteEndpoint(); });
-            });
-        _server = new TestServer(builder);
+            .Start();
     }
 
     [Fact]
     public async Task test_creating_and_finding_test_runs()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
         var createTest = new TestRun
         {
             RunId = "1234",
@@ -77,7 +82,7 @@ public class TestSuiteEndpointTests : MongoTestSupport
                 TestContext.Current.CancellationToken);
         }
 
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
 
         // First page, should be fully populated
         var resp = await client.GetAsync("/test-run?name=pagination&size=10", TestContext.Current.CancellationToken);
@@ -101,7 +106,7 @@ public class TestSuiteEndpointTests : MongoTestSupport
     [Fact]
     public async Task test_filter_on_env()
     {
-        var client = _server.CreateClient();
+        var client = _host.GetTestClient();
 
         var createTestProd = new TestRun
         {

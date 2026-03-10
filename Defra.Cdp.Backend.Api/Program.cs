@@ -100,7 +100,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
         ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -276,6 +276,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddEndpointsApiExplorer();
 
+
 //-------- Build and Setup the WebApplication------------------//
 var app = builder.Build();
 
@@ -304,6 +305,8 @@ app.MapDebugEndpoint();
 app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
+
+
 
 var logger = app.Services.GetService<ILogger<Program>>();
 
