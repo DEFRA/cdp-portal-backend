@@ -1,9 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -142,13 +142,16 @@ public static class DeploymentsEndpoint
     private static async Task<IResult> RegisterDeployment(
         IDeploymentsService deploymentsService,
         ISecretsService secretsService,
-        IValidator<RequestedDeployment> validator,
         RequestedDeployment requestedDeployment,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var validatedResult = await validator.ValidateAsync(requestedDeployment, cancellationToken);
-        if (!validatedResult.IsValid) return Results.ValidationProblem(validatedResult.ToDictionary());
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(requestedDeployment, new ValidationContext(requestedDeployment), results, validateAllProperties: true);
+        if (!isValid)
+        {
+            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+        }
 
         var logger = loggerFactory.CreateLogger("RegisterDeployment");
         logger.LogInformation("Registering deployment {DeploymentId}", requestedDeployment.DeploymentId);

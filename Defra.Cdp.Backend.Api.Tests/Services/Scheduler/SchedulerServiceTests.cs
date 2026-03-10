@@ -97,7 +97,7 @@ public class SchedulerDomainTests
 
         var nextRunAt = DateTime.UtcNow.AddMinutes(-10); // outside tolerance
 
-        await task.ExecuteAsync(services, nextRunAt, logger, CancellationToken.None);
+        await task.ExecuteAsync(services, nextRunAt, logger, TestContext.Current.CancellationToken);
 
         await deployer.DidNotReceiveWithAnyArgs().DeployAsync(default!, default!, default, default, default, default);
     }
