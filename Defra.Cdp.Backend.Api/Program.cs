@@ -274,7 +274,6 @@ builder.Services.AddHostedService<PlatformEventListener>();
 builder.Services.AddHostedService<MonoLambdaEventListener>();
 
 // API docs
-//builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
 //-------- Build and Setup the WebApplication------------------//
