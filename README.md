@@ -48,16 +48,8 @@ When an event comes in it will do the following:
 
 **Artifacts and images - what we can deploy on the portal**
 
-`cdp-portal-backend` listens for SQS events from the AWS ECR repository. When a new container is pushed, this service
-will download the manifest of the image.
-If it hasn't seen the image before it will attempt to retrieve all the layers of the image, including the config layer.
-As it encounters files/data of interest it will read and
-store this data.
-Currently it extracts:
-
-- Labels (specifically ones added during the build process to link it to the git repo that created it)
-- Package.json (this is an example of how file extraction might work. In practice we'd want to search for
-  package-lock.json etc)
+`cdp-portal-backend` listens for SQS events from the AWS ECR repository. It keeps track of what versions/tags are 
+available and to deploy. If a tag is deleted from ECR it is also deleted from cdp-portal-backend.
 
 ## APIs
 
@@ -203,7 +195,7 @@ you'll get 1 event per instance rather than the whole deployment
 
 `GET /running-services/:service` return the most recent deployment for a given service in each environment
 
-### Get list of all Github repositories
+### Get list of all GitHub repositories
 
 `GET /repositories` returns all repositories for the organisation
 
@@ -327,52 +319,4 @@ docker run --pull=always -d -p 4566:4566 -p 4510-4559:4510-4559 localstack/local
 
 ```bash
 awslocal sqs create-queue --queue-name ecs-deployments
-```
-
-### Simulating ECR SQS messages locally
-
-Send a message to the `ecr-push-events` queue, simulates a docker image available in the docker registry, for
-deployment.
-
-This assumes:
-
-- The AWS LocalStack Docker container is running and AWS LocalStack is installed.
-- The appropriate docker image has been added to your local docker registry.
-
-If you're not using AWS LocalStack, just replace the command with the normal aws command line + localstack connection
-details.
-
-- Create the `ecr-push-events` queue:
-
-```bash
-awslocal sqs create-queue --queue-name ecr-push-events
-```
-
-- Send an event:
-
-```bash
-awslocal sqs send-message --queue-url "http://127.0.0.1:4566/000000000000/ecr-push-events" --message-body '{"detail": { "result": "SUCCESS", "action-type": "PUSH", "image-tag": "0.1.0", "repository-name": "cdp-portal-frontend"}}'
-```
-
-### Generate fake deployments
-
-To Generate fake deployments across environments.
-
-This assumes:
-
-- The appropriate docker image has been added to your local docker registry.
-- An `ecr-push-events` SQS queue message has been sent
-
-```bash
-cd cdp-portal-backend
-```
-
-```bash
-./generate-fake-deployments.sh service-name version
-```
-
-E.g:
-
-```bash
-./generate-fake-deployments.sh cdp-portal-frontend 0.1.0
 ```
