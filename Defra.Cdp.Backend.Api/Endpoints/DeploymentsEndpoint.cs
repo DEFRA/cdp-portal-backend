@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -24,7 +25,7 @@ public static class DeploymentsEndpoint
     }
 
     // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
-    private static async Task<IResult> FindLatestDeployments(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
+    private static async Task<Ok<Paginated<Deployment>>> FindLatestDeployments(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "team")] string? team,
         [AsParameters] DeploymentMatchers matchers,
         [AsParameters] Pagination pagination,
@@ -45,10 +46,10 @@ public static class DeploymentsEndpoint
             pagination.Size ?? DeploymentsService.DefaultPageSize,
             cancellationToken
         );
-        return Results.Ok(deploymentsPage);
+        return TypedResults.Ok(deploymentsPage);
     }
 
-    private static async Task<IResult> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
+    private static async Task<Ok<Paginated<DeploymentOrMigration>>> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "team")] string? team,
         [AsParameters] DeploymentMatchers matchers,
         [AsParameters] Pagination pagination,
@@ -69,11 +70,11 @@ public static class DeploymentsEndpoint
             pagination.Size ?? DeploymentsService.DefaultPageSize,
             cancellationToken
         );
-        return Results.Ok(deploymentsPage);
+        return TypedResults.Ok(deploymentsPage);
     }
 
     // GET /deployments/filters
-    private static async Task<IResult> GetDeploymentsFilters(
+    private static async Task<Ok<DeploymentFiltersResponse>> GetDeploymentsFilters(
         IDeploymentsService deploymentsService,
         IUserServiceBackendClient userServiceBackendClient,
         CancellationToken cancellationToken)
@@ -84,23 +85,23 @@ public static class DeploymentsEndpoint
         {
             deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
         }
-        return Results.Ok(new { Filters = deploymentFilters });
+        return TypedResults.Ok(new DeploymentFiltersResponse{ Filters = deploymentFilters });
     }
 
     // Get /deployments/{deploymentId}
-    private static async Task<IResult> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
+    private static async Task<Results<NotFound<ApiError>, Ok<Deployment>>> FindDeployment(IDeploymentsService deploymentsService, string deploymentId,
         CancellationToken cancellationToken)
     {
         var deployment = await deploymentsService.FindDeployment(deploymentId, cancellationToken);
 
-        if (deployment == null) return Results.NotFound(new ApiError($"{deploymentId} was not found"));
+        if (deployment == null) return TypedResults.NotFound(new ApiError($"{deploymentId} was not found"));
 
         deployment.Secrets.Keys.Sort();
-        return Results.Ok(deployment);
+        return TypedResults.Ok(deployment);
     }
 
     // GET /running-services or with query params GET /running-services?environments=dev&service=forms-runner&status=running
-    private static async Task<IResult> RunningServices(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
+    private static async Task<Ok<List<Deployment>>> RunningServices(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "team")] string? team,
         [AsParameters] DeploymentMatchers matchers,
         CancellationToken cancellationToken)
@@ -114,15 +115,15 @@ public static class DeploymentsEndpoint
         var deployments = await deploymentsService.RunningDeploymentsForService(
             matchers with { Services = servicesForTeam },
             cancellationToken);
-        return Results.Ok(deployments);
+        return TypedResults.Ok(deployments);
     }
 
     // GET /running-services/{service}
-    private static async Task<IResult> RunningServicesForService(IDeploymentsService deploymentsService,
+    private static async Task<Ok<List<Deployment>>> RunningServicesForService(IDeploymentsService deploymentsService,
         string service, CancellationToken cancellationToken)
     {
         var deployments = await deploymentsService.RunningDeploymentsForService(service, cancellationToken);
-        return Results.Ok(deployments);
+        return TypedResults.Ok(deployments);
     }
 
     // GET /running-services/filters
@@ -139,7 +140,7 @@ public static class DeploymentsEndpoint
         return Results.Ok(new { Filters = whatsRunningWhereFilters });
     }
 
-    private static async Task<IResult> RegisterDeployment(
+    private static async Task<Results<BadRequest<IEnumerable<string?>>, Ok>> RegisterDeployment(
         IDeploymentsService deploymentsService,
         ISecretsService secretsService,
         RequestedDeployment requestedDeployment,
@@ -150,7 +151,7 @@ public static class DeploymentsEndpoint
         var isValid = Validator.TryValidateObject(requestedDeployment, new ValidationContext(requestedDeployment), results, validateAllProperties: true);
         if (!isValid)
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            return TypedResults.BadRequest(results.Select(r => r.ErrorMessage));
         }
 
         var logger = loggerFactory.CreateLogger("RegisterDeployment");
@@ -166,16 +167,21 @@ public static class DeploymentsEndpoint
         }
 
         await deploymentsService.RegisterDeployment(deployment, cancellationToken);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
-    private static async Task<IResult> FindDeploymentSettings(
+    private static async Task<Results<NotFound<ApiError>, Ok<DeploymentSettings>>> FindDeploymentSettings(
         IDeploymentsService deploymentsService,
         string service,
         string environment,
         CancellationToken cancellationToken)
     {
         var result = await deploymentsService.FindDeploymentSettings(service, environment, cancellationToken);
-        return result == null ? Results.NotFound(new ApiError("Not found")) : Results.Ok(result);
+        return result == null ? TypedResults.NotFound(new ApiError("Not found")) : TypedResults.Ok(result);
     }
+}
+
+public class DeploymentFiltersResponse
+{
+    public required DeploymentFilters Filters { get; init; }
 }

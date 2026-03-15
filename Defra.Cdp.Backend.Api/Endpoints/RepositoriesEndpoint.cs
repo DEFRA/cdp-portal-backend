@@ -1,6 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -10,24 +10,15 @@ public static class RepositoriesEndpoint
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
         // Template repositories
-        app.MapGet("/repositories/templates",
-                async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Template, cancellationToken));
+        app.MapGet("/repositories/templates", GetRepositoriesByTopic);
 
-        // Template repository
-        app.MapGet("/repositories/templates/{id}",
-                async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryById(repositoryService, id, cancellationToken));
+        app.MapGet("/repositories/templates/{id}", GetRepositoryById);
 
         // Library repositories
-        app.MapGet("/repositories/libraries",
-                async (IRepositoryService repositoryService, CancellationToken cancellationToken) =>
-                    await GetRepositoriesByTopic(repositoryService, CdpTopic.Library, cancellationToken));
+        app.MapGet("/repositories/libraries", GetRepositoriesByTopic);
 
         // Library repository
-        app.MapGet("/repositories/libraries/{id}",
-                async (IRepositoryService repositoryService, string id, CancellationToken cancellationToken) =>
-                    await GetRepositoryById(repositoryService, id, cancellationToken));
+        app.MapGet("/repositories/libraries/{id}", GetRepositoryById);
 
         // Get a Teams repositories
         app.MapGet("/repositories/all/{teamId}", GetTeamRepositories);
@@ -35,24 +26,24 @@ public static class RepositoriesEndpoint
         app.MapGet("/repositories/{id}", GetRepositoryById);
     }
 
-    private static async Task<IResult> GetRepositoryById(IRepositoryService repositoryService, string id,
+    private static async Task<Results<NotFound<ApiError>,Ok<Repository>>> GetRepositoryById(IRepositoryService repositoryService, string id,
         CancellationToken cancellationToken)
     {
         var maybeRepository = await repositoryService.FindRepositoryById(id, cancellationToken);
         return maybeRepository == null
-            ? Results.NotFound(new ApiError($"{id} not found"))
-            : Results.Ok(maybeRepository);
+            ? TypedResults.NotFound(new ApiError($"{id} not found"))
+            : TypedResults.Ok(maybeRepository);
     }
 
-    private static async Task<IResult> GetRepositoriesByTopic(IRepositoryService repositoryService, CdpTopic topic,
+    private static async Task<Ok<List<Repository>>> GetRepositoriesByTopic(IRepositoryService repositoryService, CdpTopic topic,
         CancellationToken cancellationToken)
     {
         var repositories = await repositoryService.FindRepositoriesByTopic(topic, cancellationToken);
 
-        return Results.Ok(repositories);
+        return TypedResults.Ok(repositories);
     }
 
-    private static async Task<IResult> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
+    private static async Task<Ok<AllTeamRepositoriesResponse>> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
         CancellationToken cancellationToken)
     {
         var libraries = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Library,
@@ -61,7 +52,7 @@ public static class RepositoriesEndpoint
         var templates = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Template,
             cancellationToken);
 
-        return Results.Ok(new AllTeamRepositoriesResponse(libraries, templates));
+        return TypedResults.Ok(new AllTeamRepositoriesResponse(libraries, templates));
     }
 
     public sealed record AllTeamRepositoriesResponse(
