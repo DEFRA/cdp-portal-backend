@@ -82,7 +82,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Creates a new entity. This does trigger the actual creation of an entity, only that it was requested.")]
-    private static async Task<IResult> CreateEntity(IEntitiesService entitiesService, Entity entity,
+    private static async Task<Ok> CreateEntity(IEntitiesService entitiesService, Entity entity,
         CancellationToken ct)
     {
         await entitiesService.Create(entity, ct);

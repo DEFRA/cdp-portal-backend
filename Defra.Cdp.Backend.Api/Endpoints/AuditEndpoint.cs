@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Services.Audit;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -10,16 +11,16 @@ public static class AuditEndpoint
         app.MapGet("/audit", FindAudits);
     }
 
-    private static async Task<IResult> FindAudits(IAuditService auditService, CancellationToken cancellationToken)
+    private static async Task<Ok<List<AuditDto>>> FindAudits(IAuditService auditService, CancellationToken cancellationToken)
     {
         var audits = await auditService.FindAll(cancellationToken);
-        return Results.Ok(audits);
+        return TypedResults.Ok(audits);
     }
 
-    private static async Task<IResult> RecordAudit(IAuditService auditService, AuditDto auditDto,
+    private static async Task<Ok> RecordAudit(IAuditService auditService, AuditDto auditDto,
         CancellationToken cancellationToken)
     {
         await auditService.Audit(auditDto, cancellationToken);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 }

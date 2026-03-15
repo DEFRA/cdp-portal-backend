@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -17,15 +18,15 @@ public static class ArtifactsAndDeployablesEndpoint
 
 
     // GET /artifacts/{repo}
-    private static async Task<IResult> ListImagesForRepo(IDeployableArtifactsService deployableArtifactsService, string repo,
+    private static async Task<Ok<List<DeployableArtifact>>> ListImagesForRepo(IDeployableArtifactsService deployableArtifactsService, string repo,
         CancellationToken cancellationToken)
     {
         var allRepos = await deployableArtifactsService.FindAll(repo, cancellationToken);
-        return Results.Ok(allRepos);
+        return TypedResults.Ok(allRepos);
     }
 
     // GET /artifacts/{repo}/{tag}
-    private static async Task<IResult> ListImage(IDeployableArtifactsService deployableArtifactsService, string repo, string tag,
+    private static async Task<Results<NotFound<ApiError>, Ok<DeployableArtifact>>> ListImage(IDeployableArtifactsService deployableArtifactsService, string repo, string tag,
         CancellationToken cancellationToken)
     {
         DeployableArtifact? image;
@@ -37,27 +38,29 @@ public static class ArtifactsAndDeployablesEndpoint
         {
             image = await deployableArtifactsService.FindByTag(repo, tag, cancellationToken);
         }
-        return image == null ? Results.NotFound(new ApiError($"{repo}:{tag} was not found")) : Results.Ok(image);
+        return image == null
+            ? TypedResults.NotFound(new ApiError($"{repo}:{tag} was not found"))
+            : TypedResults.Ok(image);
     }
 
     // GET deployables/{repo}
-    private static async Task<IResult> ListAvailableTagsForRepo(IDeployableArtifactsService deployableArtifactsService,
+    private static async Task<Ok<List<TagInfo>>> ListAvailableTagsForRepo(IDeployableArtifactsService deployableArtifactsService,
         IConfiguration configuration, HttpContext httpContext,
         ILoggerFactory loggerFactory,
         string repo,
         CancellationToken cancellationToken)
     {
         var tags = await deployableArtifactsService.FindAllTagsForRepo(repo, cancellationToken);
-        return Results.Ok(tags);
+        return TypedResults.Ok(tags);
     }
     
     
     // GET latest-artifacts
-    private static async Task<IResult> ListLatestArtifacts(
+    private static async Task<Ok<List<ArtifactVersion>>> ListLatestArtifacts(
         IDeployableArtifactsService deployableArtifactsService,
         CancellationToken cancellationToken)
     {
         var tags = await deployableArtifactsService.FindLatestForAll(cancellationToken);
-        return Results.Ok(tags);
+        return TypedResults.Ok(tags);
     }
 }

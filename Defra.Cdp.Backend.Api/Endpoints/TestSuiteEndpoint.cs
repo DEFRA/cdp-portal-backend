@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -13,14 +14,14 @@ public static class TestSuiteEndpoint
         app.MapPost("/test-run", CreateTestRun);
     }
 
-    private static async Task<IResult> FindTestRun([FromServices] ITestRunService testRunService, string runId,
+    private static async Task<Results<NotFound, Ok<TestRun>>> FindTestRun([FromServices] ITestRunService testRunService, string runId,
         CancellationToken cancellationToken)
     {
         var result = await testRunService.FindTestRun(runId, cancellationToken);
-        return result == null ? Results.NotFound() : Results.Ok(result);
+        return result == null ? TypedResults.NotFound() : TypedResults.Ok(result);
     }
 
-    private static async Task<IResult> FindTestRunsForSuite(
+    private static async Task<Ok<Paginated<TestRun>>> FindTestRunsForSuite(
         [FromServices] ITestRunService testRunService,
         [AsParameters] TestRunMatcher matcher,
         [AsParameters] Pagination pagination,
@@ -32,13 +33,13 @@ public static class TestSuiteEndpoint
             pagination.Page ?? TestRunService.DefaultPage,
             pagination.Size ?? TestRunService.DefaultPageSize, 
             cancellationToken);
-        return Results.Ok(result);
+        return TypedResults.Ok(result);
     }
 
-    private static async Task<IResult> CreateTestRun([FromServices] ITestRunService testRunService, TestRun testRun,
+    private static async Task<Created> CreateTestRun([FromServices] ITestRunService testRunService, TestRun testRun,
         CancellationToken cancellationToken)
     {
         await testRunService.CreateTestRun(testRun, cancellationToken);
-        return Results.Created($"test-run/{testRun.RunId}", null);
+        return TypedResults.Created($"test-run/{testRun.RunId}");
     }
 }

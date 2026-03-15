@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -13,26 +14,26 @@ public static class AutoDeploymentTriggerEndpoint
         app.MapPost("auto-deployments", Save);
     }
 
-    private static async Task<IResult> FindForServiceName(
+    private static async Task<Results<NotFound, Ok<AutoDeploymentTrigger>>> FindForServiceName(
         [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, string serviceName,
         CancellationToken cancellationToken)
     {
         var result = await autoDeploymentTriggerService.FindForService(serviceName, cancellationToken);
-        return result == null ? Results.NotFound() : Results.Ok(result);
+        return result == null ? TypedResults.NotFound() : TypedResults.Ok(result);
     }
 
-    private static async Task<IResult> FindAll(
+    private static async Task<Ok<List<AutoDeploymentTrigger>>> FindAll(
         [FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService, CancellationToken cancellationToken)
     {
-        return Results.Ok(await autoDeploymentTriggerService.FindAll(cancellationToken));
+        return TypedResults.Ok(await autoDeploymentTriggerService.FindAll(cancellationToken));
     }
 
-    private static async Task<IResult> Save([FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService,
+    private static async Task<Results<Accepted, Created<AutoDeploymentTrigger>>> Save([FromServices] IAutoDeploymentTriggerService autoDeploymentTriggerService,
         AutoDeploymentTrigger trigger, CancellationToken cancellationToken)
     {
         var persistedTrigger = await autoDeploymentTriggerService.PersistTrigger(trigger, cancellationToken);
         return persistedTrigger == null
-            ? Results.Accepted("auto-deployments")
-            : Results.Created($"auto-deployments/{persistedTrigger.ServiceName}", persistedTrigger);
+            ? TypedResults.Accepted("auto-deployments")
+            : TypedResults.Created($"auto-deployments/{persistedTrigger.ServiceName}", persistedTrigger);
     }
 }
