@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Utils;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -13,12 +14,13 @@ public static class NotificationEndpoints
         app.MapPost("/entities/{entityId}/notifications", CreateNotification);
         app.MapGet("/entities/{entityId}/notifications", FindNotificationRulesForEntity);
         app.MapGet("/entities/{entityId}/supported-notifications", FindSupportedNotifications);
-        app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule).WithName("GetNotificationRule");
+        app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule);
         app.MapPut("/entities/{entityId}/notifications/{ruleId}", UpdateNotification);
         app.MapDelete("/entities/{entityId}/notifications/{ruleId}", DeleteNotification);
     }
 
-    private static async Task<IResult> CreateNotification(
+    [EndpointDescription("Creates a new notification for an entity")]
+    private static async Task<Results<BadRequest<IEnumerable<string?>>, CreatedAtRoute>> CreateNotification(
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         [FromBody] CreateRuleRequest request,
@@ -28,19 +30,20 @@ public static class NotificationEndpoints
         var isValid = Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         if (!isValid)
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            return TypedResults.BadRequest(results.Select(r => r.ErrorMessage));
         }
 
         var rule = request.ToRule(entityId);
         await notificationRuleService.SaveAsync(rule, cancellationToken);
 
-        return Results.CreatedAtRoute(
+        return TypedResults.CreatedAtRoute(
             routeName: "GetNotificationRule",
             routeValues: new { entityId = rule.Entity, ruleId = rule.RuleId }
         );
     }
 
-    private static async Task<IResult> UpdateNotification(
+    [EndpointDescription("Updates an existing notification by its rule ID")]
+    private static async Task<Results<BadRequest<IEnumerable<string?>>, NotFound<string>, Ok>> UpdateNotification(
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         [FromRoute] string ruleId,
@@ -51,21 +54,22 @@ public static class NotificationEndpoints
         var isValid = Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         if (!isValid)
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            return TypedResults.BadRequest(results.Select(r => r.ErrorMessage));
         }
 
         
         var rule = await notificationRuleService.FindRule(ruleId, cancellationToken);
         if (rule == null)
         {
-            return Results.NotFound($"rule {ruleId} not found");
+            return TypedResults.NotFound($"rule {ruleId} not found");
         }
         
         await notificationRuleService.UpdateAsync(request.ToRule(entityId, rule), cancellationToken);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
-    private static async Task<IResult> DeleteNotification(
+    [EndpointDescription("Deletes an existing notification by its rule ID")]
+    private static async Task<Results<NotFound<string>, BadRequest<string>, Ok>> DeleteNotification(
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         [FromRoute] string ruleId,
@@ -74,38 +78,41 @@ public static class NotificationEndpoints
         var rule = await notificationRuleService.FindRule(ruleId, cancellationToken);
         if (rule == null)
         {
-            return Results.NotFound($"rule {ruleId} not found");
+            return TypedResults.NotFound($"rule {ruleId} not found");
         }
 
         if (rule.Entity != entityId)
         {
-            return Results.BadRequest($"bad request: rule {ruleId} does not belong to {entityId} it belongs to {rule.Entity}");
+            return TypedResults.BadRequest($"bad request: rule {ruleId} does not belong to {entityId} it belongs to {rule.Entity}");
         }
 
         await notificationRuleService.DeleteAsync(ruleId, cancellationToken);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
     
-    private static async Task<IResult> FindNotificationRulesForEntity(
+    [EndpointDescription("Gets all rules that belong to an entity. Does not check entity exists.")]
+    private static async Task<Ok<List<NotificationRule>>> FindNotificationRulesForEntity(
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         CancellationToken cancellationToken)
     {
         var rules = await notificationRuleService.FindByEntity(entityId, cancellationToken);
-        return Results.Ok(rules);
+        return TypedResults.Ok(rules);
     }
 
-    private static async Task<IResult> GetNotificationRule(
+    [EndpointDescription("Gets a specific rule for an entity by rule ID")]
+    private static async Task<Results<NotFound, Ok<NotificationRule>>> GetNotificationRule(
         [FromServices] INotificationRuleService notificationRuleService,
         [FromRoute] string entityId,
         [FromRoute] string ruleId,
         CancellationToken cancellationToken)
     {
         var rule = await notificationRuleService.FindRule(ruleId, cancellationToken);
-        return rule == null ? Results.NotFound() : Results.Ok(rule);
+        return rule == null ? TypedResults.NotFound() : TypedResults.Ok(rule);
     }
     
-    private static async Task<IResult> FindSupportedNotifications(
+    [EndpointDescription("Gets a list of notification that can be triggered by the given entity.")]
+    private static async Task<Results<NotFound<string>, Ok<List<NotificationOptions>>>> FindSupportedNotifications(
         [FromServices] IEntitiesService entitiesService,
         [FromRoute] string entityId,
         CancellationToken cancellationToken)
@@ -114,11 +121,11 @@ public static class NotificationEndpoints
         
         if (entity == null)
         {
-            return Results.NotFound($"entity {entityId} not found");
+            return TypedResults.NotFound($"entity {entityId} not found");
         }
 
         var supportedNotifications = NotificationOptionLookup.FindOptionsForEntity(entity);
-        return Results.Ok(supportedNotifications);
+        return TypedResults.Ok(supportedNotifications);
     }
 }
 

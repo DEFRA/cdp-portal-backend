@@ -6,7 +6,9 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
+using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Defra.Cdp.Backend.Api.Utils.Clients;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -30,7 +32,7 @@ public static class EntitiesEndpoint
         app.MapDelete("/entities/{repositoryName}/schedules/{scheduleId}", DeleteSchedule);
     }
 
-    private static async Task<IResult> StartDecommissioning(IEntitiesService entitiesService,
+    private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
         ISelfServiceOpsClient selfServiceOpsClient,
         string repositoryName,
         [FromQuery(Name = "id")] string userId,
@@ -40,10 +42,12 @@ public static class EntitiesEndpoint
         await entitiesService.SetDecommissionDetail(repositoryName, userId, userDisplayName, ct);
         await selfServiceOpsClient.ScaleEcsToZero(repositoryName,
             new UserDetails { Id = userId, DisplayName = userDisplayName }, ct);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
-    private static async Task<IResult> GetEntities(
+    [EndpointDescription("Gets a list of entities based on the provided filter." +
+                         "By default the full environment details are excluded unless the summary flag is set.")]
+    private static async Task<Ok<List<Entity>>> GetEntities(
         [FromQuery(Name = "teamIds")] string[] teamIds,
         [FromQuery(Name = "type")] Type[] types,
         [FromQuery(Name = "status")] Status[] statuses,
@@ -55,48 +59,54 @@ public static class EntitiesEndpoint
     {
         var matcher = new EntityMatcher { Types = types, Statuses = statuses, PartialName = name, TeamIds = teamIds };
         var options = new EntitySearchOptions { Summary = summary };
-        return Results.Ok(await entitiesService.GetEntities(matcher, options, ct));
+        return TypedResults.Ok(await entitiesService.GetEntities(matcher, options, ct));
     }
 
-    private static async Task<IResult> GetFilters(
+    [EndpointDescription("Gets a list of values entities can be filtered on.")]
+    private static async Task<Ok<EntitiesService.EntityFilters>> GetFilters(
         [FromQuery(Name = "teamIds")] string[] teamIds,
         [FromQuery(Name = "type")] Type[] types,
         [FromQuery(Name = "status")] Status[] statuses,
         IEntitiesService entitiesService, CancellationToken ct)
     {
         var filters = await entitiesService.GetFilters(teamIds, types, statuses, ct);
-        return Results.Ok(filters);
+        return TypedResults.Ok(filters);
     }
 
-    private static async Task<IResult> GetEntity(IEntitiesService entitiesService, string repositoryName,
+    [EndpointDescription("Gets a single entity by name.")]
+    private static async Task<Results<Ok<Entity>, NotFound>> GetEntity(IEntitiesService entitiesService, string repositoryName,
         CancellationToken ct)
     {
         var entity = await entitiesService.GetEntity(repositoryName, ct);
-        return entity != null ? Results.Ok(entity) : Results.NotFound();
+        return entity != null ? TypedResults.Ok(entity) : TypedResults.NotFound();
     }
 
+    [EndpointDescription("Creates a new entity. This does trigger the actual creation of an entity, only that it was requested.")]
     private static async Task<IResult> CreateEntity(IEntitiesService entitiesService, Entity entity,
         CancellationToken ct)
     {
         await entitiesService.Create(entity, ct);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
-    private static async Task<IResult> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
+    [EndpointDescription("Adds a 'tag' (e.g. PRR, BETA) to an entity.")]
+    private static async Task<Ok> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
         CancellationToken ct)
     {
         await entitiesService.AddTag(repositoryName, tag, ct);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
-    private static async Task<IResult> UntagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
+    [EndpointDescription("Removes a 'tag' (e.g. PRR, BETA) to an entity.")]
+    private static async Task<Ok> UntagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
         CancellationToken ct)
     {
         await entitiesService.RemoveTag(repositoryName, tag, ct);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
-    private static async Task<IResult> CreateSchedule(
+    
+    private static async Task<Results<BadRequest<List<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Created<MongoSchedule>>> CreateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
         [FromRoute] string repositoryName,
@@ -111,26 +121,26 @@ public static class EntitiesEndpoint
 
         if (!isValid)
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            return TypedResults.BadRequest(results.Select(r => r.ErrorMessage).ToList());
         }
 
         var user = ExtractedUserDetails(bearerToken);
 
         if (user == null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         var entity = await entitiesService.GetEntity(repositoryName, ct);
 
         if (entity == null)
         {
-            return Results.NotFound("Entity not found");
+            return TypedResults.NotFound("Entity not found");
         }
 
         if (scheduleRequest.Task is EntityTestSuiteTask && entity.Type != Type.TestSuite)
         {
-            return Results.Conflict("Entity is not a test suite");
+            return TypedResults.Conflict("Entity is not a test suite");
         }
 
         var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user, repositoryName);
@@ -141,10 +151,10 @@ public static class EntitiesEndpoint
             new ScheduleMatchers { Id = mongoSchedule.Id },
             ct)).FirstOrDefault();
 
-        return Results.Created($"/entities/{repositoryName}/schedules/{mongoSchedule.Id}", createdSchedule);
+        return TypedResults.Created($"/entities/{repositoryName}/schedules/{mongoSchedule.Id}", createdSchedule);
     }
     
-    private static async Task<IResult> UpdateSchedule(
+    private static async Task<Results<BadRequest<List<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Ok<MongoSchedule>>> UpdateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
         [FromRoute] string repositoryName,
@@ -160,21 +170,21 @@ public static class EntitiesEndpoint
 
         if (!isValid)
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            return TypedResults.BadRequest(results.Select(r => r.ErrorMessage).ToList());
         }
 
         var user = ExtractedUserDetails(bearerToken);
 
         if (user == null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         var entity = await entitiesService.GetEntity(repositoryName, ct);
 
         if (entity == null)
         {
-            return Results.NotFound("Entity not found");
+            return TypedResults.NotFound("Entity not found");
         }
         
         var originalSchedule = (await schedulerService.FetchSchedules(
@@ -183,12 +193,12 @@ public static class EntitiesEndpoint
 
         if (originalSchedule == null)
         {
-            return Results.NotFound("Schedule id not found");
+            return TypedResults.NotFound("Schedule id not found");
         }
 
         if (scheduleRequest.Task is EntityTestSuiteTask && entity.Type != Type.TestSuite)
         {
-            return Results.Conflict("Entity is not a test suite");
+            return TypedResults.Conflict("Entity is not a test suite");
         }
         
         var mongoSchedule = ScheduleMapper.ToUpdatedMongo(scheduleRequest, originalSchedule, user, repositoryName);
@@ -198,7 +208,7 @@ public static class EntitiesEndpoint
             new ScheduleMatchers { Id = scheduleId },
             ct)).FirstOrDefault();
         
-        return Results.Ok(updatedSchedule);
+        return TypedResults.Ok(updatedSchedule);
     }
 
     // temporary until we play auth ticket 
@@ -222,7 +232,7 @@ public static class EntitiesEndpoint
         return new UserDetails { Id = oid, DisplayName = name };
     }
 
-    private static async Task<IResult> GetSchedules(
+    private static async Task<Results<NotFound, Ok<List<MongoSchedule>>>> GetSchedules(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
         string repositoryName,
@@ -232,16 +242,16 @@ public static class EntitiesEndpoint
 
         if (entity == null)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         var schedules = await schedulerService.FetchSchedules(
             new ScheduleMatchers() { EntityId = repositoryName },
             ct);
-        return Results.Ok(schedules);
+        return TypedResults.Ok(schedules);
     }
 
-    private static async Task<IResult> GetSchedule(
+    private static async Task<Results<NotFound, Ok<MongoSchedule>>> GetSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
         string repositoryName,
@@ -252,22 +262,22 @@ public static class EntitiesEndpoint
 
         if (entity == null)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         var schedule = (await schedulerService.FetchSchedules(
             new ScheduleMatchers { Id = scheduleId },
             ct)).FirstOrDefault();
 
-        return schedule is not null ? Results.Ok(schedule) : Results.NotFound();
+        return schedule is not null ? TypedResults.Ok(schedule) : TypedResults.NotFound();
     }
 
-    private static async Task<IResult> DeleteSchedule(
+    private static async Task<NoContent> DeleteSchedule(
         [FromServices] ISchedulerService schedulerService,
         string scheduleId,
         CancellationToken ct)
     {
         await schedulerService.DeleteSchedule(scheduleId, ct);
-        return Results.NoContent();
+        return TypedResults.NoContent();
     }
 }
