@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.Terminal;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -15,7 +16,7 @@ public static class TerminalEndpoint
         app.MapPost("/terminals", RecordTerminalSession);
     }
 
-    private static async Task<IResult> RecordTerminalSession(
+    private static async Task<Created> RecordTerminalSession(
         [FromServices] ITerminalService terminalService,
         [FromServices] IAuditService auditService,
         TerminalSession session,
@@ -26,7 +27,7 @@ public static class TerminalEndpoint
         {
             await auditService.Audit(CreateAuditDto(session), cancellationToken);
         }
-        return Results.Created();
+        return TypedResults.Created();
     }
 
     private static AuditDto CreateAuditDto(TerminalSession session)

@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Defra.Cdp.Backend.Api.Models;
 
@@ -12,7 +13,7 @@ public static class CostsEndpoint
         app.MapGet("/costs/servicecode", FindServiceCodeCosts);
     }
 
-    static async Task<IResult> FindServiceCodeCosts(
+    static async Task<Results<NotFound<ApiError>, Ok<ServiceCodesCostsResponse>>> FindServiceCodeCosts(
         [FromQuery(Name = "from")] DateOnly dateFrom,
         [FromQuery(Name = "to")] DateOnly dateTo,
         [FromServices] IServiceCodeCostsService serviceCodeCostsService,
@@ -25,11 +26,11 @@ public static class CostsEndpoint
         var result = await serviceCodeCostsService.FindCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
 
         return result == null
-          ? Results.NotFound(new ApiError("Not found"))
-          : Results.Ok(new ServiceCodesCostsResponse(result));
+          ? TypedResults.NotFound(new ApiError("Not found"))
+          : TypedResults.Ok(new ServiceCodesCostsResponse(result));
     }
 
-    static async Task<IResult> FindTotalCosts(
+    static async Task<Results<NotFound<ApiError>, Ok<TotalCostsResponse>>> FindTotalCosts(
         [FromQuery(Name = "from")] DateOnly dateFrom,
         [FromQuery(Name = "to")] DateOnly dateTo,
         [FromServices] ITotalCostsService totalCostsService,
@@ -42,7 +43,7 @@ public static class CostsEndpoint
         var result = await totalCostsService.FindCosts(reportTimeUnit, dateFrom, dateTo, cancellationToken);
 
         return result == null
-          ? Results.NotFound(new ApiError("Not found"))
-          : Results.Ok(new TotalCostsResponse(result));
+          ? TypedResults.NotFound(new ApiError("Not found"))
+          : TypedResults.Ok(new TotalCostsResponse(result));
     }
 }

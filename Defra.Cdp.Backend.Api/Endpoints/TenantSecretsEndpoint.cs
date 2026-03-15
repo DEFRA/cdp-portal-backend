@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Secrets;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -13,7 +14,7 @@ public static class TenantSecretsEndpoint
         app.MapPost("secrets/register/pending", RegisterPendingSecret);
     }
 
-    private static async Task<IResult> FindTenantSecrets(
+    private static async Task<Results<NotFound<ApiError>, Ok<TenantSecretsResponse>>> FindTenantSecrets(
         [FromServices] ISecretsService secretsService,
         [FromServices] IPendingSecretsService pendingSecretsService,
         string service, string environment, CancellationToken cancellationToken)
@@ -21,7 +22,7 @@ public static class TenantSecretsEndpoint
         var secrets = await secretsService.FindServiceSecretsForEnvironment(environment, service, cancellationToken);
         var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
 
-        if (secrets == null && pendingSecrets == null) return Results.NotFound(new ApiError("No secrets found"));
+        if (secrets == null && pendingSecrets == null) return TypedResults.NotFound(new ApiError("No secrets found"));
 
         var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? [];
 
@@ -33,7 +34,7 @@ public static class TenantSecretsEndpoint
 
         if (secrets == null)
         {
-            return Results.Ok(new TenantSecretsResponse(
+            return TypedResults.Ok(new TenantSecretsResponse(
                 pendingSecrets!.Service,
                 pendingSecrets.Environment,
                 pendingSecretKeys,
@@ -44,7 +45,7 @@ public static class TenantSecretsEndpoint
             );
         }
 
-        return Results.Ok(new TenantSecretsResponse(
+        return TypedResults.Ok(new TenantSecretsResponse(
             secrets.Service,
             secrets.Environment,
             secrets.Keys,
@@ -54,20 +55,22 @@ public static class TenantSecretsEndpoint
             exceptionMessage));
     }
 
-    private static async Task<IResult> FindAllTenantSecrets(
+    private static async Task<Results<NotFound<ApiError>, Ok<Dictionary<string, TenantSecretKeys>>>> FindAllTenantSecrets(
         [FromServices] ISecretsService secretsService, string service, CancellationToken cancellationToken)
     {
         var allSecrets = await secretsService.FindAllServiceSecrets(service, cancellationToken);
-        return allSecrets.Count != 0 ? Results.Ok(allSecrets) : Results.NotFound(new ApiError("No secrets found"));
+        return allSecrets.Count != 0
+            ? TypedResults.Ok(allSecrets)
+            : TypedResults.NotFound(new ApiError("No secrets found"));
     }
 
-    private static async Task<IResult> RegisterPendingSecret(
+    private static async Task<Ok<RegisterPendingSecret>> RegisterPendingSecret(
         [FromServices] IPendingSecretsService pendingSecretsService,
         RegisterPendingSecret registerPendingSecret,
         CancellationToken cancellationToken)
     {
         await pendingSecretsService.RegisterPendingSecret(registerPendingSecret, cancellationToken);
-        return Results.Ok(registerPendingSecret);
+        return TypedResults.Ok(registerPendingSecret);
     }
 
     private sealed record TenantSecretsResponse(

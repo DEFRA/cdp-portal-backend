@@ -1,5 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -12,28 +13,30 @@ public static class ShutteringEndpoint
         app.MapGet("/shuttering/{serviceName}/{url}", ShutteringStateForUrl);
     }
 
-    private static async Task<IResult> ShutteringStatesForService(
+    private static async Task<Ok<List<ShutteringUrlState>>> ShutteringStatesForService(
         IShutteringService shutteringService, string serviceName,
         CancellationToken cancellationToken)
     {
         var shutteringRecords = await shutteringService.ShutteringStatesForService(serviceName, cancellationToken);
-        return Results.Ok(shutteringRecords);
+        return TypedResults.Ok(shutteringRecords);
     }
 
-    private static async Task<IResult> ShutteringStateForUrl(
+    private static async Task<Results<NotFound<ApiError>, Ok<ShutteringUrlState>>> ShutteringStateForUrl(
         IShutteringService shutteringService,
         string serviceName,
         string url,
         CancellationToken cancellationToken)
     {
         var shutteringState = await shutteringService.ShutteringStatesForService(serviceName, url, cancellationToken);
-        return shutteringState == null ? Results.NotFound(new ApiError("Shuttering record not found")) : Results.Ok(shutteringState);
+        return shutteringState == null
+            ? TypedResults.NotFound(new ApiError("Shuttering record not found"))
+            : TypedResults.Ok(shutteringState);
     }
 
-    private static async Task<IResult> Register(IShutteringService shutteringService, ShutteringRecord shutteringRecord,
+    private static async Task<Ok> Register(IShutteringService shutteringService, ShutteringRecord shutteringRecord,
         CancellationToken cancellationToken)
     {
         await shutteringService.Register(shutteringRecord, cancellationToken);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 }

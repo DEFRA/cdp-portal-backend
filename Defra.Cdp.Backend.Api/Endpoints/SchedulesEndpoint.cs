@@ -5,6 +5,8 @@ using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
+using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
@@ -21,7 +23,7 @@ public static class SchedulesEndpoint
     }
 
     // POST /schedules
-    private static async Task<IResult> CreateSchedule(
+    private static async Task<Results<BadRequest<IEnumerable<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Created<MongoSchedule>>> CreateSchedule(
         [FromServices] ISchedulerService schedulerService,
         [FromServices] IEntitiesService entitiesService,
         [FromBody] ScheduleRequest scheduleRequest,
@@ -35,14 +37,14 @@ public static class SchedulesEndpoint
 
         if (!isValid)
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            return TypedResults.BadRequest(results.Select(r => r.ErrorMessage));
         }
 
         var user = ExtractedUserDetails(bearerToken);
 
         if (user == null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         if (scheduleRequest.Task is TestSuiteTask testSuiteTask)
@@ -51,12 +53,12 @@ public static class SchedulesEndpoint
 
             if (entity == null)
             {
-                return Results.NotFound("Entity not found");
+                return TypedResults.NotFound("Entity not found");
             }
 
             if (entity.Type != Type.TestSuite)
             {
-                return Results.Conflict("Entity is not a test suite");
+                return TypedResults.Conflict("Entity is not a test suite");
             }
         }
 
@@ -67,7 +69,7 @@ public static class SchedulesEndpoint
             new ScheduleMatchers { Id = mongoSchedule.Id },
             ct)).FirstOrDefault();
 
-        return Results.Created($"/schedules/{mongoSchedule.Id}", createdSchedule);
+        return TypedResults.Created($"/schedules/{mongoSchedule.Id}", createdSchedule);
     }
 
 
@@ -93,7 +95,7 @@ public static class SchedulesEndpoint
     }
 
     // GET /schedules or with query params GET /schedules?entityId=my-service&enabled=true
-    private static async Task<IResult> GetSchedules([FromServices] ISchedulerService schedulerService,
+    private static async Task<Ok<List<MongoSchedule>>> GetSchedules([FromServices] ISchedulerService schedulerService,
         [FromQuery(Name = "entityId")] string? entityId,
         [FromQuery(Name = "from")] DateTime? from,
         [FromQuery(Name = "before")] DateTime? before,
@@ -103,11 +105,11 @@ public static class SchedulesEndpoint
         var schedules = await schedulerService.FetchSchedules(
             new ScheduleMatchers() { EntityId = entityId, From = from, Before = before, Enabled = enabled },
             ct);
-        return Results.Ok(schedules);
+        return TypedResults.Ok(schedules);
     }
 
     // GET /schedule/1234
-    private static async Task<IResult> GetSchedule(
+    private static async Task<Results<NotFound, Ok<MongoSchedule>>> GetSchedule(
         [FromServices] ISchedulerService schedulerService,
         string scheduleId,
         CancellationToken ct)
@@ -116,16 +118,16 @@ public static class SchedulesEndpoint
             new ScheduleMatchers { Id = scheduleId },
             ct)).FirstOrDefault();
 
-        return schedule is not null ? Results.Ok(schedule) : Results.NotFound();
+        return schedule is not null ? TypedResults.Ok(schedule) : TypedResults.NotFound();
     }
 
     // DELETE /schedules/{id}
-    private static async Task<IResult> DeleteSchedule(
+    private static async Task<NoContent> DeleteSchedule(
         [FromServices] ISchedulerService schedulerService,
         string scheduleId,
         CancellationToken ct)
     {
         await schedulerService.DeleteSchedule(scheduleId, ct);
-        return Results.NoContent();
+        return TypedResults.NoContent();
     }
 }

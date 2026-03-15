@@ -127,7 +127,7 @@ public static class DeploymentsEndpoint
     }
 
     // GET /running-services/filters
-    private static async Task<IResult> RunningServicesFilters(
+    private static async Task<Ok<DeploymentFiltersResponse>> RunningServicesFilters(
         IDeploymentsService deploymentsService,
         IUserServiceBackendClient userServiceBackendClient,
         CancellationToken cancellationToken)
@@ -137,7 +137,7 @@ public static class DeploymentsEndpoint
         if (teamRecord != null)
             whatsRunningWhereFilters.Teams =
                 teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
-        return Results.Ok(new { Filters = whatsRunningWhereFilters });
+        return TypedResults.Ok(new DeploymentFiltersResponse { Filters = whatsRunningWhereFilters });
     }
 
     private static async Task<Results<BadRequest<IEnumerable<string?>>, Ok>> RegisterDeployment(

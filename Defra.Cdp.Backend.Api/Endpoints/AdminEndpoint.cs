@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -14,10 +15,10 @@ public static class AdminEndpoint
     /// </summary>
     /// <param name="entitiesService"></param>
     /// <returns></returns>
-    private static async Task<IResult> UpdateStatus(IEntitiesService entitiesService)
+    private static async Task<Ok> UpdateStatus(IEntitiesService entitiesService)
     {
         await entitiesService.BulkUpdateEntityStatus(CancellationToken.None);
-        return Results.Ok();
+        return TypedResults.Ok();
     }
 
 }
