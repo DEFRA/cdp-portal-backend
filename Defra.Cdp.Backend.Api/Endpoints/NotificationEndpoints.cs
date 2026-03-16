@@ -14,7 +14,7 @@ public static class NotificationEndpoints
         app.MapPost("/entities/{entityId}/notifications", CreateNotification);
         app.MapGet("/entities/{entityId}/notifications", FindNotificationRulesForEntity);
         app.MapGet("/entities/{entityId}/supported-notifications", FindSupportedNotifications);
-        app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule);
+        app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule).WithName("GetNotificationRule");
         app.MapPut("/entities/{entityId}/notifications/{ruleId}", UpdateNotification);
         app.MapDelete("/entities/{entityId}/notifications/{ruleId}", DeleteNotification);
     }
