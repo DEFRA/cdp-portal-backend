@@ -5,7 +5,7 @@ using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
-using Defra.Cdp.Backend.Api.Services.Dependencies;
+using Defra.Cdp.Backend.Api.Services.Sboms;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 

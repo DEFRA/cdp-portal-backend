@@ -1,13 +1,15 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 
-namespace Defra.Cdp.Backend.Api.Services.Dependencies;
+namespace Defra.Cdp.Backend.Api.Services.Sboms;
 
 
 public interface ISbomExplorerClient
 {
-    public Task PushRunningServices(string env, List<Deployment> deployments, CancellationToken cancellationToken);
-    public Task PushLatestVersions(List<ArtifactVersion> versions, CancellationToken cancellationToken);
+    Task PushRunningServices(string env, List<Deployment> deployments, CancellationToken cancellationToken);
+    Task PushLatestVersions(List<ArtifactVersion> versions, CancellationToken cancellationToken);
+    Task PushTeams(List<Entity> entities, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -21,6 +23,11 @@ public class NoOpSbomExplorerClient : ISbomExplorerClient
     }
 
     public Task PushLatestVersions(List<ArtifactVersion> versions, CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task PushTeams(List<Entity> entities, CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }
@@ -40,7 +47,7 @@ public class SbomExplorerClient : ISbomExplorerClient
         _client = httpClientFactory.CreateClient("ServiceClient");
     }
     
-    public async Task PushRunningServices(string env, List<Deployment> deployments, CancellationToken cancellationToken)
+    public async Task PushRunningServices(string env, List<Deployment> deployments, CancellationToken cancellationToken = default)
     {
         var payload = new SbomVersionPayload
         {
@@ -48,12 +55,12 @@ public class SbomExplorerClient : ISbomExplorerClient
             Versions = deployments.Select(d => new SbomVersion { Name = d.Service, Version = d.Version }).ToList()
         };
 
-        var uri = new UriBuilder(_baseUrl) { Path = "/deployments/update" }.Uri;
+        var uri = new UriBuilder(_baseUrl) { Path = "/metadata/tags/deployments" }.Uri;
         var result = await _client.PostAsJsonAsync(uri, payload, cancellationToken);
         result.EnsureSuccessStatusCode();
     }
     
-    public async Task PushLatestVersions(List<ArtifactVersion> versions, CancellationToken cancellationToken)
+    public async Task PushLatestVersions(List<ArtifactVersion> versions, CancellationToken cancellationToken = default)
     {
         var payload = new SbomVersionPayload
         {
@@ -61,7 +68,21 @@ public class SbomExplorerClient : ISbomExplorerClient
             Versions = versions.Select(d => new SbomVersion { Name = d.Name, Version = d.Version }).ToList()
         };
 
-        var uri = new UriBuilder(_baseUrl) { Path = "/deployments/update" }.Uri;
+        var uri = new UriBuilder(_baseUrl) { Path = "/metadata/tags/latest" }.Uri;
+        var result = await _client.PostAsJsonAsync(uri, payload, cancellationToken);
+        result.EnsureSuccessStatusCode();
+    }
+
+
+    public async Task PushTeams(List<Entity> entities, CancellationToken cancellationToken = default)
+    {
+        var payload = entities.Select(e => new SbomEntityOwnership
+        {
+            Name = e.Name, 
+            Teams = e.Teams.Where(t => t.TeamId != null).Select(t => t.TeamId).ToList()!
+        });
+
+        var uri = new UriBuilder(_baseUrl) { Path = "/metadata/labels/teams" }.Uri;
         var result = await _client.PostAsJsonAsync(uri, payload, cancellationToken);
         result.EnsureSuccessStatusCode();
     }
@@ -82,5 +103,14 @@ public class SbomExplorerClient : ISbomExplorerClient
 
         [JsonPropertyName("versions")] 
         public List<SbomVersion> Versions { get; init; } = [];
+    }
+
+    record SbomEntityOwnership
+    {
+        [JsonPropertyName("name")]
+        public required string Name { get; init; }
+
+        [JsonPropertyName("teams")] 
+        public List<string> Teams { get; init; } = [];
     }
 }

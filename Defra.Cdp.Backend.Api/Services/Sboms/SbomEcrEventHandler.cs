@@ -1,10 +1,10 @@
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 
-namespace Defra.Cdp.Backend.Api.Services.Dependencies;
+namespace Defra.Cdp.Backend.Api.Services.Sboms;
 
 public interface ISbomEcrEventHandler
 {
-    public Task Handle(CancellationToken ct);
+    Task Handle(CancellationToken ct);
 }
 
 public class SbomEcrEventHandler(ISbomExplorerClient client, IDeployableArtifactsService artifactsService, ILogger<SbomEcrEventHandler> logger) : ISbomEcrEventHandler

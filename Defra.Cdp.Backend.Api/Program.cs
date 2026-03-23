@@ -9,7 +9,6 @@ using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Decommissioning;
-using Defra.Cdp.Backend.Api.Services.Dependencies;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -26,6 +25,7 @@ using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
+using Defra.Cdp.Backend.Api.Services.Sboms;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Defra.Cdp.Backend.Api.Services.Scheduler.TestSuiteDeployment;
@@ -258,6 +258,7 @@ else
 
 builder.Services.AddSingleton<ISbomEcrEventHandler, SbomEcrEventHandler>();
 builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHandler>();
+builder.Services.AddSingleton<ISbomServiceOwnershipHandler, SbomServiceOwnershipHandler>();
 
 // Notifications
 builder.Services.Configure<SlackLambdaOptions>(builder.Configuration.GetSection(SlackLambdaOptions.Prefix));
