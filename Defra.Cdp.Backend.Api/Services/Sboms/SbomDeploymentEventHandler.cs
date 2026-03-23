@@ -2,11 +2,11 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 
-namespace Defra.Cdp.Backend.Api.Services.Dependencies;
+namespace Defra.Cdp.Backend.Api.Services.Sboms;
 
 public interface ISbomDeploymentEventHandler
 {
-    public Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken ct);
+    Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken ct);
 }
 
 
