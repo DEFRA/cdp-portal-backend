@@ -199,13 +199,13 @@ public class EntitiesService(
 
     public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
     {
-        return await GetEntities(new EntityMatcher { Status = Status.Creating },
+        return await GetEntities(new EntityMatcher { Statuses = [Status.Creating] },
             new EntitySearchOptions { Summary = true }, cancellationToken);
     }
 
     public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
     {
-        return await GetEntities(new EntityMatcher { Status = Status.Decommissioning },
+        return await GetEntities(new EntityMatcher { Statuses = [Status.Decommissioning] },
             new EntitySearchOptions { Summary = true }, cancellationToken);
     }
 

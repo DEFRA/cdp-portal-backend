@@ -285,7 +285,7 @@ public class DeploymentsService(
         if (query.Favourites?.Length > 0)
         {
             var entities = await entitiesService.GetEntities(
-                new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites },
+                new EntityMatcher { Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites },
                 new EntitySearchOptions { Summary = true },
                 ct);
             var servicesOwnedByTeam = entities.Select(r => r.Name);
@@ -342,7 +342,7 @@ public class DeploymentsService(
         if (query.Favourites?.Length > 0)
         {
             var entities = await entitiesService.GetEntities(
-                new EntityMatcher { Type = Type.Microservice, Status = Status.Created, TeamIds = query.Favourites },
+                new EntityMatcher { Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites },
                 new EntitySearchOptions { Summary = true },
                 ct);
             var servicesOwnedByTeam = entities.Select(r => r.Name);
@@ -474,7 +474,9 @@ public record DeploymentMatchers(
     string[]? Services = null,
     string? User = null,
     string[]? Favourites = null, // Handled outside of mongo
-    string? Kind = null // handled outside of mongo
+    string? Kind = null, // handled outside of mongo
+    DateTime? From = null,
+    DateTime? To = null
 )
 {
     public FilterDefinition<Deployment> Filter()
@@ -517,6 +519,24 @@ public record DeploymentMatchers(
         if (Services is { Length: > 0 })
         {
             filter &= builder.In(d => d.Service, Services);
+        }
+        
+        if (From.HasValue || To.HasValue)
+        {
+            var from = From ?? DateTime.MinValue;
+            var to = To ?? DateTime.MaxValue;
+
+            var overlapFilter =
+                builder.Lte(d => d.Created, to) &
+                builder.Or(
+                    builder.Eq(d => d.Status, "running"),
+                    builder.And(
+                        builder.Eq(d => d.Status, "stopped"),
+                        builder.Gte(d => d.Updated, from)
+                    )
+                );
+
+            filter &= overlapFilter;
         }
 
         return filter;
