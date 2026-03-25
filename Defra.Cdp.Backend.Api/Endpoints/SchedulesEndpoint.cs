@@ -98,12 +98,12 @@ public static class SchedulesEndpoint
     private static async Task<Ok<List<MongoSchedule>>> GetSchedules([FromServices] ISchedulerService schedulerService,
         [FromQuery(Name = "entityId")] string? entityId,
         [FromQuery(Name = "from")] DateTime? from,
-        [FromQuery(Name = "before")] DateTime? before,
+        [FromQuery(Name = "to")] DateTime? to,
         [FromQuery(Name = "enabled")] bool? enabled,
         CancellationToken ct)
     {
         var schedules = await schedulerService.FetchSchedules(
-            new ScheduleMatchers() { EntityId = entityId, From = from, Before = before, Enabled = enabled },
+            new ScheduleMatchers() { EntityId = entityId, From = from, To = to, Enabled = enabled },
             ct);
         return TypedResults.Ok(schedules);
     }

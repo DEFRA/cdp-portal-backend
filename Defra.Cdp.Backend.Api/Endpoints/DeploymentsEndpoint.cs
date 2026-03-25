@@ -27,14 +27,21 @@ public static class DeploymentsEndpoint
     // GET /deployments or with query params GET /deployments?environment=dev&service=forms-runner&user=jeff&status=running&page=1&offset=0&size=50
     private static async Task<Ok<Paginated<Deployment>>> FindLatestDeployments(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "teamId")] string[]? teams,
         [AsParameters] DeploymentMatchers matchers,
         [AsParameters] Pagination pagination,
         CancellationToken cancellationToken)
     {
+        var teamIds = new[] { team }
+            .Concat(teams ?? [])
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => t!)
+            .ToArray();
+        
         string[]? servicesForTeam = null;
-        if (!string.IsNullOrWhiteSpace(team))
+        if (teamIds.Length > 0)
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
         var query = matchers with { Services = servicesForTeam };
@@ -51,14 +58,22 @@ public static class DeploymentsEndpoint
 
     private static async Task<Ok<Paginated<DeploymentOrMigration>>> FindLatestDeploymentsWithMigrations(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "teamId")] string[]? teams,        
         [AsParameters] DeploymentMatchers matchers,
         [AsParameters] Pagination pagination,
         CancellationToken cancellationToken)
     {
+        
+        var teamIds = new[] { team }
+            .Concat(teams ?? [])
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => t!)
+            .ToArray();
+        
         string[]? servicesForTeam = null;
-        if (!string.IsNullOrWhiteSpace(team))
+        if (teamIds.Length > 0)
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
         var query = matchers with { Services = servicesForTeam };
@@ -100,16 +115,24 @@ public static class DeploymentsEndpoint
         return TypedResults.Ok(deployment);
     }
 
-    // GET /running-services or with query params GET /running-services?environments=dev&service=forms-runner&status=running
+    // GET /running-services or with query params GET /running-services?environment=dev&service=forms-runner&status=running
     private static async Task<Ok<List<Deployment>>> RunningServices(IDeploymentsService deploymentsService, IEntitiesService entitiesService,
         [FromQuery(Name = "team")] string? team,
+        [FromQuery(Name = "teamId")] string[]? teams,        
         [AsParameters] DeploymentMatchers matchers,
         CancellationToken cancellationToken)
     {
+        
+        var teamIds = new[] { team }
+            .Concat(teams ?? [])
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => t!)
+            .ToArray();
+        
         string[]? servicesForTeam = null;
-        if (!string.IsNullOrWhiteSpace(team))
+        if (teamIds.Length > 0)
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamId = team }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).Select(r => r.Name).ToArray();
         }
 
         var deployments = await deploymentsService.RunningDeploymentsForService(

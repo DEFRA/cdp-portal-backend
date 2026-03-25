@@ -9,15 +9,13 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 public record EntityMatcher(
     string? Name = null,
     string? PartialName = null,
-    string? TeamId = null,
     string[]? TeamIds = null,
     string? Environment = null,
     bool HasPostgres = false,
-    Type? Type = null,
     Type[]? Types = null,
     SubType? SubType = null,
-    Status? Status = null,
-    Status[]? Statuses = null)
+    Status[]? Statuses = null
+    )
 {
     public FilterDefinition<Entity> Match()
     {
@@ -32,11 +30,7 @@ public record EntityMatcher(
         {
             filter &= builder.Regex(t => t.Name, new BsonRegularExpression(PartialName, "i"));
         }
-
-        if (TeamId != null)
-        {
-            filter &= builder.AnyEq(new StringFieldDefinition<Entity>("teams.teamId"), TeamId);
-        }
+        
         else if (TeamIds is { Length: > 0 })
         {
             filter &= builder.AnyIn(new StringFieldDefinition<Entity>("teams.teamId"), TeamIds);
@@ -45,11 +39,6 @@ public record EntityMatcher(
         if (Environment != null)
         {
             filter &= builder.Exists(t => t.Environments[Environment]);
-        }
-
-        if (Type != null)
-        {
-            filter &= builder.Eq(t => t.Type, Type);
         }
         else if (Types is { Length: > 0 })
         {
@@ -64,11 +53,6 @@ public record EntityMatcher(
         if (HasPostgres && Environment != null)
         {
             filter &= builder.Ne(t => t.Environments[Environment].SqlDatabase, null);
-        }
-
-        if (Status != null)
-        {
-            filter &= builder.Eq(t => t.Status, Status);
         }
         else if (Statuses is { Length: > 0 })
         {

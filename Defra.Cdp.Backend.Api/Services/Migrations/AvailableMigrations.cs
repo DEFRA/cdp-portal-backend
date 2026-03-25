@@ -110,14 +110,13 @@ public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityServic
 
         var servicesForTeams = new HashSet<string>();
 
-        foreach (var teamsId in teamIds)
+        var entities =
+            await entityService.GetEntities(new EntityMatcher(TeamIds: teamIds.ToArray(), HasPostgres: true), ct);
+        foreach (var entity in entities)
         {
-            var tenants = await entityService.GetEntities(new EntityMatcher(TeamId: teamsId, HasPostgres: true), ct);
-            foreach (var tenant in tenants)
-            {
-                servicesForTeams.Add(tenant.Name);
-            }
+            servicesForTeams.Add(entity.Name);
         }
+
 
         return migrations.Where(r => servicesForTeams.Contains(r)).ToList();
     }

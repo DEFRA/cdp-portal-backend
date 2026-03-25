@@ -124,7 +124,7 @@ public record ScheduleMatchers(
     string? Id = null,
     string? EntityId = null,
     DateTime? From = null,
-    DateTime? Before = null,
+    DateTime? To = null,
     bool? Enabled = null
 )
 {
@@ -148,9 +148,9 @@ public record ScheduleMatchers(
             filter &= builder.Gte(s => s.Config.StartDate, From.Value);
         }
 
-        if (Before.HasValue)
+        if (To.HasValue)
         {
-            filter &= builder.Lte(s => s.Config.EndDate, Before.Value);
+            filter &= builder.Lte(s => s.Config.EndDate, To.Value);
         }
 
         if (Enabled.HasValue)
