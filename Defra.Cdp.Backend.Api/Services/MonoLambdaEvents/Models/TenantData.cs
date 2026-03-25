@@ -125,6 +125,15 @@ public class CdpTenant
     [property: JsonPropertyName("alerts")]
     public List<Alert> Alerts { get; set; }
 
+    [property: JsonPropertyName("playground_alerts_url")]
+    public string? PlaygroundAlertsUrl { get; set; }
+
+    [property: JsonPropertyName("default_alerts_url")]
+    public string? DefaultAlertsUrl { get; set; }
+
+    [property: JsonPropertyName("advanced_alerts_url")]
+    public string? AdvancedAlertsUrl { get; set; }
+
     [property: JsonPropertyName("nginx")]
     public CdpTenantNginx? Nginx { get; set; }
 
@@ -440,6 +449,26 @@ public class TenantMetadata
     [property: JsonPropertyName("environments")]
     public List<string>? Environments { get; set; }
 
+    [property: JsonPropertyName("api_docs")]
+    public TenantMetadataApiDocs? ApiDocs { get; set; }
+
+}
+
+[BsonIgnoreExtraElements]
+public class TenantMetadataApiDocs
+{
+    [property: JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    [property: JsonPropertyName("doc_type")]
+    public string? DocType { get; set; }
+
+    [property: JsonPropertyName("external")]
+    public bool External { get; set; }
+
+    [property: JsonPropertyName("internal")]
+    public bool Internal { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -550,6 +579,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "3e8f560d1b54f862b797cde1c81db7ea5d64542da97b2bcc74c9ba8abff9e60b";
+    public static readonly string Version = "d15376344e58ea5447c84e50b6fafa51c74c7336ea26e12a09219ea9311a9f1f";
 }
+
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
