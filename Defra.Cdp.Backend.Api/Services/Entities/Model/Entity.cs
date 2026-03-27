@@ -55,24 +55,6 @@ public record Entity
 
     [property: JsonPropertyName("overallProgress")]
     public OverallProgress? OverallProgress { get; set; }
-
-    public void CalculateOverallProgress()
-    {
-        OverallProgress = new OverallProgress
-        {
-            IsComplete = Progress.Values
-                .Where(p => p.Steps != null)
-                .All(p => p.Complete),
-            Steps = Progress.Values
-                .Where(p => p?.Steps != null)
-                .SelectMany(env => env.Steps!)
-                .GroupBy(step => step.Key)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.All(step => step.Value)
-                )
-        };
-    }
 }
 
 public sealed class OverallProgress
