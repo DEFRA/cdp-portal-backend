@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
 using Defra.Cdp.Backend.Api.Services.Sboms;
+using Defra.Cdp.Backend.Api.Utils;
 using JsonException = System.Text.Json.JsonException;
 
 namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
@@ -68,7 +69,13 @@ public class PlatformStateHandler(IEntitiesService entitiesService, IUserService
         var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
         await entitiesService.UpdateEnvironmentState(state, userServiceTeams, cancellationToken);
         await entitiesService.BulkUpdateEntityStatus(cancellationToken);
-        await serviceOwnershipHandler.Handle(cancellationToken);
+
+        // Entities always exist in management (mainly for ECR/build permissions) & ownership info is the same across
+        // all environments.
+        if (state.Environment == CdpEnvironments.Management)
+        {
+            await serviceOwnershipHandler.Handle(cancellationToken);
+        }
     }
 
     public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData)
