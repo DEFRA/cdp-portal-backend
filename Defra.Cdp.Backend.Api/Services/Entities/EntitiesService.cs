@@ -71,9 +71,6 @@ public class EntitiesService(
     {
         var entity = await Collection.Find(e => e.Name == entityName)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-
-        entity?.CalculateOverallProgress();
-
         return entity;
     }
 
