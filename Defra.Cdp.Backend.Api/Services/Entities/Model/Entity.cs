@@ -52,17 +52,6 @@ public record Entity
 
     [property: JsonPropertyName("progress")]
     public Dictionary<string, CreationProgress> Progress { get; init; } = new();
-
-    [property: JsonPropertyName("overallProgress")]
-    public OverallProgress? OverallProgress { get; set; }
-}
-
-public sealed class OverallProgress
-{
-    [property: JsonPropertyName("isComplete")]
-    public required bool IsComplete { get; init; }
-
-    [property: JsonPropertyName("steps")] public required Dictionary<string, bool> Steps { get; init; }
 }
 
 public record Decommission
