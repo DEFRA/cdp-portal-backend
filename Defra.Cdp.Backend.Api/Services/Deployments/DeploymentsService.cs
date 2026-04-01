@@ -524,8 +524,8 @@ public record DeploymentMatchers(
         
         if (From != null || To != null)
         {
-            var from = string.IsNullOrWhiteSpace(From) ? DateTime.MinValue : DateTime.Parse(From, null);
-            var to = string.IsNullOrWhiteSpace(To) ? DateTime.MaxValue : DateTime.Parse(To, null);
+            var from = string.IsNullOrWhiteSpace(From) ? DateTime.MinValue : DateTime.Parse(From);
+            var to = string.IsNullOrWhiteSpace(To) ? DateTime.MaxValue : DateTime.Parse(To);
 
             var overlapFilter =
                 builder.Lte(d => d.Created, to) &
