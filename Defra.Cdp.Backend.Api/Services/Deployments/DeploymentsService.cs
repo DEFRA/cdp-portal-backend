@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
+using Microsoft.IdentityModel.Abstractions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -475,8 +476,8 @@ public record DeploymentMatchers(
     string? User = null,
     string[]? Favourites = null, // Handled outside of mongo
     string? Kind = null, // handled outside of mongo
-    DateTime? From = null,
-    DateTime? To = null
+    string? From = null,
+    string? To = null
 )
 {
     public FilterDefinition<Deployment> Filter()
@@ -521,10 +522,10 @@ public record DeploymentMatchers(
             filter &= builder.In(d => d.Service, Services);
         }
         
-        if (From.HasValue || To.HasValue)
+        if (From != null || To != null)
         {
-            var from = From ?? DateTime.MinValue;
-            var to = To ?? DateTime.MaxValue;
+            var from = string.IsNullOrWhiteSpace(From) ? DateTime.MinValue : DateTime.Parse(From, null);
+            var to = string.IsNullOrWhiteSpace(To) ? DateTime.MaxValue : DateTime.Parse(To, null);
 
             var overlapFilter =
                 builder.Lte(d => d.Created, to) &
