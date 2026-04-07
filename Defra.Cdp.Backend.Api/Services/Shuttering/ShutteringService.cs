@@ -8,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Shuttering;
 
 public interface IShutteringService
 {
-    public Task Register(ShutteringRecord shutteringRecord, CancellationToken cancellationToken);
+    Task Register(ShutteringRecord shutteringRecord, CancellationToken cancellationToken);
     Task<List<ShutteringUrlState>> ShutteringStatesForService(string name, CancellationToken cancellationToken);
     Task<ShutteringUrlState?> ShutteringStatesForService(string name, string url, CancellationToken cancellationToken);
 }
@@ -69,7 +69,8 @@ public class ShutteringService(
                     Waf = waf,
                     LastActionedAt = requestedState?.ActionedAt,
                     LastActionedBy = requestedState?.ActionedBy,
-                    Status = status
+                    Status = status,
+                    Delegated = urlData.Delegated
                 });
             }
         }
