@@ -575,11 +575,14 @@ public class TenantUrl
     [property: JsonPropertyName("shuttered")]
     public bool Shuttered { get; set; }
 
+    [property: JsonPropertyName("delegated")]
+    public bool Delegated { get; set; }
+
 }
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "d15376344e58ea5447c84e50b6fafa51c74c7336ea26e12a09219ea9311a9f1f";
+    public static readonly string Version = "900af72c02cce1f9a0fbe125cd4517e42fb1d9492e5444b2504ec59430b381f4";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.

@@ -12,6 +12,7 @@ public record ShutteringUrlState
     public string? Waf { get; set; }
     public string? UrlType { get; set; }
     public bool Internal { get; set; }
+    public bool Delegated { get; set; }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ShutteringStatus Status { get; set; }
