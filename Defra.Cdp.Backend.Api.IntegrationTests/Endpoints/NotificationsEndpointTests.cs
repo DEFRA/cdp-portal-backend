@@ -2,13 +2,18 @@ using System.Net;
 using System.Net.Http.Json;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Notifications;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Endpoints;
 
@@ -16,11 +21,16 @@ public class NotificationsEndpointTests : MongoTestSupport
 {
     // Create Server
     private readonly IHost _host;
-
+    private readonly ISlackClient _slackClient;
+    private readonly IEntitiesService _entitiesService;
+    
     public NotificationsEndpointTests(MongoContainerFixture fixture) : base(fixture)
     {
-        INotificationRuleService ruleService = new NotificationRuleService(CreateMongoDbClientFactory(), new NullLoggerFactory());
-
+        var mongodbFactory = CreateMongoDbClientFactory();
+        INotificationRuleService ruleService = new NotificationRuleService(mongodbFactory, new NullLoggerFactory());
+        _entitiesService = new EntitiesService(mongodbFactory, new NullLoggerFactory());
+        _slackClient = Substitute.For<ISlackClient>();
+        
         _host = new HostBuilder()
             .ConfigureWebHost(webBuilder =>
             {
@@ -29,6 +39,8 @@ public class NotificationsEndpointTests : MongoTestSupport
                 {
                     services.AddRouting();
                     services.AddSingleton(ruleService);
+                    services.AddSingleton(_slackClient);
+                    services.AddSingleton(_entitiesService);
                 });
                 webBuilder.Configure(app =>
                 {
@@ -37,6 +49,7 @@ public class NotificationsEndpointTests : MongoTestSupport
                 });
             })
             .Start();
+        
     }
 
     [Fact]
@@ -100,4 +113,19 @@ public class NotificationsEndpointTests : MongoTestSupport
         var missingRule = await client.GetAsync(result.Headers.Location, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound, missingRule.StatusCode);
     }
+
+    [Fact]
+    public async Task Should_send_test_message_to_channel()
+    {
+        var client = _host.GetTestClient();
+        await _entitiesService.Create(new Entity { Name = "foo-bar" }, TestContext.Current.CancellationToken);
+        var request = new TestNotificationRequest { SlackChannel = "my-team-channel" };
+        var result = await client.PostAsJsonAsync("/entities/foo-bar/test-notification", 
+            request,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        await _slackClient.Received().SendToChannel(Arg.Is(request.SlackChannel), Arg.Any<SlackMessageBody>(),
+            Arg.Any<CancellationToken>());
+    }
+    
 }

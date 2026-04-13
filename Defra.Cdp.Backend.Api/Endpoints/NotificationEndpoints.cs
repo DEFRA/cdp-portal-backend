@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Notifications;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
+using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +16,11 @@ public static class NotificationEndpoints
         app.MapPost("/entities/{entityId}/notifications", CreateNotification);
         app.MapGet("/entities/{entityId}/notifications", FindNotificationRulesForEntity);
         app.MapGet("/entities/{entityId}/supported-notifications", FindSupportedNotifications);
+        app.MapPost("/entities/{entityId}/test-notification", TestNotification);
         app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule).WithName("GetNotificationRule");
         app.MapPut("/entities/{entityId}/notifications/{ruleId}", UpdateNotification);
         app.MapDelete("/entities/{entityId}/notifications/{ruleId}", DeleteNotification);
+        
     }
 
     [EndpointDescription("Creates a new notification for an entity")]
@@ -127,6 +131,26 @@ public static class NotificationEndpoints
         var supportedNotifications = NotificationOptionLookup.FindOptionsForEntity(entity);
         return TypedResults.Ok(supportedNotifications);
     }
+    
+    [EndpointDescription("Sends a test message to a given slack channel to validate it works.")]
+    private static async Task<Results<NotFound<string>, Ok>> TestNotification(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] ISlackClient slackClient,
+        [FromRoute] string entityId,
+        [FromBody] TestNotificationRequest body,
+        CancellationToken cancellationToken)
+    {
+        var entity = await entitiesService.GetEntity(entityId, cancellationToken);
+        
+        if (entity == null)
+        {
+            return TypedResults.NotFound($"entity {entityId} not found");
+        }
+
+        var message = SlackMessageTemplates.ChannelTestTemplate(entityId, body.SlackChannel);
+        await slackClient.SendToChannel(body.SlackChannel, message, cancellationToken);
+        return TypedResults.Ok();
+    }
 }
 
 public class CreateRuleRequest : IValidatableObject
@@ -214,6 +238,21 @@ public class UpdateRuleRequest : IValidatableObject
         }
 
         if (SlackChannel != null && SlackChannel.StartsWith('#'))
+        {
+            yield return new ValidationResult(
+                "Channels must be provided without a # prefix",
+                [nameof(SlackChannel)]
+            );
+        }
+    }
+}
+
+public class TestNotificationRequest : IValidatableObject
+{
+    public required string SlackChannel { get; init; }
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (SlackChannel.StartsWith('#'))
         {
             yield return new ValidationResult(
                 "Channels must be provided without a # prefix",
