@@ -16,11 +16,10 @@ public static class NotificationEndpoints
         app.MapPost("/entities/{entityId}/notifications", CreateNotification);
         app.MapGet("/entities/{entityId}/notifications", FindNotificationRulesForEntity);
         app.MapGet("/entities/{entityId}/supported-notifications", FindSupportedNotifications);
-        app.MapPost("/entities/{entityId}/test-notification", TestNotification);
         app.MapGet("/entities/{entityId}/notifications/{ruleId}", GetNotificationRule).WithName("GetNotificationRule");
         app.MapPut("/entities/{entityId}/notifications/{ruleId}", UpdateNotification);
         app.MapDelete("/entities/{entityId}/notifications/{ruleId}", DeleteNotification);
-        
+        app.MapPost("/entities/{entityId}/notifications/{ruleId}/test", TestNotification);
     }
 
     [EndpointDescription("Creates a new notification for an entity")]
@@ -134,21 +133,20 @@ public static class NotificationEndpoints
     
     [EndpointDescription("Sends a test message to a given slack channel to validate it works.")]
     private static async Task<Results<NotFound<string>, Ok>> TestNotification(
-        [FromServices] IEntitiesService entitiesService,
+        [FromServices] INotificationRuleService notificationRuleService,
         [FromServices] ISlackClient slackClient,
         [FromRoute] string entityId,
-        [FromBody] TestNotificationRequest body,
+        [FromRoute] string ruleId,
         CancellationToken cancellationToken)
     {
-        var entity = await entitiesService.GetEntity(entityId, cancellationToken);
-        
-        if (entity == null)
+        var rule = await notificationRuleService.FindRule(ruleId, cancellationToken);
+        if (rule?.SlackChannel == null)
         {
-            return TypedResults.NotFound($"entity {entityId} not found");
+            return TypedResults.NotFound($"rule {ruleId} not found");
         }
 
-        var message = SlackMessageTemplates.ChannelTestTemplate(entityId, body.SlackChannel);
-        await slackClient.SendToChannel(body.SlackChannel, message, cancellationToken);
+        var message = SlackMessageTemplates.ChannelTestTemplate(entityId, rule.SlackChannel);
+        await slackClient.SendToChannel(rule.SlackChannel, message, cancellationToken);
         return TypedResults.Ok();
     }
 }
@@ -238,21 +236,6 @@ public class UpdateRuleRequest : IValidatableObject
         }
 
         if (SlackChannel != null && SlackChannel.StartsWith('#'))
-        {
-            yield return new ValidationResult(
-                "Channels must be provided without a # prefix",
-                [nameof(SlackChannel)]
-            );
-        }
-    }
-}
-
-public class TestNotificationRequest : IValidatableObject
-{
-    public required string SlackChannel { get; init; }
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (SlackChannel.StartsWith('#'))
         {
             yield return new ValidationResult(
                 "Channels must be provided without a # prefix",

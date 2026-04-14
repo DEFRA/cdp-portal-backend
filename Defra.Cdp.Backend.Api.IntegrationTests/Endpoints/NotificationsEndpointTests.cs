@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
-using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
@@ -22,13 +21,11 @@ public class NotificationsEndpointTests : MongoTestSupport
     // Create Server
     private readonly IHost _host;
     private readonly ISlackClient _slackClient;
-    private readonly IEntitiesService _entitiesService;
     
     public NotificationsEndpointTests(MongoContainerFixture fixture) : base(fixture)
     {
         var mongodbFactory = CreateMongoDbClientFactory();
         INotificationRuleService ruleService = new NotificationRuleService(mongodbFactory, new NullLoggerFactory());
-        _entitiesService = new EntitiesService(mongodbFactory, new NullLoggerFactory());
         _slackClient = Substitute.For<ISlackClient>();
         
         _host = new HostBuilder()
@@ -40,7 +37,6 @@ public class NotificationsEndpointTests : MongoTestSupport
                     services.AddRouting();
                     services.AddSingleton(ruleService);
                     services.AddSingleton(_slackClient);
-                    services.AddSingleton(_entitiesService);
                 });
                 webBuilder.Configure(app =>
                 {
@@ -118,11 +114,16 @@ public class NotificationsEndpointTests : MongoTestSupport
     public async Task Should_send_test_message_to_channel()
     {
         var client = _host.GetTestClient();
-        await _entitiesService.Create(new Entity { Name = "foo-bar" }, TestContext.Current.CancellationToken);
-        var request = new TestNotificationRequest { SlackChannel = "my-team-channel" };
-        var result = await client.PostAsJsonAsync("/entities/foo-bar/test-notification", 
-            request,
-            TestContext.Current.CancellationToken);
+        
+        var request = new CreateRuleRequest { EventType = NotificationTypes.TestFailed, Environments = ["dev"], SlackChannel = "foo-channel"};
+        var result = await client.PostAsJsonAsync("/entities/foo-bar/notifications", request, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Created, result.StatusCode);
+        Assert.NotNull(result.Headers.Location);
+        
+        var rule = await client.GetFromJsonAsync<NotificationRule>(result.Headers.Location, TestContext.Current.CancellationToken);
+        Assert.NotNull(rule);
+
+        result = await client.PostAsync(result.Headers.Location + "/test", null, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         await _slackClient.Received().SendToChannel(Arg.Is(request.SlackChannel), Arg.Any<SlackMessageBody>(),
             Arg.Any<CancellationToken>());
