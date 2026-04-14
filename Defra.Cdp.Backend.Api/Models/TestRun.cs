@@ -84,7 +84,7 @@ public sealed class TestRun
     [property: JsonPropertyName("profile")]
     public string? Profile { get; set; }
     
-    [property: JsonPropertyName("profile")]
+    [property: JsonPropertyName("snapshotUrls")]
     public List<string>? SnapshotUrls { get; set; }
 }
 
