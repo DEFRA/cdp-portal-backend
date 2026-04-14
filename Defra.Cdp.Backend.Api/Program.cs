@@ -244,6 +244,7 @@ builder.Services.Configure<LambdaEventListenerOptions>(
     builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
+builder.Services.AddSingleton<IMonoLambdaEventHandler, GrafanaSnapshotHandler>();
 builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();
 
 // SBOM deployment pusher

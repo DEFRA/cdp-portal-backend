@@ -8,22 +8,24 @@ namespace Defra.Cdp.Backend.Api.Services.TestSuites;
 
 public interface ITestRunService
 {
-    public Task<bool> AnyTestRunExists(string suite, string environment, string deploymentId, CancellationToken ct);
+    Task<bool> AnyTestRunExists(string suite, string environment, string deploymentId, CancellationToken ct);
     
-    public Task CreateTestRun(TestRun testRun, CancellationToken ct);
+    Task CreateTestRun(TestRun testRun, CancellationToken ct);
     
-    public Task<TestRun?> FindTestRun(string runId, CancellationToken ct);
+    Task<TestRun?> FindTestRun(string runId, CancellationToken ct);
     
-    public Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct);
+    Task<Paginated<TestRun>> FindTestRuns(TestRunMatcher matcher, int offset, int page, int size, CancellationToken ct);
     
-    public Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct);
+    Task<TestRun?> FindByTaskArn(string taskArn, CancellationToken ct);
 
-    public Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
+    Task<TestRunSettings?> FindTestRunSettings(string name, string environment, CancellationToken ct);
     
-    public Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken ct);
+    Task<TestRun?> Link(TestRunMatchIds ids, string taskArn, CancellationToken ct);
     
-    public Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
+    Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
         List<FailureReason> failureReasons, CancellationToken ct);
+    
+    Task UpdateSnapshots(string runId, List<string> snapshotUrls, CancellationToken ct);
 }
 
 public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -110,6 +112,17 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
 
         var filter = Builders<TestRun>.Filter.Eq(t => t.TaskArn, taskArn);
 
+        await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
+    }
+
+    public async Task UpdateSnapshots(string runId, List<string> snapshotUrls, CancellationToken ct)
+    {
+        var filter = Builders<TestRun>.Filter.Eq(t => t.RunId, runId);
+        
+        var update = Builders<TestRun>
+            .Update
+            .Set(t => t.SnapshotUrls, snapshotUrls);
+        
         await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
     }
 
