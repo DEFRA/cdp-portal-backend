@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Shuttering;

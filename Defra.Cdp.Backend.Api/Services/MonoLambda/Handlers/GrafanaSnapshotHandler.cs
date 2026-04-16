@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 
-namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 
 internal class SnapshotResponse {
 

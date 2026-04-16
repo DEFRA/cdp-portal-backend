@@ -1,7 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Shuttering;

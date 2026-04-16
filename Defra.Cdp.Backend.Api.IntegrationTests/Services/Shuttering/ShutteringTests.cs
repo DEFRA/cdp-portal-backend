@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;

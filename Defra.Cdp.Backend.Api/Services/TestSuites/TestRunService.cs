@@ -156,7 +156,7 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
 
         var filter = builder.Eq(t => t.TestSuite, suite) &
                      builder.Eq(t => t.Environment, environment) &
-                     builder.Eq(t => t.Deployment.DeploymentId, deploymentId);
+                     builder.Eq(t => t.Deployment!.DeploymentId, deploymentId);
 
         return await Collection.Find(filter).AnyAsync(ct);
     }

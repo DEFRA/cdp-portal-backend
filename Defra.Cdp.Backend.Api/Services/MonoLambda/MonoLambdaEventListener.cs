@@ -6,7 +6,7 @@ using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.EventHistory;
 using Microsoft.Extensions.Options;
 
-namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambda;
 
 /// <summary>
 /// Generic handler for events sent to portal from the cdp-mono-lambda.
@@ -22,7 +22,7 @@ public class MonoLambdaEventListener : SqsListener
     public MonoLambdaEventListener(
         IAmazonSQS sqs,
         IEventHistoryFactory eventHistoryFactory,
-        IOptions<LambdaEventListenerOptions> config,
+        IOptions<MonoLambdaOptions> config,
         IEnumerable<IMonoLambdaEventHandler> eventHandlers,
         ILogger<MonoLambdaEventListener> logger) : base(sqs, config.Value.QueueUrl, logger, config.Value.Enabled)
     {

@@ -3,12 +3,12 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Services.EventHistory;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
+using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents;
+namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambda;
 
 internal class MockHandler : IMonoLambdaEventHandler
 {
@@ -28,9 +28,9 @@ public class MonoLambdaEventListenerTest
     private readonly IEventHistoryFactory _eventHistoryFactory = Substitute.For<IEventHistoryFactory>();
     private readonly IAmazonSQS Sqs = Substitute.For<IAmazonSQS>();
 
-    private readonly IOptions<LambdaEventListenerOptions> config =
-        new OptionsWrapper<LambdaEventListenerOptions>(
-            new LambdaEventListenerOptions { QueueUrl = "http://queue.url", Enabled = true });
+    private readonly IOptions<MonoLambdaOptions> config =
+        new OptionsWrapper<MonoLambdaOptions>(
+            new MonoLambdaOptions { QueueUrl = "http://queue.url", Enabled = true });
 
     
     [Fact]

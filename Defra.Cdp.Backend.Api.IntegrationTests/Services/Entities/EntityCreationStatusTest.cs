@@ -1,7 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 
