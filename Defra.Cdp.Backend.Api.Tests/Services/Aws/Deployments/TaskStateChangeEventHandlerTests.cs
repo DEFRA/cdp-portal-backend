@@ -5,6 +5,7 @@ using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
@@ -63,7 +64,8 @@ public class TaskStateChangeEventHandlerTests
         var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
         var notificationDispatcher = Substitute.For<INotificationDispatcher>();
-        
+        var testRunSnapshotter = Substitute.For<ITestRunSnapshotter>();
+
         var deployment = new Deployment
         {
             CdpDeploymentId = "cdp-123"
@@ -77,8 +79,9 @@ public class TaskStateChangeEventHandlerTests
             deploymentsService,
             entitiesService,
             testRunService,
+            testRunSnapshotter,
             notificationDispatcher,
-            ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
+            NullLogger<TaskStateChangeEventHandler>.Instance);
 
         await handler.UpdateDeployment(_testEvent, TestContext.Current.CancellationToken);
 
@@ -94,7 +97,8 @@ public class TaskStateChangeEventHandlerTests
         var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
         var notificationDispatcher = Substitute.For<INotificationDispatcher>();
-        
+        var testRunSnapshotter = Substitute.For<ITestRunSnapshotter>();
+
         var deployment = new Deployment
         {
             CdpDeploymentId = "cdp-123"
@@ -108,8 +112,9 @@ public class TaskStateChangeEventHandlerTests
             deploymentsService,
             entitiesService,
             testRunService,
+            testRunSnapshotter,
             notificationDispatcher,
-            ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
+            NullLogger<TaskStateChangeEventHandler>.Instance);
 
         await handler.UpdateDeployment(_testEvent, TestContext.Current.CancellationToken);
 
@@ -125,6 +130,8 @@ public class TaskStateChangeEventHandlerTests
         var deploymentsService = Substitute.For<IDeploymentsService>();
         var testRunService = Substitute.For<ITestRunService>();
         var notificationDispatcher = Substitute.For<INotificationDispatcher>();
+        var testRunSnapshotter = Substitute.For<ITestRunSnapshotter>();
+
 
         deploymentsService.FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>()).ReturnsNull();
         deploymentsService
@@ -137,8 +144,9 @@ public class TaskStateChangeEventHandlerTests
             deploymentsService,
             entitiesService,
             testRunService,
+            testRunSnapshotter,
             notificationDispatcher,
-            ConsoleLogger.CreateLogger<TaskStateChangeEventHandler>());
+            NullLogger<TaskStateChangeEventHandler>.Instance);
 
         await handler.UpdateDeployment(_testEvent, TestContext.Current.CancellationToken);
 

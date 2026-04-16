@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambda;
 
 public interface IMonoLambdaEventHandler
 {

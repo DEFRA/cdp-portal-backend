@@ -2,13 +2,13 @@ using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Sboms;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents.Handlers;
+namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambda.Handlers;
 
 
 internal record TestPayload

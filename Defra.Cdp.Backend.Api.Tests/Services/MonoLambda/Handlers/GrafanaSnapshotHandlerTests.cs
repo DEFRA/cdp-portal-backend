@@ -1,11 +1,11 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambdaEvents.Handlers;
+namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambda.Handlers;
 
 public class GrafanaSnapshotHandlerTests
 {

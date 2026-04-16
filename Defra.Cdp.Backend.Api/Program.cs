@@ -19,8 +19,8 @@ using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Migrations;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 using Defra.Cdp.Backend.Api.Services.PlatformEvents;
@@ -176,6 +176,7 @@ builder.Services.AddSingleton<EcrEventListener>();
 builder.Services.AddSingleton<EcsEventListener>();
 builder.Services.AddSingleton<EcrEventHandler>();
 builder.Services.AddSingleton<ITestRunService, TestRunService>();
+builder.Services.AddSingleton<ITestRunSnapshotter, TestRunSnapshotter>();
 builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<IServiceCodeCostsService, ServiceCodeCostsService>();
@@ -240,9 +241,10 @@ builder.Services.AddSingleton<IAuditService, AuditService>();
 builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsService>();
 
 // New Tenant state stuff
-builder.Services.Configure<LambdaEventListenerOptions>(
-    builder.Configuration.GetSection(LambdaEventListenerOptions.Prefix));
+builder.Services.Configure<MonoLambdaOptions>(
+    builder.Configuration.GetSection(MonoLambdaOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
+builder.Services.AddSingleton<MonoLambdaTrigger>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, GrafanaSnapshotHandler>();
 builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();

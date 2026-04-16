@@ -1,5 +1,5 @@
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using static Defra.Cdp.Backend.Api.Utils.CdpEnvironments;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;

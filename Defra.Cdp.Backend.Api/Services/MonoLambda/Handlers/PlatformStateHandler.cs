@@ -3,12 +3,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
-using Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Sboms;
 using Defra.Cdp.Backend.Api.Utils;
 using JsonException = System.Text.Json.JsonException;
 
-namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Handlers;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 
 internal class Header
 {

@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Defra.Cdp.Backend.Api.Services.MonoLambdaEvents.Models;
+namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 [BsonIgnoreExtraElements]

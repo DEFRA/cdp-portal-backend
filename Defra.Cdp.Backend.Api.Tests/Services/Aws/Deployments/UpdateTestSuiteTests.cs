@@ -21,16 +21,18 @@ public class UpdateTestSuiteTests
     private readonly IEntitiesService _entitiesService = Substitute.For<IEntitiesService>();
     private readonly IDeploymentsService _deploymentsService = Substitute.For<IDeploymentsService>();
     private readonly ITestRunService _testRunService = Substitute.For<ITestRunService>();
+    private readonly ITestRunSnapshotter _testRunSnapshotter = Substitute.For<ITestRunSnapshotter>();
     private readonly INotificationDispatcher _notificationDispatcher = Substitute.For<INotificationDispatcher>();
 
 
-    TaskStateChangeEventHandler buildHandler()
+    public TaskStateChangeEventHandler BuildHandler()
     {
         return new TaskStateChangeEventHandler(
             new MockEnvironmentLookup(),
             _deploymentsService,
             _entitiesService,
             _testRunService,
+            _testRunSnapshotter,
             _notificationDispatcher,
             new NullLogger<TaskStateChangeEventHandler>());
     }
@@ -47,7 +49,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
 
@@ -74,7 +76,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>()).ReturnsNull();
         _testRunService.Link(
@@ -109,7 +111,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = buildHandler();
+        var handler = BuildHandler();
         
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -140,7 +142,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -171,7 +173,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -203,7 +205,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -234,7 +236,7 @@ public class UpdateTestSuiteTests
             Name = "forms-perf-test",
             Type = Type.TestSuite
         };
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -269,7 +271,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun
@@ -301,7 +303,7 @@ public class UpdateTestSuiteTests
             Type = Type.TestSuite
         };
 
-        var handler = buildHandler();
+        var handler = BuildHandler();
 
         _testRunService.FindByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new TestRun

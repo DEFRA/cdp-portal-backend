@@ -14,6 +14,7 @@ public class TaskStateChangeEventHandler(
     IDeploymentsService deploymentsService,
     IEntitiesService entitiesService,
     ITestRunService testRunService,
+    ITestRunSnapshotter testRunSnapshotter,
     INotificationDispatcher notificationDispatcher,
     ILogger<TaskStateChangeEventHandler> logger)
 {
@@ -292,6 +293,22 @@ public class TaskStateChangeEventHandler(
                 {
                     logger.LogError("Failed to trigger notification for {TestSuite} run {RunId}", run.TestSuite, run.RunId);
                 }
+            }
+        }
+    }
+    
+    public async Task TriggerTestRunSnapshot(TestRun run, CancellationToken ct)
+    {
+        // Only trigger if we haven't yet moved from in-progress to complete
+        if (run.TestStatus == null)
+        {
+            try
+            {
+                await testRunSnapshotter.Snapshot(run, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to take dashboard snapshot for run {RunId}", run.RunId);
             }
         }
     }
