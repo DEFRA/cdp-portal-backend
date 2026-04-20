@@ -7,8 +7,8 @@ public record GrafanaSnapshotTrigger : MongoLambdaTriggerPayload
     [JsonPropertyName("dashboard_names")] 
     public List<string> DashboardNames { get; init; } = [];
 
-    [JsonPropertyName("dashboard_ids")]
-    public List<string> DashboardIds { get; init; } = [];
+    [JsonPropertyName("dashboard_uids")]
+    public List<string> DashboardUids { get; init; } = [];
     
     [JsonPropertyName("from")]
     public required DateTime From { get; init; }
