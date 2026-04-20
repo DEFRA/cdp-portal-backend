@@ -191,6 +191,7 @@ public class TaskStateChangeEventHandler(
             await testRunService.UpdateStatus(taskArn, taskStatus, testResults, ecsTaskStateChangeEvent.Timestamp,
                 failureReasons, cancellationToken);
             await TriggerTestRunNotification(testRun, testResults, cancellationToken);
+            await TriggerTestRunSnapshot(testRun, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -300,16 +301,18 @@ public class TaskStateChangeEventHandler(
     public async Task TriggerTestRunSnapshot(TestRun run, CancellationToken ct)
     {
         // Only trigger if we haven't yet moved from in-progress to complete
-        if (run.TestStatus == null)
+        try
         {
-            try
+            if (run.TestStatus == null)
             {
+                logger.LogInformation("Snapshotting dashboard for run {RunId} for {Env} {Suite}", run.RunId,
+                    run.Environment, run.TestSuite);
                 await testRunSnapshotter.Snapshot(run, ct);
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to take dashboard snapshot for run {RunId}", run.RunId);
-            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to take dashboard snapshot for run {RunId}", run.RunId);
         }
     }
 }
