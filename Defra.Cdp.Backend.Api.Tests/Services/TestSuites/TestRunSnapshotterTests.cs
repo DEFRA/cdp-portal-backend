@@ -1,9 +1,11 @@
 using System.Net;
+using System.Text.Json;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Triggers;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -61,5 +63,18 @@ public class TestRunSnapshotterTests
         await snapshotter.Snapshot(run, TestContext.Current.CancellationToken);
 
         await mockSns.DidNotReceiveWithAnyArgs().PublishAsync(Arg.Any<PublishRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void Test_snapshot_payload_excludes_timeout_when_missing()
+    {
+        var json = JsonSerializer.Serialize(new GrafanaSnapshotTrigger
+        {
+            RequestId = "123",
+            DashboardNames = [],
+            From = DateTime.UtcNow, To = DateTime.UtcNow,
+        });
+        
+        Assert.Equal(-1, json.IndexOf("snapshot_expiry_seconds", StringComparison.Ordinal));
     }
 }
