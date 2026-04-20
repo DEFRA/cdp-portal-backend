@@ -22,7 +22,7 @@ public class TestRunSnapshotter(MonoLambdaTrigger monoLambdaTrigger, IOptions<Te
         // TODO: we could filter based off test type here, i.e. only snapshot perf tests etc or specific envs
         var triggerEvent = new MonoLambdaTriggerEvent<GrafanaSnapshotTrigger>
         {
-            EventType = "grafana_snapshots",
+            EventType = "create_grafana_snapshots",
             Timestamp = DateTime.UtcNow,
             Payload = new GrafanaSnapshotTrigger
             {
