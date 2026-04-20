@@ -19,7 +19,7 @@ public class GrafanaSnapshotHandlerTests
         string testMessage = """
                              {
                                "request_id": "1234",
-                               "snapshot_urls": ["http://metrics/snapshot/123"]
+                               "snapshot_urls": [{"dashboard_uid": "1234", "dashboard_name": "foo", "url": "http://metrics/snapshot/123"}]
                              }
                              """;
         
@@ -30,7 +30,7 @@ public class GrafanaSnapshotHandlerTests
         var msg = JsonSerializer.Deserialize<JsonElement>(testMessage);
         await handler.HandleAsync(msg, TestContext.Current.CancellationToken);
 
-        await _testRunService.Received().UpdateSnapshots(Arg.Is("1234"), Arg.Any<List<string>>(), Arg.Any<CancellationToken>());
+        await _testRunService.Received().UpdateSnapshots(Arg.Is("1234"), Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>());
     }
     
     [Fact]
@@ -39,7 +39,7 @@ public class GrafanaSnapshotHandlerTests
         string testMessage = """
                              {
                                "request_id": "9999",
-                               "snapshot_urls": ["http://metrics/snapshot/123"]
+                               "snapshot_urls": [{ "dashboard_uid": "1234", "dashboard_name": "foo", "url": "http://metrics/snapshot/123"}]
                              }
                              """;
         
@@ -50,6 +50,6 @@ public class GrafanaSnapshotHandlerTests
         var msg = JsonSerializer.Deserialize<JsonElement>(testMessage);
         await handler.HandleAsync(msg, TestContext.Current.CancellationToken);
 
-        await _testRunService.DidNotReceiveWithAnyArgs().UpdateSnapshots(Arg.Any<string>(), Arg.Any<List<string>>(), Arg.Any<CancellationToken>());
+        await _testRunService.DidNotReceiveWithAnyArgs().UpdateSnapshots(Arg.Any<string>(), Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>());
     }
 }

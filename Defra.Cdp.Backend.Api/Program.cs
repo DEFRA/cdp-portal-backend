@@ -150,6 +150,7 @@ builder.Services.Configure<PlatformEventListenerOptions>(
     builder.Configuration.GetSection(PlatformEventListenerOptions.Prefix));
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.Configure<CloudWatchMetricsOptions>(builder.Configuration.GetSection(CloudWatchMetricsOptions.Prefix));
+builder.Services.Configure<TestRunnerOptions>(builder.Configuration.GetSection(TestRunnerOptions.Prefix));
 
 // AWS Clients
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());

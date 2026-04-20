@@ -4,11 +4,18 @@ using Defra.Cdp.Backend.Api.Services.TestSuites;
 
 namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 
+internal class SnapshotUrl
+{
+    [JsonPropertyName("dashboard_uid")] public required string Uid { get; init; }
+    [JsonPropertyName("dashboard_name")] public required string Name { get; init; }
+    [JsonPropertyName("url")] public required string Url { get; init; }
+}
+
 internal class SnapshotResponse {
 
     [JsonPropertyName("request_id")] public string? RequestId { get; init; }
 
-    [JsonPropertyName("snapshot_urls")] public List<string> SnapshotUrls { get; init; } = [];
+    [JsonPropertyName("snapshot_urls")] public List<SnapshotUrl> SnapshotUrls { get; init; } = [];
 }
 
 public class GrafanaSnapshotHandler(ITestRunService testRunService, ILogger<GrafanaSnapshotHandler> logger) : IMonoLambdaEventHandler
@@ -34,7 +41,7 @@ public class GrafanaSnapshotHandler(ITestRunService testRunService, ILogger<Graf
         if (testRun != null)
         {
             logger.LogInformation("Updating grafana snapshots for {RunId}", response.RequestId);
-            await testRunService.UpdateSnapshots(response.RequestId, response.SnapshotUrls, cancellationToken);
+            await testRunService.UpdateSnapshots(response.RequestId, response.SnapshotUrls.Select(s => s.Url), cancellationToken);
         }
     }
 }
