@@ -25,7 +25,7 @@ public interface ITestRunService
     Task UpdateStatus(string taskArn, string taskStatus, string? testStatus, DateTime ecsEventTimestamp,
         List<FailureReason> failureReasons, CancellationToken ct);
     
-    Task UpdateSnapshots(string runId, List<string> snapshotUrls, CancellationToken ct);
+    Task UpdateSnapshots(string runId, IEnumerable<string> snapshotUrls, CancellationToken ct);
 }
 
 public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -115,7 +115,7 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
         await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
     }
 
-    public async Task UpdateSnapshots(string runId, List<string> snapshotUrls, CancellationToken ct)
+    public async Task UpdateSnapshots(string runId, IEnumerable<string> snapshotUrls, CancellationToken ct)
     {
         var filter = Builders<TestRun>.Filter.Eq(t => t.RunId, runId);
         

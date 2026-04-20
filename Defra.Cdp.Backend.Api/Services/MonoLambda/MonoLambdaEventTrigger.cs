@@ -31,7 +31,7 @@ public class MonoLambdaTrigger(IAmazonSimpleNotificationService sns, IOptions<Mo
 
         if (config.Value.TopicArn == null)
         {
-            logger.LogDebug("MonoMambda topic is not set, skipping trigger");
+            logger.LogDebug("MonoLambda topic is not set, skipping trigger");
             return;
         }
         
@@ -52,6 +52,6 @@ public class MonoLambdaTrigger(IAmazonSimpleNotificationService sns, IOptions<Mo
         };
 
         var response = await sns.PublishAsync(publishRequest, cancellationToken);
-        logger.LogInformation("Triggered monolambda event, environment:{Environment} of type {Type} dedupe: {dedupeId}, status: {Status}", environment, trigger.EventType, dedupeId, response?.HttpStatusCode);
+        logger.LogInformation("Triggered MonoLambda event, environment:{Environment} of type {Type} dedupe: {dedupeId}, status: {Status}", environment, trigger.EventType, dedupeId, response?.HttpStatusCode);
     }
 }
