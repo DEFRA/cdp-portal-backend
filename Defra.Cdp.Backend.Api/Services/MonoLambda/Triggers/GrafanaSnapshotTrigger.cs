@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Triggers;
 
+
 public record GrafanaSnapshotTrigger : MongoLambdaTriggerPayload
 {
     [JsonPropertyName("dashboard_names")] 
@@ -17,7 +18,8 @@ public record GrafanaSnapshotTrigger : MongoLambdaTriggerPayload
     public required DateTime To { get; init; }
 
     [JsonPropertyName("snapshot_expiry_seconds")]
-    public string? ExpirySeconds { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? ExpirySeconds { get; init; }
 
     [JsonPropertyName("request_id")]
     public required string RequestId { get; init; }
