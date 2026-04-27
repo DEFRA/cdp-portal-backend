@@ -30,6 +30,8 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/{repositoryName}/schedules/{scheduleId}", GetSchedule);
         app.MapPatch("/entities/{repositoryName}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{repositoryName}/schedules/{scheduleId}", DeleteSchedule);
+        app.MapGet("/entities/{repositoryName}/resources", GetEntityResources);
+        app.MapGet("/entities/{repositoryName}/resources/{environment}", GetEntityResourcesForEnv);
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -279,5 +281,37 @@ public static class EntitiesEndpoint
     {
         await schedulerService.DeleteSchedule(scheduleId, ct);
         return TypedResults.NoContent();
+    }
+    
+    private static async Task<Results<NotFound, Ok<Dictionary<string, EntityResources>>>> GetEntityResources(
+        [FromServices] IEntitiesService entitiesService,
+        string repositoryName,
+        CancellationToken ct)
+    {
+        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var environments = new Dictionary<string, EntityResources>();
+
+        foreach (var env in entity.Environments.Keys)
+        {
+            environments[env] = EntityResourceMapper.FromCdpTenant(entity.Environments[env]);
+        }
+        return TypedResults.Ok(environments);
+    }
+    
+    private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
+        [FromServices] IEntitiesService entitiesService,
+        string repositoryName,
+        string environment,
+        CancellationToken ct)
+    {
+        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var resources = entity.Environments.TryGetValue(environment, out var entityEnvironment)
+            ? EntityResourceMapper.FromCdpTenant(entityEnvironment)
+            : new EntityResources();
+        return TypedResults.Ok(resources);
     }
 }
