@@ -3,13 +3,7 @@ using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities.Model;
 
-public record EntityResource<T>(string Resource, string Icon, string Name, T Properties)
-{
-    public string Resource { get; init; } = Resource;
-    public string Icon { get; init; } = Icon;
-    public string Name { get; init; } = Name;
-    public T Properties { get; init; } = Properties;
-}
+public record EntityResource<T>(string Resource, string Icon, string Name, T Properties);
 
 public record EntityResources
 {

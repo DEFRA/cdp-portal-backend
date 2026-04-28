@@ -3,6 +3,13 @@ using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.Scheduler.TestSuiteDeployment;
 
+public static class ScheduledTestRunConstants
+{
+    public const string UserId =  "00000000-0000-0000-0000-00000000001";
+    public const string DisplayName = "Auto schedule";
+}
+
+
 public interface ITestSuiteDeployer
 {
     Task DeployAsync(string testSuite, string environment, int cpu, int memory, string? profile, CancellationToken ct);
@@ -13,7 +20,7 @@ public class TestSuiteDeployer(ISelfServiceOpsClient selfServiceOpsClient, ILogg
 {
     private readonly UserDetails _userDetails = new()
     {
-        Id = "00000000-0000-0000-0000-00000000001", DisplayName = "Auto schedule"
+        Id = ScheduledTestRunConstants.UserId, DisplayName = ScheduledTestRunConstants.DisplayName
     };
 
     public async Task DeployAsync(

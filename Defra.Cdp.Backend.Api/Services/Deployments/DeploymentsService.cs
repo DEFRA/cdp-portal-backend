@@ -1,11 +1,12 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Migrations;
-using Microsoft.IdentityModel.Abstractions;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -66,7 +67,7 @@ public class DeploymentsService(
     IEntitiesService entitiesService,
     IUserServiceBackendClient userServiceBackendClient,
     ILoggerFactory loggerFactory)
-    : MongoService<Deployment>(connectionFactory, CollectionName, loggerFactory), IDeploymentsService
+    : MongoService<Deployment>(connectionFactory, CollectionName, loggerFactory), IDeploymentsService, IStatsReporter
 {
     public const string CollectionName = "deploymentsV2";
     public const int DefaultPageSize = 50;
@@ -463,6 +464,25 @@ public class DeploymentsService(
         statuses.Sort();
 
         return new DeploymentFilters { Services = serviceNames, Users = users, Statuses = statuses };
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var totalDeployments = await Collection.CountDocumentsAsync(FilterDefinition<Deployment>.Empty, null, cancellationToken);
+        metrics.RecordCount("DeploymentsTotal", null , totalDeployments);
+
+        var pipeline = new EmptyPipelineDefinition<Deployment>()
+            .Group(x => x.Environment, g => new 
+            { 
+                Environment = g.Key, 
+                Count = g.Count()
+            });
+
+        var totalByEnvironment = await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var deployment in totalByEnvironment)
+        {
+            metrics.RecordCount("DeploymentsTotalByEnvironment", new Dictionary<string, string>{ {"Environment", deployment.Environment} } , deployment.Count);
+        }
     }
 }
 

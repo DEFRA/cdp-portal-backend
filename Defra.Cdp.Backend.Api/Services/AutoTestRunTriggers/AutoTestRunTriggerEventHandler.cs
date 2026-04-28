@@ -6,9 +6,10 @@ using Defra.Cdp.Backend.Api.Utils.Clients;
 
 namespace Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 
-internal static class AutoTestRunConstants
+public static class AutoTestRunConstants
 {
-    public const string AutoTestRunId = "11111111-1111-1111-1111-111111111111";
+    public const string UserId = "11111111-1111-1111-1111-111111111111";
+    public const string DisplayName = "Auto test runner";
 }
 
 public class AutoTestRunTriggerEventHandler(
@@ -79,7 +80,7 @@ public class AutoTestRunTriggerEventHandler(
 
                     var userDetails = new UserDetails
                     {
-                        Id = AutoTestRunConstants.AutoTestRunId, DisplayName = "Auto test runner"
+                        Id = AutoTestRunConstants.UserId, DisplayName = AutoTestRunConstants.DisplayName
                     };
 
                     logger.LogInformation(
