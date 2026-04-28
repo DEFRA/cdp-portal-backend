@@ -1,5 +1,7 @@
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Scheduler;
@@ -23,7 +25,7 @@ public class SchedulerService(
     IMongoDbClientFactory connectionFactory,
     ILoggerFactory loggerFactory)
     : MongoService<MongoSchedule>(connectionFactory, CollectionName, loggerFactory),
-        ISchedulerService
+        ISchedulerService, IStatsReporter
 {
     public const string CollectionName = "schedules";
 
@@ -111,6 +113,12 @@ public class SchedulerService(
     {
         var result = await Collection.DeleteOneAsync(s => s.Id == scheduleId, ct);
         return result.DeletedCount > 0;
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var totalEnabled = await Collection.CountDocumentsAsync(x => x.Enabled == true, null, cancellationToken);
+        metrics.RecordCount("ScheduledTasksTotal", null, totalEnabled);
     }
 }
 

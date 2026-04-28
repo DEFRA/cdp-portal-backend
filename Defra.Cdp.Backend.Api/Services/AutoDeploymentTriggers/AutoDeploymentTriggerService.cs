@@ -1,23 +1,25 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 
 public interface IAutoDeploymentTriggerService
 {
-    public Task<AutoDeploymentTrigger?> FindForService(string service, CancellationToken cancellationToken);
+    Task<AutoDeploymentTrigger?> FindForService(string service, CancellationToken cancellationToken);
 
-    public Task<AutoDeploymentTrigger?> PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken);
+    Task<AutoDeploymentTrigger?> PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken);
 
-    public Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken);
+    Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken);
 }
 
 public class AutoDeploymentTriggerService(
     IMongoDbClientFactory connectionFactory,
     ILoggerFactory loggerFactory)
     : MongoService<AutoDeploymentTrigger>(connectionFactory, CollectionName, loggerFactory),
-        IAutoDeploymentTriggerService
+        IAutoDeploymentTriggerService, IStatsReporter
 {
     private readonly ILogger<AutoDeploymentTriggerService> _logger = loggerFactory.CreateLogger<AutoDeploymentTriggerService>();
 
@@ -62,5 +64,11 @@ public class AutoDeploymentTriggerService(
     public async Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken)
     {
         return await Collection.Find(_ => true).ToListAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var count = await Collection.CountDocumentsAsync(FilterDefinition<AutoDeploymentTrigger>.Empty, null, cancellationToken);
+        metrics.RecordCount("AutoRunTotalConfigured", null, count);
     }
 }

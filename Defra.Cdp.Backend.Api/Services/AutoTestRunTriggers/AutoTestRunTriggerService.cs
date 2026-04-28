@@ -1,5 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
@@ -21,7 +23,7 @@ public interface IAutoTestRunTriggerService
 public class AutoTestRunTriggerService(
     IMongoDbClientFactory connectionFactory,
     ILoggerFactory loggerFactory)
-    : MongoService<AutoTestRunTrigger>(connectionFactory, CollectionName, loggerFactory), IAutoTestRunTriggerService
+    : MongoService<AutoTestRunTrigger>(connectionFactory, CollectionName, loggerFactory), IAutoTestRunTriggerService, IStatsReporter
 {
     private readonly ILogger<AutoTestRunTriggerService> _logger =
         loggerFactory.CreateLogger<AutoTestRunTriggerService>();
@@ -157,5 +159,11 @@ public class AutoTestRunTriggerService(
 
         await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
         return await FindForService(trigger.ServiceName, cancellationToken);
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var count = await Collection.CountDocumentsAsync(FilterDefinition<AutoTestRunTrigger>.Empty, null, cancellationToken);
+        metrics.RecordCount("AutoTestRunTotalConfigured", null, count);
     }
 }
