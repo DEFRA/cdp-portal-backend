@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
-using Defra.Cdp.Backend.Api.Schedulers;
+using Defra.Cdp.Backend.Api.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Audit;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
@@ -35,6 +35,7 @@ using Defra.Cdp.Backend.Api.Services.Teams;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Terminal;
 using Defra.Cdp.Backend.Api.Services.TestSuites;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils;
 using Defra.Cdp.Backend.Api.Utils.Clients;
@@ -277,6 +278,15 @@ builder.Services.AddHostedService<SecretEventListener>();
 builder.Services.AddHostedService<GithubWorkflowEventListener>();
 builder.Services.AddHostedService<PlatformEventListener>();
 builder.Services.AddHostedService<MonoLambdaEventListener>();
+
+// Auto-register stats reporters
+builder.Services.Scan(scan => scan
+    .FromAssemblyOf<IStatsReporter>()
+    .AddClasses(classes => classes.AssignableTo<IStatsReporter>())
+    .AsImplementedInterfaces()
+    .WithSingletonLifetime());
+
+builder.Services.AddSingleton<IUsageStatsService, UsageStatsService>();
 
 // API docs
 builder.Services.AddOpenApi();

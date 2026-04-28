@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Driver;
 using Team = Defra.Cdp.Backend.Api.Services.Entities.Model.Team;
@@ -44,7 +46,7 @@ public interface IEntitiesService
 public class EntitiesService(
     IMongoDbClientFactory connectionFactory,
     ILoggerFactory loggerFactory)
-    : MongoService<Entity>(connectionFactory, CollectionName, loggerFactory), IEntitiesService
+    : MongoService<Entity>(connectionFactory, CollectionName, loggerFactory), IEntitiesService, IStatsReporter
 {
     private const string CollectionName = "entities";
     private readonly ILogger<EntitiesService> _logger = loggerFactory.CreateLogger<EntitiesService>();
@@ -414,6 +416,24 @@ public class EntitiesService(
                 .BulkWriteAsync(models, cancellationToken: cancellationToken);
             _logger.LogInformation("Updated {Updated}, inserted {Inserted}, removed {Removed} tenants in {Env}",
                 result.ModifiedCount, result.InsertedCount, result.DeletedCount, env);
+        }
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var pipeline = new EmptyPipelineDefinition<Entity>()
+            .Group(x => new { EntityType = x.Type, EntitySubType = x.SubType, Status = x.Status.ToString() } , g => new 
+            { 
+                g.Key.EntityType,
+                g.Key.EntitySubType,
+                g.Key.Status,
+                Count = g.Count() 
+            });
+
+        var result = await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var r in result)
+        {
+            metrics.RecordCount("Entities", new Dictionary<string, string>{ {"Type", r.EntityType.ToString()}, {"SubType", r.EntitySubType?.ToString() ?? "Unknown"}, {"Status", r.Status} } , r.Count);
         }
     }
 }

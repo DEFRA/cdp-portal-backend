@@ -1,5 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Driver;
 
@@ -23,7 +25,7 @@ public interface IDeployableArtifactsService
 }
 
 public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
-    : MongoService<DeployableArtifact>(connectionFactory, CollectionName, loggerFactory), IDeployableArtifactsService
+    : MongoService<DeployableArtifact>(connectionFactory, CollectionName, loggerFactory), IDeployableArtifactsService, IStatsReporter
 {
     private const string CollectionName = "artifacts";
 
@@ -88,5 +90,11 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
                 builder.Ascending(r => r.Tag)));
         var hashIndex = new CreateIndexModel<DeployableArtifact>(builder.Ascending(r => r.Sha256));
         return [repoAndTagIndex, hashIndex];
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var count = await Collection.CountDocumentsAsync(FilterDefinition<DeployableArtifact>.Empty, null, cancellationToken);
+        metrics.RecordCount("BuildsAvailable", null, count);
     }
 }

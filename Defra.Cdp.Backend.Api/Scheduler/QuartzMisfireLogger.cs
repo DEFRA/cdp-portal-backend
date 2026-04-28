@@ -1,7 +1,7 @@
-namespace Defra.Cdp.Backend.Api.Schedulers;
-
 using Quartz;
 using Quartz.Listener;
+
+namespace Defra.Cdp.Backend.Api.Scheduler;
 
 public class QuartzMisfireLogger(ILoggerFactory loggerFactory) : TriggerListenerSupport
 {

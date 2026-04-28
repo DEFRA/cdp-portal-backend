@@ -1,4 +1,6 @@
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications;
@@ -13,7 +15,8 @@ public interface INotificationRuleService
     Task<List<NotificationRule>> FindMatchingRules(INotificationEvent notification, CancellationToken ct);
 }
 
-public class NotificationRuleService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : MongoService<NotificationRule>(connectionFactory, CollectionName, loggerFactory), INotificationRuleService
+public class NotificationRuleService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) 
+    : MongoService<NotificationRule>(connectionFactory, CollectionName, loggerFactory), INotificationRuleService, IStatsReporter
 {
     private const string CollectionName = "notificationrules";
 
@@ -73,5 +76,24 @@ public class NotificationRuleService(IMongoDbClientFactory connectionFactory, IL
         }
 
         return await Collection.Find(filter).ToListAsync(ct);
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var totalEnabled = await Collection.CountDocumentsAsync(x => x.IsEnabled, null, cancellationToken);
+        metrics.RecordCount("NotificationsEnabled", null, totalEnabled);
+        
+        var pipeline = new EmptyPipelineDefinition<NotificationRule>()
+            .Group(x => x.EventType, g => new 
+            { 
+                EventType = g.Key, 
+                Count = g.Count() 
+            });
+
+        var totalByEventType = await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var r in totalByEventType)
+        {
+            metrics.RecordCount("NotificationsByType", new Dictionary<string, string>{ {"EventType", r.EventType} } , r.Count);
+        }
     }
 }

@@ -1,5 +1,9 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
+using Defra.Cdp.Backend.Api.Services.Aws;
+using Defra.Cdp.Backend.Api.Services.Scheduler.TestSuiteDeployment;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using InsertOneOptions = MongoDB.Driver.InsertOneOptions;
@@ -29,7 +33,7 @@ public interface ITestRunService
 }
 
 public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
-    : MongoService<TestRun>(connectionFactory, CollectionName, loggerFactory), ITestRunService
+    : MongoService<TestRun>(connectionFactory, CollectionName, loggerFactory), ITestRunService, IStatsReporter
 {
     private const string CollectionName = "testruns";
     private readonly TimeSpan _ecsLinkTimeWindow = TimeSpan.FromSeconds(120); // how many seconds between requesting the test run and the first ECS event
@@ -161,4 +165,49 @@ public class TestRunService(IMongoDbClientFactory connectionFactory, ILoggerFact
         return await Collection.Find(filter).AnyAsync(ct);
     }
 
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var totalTestRuns =
+            await Collection.CountDocumentsAsync(FilterDefinition<TestRun>.Empty, null, cancellationToken); 
+
+        metrics.RecordCount("TestRunsTotal", null, totalTestRuns);
+        
+        // Runs by environment
+        var pipelineByEnv = new EmptyPipelineDefinition<TestRun>()
+            .Group(x => x.Environment, g => new 
+            { 
+                Environment = g.Key, 
+                Count = g.Count() 
+            });
+        var totalTestRunsByEnv = await Collection.Aggregate(pipelineByEnv, null, cancellationToken).ToListAsync(cancellationToken);
+        
+        foreach (var testRun in totalTestRunsByEnv)
+        {
+            metrics.RecordCount("TestRunsByEnv", new Dictionary<string, string>(){ { "Environment", testRun.Environment  }}, testRun.Count);
+        }
+        
+        // Automated runs
+        var pipelineByRunType = new EmptyPipelineDefinition<TestRun>()
+            .Match(x => x.User.Id == AutoTestRunConstants.UserId || x.User.Id == ScheduledTestRunConstants.UserId)
+            .Group(x => x.User.Id, g => new 
+            { 
+                UserId = g.Key, 
+                Count = g.Count() 
+            });
+        
+        var totalAutomaticTestRuns = await Collection.Aggregate(pipelineByRunType, null, cancellationToken).ToListAsync(cancellationToken);
+
+        foreach (var testRun in totalAutomaticTestRuns)
+        {
+            switch (testRun.UserId)
+            {
+                case AutoTestRunConstants.UserId:
+                    metrics.RecordCount("TestRunsAutomated", new Dictionary<string, string>{ { "Automation", "deployment"  }}, testRun.Count);
+                    break;
+                case ScheduledTestRunConstants.UserId:
+                    metrics.RecordCount("TestRunsAutomated", new Dictionary<string, string>{ { "Automation", "scheduler"  }}, testRun.Count);
+                    break;
+            }
+        }
+    }
 }
