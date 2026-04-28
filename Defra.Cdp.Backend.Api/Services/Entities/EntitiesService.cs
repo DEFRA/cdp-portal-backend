@@ -421,19 +421,37 @@ public class EntitiesService(
 
     public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
     {
-        var pipeline = new EmptyPipelineDefinition<Entity>()
-            .Group(x => new { EntityType = x.Type, EntitySubType = x.SubType, Status = x.Status.ToString() } , g => new 
+        var entityStatusPipeline = new EmptyPipelineDefinition<Entity>()
+            .Group(x => new { Status = x.Status.ToString() } , g => new 
             { 
-                g.Key.EntityType,
-                g.Key.EntitySubType,
                 g.Key.Status,
                 Count = g.Count() 
             });
 
-        var result = await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
-        foreach (var r in result)
+        var entityStatusResults = await Collection.Aggregate(entityStatusPipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var r in entityStatusResults)
         {
-            metrics.RecordCount("Entities", new Dictionary<string, string>{ {"Type", r.EntityType.ToString()}, {"SubType", r.EntitySubType?.ToString() ?? "Unknown"}, {"Status", r.Status} } , r.Count);
+            metrics.RecordCount("Entities", new Dictionary<string, string>{ {"Status", r.Status} } , r.Count);
+        }
+        
+        var entityTypePipeline = new EmptyPipelineDefinition<Entity>()
+            .Match(x => x.Status == Status.Created)
+            .Group(x => new { x.Type, x.SubType } , g => new 
+            { 
+                g.Key.Type,
+                g.Key.SubType,
+                Count = g.Count() 
+            });
+
+        var entityTypeResults = await Collection.Aggregate(entityTypePipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var r in entityTypeResults)
+        {
+            var type = r.Type.ToString();
+            if (r.SubType != null)
+            {
+                type = $"{type}_{r.SubType.ToString()}";
+            }
+            metrics.RecordCount("EntitiesByType", new Dictionary<string, string>{ {"Type", type} } , r.Count);
         }
     }
 }
