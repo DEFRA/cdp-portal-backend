@@ -22,7 +22,7 @@ public static class EntityResourceMapper
 {
     public static EntityResource<TenantS3Bucket> Map(TenantS3Bucket s3) => new("s3", "aws-s3", s3.BucketName, s3);
     public static EntityResource<TenantSqsQueue> Map(TenantSqsQueue sqs) => new("sqs", "aws-sqs", sqs.Name, sqs);
-    public static EntityResource<TenantSnsTopic> Map(TenantSnsTopic sns) => new("sns", "aws-sns", sns.Name + (sns.FifoTopic ? ".fifo" : ""), sns);
+    public static EntityResource<TenantSnsTopic> Map(TenantSnsTopic sns) => new("sns", "aws-sns", sns.Name, sns);
     public static EntityResource<TenantDynamoDB> Map(TenantDynamoDB d) => new("dynamodb", "aws-dynamodb", d.Name, d);
     public static EntityResource<TenantApiGateway> Map(TenantApiGateway api) => new("api", "aws-api-gateway", api.Name, api);
     public static EntityResource<TenantSqlDatabase> Map(TenantSqlDatabase sql) => new("sql", "aws-rds", sql.Name, sql);
