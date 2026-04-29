@@ -270,3 +270,4 @@ library.db
 .envrc
 
 .vscode/
+.env

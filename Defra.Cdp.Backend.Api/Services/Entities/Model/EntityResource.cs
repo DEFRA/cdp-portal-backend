@@ -3,6 +3,7 @@ using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities.Model;
 
+// Available icons https://icones.js.org/collection/logos
 public record EntityResource<T>(string Resource, string Icon, string Name, T Properties);
 
 public record EntityResources
@@ -22,8 +23,8 @@ public static class EntityResourceMapper
     public static EntityResource<TenantS3Bucket> Map(TenantS3Bucket s3) => new("s3", "aws-s3", s3.BucketName, s3);
     public static EntityResource<TenantSqsQueue> Map(TenantSqsQueue sqs) => new("sqs", "aws-sqs", sqs.Name, sqs);
     public static EntityResource<TenantSnsTopic> Map(TenantSnsTopic sns) => new("sns", "aws-sns", sns.Name + (sns.FifoTopic ? ".fifo" : ""), sns);
-    public static EntityResource<TenantDynamoDB> Map(TenantDynamoDB d) => new("dynamodb", "aws-dynamo", d.Name, d);
-    public static EntityResource<TenantApiGateway> Map(TenantApiGateway api) => new("api", "aws-apigateway", api.Name, api);
+    public static EntityResource<TenantDynamoDB> Map(TenantDynamoDB d) => new("dynamodb", "aws-dynamodb", d.Name, d);
+    public static EntityResource<TenantApiGateway> Map(TenantApiGateway api) => new("api", "aws-api-gateway", api.Name, api);
     public static EntityResource<TenantSqlDatabase> Map(TenantSqlDatabase sql) => new("sql", "aws-rds", sql.Name, sql);
     public static EntityResource<TenantCognitoIdentityPool> Map(TenantCognitoIdentityPool cog) => new("cognito", "aws-cognito", cog.IdentityPoolName, cog);
     public static EntityResource<CdpBedrockProfile> Map(CdpBedrockProfile ai) => new("bedrock", "aws-bedrock", ai.Name, ai);
