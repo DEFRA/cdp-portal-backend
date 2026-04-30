@@ -76,15 +76,7 @@ public class QuartzSchedulersHostedService(
         var trigger = TriggerBuilder.Create()
             .ForJob(jobKey)
             .WithIdentity($"{jobName}-trigger");
-            
-        var cronSchedule = configSection.GetValue<string?>("Cron");
-        if (cronSchedule != null)
-        {
-            logger.LogInformation("Setting up CRON scheduler for {Job} on {Scheduler}", jobName, cronSchedule);
-            trigger = trigger.WithCronSchedule(cronSchedule);
-        }
-        
-        
+
         var pollIntervalSeconds = configSection.GetValue<int?>("PollIntervalSecs");
         if (pollIntervalSeconds != null)
         {
