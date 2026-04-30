@@ -32,6 +32,7 @@ public static class EntitiesEndpoint
         app.MapDelete("/entities/{repositoryName}/schedules/{scheduleId}", DeleteSchedule);
         app.MapGet("/entities/{repositoryName}/resources", GetEntityResources);
         app.MapGet("/entities/{repositoryName}/resources/{environment}", GetEntityResourcesForEnv);
+        app.MapGet("/entities/{repositoryName}/topology/{environment}", GetEntityTopologyForEnv);
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -313,5 +314,19 @@ public static class EntitiesEndpoint
             ? EntityResourceMapper.FromCdpTenant(entityEnvironment)
             : new EntityResources();
         return TypedResults.Ok(resources);
+    }
+    
+    private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(
+        [FromServices] IEntityRelationshipsService entityRelationshipsService,
+        string repositoryName,
+        string environment,
+        CancellationToken ct)
+    {
+        var relationships = await entityRelationshipsService.ListTopologyOfEntity(repositoryName, environment, ct);
+        if (relationships.Count == 0)
+        {
+            return TypedResults.NotFound();
+        }
+        return TypedResults.Ok(relationships);
     }
 }
