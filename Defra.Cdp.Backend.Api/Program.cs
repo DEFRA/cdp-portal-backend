@@ -171,7 +171,7 @@ builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
-builder.Services.AddSingleton<IEntityRelationshipsService, EntityRelationshipsService>();
+builder.Services.AddSingleton<IEntityTopologyService, EntityTopologyService>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();
 builder.Services.AddSingleton<IEcsEventsService, EcsEventsService>();
 builder.Services.AddSingleton<IEnvironmentLookup, EnvironmentLookup>();
