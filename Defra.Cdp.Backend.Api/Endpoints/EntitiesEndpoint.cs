@@ -317,12 +317,12 @@ public static class EntitiesEndpoint
     }
     
     private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(
-        [FromServices] IEntityRelationshipsService entityRelationshipsService,
+        [FromServices] IEntityTopologyService entityTopologyService,
         string repositoryName,
         string environment,
         CancellationToken ct)
     {
-        var relationships = await entityRelationshipsService.ListTopologyOfEntity(repositoryName, environment, ct);
+        var relationships = await entityTopologyService.ListTopologyOfEntity(repositoryName, environment, ct);
         if (relationships.Count == 0)
         {
             return TypedResults.NotFound();
