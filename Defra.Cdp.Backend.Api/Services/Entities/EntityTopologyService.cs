@@ -41,7 +41,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         };
 
         return await collection
-            .Aggregate<QueueSubscriptions>(pipeline)
+            .Aggregate<QueueSubscriptions>(pipeline, cancellationToken: ct)
             .ToListAsync(ct);
     }
     
