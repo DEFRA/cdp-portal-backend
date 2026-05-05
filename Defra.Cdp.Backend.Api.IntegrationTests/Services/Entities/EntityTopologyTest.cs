@@ -56,8 +56,8 @@ public class EntityTopologyTest
         Assert.Equal(links[0].Name, rootService.Name);
         Assert.Equal(2, links[0].Resources.Count);
         
-        Assert.Equivalent(new TopologyResource("foo-topic", "sqs", "aws-sns", []), links[0].Resources[0]);
-        Assert.Equivalent(new TopologyResource("foo-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("foo", "sns", "foo-topic", "subscription") ]), links[0].Resources[1]);
+        Assert.Equivalent(new TopologyResource("foo-topic", "sns", "aws-sns", []), links[0].Resources[0]);
+        Assert.Equivalent(new TopologyResource("foo-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("foo", "foo-topic", "sns", "subscription") ]), links[0].Resources[1]);
     }
     
     [Fact]
@@ -84,7 +84,7 @@ public class EntityTopologyTest
         Assert.Equal("bar", links[1].Name);
         Assert.Single(links[0].Resources);
         
-        Assert.Equivalent(new TopologyResource("foo-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("bar", "sns", "bar-topic", "subscription") ]), links[0].Resources[0]);
+        Assert.Equivalent(new TopologyResource("foo-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("bar", "bar-topic", "sns", "subscription") ]), links[0].Resources[0]);
         Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-topic", "sns", "aws-sns", [])]), links[1]);
     }
    
@@ -114,6 +114,6 @@ public class EntityTopologyTest
         Assert.Single(links[0].Resources);
         
         Assert.Equivalent(new TopologyService("foo", SubType.Backend, [], [new TopologyResource("foo-topic", "sns", "aws-sns", [])]), links[0]);
-        Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("foo", "sns", "foo-topic", "subscription")])]), links[1]);
+        Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("foo", "foo-topic", "sns", "subscription")])]), links[1]);
     }
 }
