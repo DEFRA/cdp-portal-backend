@@ -116,7 +116,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
                 services.TryAdd(sub.Service, new TopologyService(sub.Service, sub.SubType, sub.Teams, []));
                 // Link back to root service's topic
                 services[sub.Service].Resources.Add(
-                    new TopologyResource(sub.Queue, "sqs", "aws-sqs", [ new TopologyResourceLink(rootService.Name, sub.Topic, "sns", "subscription") ]));
+                    new TopologyResource(sub.Queue, EntityResourceMapper.SQS.Name, EntityResourceMapper.SQS.Icon, [ new TopologyResourceLink(rootService.Name, sub.Topic, EntityResourceMapper.SNS.Name, "subscription") ]));
             }
         }
         
@@ -128,13 +128,13 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             {
 
                 var topicQueueIsSubscribedTo = topicLookup.Find(q => q.Topic == topicName);
-                resource.Links?.Add(new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, "sns", "subscription"));
+                resource.Links?.Add(new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, EntityResourceMapper.SNS.Name, "subscription"));
                 
                 // Add topics owned by services outside the current service
                 if (topicQueueIsSubscribedTo == null || topicQueueIsSubscribedTo.Service == rootService.Name) continue;
                
                 services.TryAdd(topicQueueIsSubscribedTo.Service, new TopologyService(topicQueueIsSubscribedTo.Service, topicQueueIsSubscribedTo.SubType, topicQueueIsSubscribedTo.Teams, []));
-                services[topicQueueIsSubscribedTo.Service].Resources.Add(new TopologyResource(topicName, "sns", "aws-sns", []));
+                services[topicQueueIsSubscribedTo.Service].Resources.Add(new TopologyResource(topicName, EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, []));
             }
 
             services[rootService.Name].Resources.Add(resource);

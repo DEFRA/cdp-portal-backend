@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
+using static Defra.Cdp.Backend.Api.Services.Entities.Model.EntityResourceMapper;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Entities;
 
@@ -22,7 +23,7 @@ public class EntityTopologyTest
     public void Test_topology_with_S3()
     {
         var rootService = new TopologyService("foo", SubType.Backend, [], []);
-        var resources = new EntityResources { S3Buckets = [ new EntityResource<TenantS3Bucket>("s3", "aws-s3", "foo-bucket", new TenantS3Bucket())]};
+        var resources = new EntityResources { S3Buckets = [ new EntityResource<TenantS3Bucket>(S3.Name, S3.Icon, "foo-bucket", new TenantS3Bucket())]};
         
         var links = EntityTopologyService.LinkResources(rootService, resources, [], []);
         Assert.Single(links);
@@ -37,8 +38,8 @@ public class EntityTopologyTest
         var rootService = new TopologyService("foo", SubType.Backend, [], []);
         var resources = new EntityResources
         {
-            SqsQueues = [new EntityResource<TenantSqsQueue>("sqs", "aws-sqs", "foo-queue", new TenantSqsQueue { Name = "foo-queue", FifoQueue = false, Subscriptions = ["foo-topic"]})],
-            SnsTopics = [new EntityResource<TenantSnsTopic>("sns", "aws-sns", "foo-topic", new TenantSnsTopic { Name = "foo-topic", FifoTopic = false })]
+            SqsQueues = [new EntityResource<TenantSqsQueue>(SQS.Name, SQS.Icon, "foo-queue", new TenantSqsQueue { Name = "foo-queue", FifoQueue = false, Subscriptions = ["foo-topic"]})],
+            SnsTopics = [new EntityResource<TenantSnsTopic>(SNS.Name, SNS.Icon, "foo-topic", new TenantSnsTopic { Name = "foo-topic", FifoTopic = false })]
         };
         List<QueueSubscriptions> queueLookup = [ 
             new("foo", SubType.Backend, [], "foo-queue", "foo-topic"), 
@@ -56,8 +57,8 @@ public class EntityTopologyTest
         Assert.Equal(links[0].Name, rootService.Name);
         Assert.Equal(2, links[0].Resources.Count);
         
-        Assert.Equivalent(new TopologyResource("foo-topic", "sns", "aws-sns", []), links[0].Resources[0]);
-        Assert.Equivalent(new TopologyResource("foo-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("foo", "foo-topic", "sns", "subscription") ]), links[0].Resources[1]);
+        Assert.Equivalent(new TopologyResource("foo-topic", SNS.Name,  SNS.Icon, []), links[0].Resources[0]);
+        Assert.Equivalent(new TopologyResource("foo-queue", SQS.Name, SQS.Icon, [ new TopologyResourceLink("foo", "foo-topic", SNS.Name, "subscription") ]), links[0].Resources[1]);
     }
     
     [Fact]
@@ -66,7 +67,7 @@ public class EntityTopologyTest
         var rootService = new TopologyService("foo", SubType.Backend, [], []);
         var resources = new EntityResources
         {
-            SqsQueues = [new EntityResource<TenantSqsQueue>("sqs", "aws-sqs", "foo-queue", new TenantSqsQueue { Name = "foo-queue", FifoQueue = false, Subscriptions = ["bar-topic"]})],
+            SqsQueues = [new EntityResource<TenantSqsQueue>(SQS.Name, SQS.Icon, "foo-queue", new TenantSqsQueue { Name = "foo-queue", FifoQueue = false, Subscriptions = ["bar-topic"]})],
         };
         
         List<QueueSubscriptions> queueLookup = [ 
@@ -84,8 +85,8 @@ public class EntityTopologyTest
         Assert.Equal("bar", links[1].Name);
         Assert.Single(links[0].Resources);
         
-        Assert.Equivalent(new TopologyResource("foo-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("bar", "bar-topic", "sns", "subscription") ]), links[0].Resources[0]);
-        Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-topic", "sns", "aws-sns", [])]), links[1]);
+        Assert.Equivalent(new TopologyResource("foo-queue", SQS.Name, SQS.Icon, [ new TopologyResourceLink("bar", "bar-topic", SNS.Name, "subscription") ]), links[0].Resources[0]);
+        Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-topic", SNS.Name, SNS.Icon, [])]), links[1]);
     }
    
     
@@ -95,7 +96,7 @@ public class EntityTopologyTest
         var rootService = new TopologyService("foo", SubType.Backend, [], []);
         var resources = new EntityResources
         {
-            SnsTopics = [new EntityResource<TenantSnsTopic>("sns", "aws-sns", "foo-topic", new TenantSnsTopic())],
+            SnsTopics = [new EntityResource<TenantSnsTopic>(SNS.Name, SNS.Icon, "foo-topic", new TenantSnsTopic())],
         };
         
         List<QueueSubscriptions> queueLookup = [ 
@@ -113,7 +114,7 @@ public class EntityTopologyTest
         Assert.Equal("bar", links[1].Name);
         Assert.Single(links[0].Resources);
         
-        Assert.Equivalent(new TopologyService("foo", SubType.Backend, [], [new TopologyResource("foo-topic", "sns", "aws-sns", [])]), links[0]);
-        Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-queue", "sqs", "aws-sqs", [ new TopologyResourceLink("foo", "foo-topic", "sns", "subscription")])]), links[1]);
+        Assert.Equivalent(new TopologyService("foo", SubType.Backend, [], [new TopologyResource("foo-topic", SNS.Name, SNS.Icon, [])]), links[0]);
+        Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-queue", SQS.Name, SQS.Icon, [ new TopologyResourceLink("foo", "foo-topic", SNS.Name, "subscription")])]), links[1]);
     }
 }
