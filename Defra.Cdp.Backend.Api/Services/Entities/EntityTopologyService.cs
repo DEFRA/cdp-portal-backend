@@ -96,14 +96,14 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
         
         // S3 Buckets
-        foreach (var resource in resources.S3Buckets.Select(resourceS3Bucket => new TopologyResource(resourceS3Bucket.Name, resourceS3Bucket.Icon, [])))
+        foreach (var resource in resources.S3Buckets.Select(resourceS3Bucket => new TopologyResource(resourceS3Bucket.Name, resourceS3Bucket.Resource, resourceS3Bucket.Icon, [])))
         {
             services[rootService.Name].Resources.Add(resource);
             // TODO: add shared access once we have the IAM data in the entity
         }
 
         // SNS Topics
-        foreach (var topic in resources.SnsTopics.Select(resourcesSnsTopic => new TopologyResource(resourcesSnsTopic.Name, resourcesSnsTopic.Icon, [])))
+        foreach (var topic in resources.SnsTopics.Select(snsTopic => new TopologyResource(snsTopic.Name, snsTopic.Resource, snsTopic.Icon, [])))
         {
             services[rootService.Name].Resources.Add(topic);
             
@@ -116,25 +116,25 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
                 services.TryAdd(sub.Service, new TopologyService(sub.Service, sub.SubType, sub.Teams, []));
                 // Link back to root service's topic
                 services[sub.Service].Resources.Add(
-                    new TopologyResource(sub.Queue, "aws-sqs", [ new TopologyResourceLink(rootService.Name, sub.Topic, "subscription") ]));
+                    new TopologyResource(sub.Queue, "sqs", "aws-sqs", [ new TopologyResourceLink(rootService.Name, sub.Topic, "sns", "subscription") ]));
             }
         }
         
         // SQS Queues
         foreach (var queue in resources.SqsQueues)
         {
-            var resource = new TopologyResource(queue.Name, queue.Icon, []);
+            var resource = new TopologyResource(queue.Name, queue.Resource, queue.Icon, []);
             foreach (var topicName in queue.Properties.Subscriptions)
             {
 
                 var topicQueueIsSubscribedTo = topicLookup.Find(q => q.Topic == topicName);
-                resource.Links?.Add(new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, "subscription"));
+                resource.Links?.Add(new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, "sns", "subscription"));
                 
                 // Add topics owned by services outside the current service
                 if (topicQueueIsSubscribedTo == null || topicQueueIsSubscribedTo.Service == rootService.Name) continue;
                
                 services.TryAdd(topicQueueIsSubscribedTo.Service, new TopologyService(topicQueueIsSubscribedTo.Service, topicQueueIsSubscribedTo.SubType, topicQueueIsSubscribedTo.Teams, []));
-                services[topicQueueIsSubscribedTo.Service].Resources.Add(new TopologyResource(topicName, "aws-sns", []));
+                services[topicQueueIsSubscribedTo.Service].Resources.Add(new TopologyResource(topicName, "sns", "aws-sns", []));
             }
 
             services[rootService.Name].Resources.Add(resource);
