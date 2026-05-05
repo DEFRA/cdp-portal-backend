@@ -23,8 +23,6 @@ using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
-using Defra.Cdp.Backend.Api.Services.PlatformEvents;
-using Defra.Cdp.Backend.Api.Services.PlatformEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Sboms;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
@@ -182,8 +180,6 @@ builder.Services.AddSingleton<ITestRunService, TestRunService>();
 builder.Services.AddSingleton<ITestRunSnapshotter, TestRunSnapshotter>();
 builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
-builder.Services.AddSingleton<IServiceCodeCostsService, ServiceCodeCostsService>();
-builder.Services.AddSingleton<ITotalCostsService, TotalCostsService>();
 builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
 
@@ -212,8 +208,6 @@ builder.Services.AddSingleton<IUserServiceBackendClient, UserServiceBackendClien
 
 // GitHub Workflow Event Handlers
 builder.Services.AddSingleton<GithubWorkflowEventListener>();
-builder.Services.AddSingleton<IPlatformEventHandler, PlatformEventHandler>();
-builder.Services.AddSingleton<PlatformEventListener>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, AppConfigsService>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, AppConfigVersionsService>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, TeamsEventHandler>();
@@ -277,7 +271,6 @@ builder.Services.AddHostedService<EcsEventListener>();
 builder.Services.AddHostedService<EcrEventListener>();
 builder.Services.AddHostedService<SecretEventListener>();
 builder.Services.AddHostedService<GithubWorkflowEventListener>();
-builder.Services.AddHostedService<PlatformEventListener>();
 builder.Services.AddHostedService<MonoLambdaEventListener>();
 
 // Auto-register stats reporters
@@ -302,7 +295,6 @@ app.UseHeaderPropagation();
 // Add endpoints
 app.MapRepositoriesEndpoint();
 app.MapConfigEndpoint();
-app.MapCostsEndpoint();
 app.MapArtifactsAndDeployablesEndpoint();
 app.MapDeploymentsEndpoint();
 app.MapEntitiesEndpoint();
