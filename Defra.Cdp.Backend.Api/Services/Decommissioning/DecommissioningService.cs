@@ -19,7 +19,6 @@ public sealed class DecommissioningService(
     {
         try
         {
-            _logger.LogInformation("Polling pending service decommissions...");
             var pendingEntities = await entitiesService.EntitiesPendingDecommission(context.CancellationToken);
             foreach (var entity in pendingEntities)
             {

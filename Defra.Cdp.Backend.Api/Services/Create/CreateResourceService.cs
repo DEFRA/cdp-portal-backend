@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
@@ -7,7 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Create;
 
 public interface ICreateResourceService
 {
-    Task TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken);
+    Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken);
 }
 
 public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory, IConfiguration configuration) : ICreateResourceService
@@ -17,8 +18,8 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
     
     private readonly string _configRepo = "cdp-tenant-config";
     private readonly string _cdpWorkflowId = "generic-cdp-cli-workflow.yml";
-    
-    public async Task TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken)
+
+    public async Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken)
     {
         var url = $"{_githubApiUrl}/repos/{_githubOrg}/{_configRepo}/actions/workflows/{_cdpWorkflowId}/dispatches";
         var client = clientFactory.CreateClient("GitHubClient");
@@ -30,9 +31,6 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
         };
 
         var jsonPayload = JsonSerializer.Serialize(payload);
-        
-        Console.WriteLine(jsonPayload);
-
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
         
@@ -44,5 +42,18 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
 
         var response = await client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<GitHubTriggerWorkflowResponse>(cancellationToken: cancellationToken);
     }
+}
+
+public record GitHubTriggerWorkflowResponse
+{
+    [JsonPropertyName("workflow_run_id")]
+    public int? WorkflowRunId { get; init; }
+
+    [JsonPropertyName("run_url")]
+    public string? WorkflowRunUrl { get; init; }
+    
+    [JsonPropertyName("html_url")]
+    public string? WorkflowRunHtmlUrl { get; init; }
 }
