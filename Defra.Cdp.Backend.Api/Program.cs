@@ -313,7 +313,6 @@ app.MapDebugEndpoint();
 app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
-app.MapCreateResourceEndpoint();
 
 app.MapOpenApi();
 

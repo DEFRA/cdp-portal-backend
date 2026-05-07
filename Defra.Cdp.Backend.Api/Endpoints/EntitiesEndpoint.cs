@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
+using Defra.Cdp.Backend.Api.Services.Create;
+using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
@@ -21,29 +23,30 @@ public static class EntitiesEndpoint
         app.MapPost("/entities", CreateEntity);
         app.MapGet("/entities", GetEntities);
         app.MapGet("/entities/filters", GetFilters);
-        app.MapGet("/entities/{repositoryName}", GetEntity);
-        app.MapPost("/entities/{repositoryName}/decommission", StartDecommissioning);
-        app.MapPost("/entities/{repositoryName}/tags", TagEntity);
-        app.MapDelete("/entities/{repositoryName}/tags", UntagEntity);
-        app.MapPost("/entities/{repositoryName}/schedules", CreateSchedule);
-        app.MapGet("/entities/{repositoryName}/schedules", GetSchedules);
-        app.MapGet("/entities/{repositoryName}/schedules/{scheduleId}", GetSchedule);
-        app.MapPatch("/entities/{repositoryName}/schedules/{scheduleId}", UpdateSchedule);
-        app.MapDelete("/entities/{repositoryName}/schedules/{scheduleId}", DeleteSchedule);
-        app.MapGet("/entities/{repositoryName}/resources", GetEntityResources);
-        app.MapGet("/entities/{repositoryName}/resources/{environment}", GetEntityResourcesForEnv);
-        app.MapGet("/entities/{repositoryName}/topology/{environment}", GetEntityTopologyForEnv);
+        app.MapGet("/entities/{name}", GetEntity);
+        app.MapPost("/entities/{name}/decommission", StartDecommissioning);
+        app.MapPost("/entities/{name}/tags", TagEntity);
+        app.MapDelete("/entities/{name}/tags", UntagEntity);
+        app.MapPost("/entities/{name}/schedules", CreateSchedule);
+        app.MapGet("/entities/{name}/schedules", GetSchedules);
+        app.MapGet("/entities/{name}/schedules/{scheduleId}", GetSchedule);
+        app.MapPatch("/entities/{name}/schedules/{scheduleId}", UpdateSchedule);
+        app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
+        app.MapGet("/entities/{name}/resources", GetEntityResources);
+        app.MapPost("/entities/{name}/resources", CreateS3ResourceForEntity);
+        app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
+        app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
     }
-
+    
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
         ISelfServiceOpsClient selfServiceOpsClient,
-        string repositoryName,
+        string name,
         [FromQuery(Name = "id")] string userId,
         [FromQuery(Name = "displayName")] string userDisplayName,
         CancellationToken ct)
     {
-        await entitiesService.SetDecommissionDetail(repositoryName, userId, userDisplayName, ct);
-        await selfServiceOpsClient.ScaleEcsToZero(repositoryName,
+        await entitiesService.SetDecommissionDetail(name, userId, userDisplayName, ct);
+        await selfServiceOpsClient.ScaleEcsToZero(name,
             new UserDetails { Id = userId, DisplayName = userDisplayName }, ct);
         return TypedResults.Ok();
     }
@@ -77,10 +80,10 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Gets a single entity by name.")]
-    private static async Task<Results<Ok<Entity>, NotFound>> GetEntity(IEntitiesService entitiesService, string repositoryName,
+    private static async Task<Results<Ok<Entity>, NotFound>> GetEntity(IEntitiesService entitiesService, string name,
         CancellationToken ct)
     {
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
         return entity != null ? TypedResults.Ok(entity) : TypedResults.NotFound();
     }
 
@@ -93,18 +96,18 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Adds a 'tag' (e.g. PRR, BETA) to an entity.")]
-    private static async Task<Ok> TagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
+    private static async Task<Ok> TagEntity(IEntitiesService entitiesService, string name, string tag,
         CancellationToken ct)
     {
-        await entitiesService.AddTag(repositoryName, tag, ct);
+        await entitiesService.AddTag(name, tag, ct);
         return TypedResults.Ok();
     }
 
     [EndpointDescription("Removes a 'tag' (e.g. PRR, BETA) to an entity.")]
-    private static async Task<Ok> UntagEntity(IEntitiesService entitiesService, string repositoryName, string tag,
+    private static async Task<Ok> UntagEntity(IEntitiesService entitiesService, string name, string tag,
         CancellationToken ct)
     {
-        await entitiesService.RemoveTag(repositoryName, tag, ct);
+        await entitiesService.RemoveTag(name, tag, ct);
         return TypedResults.Ok();
     }
 
@@ -112,7 +115,7 @@ public static class EntitiesEndpoint
     private static async Task<Results<BadRequest<List<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Created<MongoSchedule>>> CreateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
-        [FromRoute] string repositoryName,
+        [FromRoute] string name,
         [FromBody] EntityScheduleRequest scheduleRequest,
         [FromHeader(Name = "Authorization")] string? bearerToken,
         CancellationToken ct)
@@ -134,7 +137,7 @@ public static class EntitiesEndpoint
             return TypedResults.Unauthorized();
         }
 
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
 
         if (entity == null)
         {
@@ -146,7 +149,7 @@ public static class EntitiesEndpoint
             return TypedResults.Conflict("Entity is not a test suite");
         }
 
-        var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user, repositoryName);
+        var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user, name);
         await schedulerService.Schedule(mongoSchedule, ct);
 
 
@@ -154,13 +157,13 @@ public static class EntitiesEndpoint
             new ScheduleMatchers { Id = mongoSchedule.Id },
             ct)).FirstOrDefault();
 
-        return TypedResults.Created($"/entities/{repositoryName}/schedules/{mongoSchedule.Id}", createdSchedule);
+        return TypedResults.Created($"/entities/{name}/schedules/{mongoSchedule.Id}", createdSchedule);
     }
     
     private static async Task<Results<BadRequest<List<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Ok<MongoSchedule>>> UpdateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
-        [FromRoute] string repositoryName,
+        [FromRoute] string name,
         [FromRoute] string scheduleId,
         [FromBody] EntityScheduleRequest scheduleRequest,
         [FromHeader(Name = "Authorization")] string? bearerToken,
@@ -183,7 +186,7 @@ public static class EntitiesEndpoint
             return TypedResults.Unauthorized();
         }
 
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
 
         if (entity == null)
         {
@@ -204,7 +207,7 @@ public static class EntitiesEndpoint
             return TypedResults.Conflict("Entity is not a test suite");
         }
         
-        var mongoSchedule = ScheduleMapper.ToUpdatedMongo(scheduleRequest, originalSchedule, user, repositoryName);
+        var mongoSchedule = ScheduleMapper.ToUpdatedMongo(scheduleRequest, originalSchedule, user, name);
         await schedulerService.UpdateAsync(scheduleId, mongoSchedule, ct);
 
         var updatedSchedule = (await schedulerService.FetchSchedules(
@@ -238,10 +241,10 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok<List<MongoSchedule>>>> GetSchedules(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
-        string repositoryName,
+        string name,
         CancellationToken ct)
     {
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
 
         if (entity == null)
         {
@@ -249,7 +252,7 @@ public static class EntitiesEndpoint
         }
 
         var schedules = await schedulerService.FetchSchedules(
-            new ScheduleMatchers() { EntityId = repositoryName },
+            new ScheduleMatchers() { EntityId = name },
             ct);
         return TypedResults.Ok(schedules);
     }
@@ -257,11 +260,11 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok<MongoSchedule>>> GetSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
-        string repositoryName,
+        string name,
         string scheduleId,
         CancellationToken ct)
     {
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
 
         if (entity == null)
         {
@@ -286,10 +289,10 @@ public static class EntitiesEndpoint
     
     private static async Task<Results<NotFound, Ok<Dictionary<string, EntityResources>>>> GetEntityResources(
         [FromServices] IEntitiesService entitiesService,
-        string repositoryName,
+        string name,
         CancellationToken ct)
     {
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
         var environments = new Dictionary<string, EntityResources>();
@@ -301,13 +304,27 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(environments);
     }
     
+    private static async Task<Results<BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateS3ResourceForEntity(
+        [FromRoute] string name,
+        [FromBody] CreateResourceRequest request,
+        [FromServices] ICreateResourceService createResourceService,
+        [FromServices] IEntitiesService entitiesService,
+        CancellationToken cancellationToken)
+    {
+        return request switch
+        {
+            CreateS3BucketRequest s3 => TypedResults.Ok(await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken)),
+            _ => TypedResults.BadRequest(new ApiError($"supported resource type"))
+        };
+    }
+    
     private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
         [FromServices] IEntitiesService entitiesService,
-        string repositoryName,
+        string name,
         string environment,
         CancellationToken ct)
     {
-        var entity = await entitiesService.GetEntity(repositoryName, ct);
+        var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
         var resources = entity.Environments.TryGetValue(environment, out var entityEnvironment)
@@ -318,11 +335,11 @@ public static class EntitiesEndpoint
     
     private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(
         [FromServices] IEntityTopologyService entityTopologyService,
-        string repositoryName,
+        string name,
         string environment,
         CancellationToken ct)
     {
-        var relationships = await entityTopologyService.ListTopologyOfEntity(repositoryName, environment, ct);
+        var relationships = await entityTopologyService.ListTopologyOfEntity(name, environment, ct);
         if (relationships.Count == 0)
         {
             return TypedResults.NotFound();
