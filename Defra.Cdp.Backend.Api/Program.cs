@@ -8,6 +8,7 @@ using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
@@ -182,7 +183,7 @@ builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
-
+builder.Services.AddSingleton<ICreateResourceService, CreateResourceService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -312,6 +313,7 @@ app.MapDebugEndpoint();
 app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
+app.MapCreateResourceEndpoint();
 
 app.MapOpenApi();
 

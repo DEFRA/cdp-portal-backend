@@ -1,35 +1,20 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
 
-public interface ICreateWorkflowRequest
+public interface ICreateResourceService
 {
-    GenericCdpWorkflowInputs BuildWorkflowInput(string? runId, string? useBranch, string? prTitle);
+    Task TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken);
 }
 
-public class GenericCdpWorkflowInputs(List<string> commands, string? runId, string? useBranch, string? prTitle)
+public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory, IConfiguration configuration) : ICreateResourceService
 {
-    [JsonPropertyName("run_id")]
-    public string? RunId { get; init; } = runId;
-
-    [JsonPropertyName("commands")]
-    public string Commands { get; init; } = JsonSerializer.Serialize(commands);
-
-    [JsonPropertyName("use_branch")]
-    public string? UseBranch { get; init; } = useBranch;
-
-    [JsonPropertyName("pr_title")]
-    public string? PrTitle { get; init; } = prTitle;
-}
-
-public class CreateResource(IHttpClientFactory clientFactory, IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory, IConfiguration configuration)
-{
-    private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
-
-    private readonly string _githubOrg = "DEFRA";
+    private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
+    private readonly string _githubOrg =  $"{configuration.GetValue<string>("Github:Organisation")!}";
+    
     private readonly string _configRepo = "cdp-tenant-config";
     private readonly string _cdpWorkflowId = "generic-cdp-cli-workflow.yml";
     
@@ -45,6 +30,8 @@ public class CreateResource(IHttpClientFactory clientFactory, IGithubCredentialA
         };
 
         var jsonPayload = JsonSerializer.Serialize(payload);
+        
+        Console.WriteLine(jsonPayload);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
