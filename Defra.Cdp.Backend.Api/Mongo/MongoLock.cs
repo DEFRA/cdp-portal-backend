@@ -33,12 +33,12 @@ public class MongoLock(IMongoDbClientFactory connectionFactory, ILoggerFactory l
         try
         {
             await Collection.InsertOneAsync(new Lock(lockId, DateTime.Now.Add(duration)), cancellationToken: ct);
-            _logger.LogInformation("Claimed lock {lockId}", lockId);
+            _logger.LogDebug("Claimed lock {lockId}", lockId);
             return true;
         }
         catch (Exception e)
         {
-            _logger.LogWarning("Failed to lock {lockId}", lockId);
+            _logger.LogDebug("Failed to lock {lockId}", lockId);
             _logger.LogTrace("Failed to lock {e}", e.Message);
             return false;
         }
@@ -50,7 +50,7 @@ public class MongoLock(IMongoDbClientFactory connectionFactory, ILoggerFactory l
         {
             var filter = new FilterDefinitionBuilder<Lock>().Eq(l => l.Id, lockId);
             await Collection.DeleteOneAsync(filter, ct);
-            _logger.LogInformation("Released lock {lockId}", lockId);
+            _logger.LogDebug("Released lock {lockId}", lockId);
         }
         catch (Exception e)
         {
