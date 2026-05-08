@@ -15,6 +15,7 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 public interface IEntitiesService
 {
     Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
+    Task<List<string>> GetEntityIds(EntityMatcher matcher, CancellationToken cancellationToken);
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken); //Used for tests
 
     Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options,
@@ -76,6 +77,21 @@ public class EntitiesService(
         return entity;
     }
 
+    /// <summary>
+    /// Returns a list of all entities ids/names that match the matcher with default options.
+    /// </summary>
+    /// <param name="matcher"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<List<string>> GetEntityIds(EntityMatcher matcher, CancellationToken cancellationToken)
+    {
+        return await Collection
+            .Find(matcher.Match())
+            .Sort(Builders<Entity>.Sort.Ascending(e => e.Name))
+            .Project(e => e.Name)
+            .ToListAsync(cancellationToken);
+    }
+    
     /// <summary>
     /// Returns a list of all entities that match the matcher with default options.
     /// </summary>

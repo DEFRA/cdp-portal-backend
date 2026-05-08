@@ -123,11 +123,11 @@ public class SecretsService(IMongoDbClientFactory connectionFactory, ILoggerFact
     protected override List<CreateIndexModel<TenantSecrets>> DefineIndexes(
         IndexKeysDefinitionBuilder<TenantSecrets> builder)
     {
-        var serviceAndEnv = new CreateIndexModel<TenantSecrets>(builder.Combine(
+        var serviceAndEnvIndex = new CreateIndexModel<TenantSecrets>(builder.Combine(
             builder.Ascending(s => s.Service),
             builder.Ascending(s => s.Environment)
         ));
-
-        return [serviceAndEnv];
+        var envIndex = new CreateIndexModel<TenantSecrets>(builder.Ascending(s => s.Environment));
+        return [serviceAndEnvIndex, envIndex];
     }
 }
