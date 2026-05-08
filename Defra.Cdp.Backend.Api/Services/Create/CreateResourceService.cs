@@ -51,7 +51,7 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
 public record GitHubTriggerWorkflowResponse
 {
     [JsonPropertyName("workflow_run_id")]
-    public int? WorkflowRunId { get; init; }
+    public long? WorkflowRunId { get; init; }
 
     [JsonPropertyName("run_url")]
     public string? WorkflowRunUrl { get; init; }
