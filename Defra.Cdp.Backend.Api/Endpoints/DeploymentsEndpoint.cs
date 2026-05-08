@@ -6,6 +6,7 @@ using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using static Defra.Cdp.Backend.Api.Services.Aws.Deployments.DeploymentStatus;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -41,7 +42,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (teamIds.Length > 0)
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).ToArray();
         }
 
         var query = matchers with { Services = servicesForTeam };
@@ -73,7 +74,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (teamIds.Length > 0)
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).ToArray();
         }
 
         var query = matchers with { Services = servicesForTeam };
@@ -132,7 +133,7 @@ public static class DeploymentsEndpoint
         string[]? servicesForTeam = null;
         if (teamIds.Length > 0)
         {
-            servicesForTeam = (await entitiesService.GetEntities( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).Select(r => r.Name).ToArray();
+            servicesForTeam = (await entitiesService.GetEntityIds( new EntityMatcher {TeamIds = teamIds }, cancellationToken)).ToArray();
         }
 
         var deployments = await deploymentsService.RunningDeploymentsForService(

@@ -90,8 +90,7 @@ public class SecretEventHandler(
         {
             await secretsService.UpdateSecrets(secrets, cancellationToken);
         }
-
-        await secretsService.UpdateSecrets(secrets, cancellationToken);
+        
         logger.LogInformation("Get All Secrets: Updated secrets for {Environment}", body.Environment);
     }
 

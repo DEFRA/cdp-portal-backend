@@ -33,7 +33,7 @@ public static class EntitiesEndpoint
         app.MapPatch("/entities/{name}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
         app.MapGet("/entities/{name}/resources", GetEntityResources);
-        app.MapPost("/entities/{name}/resources", CreateS3ResourceForEntity);
+        app.MapPost("/entities/{name}/resources", CreateResourceForEntity);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
     }
@@ -304,7 +304,7 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(environments);
     }
     
-    private static async Task<Results<BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateS3ResourceForEntity(
+    private static async Task<Results<BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
         [FromRoute] string name,
         [FromBody] CreateResourceRequest request,
         [FromServices] ICreateResourceService createResourceService,

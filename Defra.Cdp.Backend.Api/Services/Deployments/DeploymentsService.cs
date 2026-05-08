@@ -91,8 +91,9 @@ public class DeploymentsService(
             builder.Descending(d => d.Service),
             builder.Descending(d => d.Version)
         ));
+        var service = new CreateIndexModel<Deployment>(builder.Ascending(d => d.Service));
 
-        return [created, updated, lambdaId, cdpDeploymentId, envServiceVersion];
+        return [created, updated, lambdaId, cdpDeploymentId, envServiceVersion, service];
     }
 
     public async Task RegisterDeployment(Deployment deployment, CancellationToken ct)
@@ -286,11 +287,9 @@ public class DeploymentsService(
 
         if (query.Favourites?.Length > 0)
         {
-            var entities = await entitiesService.GetEntities(
+            var servicesOwnedByTeam = await entitiesService.GetEntityIds(
                 new EntityMatcher { Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites },
-                new EntitySearchOptions { Summary = true },
                 ct);
-            var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.Service)).ToList();
         }
 
@@ -343,13 +342,11 @@ public class DeploymentsService(
         //  we may be able to do this in an easier way in the UI
         if (query.Favourites?.Length > 0)
         {
-            var entities = await entitiesService.GetEntities(
+            var servicesOwnedByTeam = await entitiesService.GetEntityIds(
                 new EntityMatcher { Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites },
-                new EntitySearchOptions { Summary = true },
                 ct);
-            var servicesOwnedByTeam = entities.Select(r => r.Name);
             deployments = deployments.OrderByDescending(d =>
-                servicesOwnedByTeam.Contains(d.Deployment?.Service ?? d.Migration?.Service)
+                servicesOwnedByTeam.Contains((d.Deployment?.Service ?? d.Migration?.Service)!)
             ).ToList();
         }
 
@@ -454,9 +451,7 @@ public class DeploymentsService(
             .Distinct(d => d.Service, filter, cancellationToken: ct)
             .ToListAsync(ct);
 
-        var statuses = await Collection
-            .Distinct(d => d.Status, filter, cancellationToken: ct)
-            .ToListAsync(ct);
+        List<string> statuses = [Running, Pending, Undeployed];
 
         var users = await UserDetailsList(ct);
 
