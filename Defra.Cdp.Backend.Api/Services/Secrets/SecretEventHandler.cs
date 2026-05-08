@@ -86,11 +86,7 @@ public class SecretEventHandler(
             await secretsService.DeleteSecrets(secretsToDelete, cancellationToken);
         }
 
-        if (secrets.Count != 0)
-        {
-            await secretsService.UpdateSecrets(secrets, cancellationToken);
-        }
-        
+        await secretsService.UpdateSecrets(secrets, cancellationToken);
         logger.LogInformation("Get All Secrets: Updated secrets for {Environment}", body.Environment);
     }
 
