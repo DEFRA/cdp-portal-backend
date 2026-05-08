@@ -11,7 +11,7 @@ public interface ICreateResourceService
     Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken);
 }
 
-public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory, IConfiguration configuration) : ICreateResourceService
+public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory, IConfiguration configuration, ILogger<CreateResourceService> logger) : ICreateResourceService
 {
     private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
     private readonly string _githubOrg =  $"{configuration.GetValue<string>("Github:Organisation")!}";
@@ -37,10 +37,12 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
         request.Headers.Add("Authorization", $"Bearer {token}");
         request.Headers.Add("Accept", "application/vnd.github+json");
         request.Headers.Add("User-Agent", "CdpPortalBackend");
-        request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+        request.Headers.Add("X-GitHub-Api-Version", "2026-03-10");
         request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
         var response = await client.SendAsync(request, cancellationToken);
+        
+        logger.LogInformation("Trigger GitHub {Workflow} responded with {Status}", _cdpWorkflowId, response.StatusCode);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<GitHubTriggerWorkflowResponse>(cancellationToken: cancellationToken);
     }

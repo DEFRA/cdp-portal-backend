@@ -311,11 +311,20 @@ public static class EntitiesEndpoint
         [FromServices] IEntitiesService entitiesService,
         CancellationToken cancellationToken)
     {
-        return request switch
+        if (request is CreateS3BucketRequest s3)
         {
-            CreateS3BucketRequest s3 => TypedResults.Ok(await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken)),
-            _ => TypedResults.BadRequest(new ApiError($"supported resource type"))
-        };
+            try
+            {
+                var response = await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken);
+                return TypedResults.Ok(response);
+            }
+            catch (Exception err)
+            {
+                return TypedResults.BadRequest(new ApiError($"Failed to create resource, Unsupported resource type: {err.Message}"));
+            }
+        }
+
+        return TypedResults.BadRequest(new ApiError("Failed to create resource, Unsupported resource type"));
     }
     
     private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
