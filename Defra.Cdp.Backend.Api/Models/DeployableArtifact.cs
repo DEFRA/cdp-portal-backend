@@ -29,7 +29,7 @@ public sealed class DeployableArtifact
 
     public static DeployableArtifact FromEcrEvent(SqsEcrEvent ecrEvent)
     {
-        var semver =  Defra.Cdp.Backend.Api.Utils.SemVer.SemVerAsLong(ecrEvent.Detail.ImageTag);
+        var semver =  Utils.SemVer.SemVerAsLong(ecrEvent.Detail.ImageTag);
 
         return new DeployableArtifact
         {
