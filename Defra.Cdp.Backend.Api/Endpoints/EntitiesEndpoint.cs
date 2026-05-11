@@ -304,7 +304,7 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(environments);
     }
     
-    private static async Task<Results<BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
+    private static async Task<Results<NotFound, BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
         [FromRoute] string name,
         [FromBody] CreateResourceRequest request,
         [FromServices] ICreateResourceService createResourceService,
@@ -315,6 +315,10 @@ public static class EntitiesEndpoint
         {
             try
             {
+                if (await entitiesService.GetEntity(s3.Service, cancellationToken)== null)
+                {
+                    return TypedResults.NotFound();
+                }
                 var response = await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken);
                 return TypedResults.Ok(response);
             }
