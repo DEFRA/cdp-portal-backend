@@ -39,7 +39,29 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
         Assert.Equivalent(untaggedEntity?.Tags, new List<string> { "PRR" });
 
     }
+    
+        
+    [Fact]
+    public async Task GetEntityIds_only_returns_entity_ids()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new EntitiesService(mongoFactory, new NullLoggerFactory());
 
+        var entity = new Entity
+        {
+            Name = _fooRepository.Id,
+            Teams = [],
+            Status = Status.Created,
+            Type = Type.Microservice
+        };
+        
+        await service.Create(entity, TestContext.Current.CancellationToken);
+        var result = await service.GetEntityIds(new EntityMatcher(), TestContext.Current.CancellationToken);
+        Assert.NotNull(result);
+        Assert.Equal([_fooRepository.Id], result);
+    }
+
+    
     private readonly Repository _fooRepository = new()
     {
         Id = "foo",
