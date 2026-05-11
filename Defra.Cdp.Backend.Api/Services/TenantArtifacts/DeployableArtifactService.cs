@@ -90,7 +90,10 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
                 builder.Ascending(r => r.Tag)));
         var hashIndex = new CreateIndexModel<DeployableArtifact>(builder.Ascending(r => r.Sha256));
         var semverIndex = new CreateIndexModel<DeployableArtifact>(builder.Descending(r => r.SemVer));
-        return [repoAndTagIndex, hashIndex, semverIndex];
+        var repoAndSemverIndex =
+            new CreateIndexModel<DeployableArtifact>(builder.Combine(builder.Ascending(r => r.Repo),
+                builder.Descending(r => r.SemVer)));
+        return [repoAndTagIndex, hashIndex, semverIndex, repoAndSemverIndex];
     }
 
     public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
