@@ -28,13 +28,13 @@
     <PackageReference Include="GitHubJwt" Version="0.0.6" />
     <PackageReference Include="LocalStack.Client" Version="1.4.1" />
     <PackageReference Include="LocalStack.Client.Extensions" Version="1.2.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="10.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.4" />
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="4.5.0" />
-    <PackageReference Include="MongoDB.Driver" Version="3.7.0" />
-    <PackageReference Include="MongoDB.Driver.Authentication.AWS" Version="3.7.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="4.0.725402" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.9.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.8.1" />
+    <PackageReference Include="MongoDB.Driver.Authentication.AWS" Version="3.8.1" />
     <PackageReference Include="Quartz" Version="3.13.0" />
     <PackageReference Include="Quartz.AspNetCore" Version="3.13.0" />
     <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.13.0" />

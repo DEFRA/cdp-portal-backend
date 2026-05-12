@@ -9,6 +9,7 @@ using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
+using Defra.Cdp.Backend.Api.Utils.Auth;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +34,7 @@ public static class EntitiesEndpoint
         app.MapPatch("/entities/{name}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
         app.MapGet("/entities/{name}/resources", GetEntityResources);
-        app.MapPost("/entities/{name}/resources", CreateResourceForEntity);
+        app.MapPost("/entities/{name}/resources", CreateResourceForEntity).RequireAuthorization(AuthPolicies.IsAdmin);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
     }
