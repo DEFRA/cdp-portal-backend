@@ -30,8 +30,8 @@ public record EntityMatcher(
         {
             filter &= builder.Regex(t => t.Name, new BsonRegularExpression(PartialName, "i"));
         }
-        
-        else if (TeamIds is { Length: > 0 })
+
+        if (TeamIds is { Length: > 0 })
         {
             filter &= builder.AnyIn(new StringFieldDefinition<Entity>("teams.teamId"), TeamIds);
         }
