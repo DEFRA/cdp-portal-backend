@@ -37,9 +37,12 @@ using Defra.Cdp.Backend.Api.Services.TestSuites;
 using Defra.Cdp.Backend.Api.Services.Usage;
 using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils;
+using Defra.Cdp.Backend.Api.Utils.Auth;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Defra.Cdp.Backend.Api.Utils.Logging;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -81,7 +84,6 @@ builder.Services.AddHttpClient("GitHubClient", HttpClientConfiguration.GitHub)
 
 builder.Services.AddHttpClient("proxy", HttpClientConfiguration.Proxy)
     .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
-
 
 // Propagate trace header.
 builder.Services.AddHeaderPropagation(options =>
@@ -283,6 +285,10 @@ builder.Services.Scan(scan => scan
 
 builder.Services.AddSingleton<IUsageStatsService, UsageStatsService>();
 
+// Auth
+builder.Services.AddCdpAuth(builder.Configuration);
+builder.Services.AddAuthorization();
+
 // API docs
 builder.Services.AddOpenApi();
 
@@ -291,6 +297,7 @@ var app = builder.Build();
 
 app.UseJsonExceptionHandler();
 app.UseRouting();
+app.UseAuthorization();
 app.UseHeaderPropagation();
 
 // Add endpoints

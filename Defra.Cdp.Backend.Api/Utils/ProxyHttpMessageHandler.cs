@@ -22,12 +22,4 @@ public class ProxyHttpMessageHandler : HttpClientHandler
         Proxy = proxy;
         UseProxy = proxyUri != null;
     }
-
-    public static NetworkCredential? GetCredentialsFromUri(UriBuilder uri)
-    {
-        var username = uri.UserName;
-        var password = uri.Password;
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password)) return null;
-        return new NetworkCredential(username, password);
-    }
 }
