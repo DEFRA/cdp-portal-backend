@@ -62,6 +62,38 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
     }
 
     
+    [Fact]
+    public async Task GetEntities_FiltersPartialNameAndTeamIdsTogether()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var service = new EntitiesService(CreateMongoDbClientFactory(), new NullLoggerFactory());
+
+        var platformService = new Entity
+        {
+            Name = "tenant-platform-service",
+            Teams = [new Team { TeamId = "platform", Name = "Platform" }],
+            Status = Status.Created,
+            Type = Type.Microservice
+        };
+
+        var otherTeamService = new Entity
+        {
+            Name = "tenant-other-service",
+            Teams = [new Team { TeamId = "other-team", Name = "Other Team" }],
+            Status = Status.Created,
+            Type = Type.Microservice
+        };
+
+        await service.Create(platformService, ct);
+        await service.Create(otherTeamService, ct);
+
+        var matcher = new EntityMatcher(PartialName: "tenant", TeamIds: ["platform"]);
+        var results = await service.GetEntities(matcher, ct);
+
+        Assert.Single(results);
+        Assert.Equal("tenant-platform-service", results[0].Name);
+    }
+
     private readonly Repository _fooRepository = new()
     {
         Id = "foo",
