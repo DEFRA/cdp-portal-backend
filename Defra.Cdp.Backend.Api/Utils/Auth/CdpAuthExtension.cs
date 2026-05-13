@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Defra.Cdp.Backend.Api.Utils.Auth;
@@ -28,6 +29,7 @@ public static class CdpAuthExtension
         services.AddHttpClient<ICdpPermissionsClient, CdpPermissionsClient>();
         services.AddScoped<ICdpPermissionsClient, CdpPermissionsClient>();
         services.AddScoped<CdpJwtEventHandler>();
+        
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -43,8 +45,9 @@ public static class CdpAuthExtension
                     ValidateLifetime = cfg.ValidateLifetime,
                     ClockSkew = TimeSpan.FromMinutes(2)
                 };
-
                 options.EventsType = typeof(CdpJwtEventHandler);
+                options.BackchannelHttpHandler =
+                    new ProxyHttpMessageHandler(NullLogger<ProxyHttpMessageHandler>.Instance);
             });
     }
 }
