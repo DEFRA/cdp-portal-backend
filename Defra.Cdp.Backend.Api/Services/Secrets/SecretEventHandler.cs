@@ -43,6 +43,7 @@ public class SecretEventHandler(
      * secret values set along with a list of the key/environment variable the secret is bound to,
      * but NOT the actual secret itself.
      */
+    [Obsolete("Moved to monolambda")]
     private async Task HandleGetAllSecrets(SecretMessage message, CancellationToken cancellationToken)
     {
         var body = message.Body?.Deserialize<BodyGetAllSecretKeys>();
