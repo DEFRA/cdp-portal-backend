@@ -107,6 +107,9 @@ public class CdpTenant
     [property: JsonPropertyName("api_gateway")]
     public TenantApiGateway? ApiGateway { get; set; }
 
+    [property: JsonPropertyName("api_gateways")]
+    public List<TenantApiGateway> ApiGateways { get; set; }
+
     [property: JsonPropertyName("cognito_identity_pool")]
     public TenantCognitoIdentityPool? CognitoIdentityPool { get; set; }
 
@@ -578,11 +581,14 @@ public class TenantUrl
     [property: JsonPropertyName("delegated")]
     public bool Delegated { get; set; }
 
+    [property: JsonPropertyName("ingress_type")]
+    public string? IngressType { get; set; }
+
 }
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "900af72c02cce1f9a0fbe125cd4517e42fb1d9492e5444b2504ec59430b381f4";
+    public static readonly string Version = "6f3e818eff3d8c9c0432301dc6882df5845cd8f8f57e3297ce6d553a064c530c";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
