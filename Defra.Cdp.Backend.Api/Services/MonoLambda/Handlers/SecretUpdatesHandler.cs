@@ -37,7 +37,7 @@ public class SecretUpdatesHandler(ISecretsService secretsService, ILogger<Secret
 
         if (body.Exception != "")
         {
-            logger.LogError("get_all_secret_keys message contained exception {}", body.Exception);
+            logger.LogError("get_all_secret_keys message contained exception {Exception}", body.Exception);
             return;
         }
 
