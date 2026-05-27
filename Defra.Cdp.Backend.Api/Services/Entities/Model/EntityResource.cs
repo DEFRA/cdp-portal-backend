@@ -16,7 +16,7 @@ public record EntityResources
     [JsonPropertyName("sns_topics")] public List<EntityResource<TenantSnsTopic>> SnsTopics { get; set; } = [];
     [JsonPropertyName("sql_database")] public List<EntityResource<TenantSqlDatabase>> SqlDatabase { get; set; } = [];
     [JsonPropertyName("dynamodb")] public List<EntityResource<TenantDynamoDB>> Dynamodb { get; set; } = [];
-    [JsonPropertyName("api_gateway")] public List<EntityResource<TenantApiGateway>> ApiGateway { get; set; } = [];
+    [JsonPropertyName("api_gateways")] public List<EntityResource<TenantApiGateway>> ApiGateways { get; set; } = [];
     [JsonPropertyName("cognito_identity_pool")] public List<EntityResource<TenantCognitoIdentityPool>> CognitoIdentityPool { get; set; } = [];
     [JsonPropertyName("bedrock_ai")] public List<EntityResource<CdpBedrockProfile>> BedrockAi { get; set; } = [];
 }
@@ -50,7 +50,7 @@ public static class EntityResourceMapper
             SnsTopics = tenant.SnsTopics.Select(Map).ToList(),
             SqlDatabase = tenant.SqlDatabase == null ? [] : [Map(tenant.SqlDatabase)],
             Dynamodb = tenant.Dynamodb.Select(Map).ToList(),
-            ApiGateway = tenant.ApiGateway == null ? [] : [Map(tenant.ApiGateway)],
+            ApiGateways = tenant.ApiGateways.Select(Map).ToList(),
             CognitoIdentityPool = tenant.CognitoIdentityPool == null ? [] : [Map(tenant.CognitoIdentityPool)],
             BedrockAi = tenant.BedrockAi?.Profiles == null ? [] : tenant.BedrockAi.Profiles.Select(Map).ToList()
         };
