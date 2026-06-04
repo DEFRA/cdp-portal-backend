@@ -45,14 +45,14 @@ public static class EntityResourceMapper
     {
         return new EntityResources
         {
-            S3Buckets = tenant.S3Buckets.Select(Map).ToList(),
-            SqsQueues = tenant.SqsQueues.Select(Map).ToList(),
-            SnsTopics = tenant.SnsTopics.Select(Map).ToList(),
+            S3Buckets = tenant.S3Buckets?.Select(Map).ToList() ?? [],
+            SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
+            SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? [],
             SqlDatabase = tenant.SqlDatabase == null ? [] : [Map(tenant.SqlDatabase)],
-            Dynamodb = tenant.Dynamodb.Select(Map).ToList(),
-            ApiGateways = tenant.ApiGateways.Select(Map).ToList(),
+            Dynamodb = tenant.Dynamodb?.Select(Map).ToList() ?? [],
+            ApiGateways = tenant.ApiGateways?.Select(Map).ToList() ?? [],
             CognitoIdentityPool = tenant.CognitoIdentityPool == null ? [] : [Map(tenant.CognitoIdentityPool)],
-            BedrockAi = tenant.BedrockAi?.Profiles == null ? [] : tenant.BedrockAi.Profiles.Select(Map).ToList()
+            BedrockAi = tenant.BedrockAi?.Profiles?.Select(Map).ToList() ?? []
         };
     }
 }

@@ -309,7 +309,9 @@ public static class EntitiesEndpoint
         [FromRoute] string name,
         [FromBody] CreateResourceRequest request,
         [FromServices] ICreateResourceService createResourceService,
+        [FromServices] IResourceRequestService resourceRequestService,
         [FromServices] IEntitiesService entitiesService,
+        [FromHeader(Name = "Authorization")] string? bearerToken,
         CancellationToken cancellationToken)
     {
         if (request is CreateS3BucketRequest s3)
@@ -321,6 +323,7 @@ public static class EntitiesEndpoint
                     return TypedResults.NotFound();
                 }
                 var response = await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken);
+                await resourceRequestService.RecordRequest(name, ExtractedUserDetails(bearerToken), [request], response, cancellationToken);
                 return TypedResults.Ok(response);
             }
             catch (Exception err)

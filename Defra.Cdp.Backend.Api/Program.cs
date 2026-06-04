@@ -184,6 +184,7 @@ builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsServic
 builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
 builder.Services.AddSingleton<ICreateResourceService, CreateResourceService>();
+builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
