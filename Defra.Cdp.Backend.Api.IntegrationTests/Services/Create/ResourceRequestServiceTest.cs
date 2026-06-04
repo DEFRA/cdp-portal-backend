@@ -19,9 +19,6 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         WorkflowRunHtmlUrl = "https://github.com/DEFRA/cdp-tenant-config/actions/runs/25552427454"
     };
 
-    private IMongoCollection<ResourceRequestRecord> GetCollection(IMongoDbClientFactory mongoFactory) =>
-        mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
-
     [Fact]
     public async Task Should_persist_resource_request_with_entity_user_and_workflow_link()
     {
@@ -39,7 +36,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         await service.RecordRequest("foo-backend", TestUser, [request], TestWorkflow, CancellationToken.None);
         var after = DateTime.UtcNow;
 
-        var collection = GetCollection(mongoFactory);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var records = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .ToListAsync(TestContext.Current.CancellationToken);
@@ -79,7 +76,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         await service.RecordRequest("multi-svc", TestUser, resources, TestWorkflow, CancellationToken.None);
 
-        var collection = GetCollection(mongoFactory);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
@@ -105,7 +102,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         await service.RecordRequest("anon-svc", null, [request], TestWorkflow, CancellationToken.None);
 
-        var collection = GetCollection(mongoFactory);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
