@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.Create;
@@ -239,6 +240,23 @@ public static class EntitiesEndpoint
         return new UserDetails { Id = oid, DisplayName = name };
     }
 
+    private static UserDetails? UserDetailsFrom(ClaimsPrincipal principal)
+    {
+        if (principal.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var id = principal.FindFirst("oid")?.Value ?? principal.Identity?.Name;
+        if (string.IsNullOrEmpty(id))
+        {
+            return null;
+        }
+
+        var displayName = principal.FindFirst("name")?.Value ?? "";
+        return new UserDetails { Id = id, DisplayName = displayName };
+    }
+
     private static async Task<Results<NotFound, Ok<List<MongoSchedule>>>> GetSchedules(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
@@ -311,7 +329,7 @@ public static class EntitiesEndpoint
         [FromServices] ICreateResourceService createResourceService,
         [FromServices] IResourceRequestService resourceRequestService,
         [FromServices] IEntitiesService entitiesService,
-        [FromHeader(Name = "Authorization")] string? bearerToken,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
         if (request is CreateS3BucketRequest s3)
@@ -323,7 +341,7 @@ public static class EntitiesEndpoint
                     return TypedResults.NotFound();
                 }
                 var response = await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken);
-                await resourceRequestService.RecordRequest(name, ExtractedUserDetails(bearerToken), [request], response, cancellationToken);
+                await resourceRequestService.RecordRequest(name, UserDetailsFrom(httpContext.User), [request], response, cancellationToken);
                 return TypedResults.Ok(response);
             }
             catch (Exception err)
