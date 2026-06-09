@@ -13,6 +13,8 @@ public interface IAutoDeploymentTriggerService
     Task<AutoDeploymentTrigger?> PersistTrigger(AutoDeploymentTrigger autoDeploymentTrigger, CancellationToken cancellationToken);
 
     Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken);
+    
+    Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken);
 }
 
 public class AutoDeploymentTriggerService(
@@ -64,6 +66,11 @@ public class AutoDeploymentTriggerService(
     public async Task<List<AutoDeploymentTrigger>> FindAll(CancellationToken cancellationToken)
     {
         return await Collection.Find(_ => true).ToListAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken)
+    {
+        await Collection.DeleteManyAsync(a => a.ServiceName == entityName, cancellationToken);
     }
 
     public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)

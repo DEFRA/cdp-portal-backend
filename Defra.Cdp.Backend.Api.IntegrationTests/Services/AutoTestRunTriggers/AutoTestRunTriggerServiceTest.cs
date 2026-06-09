@@ -262,4 +262,119 @@ public class AutoTestRunTriggerServiceTest(MongoContainerFixture fixture) : Mong
         Assert.Equal(["test"], triggerFromDb.TestSuites["test-suite"][0].Environments);
     }
 
+    
+    [Fact]
+    public async Task DecommissionTestRun_Removes_All_References()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
+
+        var newTrigger1 = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
+                                                                           {
+                                                                               "serviceName": "test-service",
+                                                                               "testSuite": "active-tests",
+                                                                               "profile": "",
+                                                                               "environments": ["dev", "test"]
+                                                                           }
+                                                                           """)!;
+        var newTrigger2 = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
+                                                                            {
+                                                                                "serviceName": "test-service",
+                                                                                "testSuite": "suite-to-remove",
+                                                                                "profile": "",
+                                                                                "environments": ["dev", "test"]
+                                                                            }
+                                                                            """)!;
+        
+        var newTrigger3 = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
+                                                                            {
+                                                                                "serviceName": "another-service",
+                                                                                "testSuite": "suite-to-remove",
+                                                                                "profile": "",
+                                                                                "environments": ["dev", "test"]
+                                                                            }
+                                                                            """)!;
+
+        await autoTestRunTriggerService.SaveTrigger(newTrigger1, TestContext.Current.CancellationToken);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger2, TestContext.Current.CancellationToken);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger3, TestContext.Current.CancellationToken);
+        
+        var service1 = await autoTestRunTriggerService.FindForService("test-service", TestContext.Current.CancellationToken);
+        var service2 = await autoTestRunTriggerService.FindForService("another-service", TestContext.Current.CancellationToken);
+        
+        Assert.NotNull(service1);
+        Assert.Equal(2, service1.TestSuites.Count);
+
+        Assert.NotNull(service2);
+        Assert.Single(service2.TestSuites);
+
+        // Decommission suite-to-remove
+        await autoTestRunTriggerService.DecommissioningWorkflowTriggered("suite-to-remove", TestContext.Current.CancellationToken);
+        service1 = await autoTestRunTriggerService.FindForService("test-service", TestContext.Current.CancellationToken);
+        service2 = await autoTestRunTriggerService.FindForService("another-service", TestContext.Current.CancellationToken);
+        
+        Assert.NotNull(service1);
+        Assert.Single(service1.TestSuites);
+        Assert.Single(service1.TestSuites["active-tests"]);
+        
+        Assert.NotNull(service2);
+        Assert.Empty(service2.TestSuites);
+    }
+    
+    [Fact]
+    public async Task DecommissionTestRun_Removes_All_Services()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var autoTestRunTriggerService = new AutoTestRunTriggerService(mongoFactory, new LoggerFactory());
+
+        var newTrigger1 = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
+                                                                           {
+                                                                               "serviceName": "test-service",
+                                                                               "testSuite": "active-tests",
+                                                                               "profile": "",
+                                                                               "environments": ["dev", "test"]
+                                                                           }
+                                                                           """)!;
+        var newTrigger2 = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
+                                                                            {
+                                                                                "serviceName": "test-service",
+                                                                                "testSuite": "suite-to-remove",
+                                                                                "profile": "",
+                                                                                "environments": ["dev", "test"]
+                                                                            }
+                                                                            """)!;
+        
+        var newTrigger3 = JsonSerializer.Deserialize<AutoTestRunTriggerDto>("""
+                                                                            {
+                                                                                "serviceName": "another-service",
+                                                                                "testSuite": "suite-to-remove",
+                                                                                "profile": "",
+                                                                                "environments": ["dev", "test"]
+                                                                            }
+                                                                            """)!;
+
+        await autoTestRunTriggerService.SaveTrigger(newTrigger1, TestContext.Current.CancellationToken);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger2, TestContext.Current.CancellationToken);
+        await autoTestRunTriggerService.SaveTrigger(newTrigger3, TestContext.Current.CancellationToken);
+        
+        var service1 = await autoTestRunTriggerService.FindForService("test-service", TestContext.Current.CancellationToken);
+        var service2 = await autoTestRunTriggerService.FindForService("another-service", TestContext.Current.CancellationToken);
+        
+        Assert.NotNull(service1);
+        Assert.Equal(2, service1.TestSuites.Count);
+
+        Assert.NotNull(service2);
+        Assert.Single(service2.TestSuites);
+
+        // Decommission suite-to-remove
+        await autoTestRunTriggerService.DecommissioningWorkflowTriggered("test-service", TestContext.Current.CancellationToken);
+        service1 = await autoTestRunTriggerService.FindForService("test-service", TestContext.Current.CancellationToken);
+        service2 = await autoTestRunTriggerService.FindForService("another-service", TestContext.Current.CancellationToken);
+        
+        Assert.Null(service1);
+        
+        Assert.NotNull(service2);
+        Assert.Single(service2.TestSuites);
+    }
+    
 }

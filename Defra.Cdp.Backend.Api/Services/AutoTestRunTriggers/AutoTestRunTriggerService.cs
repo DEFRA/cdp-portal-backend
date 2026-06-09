@@ -18,6 +18,8 @@ public interface IAutoTestRunTriggerService
 
     Task<AutoTestRunTrigger?> UpdateTestRun(AutoTestRunTriggerDto autoTestRunTrigger,
         CancellationToken cancellationToken);
+
+    Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken);
 }
 
 public class AutoTestRunTriggerService(
@@ -99,6 +101,22 @@ public class AutoTestRunTriggerService(
         await Collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken);
 
         return await FindForService(autoTestRunTrigger.ServiceName, cancellationToken);
+    }
+    
+    public async Task DecommissioningWorkflowTriggered(string entityName, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "Removing all references to test {TestSuite}",
+            entityName);
+        
+        var fieldMatcher = new StringFieldDefinition<AutoTestRunTrigger>($"testSuites.{entityName}");
+        var testSuiteFilter = Builders<AutoTestRunTrigger>.Filter.Exists(fieldMatcher);
+        var testSuiteUpdate = Builders<AutoTestRunTrigger>.Update
+            .Unset(fieldMatcher);
+        await Collection.UpdateManyAsync(testSuiteFilter, testSuiteUpdate, new UpdateOptions { IsUpsert = true }, cancellationToken);
+
+        var serviceFilter = Builders<AutoTestRunTrigger>.Filter.Eq(f => f.ServiceName, entityName);
+        await Collection.DeleteManyAsync(serviceFilter, cancellationToken);
     }
 
     public async Task<AutoTestRunTrigger?> UpdateTestRun(AutoTestRunTriggerDto autoTestRunTrigger,

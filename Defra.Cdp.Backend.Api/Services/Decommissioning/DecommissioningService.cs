@@ -1,3 +1,5 @@
+using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
+using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
@@ -10,7 +12,9 @@ public sealed class DecommissioningService(
     ILoggerFactory loggerFactory,
     IEntitiesService entitiesService,
     IDeploymentsService deploymentsService,
-    ISelfServiceOpsClient selfServiceOpsClient
+    ISelfServiceOpsClient selfServiceOpsClient,
+    IAutoTestRunTriggerService autoTestRunTriggerService,
+    IAutoDeploymentTriggerService autoDeploymentTriggerService
 ) : IJob
 {
     private readonly ILogger<DecommissioningService> _logger = loggerFactory.CreateLogger<DecommissioningService>();
@@ -37,6 +41,10 @@ public sealed class DecommissioningService(
                 {
                     await selfServiceOpsClient.TriggerDecommissionWorkflow(entity.Name, context.CancellationToken);
                     await entitiesService.DecommissioningWorkflowTriggered(entity.Name, context.CancellationToken);
+                    await autoTestRunTriggerService.DecommissioningWorkflowTriggered(entity.Name,
+                        context.CancellationToken);
+                    await autoDeploymentTriggerService.DecommissioningWorkflowTriggered(entity.Name,
+                        context.CancellationToken);
                 }
                 else
                 {
