@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Create.Models;
@@ -8,31 +7,171 @@ public class CreateResourceRequestTests
 {
 
     [Fact]
-    public void Test_polymophic_deserialization()
+    public void Test_GetServices_gets_unique_services()
+    {
+        var request = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-backend", Name = "my-bucket", Environments = "tenant", Versioning = false
+                },
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-frontend", Name = "another-bucket", Environments = "tenant", Versioning = false
+                },
+            ],
+            SnsTopics = [
+                new CreateTenantSnsTopic
+                {
+                    Service = "bar-backend", Name = "my-topic", Environments = "tenant"
+                },
+                new CreateTenantSnsTopic
+                {
+                    Service = "bar-frontend", Name = "another-topic", Environments = "tenant"
+                }
+            ],
+            SqsQueues = [
+                new CreateTenantSqsQueue
+                {
+                    Service = "foo-frontend", Name = "my-queue", Environments = "tenant"
+                },
+                new CreateTenantSqsQueue
+                {
+                    Service = "bar-backend", Name = "another-queue", Environments = "tenant"
+                }
+            ]
+        };
+
+        var services = request.GetServices();
+        services.Sort();
+
+        Assert.Equivalent( new List<string> {
+            "bar-backend", "bar-frontend", "foo-backend", "foo-frontend"
+        }, services);
+    }
+    
+    [Fact]
+    public void Test_ToWorkflowInputs()
+    {
+        var request = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-backend", Name = "my-bucket", Environments = "tenant", Versioning = false
+                },
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-frontend", Name = "another-bucket", Environments = "tenant", Versioning = false
+                },
+            ],
+            SnsTopics = [
+                new CreateTenantSnsTopic
+                {
+                    Service = "bar-backend", Name = "my-topic", Environments = "tenant"
+                },
+                new CreateTenantSnsTopic
+                {
+                    Service = "bar-frontend", Name = "another-topic", Environments = "tenant"
+                }
+            ],
+            SqsQueues = [
+                new CreateTenantSqsQueue
+                {
+                    Service = "foo-frontend", Name = "my-queue", Environments = "tenant"
+                },
+                new CreateTenantSqsQueue
+                {
+                    Service = "bar-backend", Name = "another-queue", Environments = "tenant"
+                }
+            ]
+        };
+
+        var inputs = request.ToWorkflowInputs("1234", "foo", "pr");
+        const string expected = """["tenant s3-buckets add --service-name foo-backend --bucket-name my-bucket --environment tenant","tenant s3-buckets add --service-name foo-frontend --bucket-name another-bucket --environment tenant","tenant sqs-queues add --service-name foo-frontend --queue-names my-queue --environment tenant","tenant sqs-queues add --service-name bar-backend --queue-names another-queue --environment tenant","tenant sns-topics add --service-name bar-backend --topic-names my-topic --environment tenant","tenant sns-topics add --service-name bar-frontend --topic-names another-topic --environment tenant"]""";
+        Assert.Equivalent(expected, inputs.Commands);
+    }
+    
+    [Fact]
+    public void Test_CreateTenantS3Bucket_generate_correct_cmd()
+    {
+        var request1 = new CreateTenantS3Bucket
+        {
+            Service = "foo-backend", Name = "my-bucket", Environments = "tenant", Versioning = false
+        };
+        
+        var request2 = new CreateTenantS3Bucket
+        {
+            Service = "foo-backend", Name = "my-bucket", Environments = "tenant", Versioning = true
+        };
+        
+        // These must match the params accepted by the cdp-cli from cdp-tenant-config
+        Assert.Equal("tenant s3-buckets add --service-name foo-backend --bucket-name my-bucket --environment tenant", request1.ToWorkflowCommand());
+        Assert.Equal("tenant s3-buckets add --service-name foo-backend --bucket-name my-bucket --environment tenant --versioning", request2.ToWorkflowCommand());
+    }
+    
+    [Fact]
+    public void Test_CreateTenantSqsQueue_generate_correct_cmd()
+    {
+        var request1 = new CreateTenantSqsQueue
+        {
+            Service = "foo-backend", Name = "my-queue", Environments = "tenant"
+        };
+        
+        var request2 = new CreateTenantSqsQueue
+        {
+            Service = "foo-backend", Name = "my-queue", Environments = "tenant", VisibilityTimeout = 200, Fifo = true
+        };
+
+        
+        // These must match the params accepted by the cdp-cli from cdp-tenant-config
+        Assert.Equal("tenant sqs-queues add --service-name foo-backend --queue-names my-queue --environment tenant", request1.ToWorkflowCommand());
+        Assert.Equal("tenant sqs-queues add --service-name foo-backend --queue-names my-queue --environment tenant --queue-type fifo --visibility-timeout 200", request2.ToWorkflowCommand());
+    }
+    
+    [Fact]
+    public void Test_CreateTenantSnsTopics_generate_correct_cmd()
+    {
+        var request1 = new CreateTenantSnsTopic
+        {
+            Service = "foo-backend", Name = "my-topic", Environments = "tenant"
+        };
+        
+        var request2 = new CreateTenantSnsTopic
+        {
+            Service = "foo-backend", Name = "my-topic", Environments = "tenant", 
+            Fifo = true, ContentDeduplication = true
+        };
+
+        
+        // These must match the params accepted by the cdp-cli from cdp-tenant-config
+        Assert.Equal("tenant sns-topics add --service-name foo-backend --topic-names my-topic --environment tenant", request1.ToWorkflowCommand());
+        Assert.Equal("tenant sns-topics add --service-name foo-backend --topic-names my-topic --environment tenant --topic-type fifo --content-based-deduplication", request2.ToWorkflowCommand());
+    }
+    
+    [Fact]
+    public void Test_deserialize_create_tenant_resource_request()
     {
         var json = """
                    {
-                       "resourceType": "s3", 
-                       "service": "foo",
-                       "bucketName": "my-bucket",
-                       "environment": "prod",
-                       "useBranch": "my-branch",
-                       "runId": "new bucket",
-                       "prTitle": "new bucket for foo"
+                   "s3_buckets": [{
+                     "service": "cdp-portal-backend",
+                     "name": "testing123",
+                     "versioning": true,
+                     "environments": "dev"
+                   }],
+                   "sqs_queues": [],
+                   "sns_topics": []
                    }
                    """;
-
-        var result = JsonSerializer.Deserialize<CreateResourceRequest>(json);
-        var req = Assert.IsType<CreateS3BucketRequest>(result);
-        Assert.Equal("foo", req.Service);
-        Assert.Equal("my-bucket", req.BucketName);
-        Assert.Equal("prod", req.Environment);
-        Assert.Equal("my-branch", req.UseBranch);
-        Assert.Equal("new bucket", req.RunId);
-        Assert.Equal("new bucket for foo", req.PrTitle);
+        
+        var result = JsonSerializer.Deserialize<CreateTenantResourceRequest>(json);
+        Assert.NotNull(result);
     }
-
-
+    
     [Fact]
     public void Test_deserialize_github_response()
     {
