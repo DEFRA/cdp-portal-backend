@@ -99,7 +99,6 @@ public record CreateTenantSnsTopic
 
     public string ToWorkflowCommand()
     {
-        var environments = string.Join(" ", Environments.Select(e => $"--environment {e}"));
         var topicType = Fifo ? "--topic-type fifo" : "";
         var contentDeduplication = ContentDeduplication ? "--content-based-deduplication" : "";
         return $"tenant sns-topics add --service-name {Service} --topic-names {Name} --environment {Environments} {topicType} {contentDeduplication}".TrimEnd();
