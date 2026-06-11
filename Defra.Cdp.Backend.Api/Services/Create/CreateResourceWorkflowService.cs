@@ -1,17 +1,22 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
 
-public interface ICreateResourceService
+public interface ICreateResourceWorkflowService
 {
-    Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken);
+    Task<ResourceRequestRecord> CreateResources(CreateTenantResourceRequest request, UserDetails user,
+        CancellationToken cancellationToken);
 }
 
-public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory, IConfiguration configuration, ILogger<CreateResourceService> logger) : ICreateResourceService
+public class CreateResourceWorkflowWorkflowService(IHttpClientFactory clientFactory, 
+    IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
+    IResourceRequestService resourceRequestService,
+    IConfiguration configuration, 
+    ILogger<CreateResourceWorkflowWorkflowService> logger) : ICreateResourceWorkflowService
 {
     private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
     private readonly string _githubOrg =  $"{configuration.GetValue<string>("Github:Organisation")!}";
@@ -19,6 +24,19 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
     private readonly string _configRepo = "cdp-tenant-config";
     private readonly string _cdpWorkflowId = "generic-cdp-cli-workflow.yml";
 
+        
+    public async Task<ResourceRequestRecord> CreateResources(CreateTenantResourceRequest request, UserDetails user, CancellationToken cancellationToken)
+    {
+        var runId = Guid.NewGuid().ToString();
+        var branch = $"tenant-request-{runId}";
+        var title = PrTitleBuilder.Build(request);
+        var inputs = request.ToWorkflowInputs(runId, branch, title);
+        
+        var response = await TriggerWorkflow(inputs, cancellationToken);
+        var name = request.GetServices().FirstOrDefault("no service");
+        return await resourceRequestService.RecordRequest(name, user, request, inputs, response, cancellationToken);
+    }
+    
     public async Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken)
     {
         var url = $"{_githubApiUrl}/repos/{_githubOrg}/{_configRepo}/actions/workflows/{_cdpWorkflowId}/dispatches";
@@ -42,20 +60,12 @@ public class CreateResourceService(IHttpClientFactory clientFactory, IGithubCred
 
         var response = await client.SendAsync(request, cancellationToken);
         
+        logger.LogInformation("Requesting resources via {Workflow} with payload {Payload}", _cdpWorkflowId, jsonPayload);
         logger.LogInformation("Trigger GitHub {Workflow} responded with {Status}", _cdpWorkflowId, response.StatusCode);
+        
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<GitHubTriggerWorkflowResponse>(cancellationToken: cancellationToken);
     }
-}
 
-public record GitHubTriggerWorkflowResponse
-{
-    [JsonPropertyName("workflow_run_id")]
-    public long? WorkflowRunId { get; init; }
 
-    [JsonPropertyName("run_url")]
-    public string? WorkflowRunUrl { get; init; }
-    
-    [JsonPropertyName("html_url")]
-    public string? WorkflowRunHtmlUrl { get; init; }
 }

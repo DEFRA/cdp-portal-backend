@@ -4,6 +4,13 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Models;
 
+/// <summary>
+/// Represents the payload to be passed to the GitHub Generic CDP CLI workflow.
+/// </summary>
+/// <param name="commands">A stringified json array containing the commands to run</param>
+/// <param name="runId">Unique ID to track the workflow</param>
+/// <param name="useBranch">Name of the branch to raise the PR from</param>
+/// <param name="prTitle">PR Title</param>
 public class GenericCdpWorkflowInputs(List<string> commands, string? runId, string? useBranch, string? prTitle)
 {
     private static readonly JsonSerializerOptions s_serializerOptions = new()

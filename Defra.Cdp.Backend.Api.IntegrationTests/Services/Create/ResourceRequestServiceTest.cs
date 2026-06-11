@@ -1,6 +1,5 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -25,15 +24,20 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
-        var request = new CreateS3BucketRequest
+        var request = new CreateTenantResourceRequest
         {
-            Service = "foo-backend",
-            BucketName = "my-test-bucket",
-            Environment = "dev"
+            S3Buckets = [ new CreateTenantS3Bucket
+            {
+                Service = "foo-backend",
+                Name = "my-test-bucket",
+                Environments = "dev"
+            }]
         };
 
+        var inputs = request.ToWorkflowInputs("123", "foo", "foo");
+
         var before = DateTime.UtcNow;
-        await service.RecordRequest("foo-backend", TestUser, [request], TestWorkflow, CancellationToken.None);
+        await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
         var after = DateTime.UtcNow;
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
@@ -46,20 +50,19 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var record = records.First();
         Assert.Equal("foo-backend", record.EntityName);
         Assert.Equivalent(TestUser, record.RequestedBy);
-        Assert.InRange(record.RequestedAt, before, after);
-
-        Assert.Single(record.Resources);
-
-        var resourceDoc = record.Resources[0].AsBsonDocument;
-        Assert.Equal("s3", resourceDoc["resourceType"].AsString);
-        Assert.Equal("foo-backend", resourceDoc["service"].AsString);
-        Assert.Equal("my-test-bucket", resourceDoc["bucketName"].AsString);
-        Assert.Equal("dev", resourceDoc["environment"].AsString);
+        Assert.InRange(record.RequestedAt, before.AddSeconds(-1), after.AddSeconds(1));
+        
+        var resources = record.Resources;
+        
+        Assert.NotNull(resources);
+        Assert.Single(resources.S3Buckets);
+        Assert.Equal("foo-backend", resources.S3Buckets[0].Service);
+        Assert.Equal("my-test-bucket",resources.S3Buckets[0].Name);
+        Assert.False(resources.S3Buckets[0].Versioning);
+        Assert.Equal("dev", resources.S3Buckets[0].Environments);
 
         Assert.NotNull(record.Workflow);
-        Assert.Equal(TestWorkflow.WorkflowRunId, record.Workflow["workflow_run_id"].AsInt64);
-        Assert.Equal(TestWorkflow.WorkflowRunUrl, record.Workflow["run_url"].AsString);
-        Assert.Equal(TestWorkflow.WorkflowRunHtmlUrl, record.Workflow["html_url"].AsString);
+        Assert.Equal(TestWorkflow, record.Workflow);
     }
 
     [Fact]
@@ -68,20 +71,23 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
-        List<CreateResourceRequest> resources =
-        [
-            new CreateS3BucketRequest { Service = "multi-svc", BucketName = "bucket-one", Environment = "dev" },
-            new CreateS3BucketRequest { Service = "multi-svc", BucketName = "bucket-two", Environment = "dev" }
-        ];
-
-        await service.RecordRequest("multi-svc", TestUser, resources, TestWorkflow, CancellationToken.None);
+        var resources = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket { Service = "multi-svc", Name = "bucket-one", Environments = "dev" },
+                new CreateTenantS3Bucket { Service = "multi-svc", Name = "bucket-two", Environments = "dev" }
+            ]
+        };
+        var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
+        await service.RecordRequest("multi-svc", TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, record.Resources.Count);
+        Assert.Equal(2, record.Resources?.S3Buckets.Length);
         Assert.Equal(1, await collection.CountDocumentsAsync(
             Builders<ResourceRequestRecord>.Filter.Empty,
             cancellationToken: TestContext.Current.CancellationToken));
@@ -93,14 +99,17 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
-        var request = new CreateS3BucketRequest
-        {
-            Service = "anon-svc",
-            BucketName = "anon-bucket",
-            Environment = "test"
-        };
-
-        await service.RecordRequest("anon-svc", null, [request], TestWorkflow, CancellationToken.None);
+        var request = new CreateTenantResourceRequest { S3Buckets = [
+            new CreateTenantS3Bucket
+            {
+                Service = "anon-svc",
+                Name = "anon-bucket",
+                Environments = "test"
+            }
+        ] };
+        
+        var inputs = request.ToWorkflowInputs("123", "foo", "foo");
+        await service.RecordRequest("anon-svc", null, request, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection

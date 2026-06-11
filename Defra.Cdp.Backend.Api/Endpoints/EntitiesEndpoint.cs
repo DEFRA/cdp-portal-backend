@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.Create;
@@ -15,7 +14,7 @@ using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
-
+using static Defra.Cdp.Backend.Api.Utils.Auth.UserDetailsExtractor;
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class EntitiesEndpoint
@@ -240,23 +239,6 @@ public static class EntitiesEndpoint
         return new UserDetails { Id = oid, DisplayName = name };
     }
 
-    private static UserDetails? UserDetailsFrom(ClaimsPrincipal principal)
-    {
-        if (principal.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var id = principal.FindFirst("oid")?.Value ?? principal.Identity?.Name;
-        if (string.IsNullOrEmpty(id))
-        {
-            return null;
-        }
-
-        var displayName = principal.FindFirst("name")?.Value ?? "";
-        return new UserDetails { Id = id, DisplayName = displayName };
-    }
-
     private static async Task<Results<NotFound, Ok<List<MongoSchedule>>>> GetSchedules(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
@@ -323,34 +305,38 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(environments);
     }
     
+    [Obsolete("To be removed when we switch to create resources")]
     private static async Task<Results<NotFound, BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
         [FromRoute] string name,
-        [FromBody] CreateResourceRequest request,
-        [FromServices] ICreateResourceService createResourceService,
+        [FromBody] CreateAdminResourceRequest request,
+        [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
         [FromServices] IResourceRequestService resourceRequestService,
         [FromServices] IEntitiesService entitiesService,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        if (request is CreateS3BucketRequest s3)
+        try
         {
-            try
+            // Converts the API call used in the original admin version to the new format used in the tenant resource requests
+            var mappedRequest = new CreateTenantResourceRequest
             {
-                if (await entitiesService.GetEntity(s3.Service, cancellationToken)== null)
-                {
-                    return TypedResults.NotFound();
-                }
-                var response = await createResourceService.TriggerWorkflow(s3.ToWorkflowInputs(), cancellationToken);
-                await resourceRequestService.RecordRequest(name, UserDetailsFrom(httpContext.User), [request], response, cancellationToken);
-                return TypedResults.Ok(response);
-            }
-            catch (Exception err)
-            {
-                return TypedResults.BadRequest(new ApiError($"Failed to create resource, Unsupported resource type: {err.Message}"));
-            }
+                S3Buckets =
+                [
+                    new CreateTenantS3Bucket
+                    {
+                        Service = request.Service, Name = request.BucketName, Environments = request.Environment
+                    }
+                ]
+            };
+            
+            var user = UserDetailsFrom(httpContext.User);
+            var response = await createResourceWorkflowService.CreateResources(mappedRequest, user!, cancellationToken);
+            return TypedResults.Ok(response.Workflow);
         }
-
-        return TypedResults.BadRequest(new ApiError("Failed to create resource, Unsupported resource type"));
+        catch (Exception err)
+        {
+            return TypedResults.BadRequest(new ApiError($"Failed to create resource, Unsupported resource type: {err.Message}"));
+        }
     }
     
     private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
