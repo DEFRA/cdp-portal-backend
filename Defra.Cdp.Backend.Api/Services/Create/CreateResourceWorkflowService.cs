@@ -12,11 +12,11 @@ public interface ICreateResourceWorkflowService
         CancellationToken cancellationToken);
 }
 
-public class CreateResourceWorkflowWorkflowService(IHttpClientFactory clientFactory, 
+public class CreateResourceWorkflowService(IHttpClientFactory clientFactory, 
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     IResourceRequestService resourceRequestService,
     IConfiguration configuration, 
-    ILogger<CreateResourceWorkflowWorkflowService> logger) : ICreateResourceWorkflowService
+    ILogger<CreateResourceWorkflowService> logger) : ICreateResourceWorkflowService
 {
     private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}";
     private readonly string _githubOrg =  $"{configuration.GetValue<string>("Github:Organisation")!}";
@@ -58,9 +58,9 @@ public class CreateResourceWorkflowWorkflowService(IHttpClientFactory clientFact
         request.Headers.Add("X-GitHub-Api-Version", "2026-03-10");
         request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
-        var response = await client.SendAsync(request, cancellationToken);
-        
         logger.LogInformation("Requesting resources via {Workflow} with payload {Payload}", _cdpWorkflowId, jsonPayload);
+
+        var response = await client.SendAsync(request, cancellationToken);
         logger.LogInformation("Trigger GitHub {Workflow} responded with {Status}", _cdpWorkflowId, response.StatusCode);
         
         response.EnsureSuccessStatusCode();

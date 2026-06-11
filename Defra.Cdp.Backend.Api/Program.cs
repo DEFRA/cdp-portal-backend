@@ -183,7 +183,7 @@ builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
-builder.Services.AddSingleton<ICreateResourceWorkflowService, CreateResourceWorkflowWorkflowService>();
+builder.Services.AddSingleton<ICreateResourceWorkflowService, CreateResourceWorkflowService>();
 builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>();
 
 // Proxy
