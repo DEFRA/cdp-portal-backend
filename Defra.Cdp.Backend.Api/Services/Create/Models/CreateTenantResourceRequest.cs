@@ -72,15 +72,34 @@ public record CreateTenantSqsQueue
     
     [JsonPropertyName("visibilityTimeout")] 
     public int? VisibilityTimeout { get; init; }
+
+    [JsonPropertyName("deduplicationScope")]
+    public string? DeduplicationScope { get; init; }
+    
+    [JsonPropertyName("fifoThroughputLimit")]
+    public string? FifoThroughputLimit { get; init; }
+    
+    [JsonPropertyName("dlqMaxReceiveCount")]
+    public int? DqlMaxReceiveCount { get; init; }
+
+    [JsonPropertyName("redriveAllowPolicyByQueue")]
+    public bool RedriveAllowPolicyByQueue { get; init; }
     
     [JsonPropertyName("environments")]
     public required string Environments  { get; init; }
    
     public string ToWorkflowCommand()
     {
-        var queueType = Fifo ? "--queue-type fifo" : "";
-        var visibilityTimeout = VisibilityTimeout != null ? $"--visibility-timeout {VisibilityTimeout}" : "";
-        return $"tenant sqs-queues add --service-name {Service} --queue-names {Name} --environment {Environments} {queueType} {visibilityTimeout}".TrimEnd();
+        List<string> optionalParams = [
+            Fifo ? "--queue-type fifo" : "",
+            VisibilityTimeout == null ? "" : $"--visibility-timeout {VisibilityTimeout}",
+            FifoThroughputLimit == null ? "" : $"--fifo-throughput-limit {FifoThroughputLimit}",
+            DqlMaxReceiveCount == null ? "" : $"--dlq-max-receive-count {DqlMaxReceiveCount}",
+            DeduplicationScope == null ? "" : $"--deduplication-scope {DeduplicationScope}",
+            RedriveAllowPolicyByQueue ? "--redrive-allow-policy-by-queue" : ""
+        ];
+        
+        return $"tenant sqs-queues add --service-name {Service} --queue-names {Name} --environment {Environments} {string.Join(" ", optionalParams)}".TrimEnd();
     }
 }
 
