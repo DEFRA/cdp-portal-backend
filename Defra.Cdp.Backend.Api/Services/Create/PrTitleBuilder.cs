@@ -9,19 +9,19 @@ public static class PrTitleBuilder
     {
         var sb = new StringBuilder("Tenant: Create");
         
-        if (req.S3Buckets.Length > 0)
+        if (req.S3Buckets.Count > 0)
         {
-            sb.Append($" {req.S3Buckets.Length} S3,");
+            sb.Append($" {req.S3Buckets.Count} S3,");
         }
         
-        if (req.SqsQueues.Length > 0)
+        if (req.SqsQueues.Count > 0)
         {
-            sb.Append($" {req.SqsQueues.Length} SQS,");
+            sb.Append($" {req.SqsQueues.Count} SQS,");
         }
         
-        if (req.SnsTopics.Length > 0)
+        if (req.SnsTopics.Count > 0)
         {
-            sb.Append($" {req.SnsTopics.Length} SNS,");
+            sb.Append($" {req.SnsTopics.Count} SNS,");
         }
 
         sb.Append($" for {string.Join(",", req.GetServices())}");

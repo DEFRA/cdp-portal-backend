@@ -87,7 +87,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, record.Resources?.S3Buckets.Length);
+        Assert.Equal(2, record.Resources?.S3Buckets.Count);
         Assert.Equal(1, await collection.CountDocumentsAsync(
             Builders<ResourceRequestRecord>.Filter.Empty,
             cancellationToken: TestContext.Current.CancellationToken));

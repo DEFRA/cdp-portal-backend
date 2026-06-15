@@ -16,7 +16,6 @@ public record TopicOwner(string Service, SubType SubType, List<Team> Teams, stri
 
 public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) : IEntityTopologyService {
   
-
     private async Task<List<QueueSubscriptions>> BuildQueueLookup(string environment, CancellationToken ct)
     {
         var collection = mongoDbClientFactory.GetCollection<Entity>("entities");

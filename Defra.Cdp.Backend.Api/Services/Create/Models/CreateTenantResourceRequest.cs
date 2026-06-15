@@ -3,16 +3,24 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Models;
 
+public interface ICreateTenantResourceItem
+{
+    string ToWorkflowCommand();
+}
+
 public record CreateTenantResourceRequest
 {
     [JsonPropertyName("s3_buckets")]
-    public ImmutableArray<CreateTenantS3Bucket> S3Buckets { get; init; } = [];
+    public List<CreateTenantS3Bucket> S3Buckets { get; init; } = [];
     
     [JsonPropertyName("sqs_queues")]
-    public ImmutableArray<CreateTenantSqsQueue> SqsQueues { get; init; } = [];
+    public List<CreateTenantSqsQueue> SqsQueues { get; init; } = [];
     
     [JsonPropertyName("sns_topics")]
-    public ImmutableArray<CreateTenantSnsTopic> SnsTopics { get; init; } = [];
+    public List<CreateTenantSnsTopic> SnsTopics { get; init; } = [];
+
+    [JsonPropertyName("sqs_sns_subscriptions")]
+    public List<CreateTenantSubscription> Subscriptions { get; init; } = [];
 
     
     public GenericCdpWorkflowInputs ToWorkflowInputs(string runId, string branch, string prTitle)
@@ -20,8 +28,8 @@ public record CreateTenantResourceRequest
         var commands = new List<string>();
         commands.AddRange(S3Buckets.Select(s3 => s3.ToWorkflowCommand()));
         commands.AddRange(SqsQueues.Select(sqs => sqs.ToWorkflowCommand()));
-        commands.AddRange(SnsTopics.Select(sqs => sqs.ToWorkflowCommand()));
-        
+        commands.AddRange(SnsTopics.Select(sns => sns.ToWorkflowCommand()));
+        commands.AddRange(Subscriptions.Select(sub => sub.ToWorkflowCommand()));
         return new GenericCdpWorkflowInputs(commands, runId, branch, prTitle);
     }
 
@@ -31,11 +39,13 @@ public record CreateTenantResourceRequest
         services.UnionWith(SqsQueues.Select(s => s.Service));
         services.UnionWith(SnsTopics.Select(s => s.Service));
         services.UnionWith(S3Buckets.Select(s => s.Service));
+        services.UnionWith(Subscriptions.Select(s => s.QueueService));
+        services.UnionWith(Subscriptions.Select(s => s.TopicService));
         return services.ToList();
     }
 }
 
-public record CreateTenantS3Bucket
+public record CreateTenantS3Bucket : ICreateTenantResourceItem
 {
     [JsonPropertyName("service")]
     public required string Service { get; init; }
@@ -55,7 +65,7 @@ public record CreateTenantS3Bucket
     }
 }
 
-public record CreateTenantSqsQueue
+public record CreateTenantSqsQueue : ICreateTenantResourceItem
 {
     [JsonPropertyName("service")]
     public required string Service { get; init; }
@@ -80,7 +90,7 @@ public record CreateTenantSqsQueue
     }
 }
 
-public record CreateTenantSnsTopic
+public record CreateTenantSnsTopic : ICreateTenantResourceItem
 {
     [JsonPropertyName("service")]
     public required string Service { get; init; }
@@ -102,5 +112,47 @@ public record CreateTenantSnsTopic
         var topicType = Fifo ? "--topic-type fifo" : "";
         var contentDeduplication = ContentDeduplication ? "--content-based-deduplication" : "";
         return $"tenant sns-topics add --service-name {Service} --topic-names {Name} --environment {Environments} {topicType} {contentDeduplication}".TrimEnd();
+    }
+}
+
+public record CreateTenantSubscription : ICreateTenantResourceItem
+{
+    [JsonPropertyName("queueService")]
+    public required string QueueService { get; init; }
+
+    [JsonPropertyName("queue")]
+    public required string Queue { get; init; }
+
+    [JsonPropertyName("topicService")]
+    public required string TopicService { get; init; }
+
+    [JsonPropertyName("topic")]
+    public required string Topic { get; set; }
+
+    [JsonPropertyName("environments")]
+    public required string Environments  { get; init; }
+
+    /// <summary>
+    /// If the topic is part of the same request and its fifo, update the topic name with suffix.
+    /// The workflow requires us to pass the 'full' topic name, including fifo suffix which is only added
+    /// after its created.
+    /// </summary>
+    /// <param name="topics"></param>
+    public void EnsureTopicHasExtension(List<CreateTenantSnsTopic> topics)
+    {
+        foreach (var subTopic in topics)
+        {
+            if (!subTopic.Fifo) continue;
+
+            if (Topic == subTopic.Name && !subTopic.Name.EndsWith(".fifo"))
+            {
+                Topic += ".fifo";
+            }
+        }
+    }
+    
+    public string ToWorkflowCommand()
+    {
+        return $"tenant sqs-queues subscriptions add --environment {Environments} --service {QueueService} --queue-name {Queue} --topic-full-name {Topic}".TrimEnd();
     }
 }
