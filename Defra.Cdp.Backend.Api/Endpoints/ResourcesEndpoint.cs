@@ -19,11 +19,15 @@ public static class ResourcesEndpoint
     private static async Task<Results<BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResource(
         [FromBody] CreateTenantResourceRequest request,
         [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
-        [FromServices] IEntitiesService entitiesService,
+        [FromServices] ICreateResourceValidator validator,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        // TODO: validate payload & user is an owner of all of the services involved.
+        var errors = await validator.Validate(request, cancellationToken);
+        if (errors.Count > 0)
+        {
+            return TypedResults.BadRequest(new ApiError("Invalid request", errors));
+        }
         var user = UserDetailsFrom(httpContext.User);
         var response = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
         return TypedResults.Ok(response.Workflow);

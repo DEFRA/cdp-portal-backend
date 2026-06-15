@@ -153,6 +153,41 @@ public class CreateResourceRequestTests
     }
     
     [Fact]
+    public void Test_CreateTenantSubscription_generate_correct_cmd()
+    {
+        var request1 = new CreateTenantSubscription
+        {
+            QueueService = "foo-backend", 
+            Queue = "my-queue",
+            TopicService = "foo-admin",
+            Topic = "my-topic",
+            Environments = "tenant"
+        };
+        
+        // These must match the params accepted by the cdp-cli from cdp-tenant-config
+        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic", request1.ToWorkflowCommand());
+    }
+    
+    [Fact]
+    public void Test_CreateTenantSubscription_uses_fifo_queues_from_request()
+    {
+        var request1 = new CreateTenantSubscription
+        {
+            QueueService = "foo-backend", 
+            Queue = "my-queue",
+            TopicService = "foo-admin",
+            Topic = "my-topic",
+            Environments = "tenant"
+        };
+        
+        request1.EnsureTopicHasExtension([new CreateTenantSnsTopic { Name = "my-topic", Fifo = true, Service = "foo-admin", Environments = "tenant"}]);
+        
+        Assert.Equal("my-topic.fifo", request1.Topic);
+        // These must match the params accepted by the cdp-cli from cdp-tenant-config
+        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic.fifo", request1.ToWorkflowCommand());
+    }
+    
+    [Fact]
     public void Test_deserialize_create_tenant_resource_request()
     {
         var json = """
