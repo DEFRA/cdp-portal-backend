@@ -18,7 +18,8 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity1 = new Entity
         {
@@ -77,7 +78,8 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity1 = new Entity
         {
@@ -136,7 +138,8 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity1 = new Entity
         {
@@ -171,7 +174,7 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         var errors = await validator.Validate(req, ct);
 
         Assert.Equal(2, errors.Count);
-        Assert.Equal("SQS Subscription queue my-queue doesn't exist in dev", errors[0]);
-        Assert.Equal("SQS Subscription topic my-topic doesn't exist in dev", errors[1]);
+        Assert.Equal("SQS Subscription queue my-queue doesn't exist in all environments", errors[0]);
+        Assert.Equal("SQS Subscription topic my-topic doesn't exist in all environments", errors[1]);
     }
 }

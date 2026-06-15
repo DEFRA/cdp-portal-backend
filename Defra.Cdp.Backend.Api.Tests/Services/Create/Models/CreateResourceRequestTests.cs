@@ -165,7 +165,7 @@ public class CreateResourceRequestTests
         };
         
         // These must match the params accepted by the cdp-cli from cdp-tenant-config
-        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic", request1.ToWorkflowCommand());
+        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic", request1.ToWorkflowCommand([]));
     }
     
     [Fact]
@@ -179,12 +179,13 @@ public class CreateResourceRequestTests
             Topic = "my-topic",
             Environments = "tenant"
         };
+        List<CreateTenantSnsTopic> topics =
+        [
+            new() { Name = "my-topic", Fifo = true, Service = "foo-admin", Environments = "tenant" }
+        ];
         
-        request1.EnsureTopicHasExtension([new CreateTenantSnsTopic { Name = "my-topic", Fifo = true, Service = "foo-admin", Environments = "tenant"}]);
-        
-        Assert.Equal("my-topic.fifo", request1.Topic);
         // These must match the params accepted by the cdp-cli from cdp-tenant-config
-        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic.fifo", request1.ToWorkflowCommand());
+        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic.fifo", request1.ToWorkflowCommand(topics));
     }
     
     [Fact]
