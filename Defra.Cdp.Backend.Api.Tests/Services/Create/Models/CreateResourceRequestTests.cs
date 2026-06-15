@@ -123,13 +123,15 @@ public class CreateResourceRequestTests
         
         var request2 = new CreateTenantSqsQueue
         {
-            Service = "foo-backend", Name = "my-queue", Environments = "tenant", VisibilityTimeout = 200, Fifo = true
+            Service = "foo-backend", Name = "my-queue", Environments = "tenant", VisibilityTimeout = 200, Fifo = true,
+            DqlMaxReceiveCount = 3, DeduplicationScope = "messageGroup", FifoThroughputLimit = "perMessageGroupId", 
+            RedriveAllowPolicyByQueue = true
         };
 
         
         // These must match the params accepted by the cdp-cli from cdp-tenant-config
         Assert.Equal("tenant sqs-queues add --service-name foo-backend --queue-names my-queue --environment tenant", request1.ToWorkflowCommand());
-        Assert.Equal("tenant sqs-queues add --service-name foo-backend --queue-names my-queue --environment tenant --queue-type fifo --visibility-timeout 200", request2.ToWorkflowCommand());
+        Assert.Equal("tenant sqs-queues add --service-name foo-backend --queue-names my-queue --environment tenant --queue-type fifo --visibility-timeout 200 --fifo-throughput-limit perMessageGroupId --dlq-max-receive-count 3 --deduplication-scope messageGroup --redrive-allow-policy-by-queue", request2.ToWorkflowCommand());
     }
     
     [Fact]
