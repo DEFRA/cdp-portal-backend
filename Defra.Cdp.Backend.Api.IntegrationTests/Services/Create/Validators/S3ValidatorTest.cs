@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
-using Defra.Cdp.Backend.Api.Services.Create.Validators;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
@@ -17,10 +16,11 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var ctx = new ResourceValidatorContext { EntitiesCollection = mongoFactory.GetCollection<Entity>("entities"), OriginalRequest = new CreateTenantResourceRequest()};
+        var ctx = new EntityResourceService(mongoFactory);
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new S3Validator();
-
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
+        
         var entity = new Entity
         {
             Name = "foo-backend",
@@ -35,8 +35,8 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
             }
         };
         await entities.Create(entity, ct);
-        var errors = await validator.Validate(new CreateTenantS3Bucket { Name = "foobar", Environments = "tenant", Service = "foo-backend" }, ctx, ct);
         
+        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenant", Service = "foo-backend" }] },  ct);
         Assert.Empty(errors);
     }
     
@@ -46,8 +46,8 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        //var ctx = new ResourceValidatorContext { EntitiesCollection = mongoFactory.GetCollection<Entity>("entities"), OriginalRequest = new CreateTenantResourceRequest()};
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
         {
@@ -75,7 +75,8 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
         {
@@ -98,7 +99,8 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
         {

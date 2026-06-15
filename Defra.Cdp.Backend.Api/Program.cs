@@ -186,6 +186,8 @@ builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
 builder.Services.AddSingleton<ICreateResourceWorkflowService, CreateResourceWorkflowService>();
 builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>();
 builder.Services.AddSingleton<ICreateResourceValidator, CreateResourceValidator>();
+builder.Services.AddSingleton<IEntityResourceService, EntityResourceService>();
+
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
 

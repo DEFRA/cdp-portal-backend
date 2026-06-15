@@ -1,15 +1,12 @@
 using Defra.Cdp.Backend.Api.Services.Create.Models;
-using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Validators;
 
-public class SqsValidator : ICreateResourceValidator<CreateTenantSqsQueue>
+public class SqsValidator
 {
-    public async Task<List<string>> Validate(CreateTenantSqsQueue sqs, ResourceValidatorContext ctx, CancellationToken cancellationToken)
+    public static async Task<List<string>> Validate(CreateTenantSqsQueue sqs, IEntityResourceService entities, CancellationToken cancellationToken)
     {
         List<string> errors = [];
-        var entities = ctx.EntitiesCollection;
 
         // Check name length
         if (sqs.Name.Length > 256)
@@ -18,9 +15,8 @@ public class SqsValidator : ICreateResourceValidator<CreateTenantSqsQueue>
         }
         
         // Check service exists
-        var service = await entities.Find(e => e.Name == sqs.Service).Project(e => e.Name)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (service == null)
+        var service = await entities.ServiceExists(sqs.Service, cancellationToken);
+        if (!service)
         {
             errors.Add($"SQS Queue {sqs.Name} is assigned to an unknown service: {sqs.Service}");
         }
@@ -32,14 +28,9 @@ public class SqsValidator : ICreateResourceValidator<CreateTenantSqsQueue>
         }
         
         // Check if it already exists
-        var fb = new FilterDefinitionBuilder<Entity>();
-        foreach (var env in envs)
-        {
-            var filter = fb.AnyEq(new StringFieldDefinition<Entity>($"environments.{env}.sqsQueues.name"), sqs.Name);
-            var owner = await entities.Find(filter).Project(e => e.Name).FirstOrDefaultAsync(cancellationToken);
-            if (owner == null) continue;
+        var owner = await entities.QueueExists(sqs.Name, envs, cancellationToken);
+        if (owner != null) {
             errors.Add($"SQS Queue {sqs.Name} already exists for service {owner}");
-            break;
         }
 
         return errors;

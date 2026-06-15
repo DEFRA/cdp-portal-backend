@@ -17,7 +17,9 @@ public class SnsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
         {
@@ -47,7 +49,9 @@ public class SnsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
         {
@@ -78,7 +82,8 @@ public class SnsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var validator = new CreateResourceValidator(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
         {
