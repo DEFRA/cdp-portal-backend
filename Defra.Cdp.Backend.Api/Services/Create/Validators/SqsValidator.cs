@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.Services.Create.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Validators;
 
-public class SqsValidator
+public static class SqsValidator
 {
     public static async Task<List<string>> Validate(CreateTenantSqsQueue sqs, IEntityResourceService entities, CancellationToken cancellationToken)
     {

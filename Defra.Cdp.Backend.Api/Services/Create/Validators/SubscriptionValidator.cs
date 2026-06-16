@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.Services.Create.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Validators;
 
-public class SubscriptionValidator
+public static class SubscriptionValidator
 {
     public static async Task<List<string>> Validate(CreateTenantSubscription sub, IEntityResourceService entities, CreateTenantResourceRequest request, CancellationToken cancellationToken)
     {
@@ -35,7 +35,7 @@ public class SubscriptionValidator
         var queueOwner = await entities.QueueExists(sub.Queue, envs, cancellationToken);
         if (queueOwner == null && !requestQueues.Contains(sub.Queue))
         {
-            errors.Add($"SQS Subscription queue {sub.Queue} doesn't exist in all environments");    
+            errors.Add($"SQS Subscription queue {sub.Queue} doesn't exist, check it is part of this request");    
         }
         
         // Assume that the form was populated from the existing entity data so topic will have .fifo if present
@@ -43,7 +43,7 @@ public class SubscriptionValidator
 
         var topicOwner = await entities.TopicExists(sub.Topic, envs, cancellationToken);
         if (topicOwner == null && !requestTopics.Contains(sub.Topic)) {
-            errors.Add($"SQS Subscription topic {sub.Topic} doesn't exist in all environments");
+            errors.Add($"SQS Subscription topic {sub.Topic} doesn't exist, check it is part of this request");
         }
         return errors;
     }
