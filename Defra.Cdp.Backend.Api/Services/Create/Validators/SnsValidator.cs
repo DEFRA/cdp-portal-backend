@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.Services.Create.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Validators;
 
-public class SnsValidator
+public static class SnsValidator
 {
     public static async Task<List<string>> Validate(CreateTenantSnsTopic sns, IEntityResourceService entities, CancellationToken cancellationToken)
     {
@@ -11,7 +11,7 @@ public class SnsValidator
         // Check name length
         if (sns.Name.Length > 75)
         {
-            errors.Add($"SNS Topic {sns.Name} name too long (>75 chars)");
+            errors.Add($"SNS Topic {sns.Name} name too long (max 75 chars)");
         }
         
         // Check service exists

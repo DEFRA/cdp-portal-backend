@@ -2,7 +2,7 @@ using Defra.Cdp.Backend.Api.Services.Create.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Validators;
 
-public class S3Validator
+public static class S3Validator
 {
 
     public static async Task<List<string>> Validate(CreateTenantS3Bucket s3, IEntityResourceService entities, CancellationToken cancellationToken)

@@ -174,7 +174,7 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         var errors = await validator.Validate(req, ct);
 
         Assert.Equal(2, errors.Count);
-        Assert.Equal("SQS Subscription queue my-queue doesn't exist in all environments", errors[0]);
-        Assert.Equal("SQS Subscription topic my-topic doesn't exist in all environments", errors[1]);
+        Assert.Equal("SQS Subscription queue my-queue doesn't exist, check it is part of this request", errors[0]);
+        Assert.Equal("SQS Subscription topic my-topic doesn't exist, check it is part of this request", errors[1]);
     }
 }
