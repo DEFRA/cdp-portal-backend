@@ -175,7 +175,8 @@ public record CreateTenantSubscription
             if (!subTopic.Fifo) continue;
             if (subTopic.Name == Topic)
             {
-                finalTopic = Topic + ".fifo";
+                finalTopic = $"{Topic}.fifo";
+                break;
             }
         }
         
