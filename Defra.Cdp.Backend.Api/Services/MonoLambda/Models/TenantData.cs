@@ -104,9 +104,6 @@ public class CdpTenant
     [property: JsonPropertyName("dynamodb")]
     public List<TenantDynamoDB> Dynamodb { get; set; }
 
-    [property: JsonPropertyName("api_gateway")]
-    public TenantApiGateway? ApiGateway { get; set; }
-
     [property: JsonPropertyName("api_gateways")]
     public List<TenantApiGateway> ApiGateways { get; set; }
 
@@ -189,6 +186,9 @@ public class GrafanaDashboard
 
     [property: JsonPropertyName("uid")]
     public string Uid { get; set; }
+
+    [property: JsonPropertyName("scope")]
+    public string Scope { get; set; }
 
     [property: JsonPropertyName("version")]
     public int Version { get; set; }
@@ -278,8 +278,8 @@ public class RequestedConfig
     [property: JsonPropertyName("sql_database")]
     public bool SqlDatabase { get; set; }
 
-    [property: JsonPropertyName("api_gateway")]
-    public bool ApiGateway { get; set; }
+    [property: JsonPropertyName("api_gateways")]
+    public List<string> ApiGateways { get; set; }
 
     [property: JsonPropertyName("cognito_identity_pool")]
     public bool CognitoIdentityPool { get; set; }
@@ -588,7 +588,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "6f3e818eff3d8c9c0432301dc6882df5845cd8f8f57e3297ce6d553a064c530c";
+    public static readonly string Version = "c32cffa62118fb9b6a1f0faa91080acd25cc95fb5e0df9eebc4a11ff896e1613";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
