@@ -37,7 +37,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         await entities.Create(entity, ct);
         var req = new CreateTenantResourceRequest
         {
-            SqsQueues = [new CreateTenantSqsQueue() { Name = "foobar", Environments = "tenant", Service = "foo-backend" }]
+            SqsQueues = [new CreateTenantSqsQueue() { Name = "foobar", Environments = "tenants", Service = "foo-backend" }]
         };
         var errors = await validator.Validate(req,  ct);
         
@@ -70,7 +70,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         
         var req = new CreateTenantResourceRequest
         {
-            SqsQueues = [new CreateTenantSqsQueue { Name = "foo", Environments = "tenant", Service = "i-dont-exist" }]
+            SqsQueues = [new CreateTenantSqsQueue { Name = "foo", Environments = "tenants", Service = "i-dont-exist" }]
         };
         var errors = await validator.Validate(req,  ct);
 
@@ -135,7 +135,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         
         var req = new CreateTenantResourceRequest
         {
-            SqsQueues = [new CreateTenantSqsQueue { Name = "my-queue", Environments = "tenant", Service = "foo-admin" }]
+            SqsQueues = [new CreateTenantSqsQueue { Name = "my-queue", Environments = "tenants", Service = "foo-admin" }]
         };
         var errors = await validator.Validate(req,  ct);
 

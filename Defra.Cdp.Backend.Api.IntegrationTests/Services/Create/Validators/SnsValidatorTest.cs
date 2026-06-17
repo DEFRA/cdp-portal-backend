@@ -36,7 +36,7 @@ public class SnsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         };
         await entities.Create(entity, ct);
         var req = new CreateTenantResourceRequest {
-                SnsTopics = [new CreateTenantSnsTopic { Name = "foobar", Environments = "tenant", Service = "foo-backend" }],
+                SnsTopics = [new CreateTenantSnsTopic { Name = "foobar", Environments = "tenants", Service = "foo-backend" }],
         };
         var errors = await validator.Validate(req,  ct);
         
@@ -68,7 +68,7 @@ public class SnsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         };
         await entities.Create(entity, ct);
         var req = new CreateTenantResourceRequest {
-            SnsTopics = [new CreateTenantSnsTopic { Name = "foo", Environments = "tenant", Service = "i-dont-exist" }],
+            SnsTopics = [new CreateTenantSnsTopic { Name = "foo", Environments = "tenants", Service = "i-dont-exist" }],
         };
         var errors = await validator.Validate(req,  ct);
 
@@ -102,7 +102,7 @@ public class SnsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
 
         var req = new CreateTenantResourceRequest
         {
-            SnsTopics = [new CreateTenantSnsTopic { Name = "mytopic", Environments = "tenant", Service = "foo-backend" }]
+            SnsTopics = [new CreateTenantSnsTopic { Name = "mytopic", Environments = "tenants", Service = "foo-backend" }]
         };
         var errors = await validator.Validate(req,  ct);
 

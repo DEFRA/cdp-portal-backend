@@ -12,11 +12,23 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Create.Validators;
 public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
     [Fact]
+    public async Task Test_empty_request_fails_with_error()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mongoFactory = CreateMongoDbClientFactory();
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
+
+        var errors = await validator.Validate(new CreateTenantResourceRequest(),  ct);
+        Assert.Single(errors);
+        Assert.Equal("The request has no resources", errors[0]);
+    }
+    
+    [Fact]
     public async Task Test_S3_Validator_passes_with_no_errors()
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var ctx = new EntityResourceService(mongoFactory);
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
         var entityResourceService = new EntityResourceService(mongoFactory);
         var validator = new CreateResourceValidator(entityResourceService);
@@ -36,7 +48,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         };
         await entities.Create(entity, ct);
         
-        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenant", Service = "foo-backend" }] },  ct);
+        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenants", Service = "foo-backend" }] },  ct);
         Assert.Empty(errors);
     }
     
@@ -63,7 +75,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
             }
         };
         await entities.Create(entity, ct);
-        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenant", Service = "foo-backend" }] }, ct);
+        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenants", Service = "foo-backend" }] }, ct);
         
         Assert.Single(errors);
         Assert.Equal("S3 Bucket foobar already exists for service foo-backend", errors[0]);
@@ -86,7 +98,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
             SubType = SubType.Backend
         };
         await entities.Create(entity, ct);
-        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenant", Service = "i-dont-exist" }] },  ct);
+        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = "foobar", Environments = "tenants", Service = "i-dont-exist" }] },  ct);
         
         Assert.Single(errors);
         
@@ -113,7 +125,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
 
         var longName =
             "abcd123456abcd123456abcd123456abcd123456abcd123456abcd123456abcd123456abcd123456abcd123456abcd123456abcd123456abcd12345a";
-        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = longName, Environments = "tenant", Service = "foo-backend" }]},  ct);
+        var errors = await validator.Validate(new CreateTenantResourceRequest { S3Buckets = [new CreateTenantS3Bucket { Name = longName, Environments = "tenants", Service = "foo-backend" }]},  ct);
         
         Assert.Single(errors);
         Assert.Equal($"S3 Bucket {longName} name is too long (max 46 chars)", errors[0]);
