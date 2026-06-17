@@ -4,7 +4,7 @@ namespace Defra.Cdp.Backend.Api.Services.Create.Models;
 
 public static class CreateResourceEnvironments
 {
-    public const string Tenant = "tenant";
+    public const string Tenants = "tenants";
     public const string Platform = "platform";
     public const string All = "all";
     
@@ -25,7 +25,7 @@ public static class CreateResourceEnvironments
 
     public static readonly string[] ValidCreateResourceEnvironments = 
     [
-        Tenant,
+        Tenants,
         Platform,
         All,
         InfraDev,
@@ -51,7 +51,7 @@ public static class CreateResourceEnvironments
         
         return env switch
         {
-            Tenant => TenantEnvironments,
+            Tenants => TenantEnvironments,
             Platform => PlatformEnvironments,
             All => CdpEnvironments.Environments,
             _ => []

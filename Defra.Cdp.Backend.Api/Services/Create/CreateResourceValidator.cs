@@ -14,6 +14,11 @@ public class CreateResourceValidator(IEntityResourceService ers) : ICreateResour
     public async Task<List<string>> Validate(CreateTenantResourceRequest request, CancellationToken cancellationToken)
     {
         List<string> errors = [];
+
+        if (request.Count() == 0)
+        {
+            errors.Add("The request has no resources");
+        }
         
         foreach (var s3 in request.S3Buckets)
         {

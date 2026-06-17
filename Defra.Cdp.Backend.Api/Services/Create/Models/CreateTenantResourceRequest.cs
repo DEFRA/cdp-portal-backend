@@ -37,6 +37,11 @@ public record CreateTenantResourceRequest
         services.UnionWith(Subscriptions.Select(s => s.TopicService));
         return services.ToList();
     }
+
+    public int Count()
+    {
+        return S3Buckets.Count + SqsQueues.Count + SnsTopics.Count + Subscriptions.Count;
+    }
 }
 
 public record CreateTenantS3Bucket
@@ -144,23 +149,6 @@ public record CreateTenantSubscription
 
     [JsonPropertyName("environments")]
     public required string Environments  { get; init; }
-
-    /// <summary>
-
-    /// </summary>
-    /// <param name="topics"></param>
-    public void EnsureTopicHasExtension(List<CreateTenantSnsTopic> topics)
-    {
-        foreach (var subTopic in topics)
-        {
-            if (!subTopic.Fifo) continue;
-
-            if (Topic == subTopic.Name && !subTopic.Name.EndsWith(".fifo"))
-            {
-                Topic += ".fifo";
-            }
-        }
-    }
     
     public string ToWorkflowCommand(List<CreateTenantSnsTopic> topics)
     {

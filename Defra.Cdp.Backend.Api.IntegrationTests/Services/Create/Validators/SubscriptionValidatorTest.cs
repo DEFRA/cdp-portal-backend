@@ -60,7 +60,7 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         {
             Subscriptions = [new CreateTenantSubscription
             {
-                Environments = "tenant",
+                Environments = "tenants",
                 QueueService = "foo-backend",
                 Queue = "my-queue",
                 Topic = "my-topic",
@@ -107,20 +107,20 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
                 {
                     Name = "my-topic",
                     Service = "foo-backend",
-                    Environments = "tenant"
+                    Environments = "tenants"
                 }],
             SqsQueues = [
                 new CreateTenantSqsQueue
                 {
                     Name = "my-queue",
                     Service = "foo-frontend",
-                    Environments = "tenant"
+                    Environments = "tenants"
                 }
             ],
             
             Subscriptions = [new CreateTenantSubscription
             {
-                Environments = "tenant",
+                Environments = "tenants",
                 QueueService = "foo-backend",
                 Queue = "my-queue",
                 Topic = "my-topic",
@@ -164,7 +164,7 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         {
             Subscriptions = [new CreateTenantSubscription
             {
-                Environments = "tenant",
+                Environments = "tenants",
                 QueueService = "foo-backend",
                 Queue = "my-queue",
                 Topic = "my-topic",

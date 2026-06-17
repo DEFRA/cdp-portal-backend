@@ -29,11 +29,7 @@ public class CreateResourceWorkflowService(IHttpClientFactory clientFactory,
     {
         var runId = Guid.NewGuid().ToString();
         var branch = $"tenant-request-{runId}";
-        var title = PrTitleBuilder.Build(request);
-        foreach (var sub in request.Subscriptions)
-        {
-            sub.EnsureTopicHasExtension(request.SnsTopics);
-        }
+        var title = $"Tenant resource request from {user.DisplayName}";
         var inputs = request.ToWorkflowInputs(runId, branch, title);
         
         var response = await TriggerWorkflow(inputs, cancellationToken);

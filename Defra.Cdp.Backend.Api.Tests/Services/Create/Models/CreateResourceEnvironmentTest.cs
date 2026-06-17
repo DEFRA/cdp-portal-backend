@@ -8,7 +8,7 @@ public class CreateResourceEnvironmentTest
     [Fact]
     public void ToCdpEnvironment_maps_meta_envs()
     {
-        var tenants = CreateResourceEnvironments.ToCdpEnvironments(CreateResourceEnvironments.Tenant);
+        var tenants = CreateResourceEnvironments.ToCdpEnvironments(CreateResourceEnvironments.Tenants);
         var platform = CreateResourceEnvironments.ToCdpEnvironments(CreateResourceEnvironments.Platform);
         var all =  CreateResourceEnvironments.ToCdpEnvironments(CreateResourceEnvironments.All);
         
