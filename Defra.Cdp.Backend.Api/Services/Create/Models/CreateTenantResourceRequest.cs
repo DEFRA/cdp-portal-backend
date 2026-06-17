@@ -78,6 +78,9 @@ public record CreateTenantSqsQueue
     [JsonPropertyName("visibilityTimeout")] 
     public int? VisibilityTimeout { get; init; }
 
+    [JsonPropertyName("contentBasedDeduplication")]
+    public bool ContentBasedDeduplication { get; init; }
+    
     [JsonPropertyName("deduplicationScope")]
     public string? DeduplicationScope { get; init; }
     
@@ -101,7 +104,8 @@ public record CreateTenantSqsQueue
             FifoThroughputLimit == null ? "" : $"--fifo-throughput-limit {FifoThroughputLimit}",
             DqlMaxReceiveCount == null ? "" : $"--dlq-max-receive-count {DqlMaxReceiveCount}",
             DeduplicationScope == null ? "" : $"--deduplication-scope {DeduplicationScope}",
-            RedriveAllowPolicyByQueue ? "--redrive-allow-policy-by-queue" : ""
+            RedriveAllowPolicyByQueue ? "--redrive-allow-policy-by-queue" : "",
+            ContentBasedDeduplication ? "--content-based-deduplication" : ""
         ];
         
         return $"tenant sqs-queues add --service-name {Service} --queue-names {Name} --environment {Environments} {string.Join(" ", optionalParams)}".TrimEnd();
