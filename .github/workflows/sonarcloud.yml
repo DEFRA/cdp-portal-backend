@@ -6,11 +6,6 @@ on:
       SONAR_TOKEN:
         required: true
 
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write
-
 jobs:
   build:
     if: github.run_number != 1
