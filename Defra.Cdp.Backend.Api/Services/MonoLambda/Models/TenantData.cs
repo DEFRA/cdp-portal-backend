@@ -110,6 +110,9 @@ public class CdpTenant
     [property: JsonPropertyName("cognito_identity_pool")]
     public TenantCognitoIdentityPool? CognitoIdentityPool { get; set; }
 
+    [property: JsonPropertyName("cognito_user_pool")]
+    public TenantCognitoUserPool? CognitoUserPool { get; set; }
+
     [property: JsonPropertyName("bedrock_ai")]
     public CdpBedrockAI? BedrockAi { get; set; }
 
@@ -361,6 +364,17 @@ public class TenantCognitoIdentityPool
 }
 
 [BsonIgnoreExtraElements]
+public class TenantCognitoUserPool
+{
+    [property: JsonPropertyName("user_pool_id")]
+    public string UserPoolId { get; set; }
+
+    [property: JsonPropertyName("user_pool_arn")]
+    public string UserPoolArn { get; set; }
+
+}
+
+[BsonIgnoreExtraElements]
 public class TenantDynamoDB
 {
     [property: JsonPropertyName("arn")]
@@ -588,7 +602,8 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "c32cffa62118fb9b6a1f0faa91080acd25cc95fb5e0df9eebc4a11ff896e1613";
+    public static readonly string Version = "1acfca3bd12d19991e9006131ba448129b50b4fe25e932911a130b1c687906ac";
 }
+
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
