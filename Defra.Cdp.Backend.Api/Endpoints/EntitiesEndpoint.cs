@@ -13,6 +13,7 @@ using Defra.Cdp.Backend.Api.Utils.Auth;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
 using static Defra.Cdp.Backend.Api.Utils.Auth.UserDetailsExtractor;
 namespace Defra.Cdp.Backend.Api.Endpoints;
@@ -35,6 +36,7 @@ public static class EntitiesEndpoint
         app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
         app.MapGet("/entities/{name}/resources", GetEntityResources);
         app.MapPost("/entities/{name}/resources", CreateResourceForEntity).RequireAuthorization(AuthPolicies.IsAdmin);
+        app.MapGet("/entities/{name}/resource-requests/{requestId}", GetResourceRequestStatus).RequireAuthorization(AuthPolicies.IsAdmin);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
     }
@@ -306,7 +308,7 @@ public static class EntitiesEndpoint
     }
     
     [Obsolete("To be removed when we switch to create resources")]
-    private static async Task<Results<NotFound, BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
+    private static async Task<Results<NotFound, BadRequest<ApiError>, Ok<ResourceRequestStatusResponse>>> CreateResourceForEntity(
         [FromRoute] string name,
         [FromBody] CreateAdminResourceRequest request,
         [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
@@ -331,7 +333,15 @@ public static class EntitiesEndpoint
             
             var user = UserDetailsFrom(httpContext.User);
             var response = await createResourceWorkflowService.CreateResources(mappedRequest, user!, cancellationToken);
-            return TypedResults.Ok(response.Workflow);
+            return TypedResults.Ok(new ResourceRequestStatusResponse
+            {
+                RequestId = response.Id?.ToString() ?? string.Empty,
+                RunId = response.Inputs?.RunId,
+                Branch = response.Inputs?.UseBranch,
+                WorkflowRunUrl = response.Workflow?.WorkflowRunHtmlUrl,
+                WorkflowRunId = response.Workflow?.WorkflowRunId,
+                PullRequest = response.PullRequest
+            });
         }
         catch (Exception err)
         {
@@ -352,6 +362,36 @@ public static class EntitiesEndpoint
             ? EntityResourceMapper.FromCdpTenant(entityEnvironment)
             : new EntityResources();
         return TypedResults.Ok(resources);
+    }
+
+    private static async Task<Results<BadRequest<ApiError>, NotFound, Ok<ResourceRequestStatusResponse>>> GetResourceRequestStatus(
+        [FromServices] IResourceRequestService resourceRequestService,
+        [FromRoute] string name,
+        [FromRoute] string requestId,
+        CancellationToken cancellationToken)
+    {
+        if (!ObjectId.TryParse(requestId, out var objectId))
+        {
+            return TypedResults.BadRequest(new ApiError("Invalid request id"));
+        }
+
+        var resourceRequest = await resourceRequestService.GetByEntityAndId(name, objectId, cancellationToken);
+        if (resourceRequest == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var status = new ResourceRequestStatusResponse
+        {
+            RequestId = requestId,
+            RunId = resourceRequest.Inputs?.RunId,
+            Branch = resourceRequest.Inputs?.UseBranch,
+            WorkflowRunUrl = resourceRequest.Workflow?.WorkflowRunHtmlUrl,
+            WorkflowRunId = resourceRequest.Workflow?.WorkflowRunId,
+            PullRequest = resourceRequest.PullRequest
+        };
+
+        return TypedResults.Ok(status);
     }
     
     private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(

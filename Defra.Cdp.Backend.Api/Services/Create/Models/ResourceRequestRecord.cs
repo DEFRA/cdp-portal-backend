@@ -18,4 +18,11 @@ public class ResourceRequestRecord
     public CreateTenantResourceRequest? Resources { get; init; }
     public GenericCdpWorkflowInputs? Inputs { get; init; }
     public GitHubTriggerWorkflowResponse? Workflow { get; init; }
+    public ResourceRequestPullRequest? PullRequest { get; init; }
+}
+
+public class ResourceRequestPullRequest
+{
+    public required string Url { get; init; }
+    public required int Number { get; init; }
 }
