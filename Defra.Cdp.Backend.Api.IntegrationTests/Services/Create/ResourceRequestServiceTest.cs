@@ -119,4 +119,88 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.Equal("anon-svc", record.EntityName);
         Assert.Null(record.RequestedBy);
     }
+
+    [Fact]
+    public async Task Should_attach_pull_request_to_existing_request_by_runid_and_branch()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+
+        var request = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-backend",
+                    Name = "my-test-bucket",
+                    Environments = "dev"
+                }
+            ]
+        };
+
+        var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
+        await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+
+        var updated = await service.AttachPullRequest(
+            "run-123",
+            new ResourceRequestPullRequest
+            {
+                Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
+                Number = 42
+            },
+            CancellationToken.None);
+
+        Assert.True(updated);
+
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var record = await collection
+            .Find(Builders<ResourceRequestRecord>.Filter.Empty)
+            .FirstAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(record.PullRequest);
+        Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/pull/42", record.PullRequest.Url);
+        Assert.Equal(42, record.PullRequest.Number);
+    }
+
+    [Fact]
+    public async Task Should_not_attach_pull_request_if_no_matching_request_exists()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+
+        var request = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-backend",
+                    Name = "my-test-bucket",
+                    Environments = "dev"
+                }
+            ]
+        };
+
+        var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
+        await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+
+        var updated = await service.AttachPullRequest(
+            "other-run",
+            new ResourceRequestPullRequest
+            {
+                Url = "https://github.com/DEFRA/cdp-tenant-config/pull/43",
+                Number = 43
+            },
+            CancellationToken.None);
+
+        Assert.False(updated);
+
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var record = await collection
+            .Find(Builders<ResourceRequestRecord>.Filter.Empty)
+            .FirstAsync(TestContext.Current.CancellationToken);
+
+        Assert.Null(record.PullRequest);
+    }
 }
