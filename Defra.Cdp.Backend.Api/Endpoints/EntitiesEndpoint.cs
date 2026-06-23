@@ -310,6 +310,8 @@ public static class EntitiesEndpoint
         [FromRoute] string name,
         [FromBody] CreateAdminResourceRequest request,
         [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
+        [FromServices] IResourceRequestService resourceRequestService,
+        [FromServices] IEntitiesService entitiesService,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -351,7 +353,7 @@ public static class EntitiesEndpoint
             : new EntityResources();
         return TypedResults.Ok(resources);
     }
-
+    
     private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(
         [FromServices] IEntityTopologyService entityTopologyService,
         string name,
