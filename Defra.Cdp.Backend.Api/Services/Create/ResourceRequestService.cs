@@ -18,8 +18,6 @@ public interface IResourceRequestService
 
     Task<bool> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
         CancellationToken cancellationToken);
-
-    Task<ResourceRequestRecord?> GetByEntityAndId(string entityName, ObjectId id, CancellationToken cancellationToken);
 }
 
 public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -73,12 +71,4 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
         return result.MatchedCount > 0;
     }
 
-    public async Task<ResourceRequestRecord?> GetByEntityAndId(string entityName, ObjectId id,
-        CancellationToken cancellationToken)
-    {
-        var filter = Builders<ResourceRequestRecord>.Filter.Where(record =>
-            record.EntityName == entityName &&
-            record.Id == id);
-        return await Collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
-    }
 }

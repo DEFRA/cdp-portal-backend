@@ -3,7 +3,6 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Microsoft.Extensions.Logging.Abstractions;
-using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Create;
@@ -203,33 +202,5 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             .FirstAsync(TestContext.Current.CancellationToken);
 
         Assert.Null(record.PullRequest);
-    }
-
-    [Fact]
-    public async Task Should_get_resource_request_by_entity_and_id()
-    {
-        var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
-
-        var request = new CreateTenantResourceRequest
-        {
-            S3Buckets =
-            [
-                new CreateTenantS3Bucket
-                {
-                    Service = "foo-backend",
-                    Name = "my-test-bucket",
-                    Environments = "dev"
-                }
-            ]
-        };
-
-        var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        var stored = await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
-
-        var found = await service.GetByEntityAndId("foo-backend", stored.Id ?? ObjectId.Empty, CancellationToken.None);
-
-        Assert.NotNull(found);
-        Assert.Equal(stored.Id, found.Id);
     }
 }
