@@ -8,7 +8,9 @@ namespace Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 
 public interface IResourceRequestPrEventHandler : IGithubWorkflowEventHandler;
 
-public class ResourceRequestPrEventHandler(IResourceRequestService resourceRequestService, ILogger<ResourceRequestPrEventHandler> logger)
+public class ResourceRequestPrEventHandler(
+    IResourceRequestService resourceRequestService,
+    ILogger<ResourceRequestPrEventHandler> logger)
     : IResourceRequestPrEventHandler
 {
     public string EventType => "resource-request-pr";
@@ -25,18 +27,9 @@ public class ResourceRequestPrEventHandler(IResourceRequestService resourceReque
         var payload = workflowEvent.Payload;
         var linked = await resourceRequestService.AttachPullRequest(
             payload.RunId,
-            new ResourceRequestPullRequest
-            {
-                Url = payload.PrUrl,
-                Number = payload.PrNumber
-            },
+            new ResourceRequestPullRequest { Url = payload.PrUrl, Number = payload.PrNumber },
             cancellationToken);
 
-        if (!linked)
-        {
-            logger.LogWarning(
-                "No resource request found for runId {RunId}",
-                payload.RunId);
-        }
+        if (!linked) logger.LogWarning("No resource request found for runId {RunId}", payload.RunId);
     }
 }

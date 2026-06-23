@@ -336,10 +336,8 @@ public static class EntitiesEndpoint
             return TypedResults.Ok(new ResourceRequestStatusResponse
             {
                 RequestId = response.Id?.ToString() ?? string.Empty,
-                RunId = response.Inputs?.RunId,
                 Branch = response.Inputs?.UseBranch,
                 WorkflowRunUrl = response.Workflow?.WorkflowRunHtmlUrl,
-                WorkflowRunId = response.Workflow?.WorkflowRunId,
                 PullRequest = response.PullRequest
             });
         }
@@ -384,10 +382,8 @@ public static class EntitiesEndpoint
         var status = new ResourceRequestStatusResponse
         {
             RequestId = requestId,
-            RunId = resourceRequest.Inputs?.RunId,
             Branch = resourceRequest.Inputs?.UseBranch,
             WorkflowRunUrl = resourceRequest.Workflow?.WorkflowRunHtmlUrl,
-            WorkflowRunId = resourceRequest.Workflow?.WorkflowRunId,
             PullRequest = resourceRequest.PullRequest
         };
 

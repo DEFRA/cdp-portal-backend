@@ -52,10 +52,13 @@ public class ResourceRequestStatusEndpointTest
 
         var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Equal(requestId.ToString(), json.RootElement.GetProperty("requestId").GetString());
-        Assert.Equal("run-123", json.RootElement.GetProperty("runId").GetString());
         Assert.Equal("tenant-request-run-123", json.RootElement.GetProperty("branch").GetString());
+        Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/actions/runs/123456789",
+            json.RootElement.GetProperty("workflowRunUrl").GetString());
         Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/pull/77",
             json.RootElement.GetProperty("pullRequest").GetProperty("url").GetString());
+        Assert.False(json.RootElement.TryGetProperty("runId", out _));
+        Assert.False(json.RootElement.TryGetProperty("workflowRunId", out _));
     }
 
     [Fact]
