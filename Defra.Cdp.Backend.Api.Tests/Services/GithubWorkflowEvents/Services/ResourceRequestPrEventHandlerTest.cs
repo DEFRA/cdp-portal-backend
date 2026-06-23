@@ -15,7 +15,6 @@ public class ResourceRequestPrEventHandlerTest
     {
         _resourceRequestService.AttachPullRequest(
                 Arg.Any<string>(),
-                Arg.Any<string>(),
                 Arg.Any<ResourceRequestPullRequest>(),
                 Arg.Any<CancellationToken>())
             .Returns(true);
@@ -42,7 +41,6 @@ public class ResourceRequestPrEventHandlerTest
 
         await _resourceRequestService.Received(1).AttachPullRequest(
             "run-123",
-            "tenant-request-run-123",
             Arg.Is<ResourceRequestPullRequest>(pr => pr.Url == "https://github.com/DEFRA/cdp-tenant-config/pull/99" && pr.Number == 99),
             Arg.Any<CancellationToken>());
     }

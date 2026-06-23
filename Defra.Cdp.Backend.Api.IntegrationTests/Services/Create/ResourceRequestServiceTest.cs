@@ -145,7 +145,6 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         var updated = await service.AttachPullRequest(
             "run-123",
-            "tenant-request-run-123",
             new ResourceRequestPullRequest
             {
                 Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
@@ -189,7 +188,6 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         var updated = await service.AttachPullRequest(
             "other-run",
-            "other-branch",
             new ResourceRequestPullRequest
             {
                 Url = "https://github.com/DEFRA/cdp-tenant-config/pull/43",
