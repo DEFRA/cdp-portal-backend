@@ -167,7 +167,7 @@ public class CreateResourceRequestTests
         };
         
         // These must match the params accepted by the cdp-cli from cdp-tenant-config
-        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic", request1.ToWorkflowCommand([]));
+        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service-name foo-backend --queue-name my-queue --topic-full-name my-topic", request1.ToWorkflowCommand([]));
     }
     
     [Fact]
@@ -187,7 +187,7 @@ public class CreateResourceRequestTests
         ];
         
         // These must match the params accepted by the cdp-cli from cdp-tenant-config
-        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service foo-backend --queue-name my-queue --topic-full-name my-topic.fifo", request1.ToWorkflowCommand(topics));
+        Assert.Equal("tenant sqs-queues subscriptions add --environment tenant --service-name foo-backend --queue-name my-queue --topic-full-name my-topic.fifo", request1.ToWorkflowCommand(topics));
     }
     
     [Fact]

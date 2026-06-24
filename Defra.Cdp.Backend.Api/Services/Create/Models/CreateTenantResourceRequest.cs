@@ -172,6 +172,6 @@ public record CreateTenantSubscription
             }
         }
         
-        return $"tenant sqs-queues subscriptions add --environment {Environments} --service {QueueService} --queue-name {Queue} --topic-full-name {finalTopic}".TrimEnd();
+        return $"tenant sqs-queues subscriptions add --environment {Environments} --service-name {QueueService} --queue-name {Queue} --topic-full-name {finalTopic}".TrimEnd();
     }
 }
