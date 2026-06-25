@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
-using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
@@ -18,6 +17,8 @@ public interface IResourceRequestService
 
     Task<bool> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
         CancellationToken cancellationToken);
+
+    Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default);
 }
 
 public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -36,7 +37,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
                 new CreateIndexOptions { Sparse = true, Unique = true })
         ];
     }
-    
+
     public async Task<ResourceRequestRecord> RecordRequest(
         string entityName,
         UserDetails? requestedBy,
@@ -71,4 +72,9 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
         return result.MatchedCount > 0;
     }
 
+    public async Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default)
+    {
+        return await Collection.Find(record => record.Workflow != null && record.Workflow.WorkflowRunId == workflowRunId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }

@@ -9,7 +9,7 @@ public record GitHubTriggerWorkflowResponse
 
     [JsonPropertyName("run_url")]
     public string? WorkflowRunUrl { get; init; }
-    
+
     [JsonPropertyName("html_url")]
     public string? WorkflowRunHtmlUrl { get; init; }
 }
