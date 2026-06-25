@@ -29,6 +29,11 @@ public static class NotificationOptionLookup
                     EventType = NotificationTypes.DeploymentFailed,
                     Environments = entity.Environments.Keys.ToList()
                 });
+                options.Add(new NotificationOptions
+                {
+                    EventType = NotificationTypes.DeploymentSuccess,
+                    Environments = entity.Environments.Keys.ToList()
+                });
             
                 // Shuttering
                 // Todo: When we add shuttering, loop though the envs and check if they have any shutter-able urls.

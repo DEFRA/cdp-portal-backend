@@ -23,6 +23,7 @@ public record ServiceStatusChange
     public required string NewStatus { get; init; }
     public required string EntityId { get; init; }
     public required string Version { get; init; }
+    public string? UserDisplayName { get; init; }
 }
 
 public interface IDeploymentsService
@@ -208,6 +209,7 @@ public class DeploymentsService(
             Environment = deployment.Environment,
             EntityId = deployment.Service,
             Version = deployment.Version,
+            UserDisplayName = deployment.User?.DisplayName,
             NewStatus = deployment.LastDeploymentStatus,
             OldStatus = oldStatus
         };

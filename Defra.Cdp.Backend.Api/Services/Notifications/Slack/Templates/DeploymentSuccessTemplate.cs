@@ -4,10 +4,10 @@ namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 
 public static partial class SlackMessageTemplates
 {
-    public static SlackMessageBody DeploymentFailedTemplate(DeploymentFailedEvent e)
+    public static SlackMessageBody DeploymentSuccessTemplate(DeploymentSuccessEvent e)
     {
         var deploymentUri = new UriBuilder(PortalPublicUrl.BaseUri()) { Path = $"/deployments/{e.Environment}/{e.DeploymentId}" };
-        
+
         return new SlackMessageBody
         {
             Blocks =
@@ -15,7 +15,7 @@ public static partial class SlackMessageTemplates
                 new Block
                 {
                     Type = "header",
-                    Text = new TextObject { Type = "plain_text", Text = $"❌ {e.Entity}:{e.Version} Deployment failed", Emoji = true }
+                    Text = new TextObject { Type = "plain_text", Text = $"✅ {e.Entity}:{e.Version} Deployment succeeded", Emoji = true }
                 },
                 new Block
                 {
