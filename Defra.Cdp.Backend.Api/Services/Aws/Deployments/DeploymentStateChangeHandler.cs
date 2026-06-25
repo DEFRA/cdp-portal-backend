@@ -11,24 +11,38 @@ public class DeploymentStateChangeEventHandler(
 {
     public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
     {
-        logger.LogInformation("{id} Handling EcsDeploymentStateChange Update {deploymentId}, {name} {reason}", id, ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason);
+        logger.LogInformation("{Id} Handling EcsDeploymentStateChange Update {DeploymentId}, {Name} {Reason}", id, ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason);
         var statusChange = await deploymentsService.UpdateDeploymentStatus(ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason, cancellationToken);
-        await TriggerDeploymentNotification(statusChange, cancellationToken);
+        await TriggerDeploymentNotificationOnTransition(statusChange, cancellationToken);
     }
 
-    private async Task TriggerDeploymentNotification(ServiceStatusChange? statusChange, CancellationToken cancellationToken)
+    private async Task TriggerDeploymentNotificationOnTransition(ServiceStatusChange? statusChange, CancellationToken cancellationToken)
     {
-        // Ensure we only trigger the alert on the status change, no subsequent failure updates
-        if (statusChange is { NewStatus: DeploymentStatus.SERVICE_DEPLOYMENT_FAILED } && statusChange.OldStatus != statusChange.NewStatus)
+        if (statusChange is null || statusChange.NewStatus == statusChange.OldStatus)
+            return;
+
+        INotificationEvent? notificationEvent = statusChange.NewStatus switch
         {
-            var failureEvent = new DeploymentFailedEvent
+            DeploymentStatus.SERVICE_DEPLOYMENT_FAILED => new DeploymentFailedEvent
             {
                 DeploymentId = statusChange.DeploymentId,
                 Entity = statusChange.EntityId,
                 Environment = statusChange.Environment,
-                Version = statusChange.Version
-            };
-            await notificationDispatcher.Dispatch(failureEvent, cancellationToken);
-        }
+                Version = statusChange.Version,
+                UserDisplayName = statusChange.UserDisplayName
+            },
+            DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED => new DeploymentSuccessEvent
+            {
+                DeploymentId = statusChange.DeploymentId,
+                Entity = statusChange.EntityId,
+                Environment = statusChange.Environment,
+                Version = statusChange.Version,
+                UserDisplayName = statusChange.UserDisplayName
+            },
+            _ => null
+        };
+
+        if (notificationEvent != null)
+            await notificationDispatcher.Dispatch(notificationEvent, cancellationToken);
     }
 }

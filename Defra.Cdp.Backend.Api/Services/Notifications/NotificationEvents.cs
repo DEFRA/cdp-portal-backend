@@ -8,8 +8,9 @@ public static class NotificationTypes
     public const string TestFailed = "testfailed";
     public const string TestPassed = "testpassed";
     public const string DeploymentFailed = "deploymentfailed";
+    public const string DeploymentSuccess = "deploymentsuccess";
 
-    public static readonly string[] All = [TestPassed, TestFailed, DeploymentFailed];
+    public static readonly string[] All = [TestPassed, TestFailed, DeploymentFailed, DeploymentSuccess];
 }
 
 public interface INotificationEvent 
@@ -56,9 +57,25 @@ public class DeploymentFailedEvent : INotificationEvent
     public required string? Environment { get; init; }
     public required string Version { get; init; }
     public required string DeploymentId { get; init; }
+    public string? UserDisplayName { get; init; }
 
     public SlackMessageBody SlackMessage()
     {
         return SlackMessageTemplates.DeploymentFailedTemplate(this);
+    }
+}
+
+public class DeploymentSuccessEvent : INotificationEvent
+{
+    public string EventType => NotificationTypes.DeploymentSuccess;
+    public required string Entity { get; init; }
+    public required string? Environment { get; init; }
+    public required string Version { get; init; }
+    public required string DeploymentId { get; init; }
+    public string? UserDisplayName { get; init; }
+
+    public SlackMessageBody SlackMessage()
+    {
+        return SlackMessageTemplates.DeploymentSuccessTemplate(this);
     }
 }
