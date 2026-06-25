@@ -1,7 +1,6 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
-using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Utils.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +12,11 @@ public static class ResourcesEndpoint
 {
     public static void MapResourcesEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/resources", CreateResource).RequireAuthorization(AuthPolicies.IsTenant);
+        app.MapPost("/resources/requests", CreateResourceRequest).RequireAuthorization(AuthPolicies.IsTenant);
+        app.MapGet("/resources/requests/{workflowRunId}", GetResourceRequest);
     }
-    
-    private static async Task<Results<BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResource(
+
+    private static async Task<Results<BadRequest<ApiError>, Ok<ResourceRequestResponse>>> CreateResourceRequest(
         [FromBody] CreateTenantResourceRequest request,
         [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
         [FromServices] ICreateResourceValidator validator,
@@ -30,6 +30,25 @@ public static class ResourcesEndpoint
         }
         var user = UserDetailsFrom(httpContext.User);
         var response = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
-        return TypedResults.Ok(response.Workflow);
+        return TypedResults.Ok(new ResourceRequestResponse
+        {
+            Workflow = response.Workflow
+        });
+    }
+
+    private static async Task<Results<NotFound, Ok<ResourceRequestResponse>>> GetResourceRequest(
+        [FromServices] IResourceRequestService resourceRequestService,
+        long workflowRunId,
+        CancellationToken ct)
+    {
+        var resourceRequest = await resourceRequestService.FindByWorkflowId(workflowRunId, ct);
+
+        return resourceRequest is not null
+            ? TypedResults.Ok(new ResourceRequestResponse
+            {
+                Workflow = resourceRequest.Workflow,
+                PullRequest = resourceRequest.PullRequest
+            })
+            : TypedResults.NotFound();
     }
 }
