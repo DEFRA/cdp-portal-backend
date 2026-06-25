@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -11,7 +12,7 @@ public class ResourceRequestRecord
     [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
     [BsonIgnoreIfDefault]
     public ObjectId? Id { get; init; }
-    
+
     public string EntityName { get; init; } = "";
     public UserDetails? RequestedBy { get; init; }
     public DateTime RequestedAt { get; init; }
@@ -23,6 +24,9 @@ public class ResourceRequestRecord
 
 public class ResourceRequestPullRequest
 {
+    [JsonPropertyName("url")]
     public required string Url { get; init; }
+
+    [JsonPropertyName("number")]
     public required int Number { get; init; }
 }
