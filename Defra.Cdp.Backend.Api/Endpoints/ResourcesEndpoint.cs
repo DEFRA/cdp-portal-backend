@@ -29,10 +29,11 @@ public static class ResourcesEndpoint
             return TypedResults.BadRequest(new ApiError("Invalid request", errors));
         }
         var user = UserDetailsFrom(httpContext.User);
-        var response = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
+        var resourceRequest = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
         return TypedResults.Ok(new ResourceRequestResponse
         {
-            Workflow = response.Workflow
+            RequestedAt = resourceRequest.RequestedAt,
+            Workflow = resourceRequest.Workflow
         });
     }
 
@@ -46,6 +47,7 @@ public static class ResourcesEndpoint
         return resourceRequest is not null
             ? TypedResults.Ok(new ResourceRequestResponse
             {
+                RequestedAt = resourceRequest.RequestedAt,
                 Workflow = resourceRequest.Workflow,
                 PullRequest = resourceRequest.PullRequest
             })
