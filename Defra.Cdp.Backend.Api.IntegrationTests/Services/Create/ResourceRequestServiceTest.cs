@@ -151,7 +151,9 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             },
             CancellationToken.None);
 
-        Assert.True(updated);
+        Assert.NotNull(updated);
+        Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/pull/42", updated.PullRequest?.Url);
+        Assert.Equal(42, updated.PullRequest?.Number);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
@@ -194,7 +196,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             },
             CancellationToken.None);
 
-        Assert.False(updated);
+        Assert.Null(updated);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
