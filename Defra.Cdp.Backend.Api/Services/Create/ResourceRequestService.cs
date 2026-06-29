@@ -15,7 +15,7 @@ public interface IResourceRequestService
         GitHubTriggerWorkflowResponse? workflow,
         CancellationToken cancellationToken);
 
-    Task<bool> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
+    Task<ResourceRequestRecord?> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
         CancellationToken cancellationToken);
 
     Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default);
@@ -63,7 +63,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
         return record;
     }
 
-    public async Task<bool> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
+    public async Task<ResourceRequestRecord?> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
         CancellationToken cancellationToken)
     {
         var filter = Builders<ResourceRequestRecord>.Filter.Where(record =>
@@ -71,8 +71,11 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
             record.Inputs.RunId == runId);
 
         var update = Builders<ResourceRequestRecord>.Update.Set(record => record.PullRequest, pullRequest);
-        var result = await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
-        return result.MatchedCount > 0;
+        return await Collection.FindOneAndUpdateAsync(
+            filter,
+            update,
+            new FindOneAndUpdateOptions<ResourceRequestRecord> { ReturnDocument = ReturnDocument.After },
+            cancellationToken);
     }
 
     public async Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default)

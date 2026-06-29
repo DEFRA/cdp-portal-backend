@@ -9,8 +9,16 @@ public static class NotificationTypes
     public const string TestPassed = "testpassed";
     public const string DeploymentFailed = "deploymentfailed";
     public const string DeploymentSuccess = "deploymentsuccess";
+    public const string TenantResourceRequested = "tenantresourcerequested";
 
-    public static readonly string[] All = [TestPassed, TestFailed, DeploymentFailed, DeploymentSuccess];
+    public static readonly string[] All =
+    [
+        TestPassed,
+        TestFailed,
+        DeploymentFailed,
+        DeploymentSuccess,
+        TenantResourceRequested
+    ];
 }
 
 public interface INotificationEvent 
@@ -77,5 +85,26 @@ public class DeploymentSuccessEvent : INotificationEvent
     public SlackMessageBody SlackMessage()
     {
         return SlackMessageTemplates.DeploymentSuccessTemplate(this);
+    }
+}
+
+public class TenantResourceRequestedEvent : INotificationEvent
+{
+    public const string NotificationEntity = "tenant-resource-request";
+
+    public string EventType => NotificationTypes.TenantResourceRequested;
+    public string Entity => NotificationEntity;
+    public string? Environment => null;
+
+    public required string ServiceName { get; init; }
+    public string? RequestedByDisplayName { get; init; }
+    public string? RequestedByUserId { get; init; }
+    public required string PullRequestUrl { get; init; }
+    public required int PullRequestNumber { get; init; }
+    public string? WorkflowRunUrl { get; init; }
+
+    public SlackMessageBody SlackMessage()
+    {
+        return SlackMessageTemplates.TenantResourceRequestedTemplate(this);
     }
 }

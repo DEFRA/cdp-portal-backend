@@ -33,4 +33,24 @@ public class NotificationEventsTest
         Assert.Contains("prod",  message?.Blocks?[1].Fields?[0].Text);
         Assert.Contains("/test-suites/test-results/prod/failed/foo-backend/1234/index.html",  message?.Blocks?[1].Fields?[1].Text);
     }
+
+    [Fact]
+    public void TenantResourceRequestedTemplate()
+    {
+        var e = new TenantResourceRequestedEvent
+        {
+            ServiceName = "foo-backend",
+            RequestedByDisplayName = "Test User",
+            RequestedByUserId = "user-1",
+            PullRequestUrl = "https://github.com/DEFRA/cdp-tenant-config/pull/99",
+            PullRequestNumber = 99,
+            WorkflowRunUrl = "https://github.com/DEFRA/cdp-tenant-config/actions/runs/123456789"
+        };
+        var message = e.SlackMessage();
+        Assert.Equal("header",  message?.Blocks?[0].Type);
+        Assert.Contains("Tenant resource requested",  message?.Blocks?[0].Text?.Text);
+        Assert.Contains("Test User",  message?.Blocks?[1].Fields?[0].Text);
+        Assert.Contains("foo-backend",  message?.Blocks?[1].Fields?[1].Text);
+        Assert.Contains("https://github.com/DEFRA/cdp-tenant-config/pull/99",  message?.Blocks?[1].Fields?[2].Text);
+    }
 }
