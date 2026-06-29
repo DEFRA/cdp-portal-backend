@@ -40,7 +40,7 @@ public class NotificationEventsTest
         var e = new TenantResourceRequestedEvent
         {
             ServiceName = "foo-backend",
-            RequestedByDisplayName = "Chris Turner",
+            RequestedByDisplayName = "Test User",
             RequestedByUserId = "user-1",
             PullRequestUrl = "https://github.com/DEFRA/cdp-tenant-config/pull/99",
             PullRequestNumber = 99,
@@ -49,7 +49,7 @@ public class NotificationEventsTest
         var message = e.SlackMessage();
         Assert.Equal("header",  message?.Blocks?[0].Type);
         Assert.Contains("Tenant resource requested",  message?.Blocks?[0].Text?.Text);
-        Assert.Contains("Chris Turner",  message?.Blocks?[1].Fields?[0].Text);
+        Assert.Contains("Test User",  message?.Blocks?[1].Fields?[0].Text);
         Assert.Contains("foo-backend",  message?.Blocks?[1].Fields?[1].Text);
         Assert.Contains("https://github.com/DEFRA/cdp-tenant-config/pull/99",  message?.Blocks?[1].Fields?[2].Text);
     }
