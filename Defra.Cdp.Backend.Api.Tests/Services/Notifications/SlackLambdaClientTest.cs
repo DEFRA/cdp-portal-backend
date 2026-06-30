@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
+using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
@@ -16,84 +17,85 @@ public class SlackLambdaClientTest
     [Fact]
     public async Task Should_publish_send_slack_notification_mono_lambda_event()
     {
-        var previousEnvironment = Environment.GetEnvironmentVariable("ENVIRONMENT");
-        Environment.SetEnvironmentVariable("ENVIRONMENT", "dev");
-        try
+        using var _ = new ScopedEnvironmentVariable("ENVIRONMENT", "dev");
+
+        var sns = Substitute.For<IAmazonSimpleNotificationService>();
+        var config = Options.Create(new MonoLambdaOptions
         {
-            var sns = Substitute.For<IAmazonSimpleNotificationService>();
-            var config = new OptionsWrapper<Defra.Cdp.Backend.Api.Config.MonoLambdaOptions>(
-                new Defra.Cdp.Backend.Api.Config.MonoLambdaOptions
+            QueueUrl = "http://queue.url",
+            Enabled = true,
+            TopicArn = "arn:aws:sns:region:account-id:topic-name.fifo"
+        });
+
+        var trigger = new MonoLambdaTrigger(sns, config, NullLogger<MonoLambdaTrigger>.Instance);
+        var slackClient = new SlackLambdaClient(trigger, NullLogger<SlackLambdaClient>.Instance);
+        sns.PublishAsync(Arg.Any<PublishRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var body = new SlackMessageBody
+        {
+            Text = "Deployment complete",
+            Blocks =
+            [
+                new Block
                 {
-                    QueueUrl = "http://queue.url",
-                    Enabled = true,
-                    TopicArn = "arn:aws:sns:region:account-id:topic-name.fifo"
-                });
+                    Type = "section",
+                    Text = new TextObject { Type = "mrkdwn", Text = "Done" }
+                }
+            ]
+        };
 
-            var trigger = new MonoLambdaTrigger(sns, config, NullLogger<MonoLambdaTrigger>.Instance);
-            var slackClient = new SlackLambdaClient(trigger, NullLogger<SlackLambdaClient>.Instance);
-            sns.PublishAsync(Arg.Any<PublishRequest>(), Arg.Any<CancellationToken>())
-                .Returns(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+        await slackClient.SendToChannel("cdp-alerts", body, TestContext.Current.CancellationToken);
 
-            var body = new SlackMessageBody
-            {
-                Text = "Deployment complete",
-                Blocks =
-                [
-                    new Block
-                    {
-                        Type = "section",
-                        Text = new TextObject { Type = "mrkdwn", Text = "Done" }
-                    }
-                ]
-            };
+        await sns.Received(1).PublishAsync(Arg.Any<PublishRequest>(), Arg.Any<CancellationToken>());
 
-            await slackClient.SendToChannel("cdp-alerts", body, TestContext.Current.CancellationToken);
+        var publishCall = sns.ReceivedCalls()
+            .Single(call => call.GetMethodInfo().Name == nameof(IAmazonSimpleNotificationService.PublishAsync));
+        var request = Assert.IsType<PublishRequest>(publishCall.GetArguments()[0]);
 
-            await sns.Received(1).PublishAsync(Arg.Is<PublishRequest>(request =>
-                    request.TopicArn == "arn:aws:sns:region:account-id:topic-name.fifo" &&
-                    request.MessageGroupId == "dev" &&
-                    HasExpectedPayload(request.Message)),
-                Arg.Any<CancellationToken>());
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("ENVIRONMENT", previousEnvironment);
-        }
+        Assert.Equal("arn:aws:sns:region:account-id:topic-name.fifo", request.TopicArn);
+        Assert.Equal("dev", request.MessageGroupId);
+        AssertPayload(request.Message);
     }
 
-    private static bool HasExpectedPayload(string json)
+    private static void AssertPayload(string json)
     {
         var root = JsonSerializer.Deserialize<JsonElement>(json);
-        if (!root.TryGetProperty("event_type", out var eventType) || eventType.GetString() != "send_slack_notification")
+        Assert.True(root.TryGetProperty("event_type", out var eventType));
+        Assert.Equal("send_slack_notification", eventType.GetString());
+
+        Assert.True(root.TryGetProperty("payload", out var payload));
+
+        Assert.True(payload.TryGetProperty("team", out var team));
+        Assert.Equal("platform", team.GetString());
+
+        Assert.True(payload.TryGetProperty("message", out var message));
+
+        Assert.True(message.TryGetProperty("channel", out var channel));
+        Assert.Equal("cdp-alerts", channel.GetString());
+
+        Assert.True(message.TryGetProperty("text", out var text));
+        Assert.Equal("Deployment complete", text.GetString());
+
+        Assert.True(message.TryGetProperty("blocks", out var blocks));
+        Assert.Equal(1, blocks.GetArrayLength());
+    }
+
+    private sealed class ScopedEnvironmentVariable : IDisposable
+    {
+        private readonly string _key;
+        private readonly string? _previous;
+
+        public ScopedEnvironmentVariable(string key, string value)
         {
-            return false;
+            _key = key;
+            _previous = System.Environment.GetEnvironmentVariable(key);
+            System.Environment.SetEnvironmentVariable(key, value);
         }
 
-        if (!root.TryGetProperty("payload", out var payload))
+        public void Dispose()
         {
-            return false;
+            System.Environment.SetEnvironmentVariable(_key, _previous);
         }
-
-        if (!payload.TryGetProperty("team", out var team) || team.GetString() != "platform")
-        {
-            return false;
-        }
-
-        if (!payload.TryGetProperty("message", out var message))
-        {
-            return false;
-        }
-
-        if (!message.TryGetProperty("channel", out var channel) || channel.GetString() != "cdp-alerts")
-        {
-            return false;
-        }
-
-        if (!message.TryGetProperty("text", out var text) || text.GetString() != "Deployment complete")
-        {
-            return false;
-        }
-
-        return message.TryGetProperty("blocks", out var blocks) && blocks.GetArrayLength() == 1;
     }
 }
