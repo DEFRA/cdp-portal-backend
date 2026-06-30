@@ -4,7 +4,7 @@ using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
 namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 
 /// <summary>
-/// Payload used by https://github.com/DEFRA/cdp-notification-lambda/
+/// Payload sent as Mono Lambda event payload for send_slack_notification.
 /// </summary>
 public class SlackMessagePayload
 {
