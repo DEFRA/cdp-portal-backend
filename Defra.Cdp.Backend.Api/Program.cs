@@ -267,7 +267,6 @@ builder.Services.AddSingleton<ISbomDeploymentEventHandler, SbomDeploymentEventHa
 builder.Services.AddSingleton<ISbomServiceOwnershipHandler, SbomServiceOwnershipHandler>();
 
 // Notifications
-builder.Services.Configure<SlackLambdaOptions>(builder.Configuration.GetSection(SlackLambdaOptions.Prefix));
 builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
 builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();

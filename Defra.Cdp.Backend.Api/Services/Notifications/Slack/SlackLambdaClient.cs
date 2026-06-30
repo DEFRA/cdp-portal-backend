@@ -1,8 +1,5 @@
-using System.Text.Json;
-using Amazon.SimpleNotificationService;
-using Defra.Cdp.Backend.Api.Config;
+using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.Notifications.Slack.Templates;
-using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Notifications.Slack;
 
@@ -11,24 +8,16 @@ public interface ISlackClient
     Task SendToChannel(string channel, SlackMessageBody messageBody,CancellationToken ct); // Richer block style slack messages
 }
 
-public class SlackLambdaClient(IAmazonSimpleNotificationService snsClient, IOptions<SlackLambdaOptions> options, ILogger<SlackLambdaClient> logger) : ISlackClient
+public class SlackLambdaClient(MonoLambdaTrigger monoLambdaTrigger, ILogger<SlackLambdaClient> logger) : ISlackClient
 {
-    private async Task Send(SlackMessagePayload payload, CancellationToken ct)
+    private static string ResolveEnvironmentName()
     {
-        var messageBody = JsonSerializer.Serialize(payload);
-        if (!options.Value.Enabled)
-        {
-          
-            logger.LogInformation("Disabled: Would send '{Msg}' to {Channel}",  messageBody, payload.Message.Channel);
-            return;
-        }
-       
-        await snsClient.PublishAsync(options.Value.TopicArn, messageBody, ct);
+        return Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "management";
     }
 
     public async Task SendToChannel(string channel, SlackMessageBody body, CancellationToken ct)
     {
-        var msg = new SlackMessagePayload
+        var payload = new SlackMessagePayload
         {
             Message = new SlackMessagePayload.SlackMessage
             {
@@ -36,8 +25,18 @@ public class SlackLambdaClient(IAmazonSimpleNotificationService snsClient, IOpti
                 Blocks = body.Blocks,
                 Text = body.Text
             },
-            Team = channel
+            Team = "platform"
         };
-        await Send(msg, ct);
+
+        var triggerEvent = new MonoLambdaTriggerEvent<SlackMessagePayload>
+        {
+            EventType = "send_slack_notification",
+            Timestamp = DateTime.UtcNow,
+            Payload = payload
+        };
+
+        var environment = ResolveEnvironmentName();
+        logger.LogInformation("Publishing Slack notification via mono-lambda for channel {Channel} in {Environment}", channel, environment);
+        await monoLambdaTrigger.Trigger(triggerEvent, environment, ct);
     }
 }
