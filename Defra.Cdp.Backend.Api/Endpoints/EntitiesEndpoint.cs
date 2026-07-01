@@ -6,6 +6,8 @@ using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Grafana;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
@@ -19,6 +21,8 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class EntitiesEndpoint
 {
+    private const double GRAFANA_REFRESH_THRESHOLD = 30;
+    
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/entities", CreateEntity);
@@ -37,6 +41,7 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/resources", CreateResourceForEntity).RequireAuthorization(AuthPolicies.IsAdmin);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
+        app.MapGet("/entities/{name}/diagnostics/playground", GetEntityPlaygroundDashboardsAndAlerts);
     }
     
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -376,5 +381,22 @@ public static class EntitiesEndpoint
             return TypedResults.NotFound();
         }
         return TypedResults.Ok(relationships);
+    }
+    
+    private static async Task<Results<NotFound, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
+        [FromServices] IGrafanaPlaygroundService grafanaPlaygroundService,
+        string name,
+        CancellationToken ct)
+    {
+        var data = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
+
+        if (data == null || (DateTime.UtcNow - data.Updated).TotalSeconds > GRAFANA_REFRESH_THRESHOLD )
+        {
+            var requestId = await grafanaPlaygroundService.RequestUpdateForService(name, ct);
+            var result = await grafanaPlaygroundService.WaitForUpdate(requestId, 1500, ct);
+            return TypedResults.Ok(result);
+        }
+
+        return TypedResults.Ok(data);
     }
 }
