@@ -8,7 +8,7 @@ public interface ISlackClient
     Task SendToChannel(string channel, SlackMessageBody messageBody,CancellationToken ct); // Richer block style slack messages
 }
 
-public class SlackLambdaClient(MonoLambdaTrigger monoLambdaTrigger, ILogger<SlackLambdaClient> logger) : ISlackClient
+public class SlackLambdaClient(IMonoLambdaTrigger monoLambdaTrigger, ILogger<SlackLambdaClient> logger) : ISlackClient
 {
     private static string ResolveEnvironmentName()
     {

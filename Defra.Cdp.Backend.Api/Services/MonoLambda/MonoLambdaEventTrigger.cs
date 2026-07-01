@@ -23,7 +23,13 @@ public class MonoLambdaTriggerEvent<T>
     public required T Payload { get; init; }
 }
 
-public class MonoLambdaTrigger(IAmazonSimpleNotificationService sns, IOptions<MonoLambdaOptions> config, ILogger<MonoLambdaTrigger> logger)
+public interface IMonoLambdaTrigger
+{
+    Task Trigger<T>(MonoLambdaTriggerEvent<T> trigger, string environment,
+        CancellationToken cancellationToken);
+}
+
+public class MonoLambdaTrigger(IAmazonSimpleNotificationService sns, IOptions<MonoLambdaOptions> config, ILogger<MonoLambdaTrigger> logger) : IMonoLambdaTrigger
 {
     public async Task Trigger<T>(MonoLambdaTriggerEvent<T> trigger, string environment,
         CancellationToken cancellationToken)

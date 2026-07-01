@@ -11,7 +11,7 @@ public interface ITestRunSnapshotter
     Task Snapshot(TestRun testRun, CancellationToken cancellationToken);
 }
 
-public class TestRunSnapshotter(MonoLambdaTrigger monoLambdaTrigger, IOptions<TestRunnerOptions> options) : ITestRunSnapshotter
+public class TestRunSnapshotter(IMonoLambdaTrigger monoLambdaTrigger, IOptions<TestRunnerOptions> options) : ITestRunSnapshotter
 {
     private readonly string? _defaultDashboard = options.Value.SnapshotDashboard;
     

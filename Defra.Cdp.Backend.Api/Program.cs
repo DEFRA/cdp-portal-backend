@@ -19,6 +19,7 @@ using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
+using Defra.Cdp.Backend.Api.Services.Grafana;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
@@ -243,13 +244,14 @@ builder.Services.AddSingleton<IFeatureTogglesService, FeatureTogglesService>();
 builder.Services.AddSingleton<IAuditService, AuditService>();
 builder.Services.AddSingleton<ICloudWatchMetricsService, CloudWatchMetricsService>();
 
-// New Tenant state stuff
+// Mono-lambda handlers
 builder.Services.Configure<MonoLambdaOptions>(
     builder.Configuration.GetSection(MonoLambdaOptions.Prefix));
 builder.Services.AddSingleton<MonoLambdaEventListener>();
-builder.Services.AddSingleton<MonoLambdaTrigger>();
+builder.Services.AddSingleton<IMonoLambdaTrigger, MonoLambdaTrigger>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, PlatformStateHandler>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, GrafanaSnapshotHandler>();
+builder.Services.AddSingleton<IMonoLambdaEventHandler, GrafanaListPlaygroundsHandler>();
 builder.Services.AddSingleton<IMonoLambdaEventHandler, SecretUpdatesHandler>();
 builder.Services.AddSingleton<IEventHistoryFactory, EventHistoryFactory>();
 
@@ -271,6 +273,9 @@ builder.Services.AddSingleton<ISbomServiceOwnershipHandler, SbomServiceOwnership
 builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
 builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();
+
+// Grafana playgrounds
+builder.Services.AddSingleton<IGrafanaPlaygroundService, GrafanaPlaygroundService>();
 
 // Register background SQS listeners
 builder.Services.AddHostedService<EcsEventListener>();
