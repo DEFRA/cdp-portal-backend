@@ -21,7 +21,7 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class EntitiesEndpoint
 {
-    private const double GRAFANA_REFRESH_THRESHOLD = 30;
+    private const double GrafanaRefreshThresholdSecs = 30;
     
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
@@ -390,7 +390,7 @@ public static class EntitiesEndpoint
     {
         var data = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
 
-        if (data == null || (DateTime.UtcNow - data.Updated).TotalSeconds > GRAFANA_REFRESH_THRESHOLD )
+        if (data == null || (DateTime.UtcNow - data.Updated).TotalSeconds > GrafanaRefreshThresholdSecs )
         {
             var requestId = await grafanaPlaygroundService.RequestUpdateForService(name, ct);
             var result = await grafanaPlaygroundService.WaitForUpdate(requestId, 1500, ct);
