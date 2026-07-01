@@ -61,7 +61,8 @@ public class GrafanaListPlaygroundsHandler(IGrafanaPlaygroundService grafanaPlay
         {
             throw new Exception("Failed to parse platform state headers");
         }
-
+        
+        logger.LogInformation("Received update for {Service}'s playground dashboard, request {RequestId}", response.Service, response.RequestId);
         await grafanaPlaygroundService.UpdatePlaygroundForService(response, cancellationToken);
     }
 }
