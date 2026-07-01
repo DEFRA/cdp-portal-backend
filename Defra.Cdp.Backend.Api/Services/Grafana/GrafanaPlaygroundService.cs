@@ -107,6 +107,9 @@ public class GrafanaPlaygroundService(IMongoDbClientFactory connectionFactory, I
                 return null; 
             }
         }
+        
+        Logger.LogInformation("Grafana playground update for {RequestId} did not return inside of {Timeout}ms", requestId, timeoutMs);
+        
         return null;
     }
 }
