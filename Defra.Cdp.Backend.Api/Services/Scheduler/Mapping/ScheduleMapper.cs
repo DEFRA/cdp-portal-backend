@@ -54,24 +54,4 @@ public static class ScheduleMapper
             mongoUser
         );
     }
-
-    public static MongoSchedule ToUpdatedMongo(ScheduleRequest schedule, MongoSchedule originalSchedule, UserDetails user, string entityId)
-    {
-        var task = ScheduleTaskMapper.ToMongo(schedule.Task);
-        var config = ScheduleConfigMapper.ToMongo(schedule.Config);
-        var mongoUser = new MongoUserDetails { Id = user.Id, DisplayName = user.DisplayName };
-        var updatedSchedule = originalSchedule with
-        {
-            Enabled = schedule.Enabled,
-            Cron = schedule.Config.GetCronExpression(),
-            Description = schedule.Config.GetDescription(),
-            Config = config,
-            Task = task,
-            User = mongoUser
-        };
-
-        updatedSchedule.RecalculateNextRun();
-        return updatedSchedule;
-    }
-
 }

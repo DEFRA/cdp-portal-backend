@@ -24,8 +24,9 @@ public class AutoDeploymentTriggerExecutor(
 {
     public async Task Handle(string repositoryName, string imageTag, CancellationToken cancellationToken)
     {
-        var autoDeploymentToggle = await featureTogglesService.GetToggle("auto-deployments", cancellationToken);
-        if (autoDeploymentToggle is { Active: true })
+        var disableAutoDeploymentsToggle =
+            await featureTogglesService.GetToggle("auto-deployments", cancellationToken);
+        if (disableAutoDeploymentsToggle is { Active: true })
         {
             logger.LogInformation("Auto-deployment feature is disabled, skipping auto-deployment for {RepositoryName}",
                 repositoryName);

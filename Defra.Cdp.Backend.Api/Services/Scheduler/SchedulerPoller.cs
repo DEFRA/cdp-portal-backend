@@ -27,7 +27,6 @@ public class SchedulerPoller(
 
             var ct = context.CancellationToken;
             var now = DateTime.UtcNow;
-            var tolerance = TimeSpan.FromMinutes(5);
 
             var dueSchedules = await schedulerService.FetchDueSchedules(ct);
 
@@ -35,13 +34,10 @@ public class SchedulerPoller(
             {
                 _logger.LogInformation("Processing schedule {id} for entity {entityId} and description {description}",
                     schedule.Id, schedule.Task.EntityId, schedule.Description);
-                var shouldExecute =
-                    schedule.NextRunAt.HasValue &&
-                    schedule.NextRunAt.Value >= now - tolerance;
 
                 using var scope = serviceProvider.CreateScope();
 
-                if (shouldExecute)
+                if (ScheduleExecutionWindow.IsDue(schedule.NextRunAt, now))
                 {
                     try
                     {

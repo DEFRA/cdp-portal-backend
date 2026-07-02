@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.Deployments;
+using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.TestSuiteDeployment;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using MongoDB.Bson;
@@ -44,13 +45,7 @@ public class MongoTestSuiteScheduleTask : MongoScheduleTask
     {
         var deployer = services.GetRequiredService<ITestSuiteDeployer>();
 
-        var now = DateTime.UtcNow;
-        var tolerance = TimeSpan.FromMinutes(5);
-        var shouldExecute =
-            nextRunAt.HasValue &&
-            nextRunAt.Value >= now - tolerance;
-
-        if (shouldExecute)
+        if (ScheduleExecutionWindow.IsDue(nextRunAt))
         {
             await deployer.DeployAsync(
                 EntityId,
@@ -84,13 +79,7 @@ public class MongoDeployServiceScheduleTask : MongoScheduleTask
         var artifactsService = services.GetRequiredService<IDeployableArtifactsService>();
         var serviceDeploymentExecutor = services.GetRequiredService<IServiceDeploymentExecutor>();
 
-        var now = DateTime.UtcNow;
-        var tolerance = TimeSpan.FromMinutes(5);
-        var shouldExecute =
-            nextRunAt.HasValue &&
-            nextRunAt.Value >= now - tolerance;
-
-        if (!shouldExecute)
+        if (!ScheduleExecutionWindow.IsDue(nextRunAt))
         {
             logger.LogWarning(
                 "Not executing service deployment for {service} with next run at {nextRunAt}",
