@@ -64,7 +64,7 @@ public class GrafanaPlaygroundService(IMongoDbClientFactory connectionFactory, I
     {
         var triggerEvent = new MonoLambdaTriggerEvent<GrafanaListPlaygroundsTrigger>
         {
-            EventType = "create_grafana_snapshots",
+            EventType = "grafana_list_playgrounds",
             Timestamp = DateTime.UtcNow,
             Payload = new GrafanaListPlaygroundsTrigger
             {
