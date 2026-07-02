@@ -1,6 +1,6 @@
 namespace Defra.Cdp.Backend.Api.Services.Scheduler;
 
-internal static class ScheduleExecutionWindow
+public static class ScheduleExecutionWindow
 {
     private static readonly TimeSpan Tolerance = TimeSpan.FromMinutes(5);
 
