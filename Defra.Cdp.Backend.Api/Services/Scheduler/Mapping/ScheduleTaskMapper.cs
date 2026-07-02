@@ -17,6 +17,11 @@ public static class ScheduleTaskMapper
                 Memory = ts.Memory,
                 Profile = ts.Profile
             },
+            DeployServiceTask ds => new MongoDeployServiceScheduleTask
+            {
+                EntityId = ds.EntityId,
+                Environments = ds.Environments
+            },
             // add other task types here...
             _ => throw new NotSupportedException($"Unknown task type {task.GetType()}")
         };
@@ -34,6 +39,11 @@ public static class ScheduleTaskMapper
                 Cpu = ts.Cpu,
                 Memory = ts.Memory,
                 Profile = ts.Profile
+            },
+            EntityDeployServiceTask ds => new MongoDeployServiceScheduleTask
+            {
+                EntityId = entityId,
+                Environments = ds.Environments
             },
             // add other task types here...
             _ => throw new NotSupportedException($"Unknown task type {task.GetType()}")

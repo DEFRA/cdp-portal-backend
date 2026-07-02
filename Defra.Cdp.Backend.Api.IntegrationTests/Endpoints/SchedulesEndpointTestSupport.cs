@@ -87,6 +87,39 @@ public class SchedulesEndpointTestSupport : MongoTestSupport
             $"Expected 201 Created but got {response.StatusCode}. json: {body}");
     }
 
+    [Fact]
+    public async Task Should_create_deploy_service_task_schedule()
+    {
+        var client = _host.GetTestClient();
+
+        var json = """
+                   {
+                     "task": {
+                       "type": "DeployService",
+                       "entityId": "my-microservice-entity",
+                       "environments": ["infra-dev", "prod"]
+                     },
+                     "config": {
+                       "frequency": "DAILY",
+                       "time": "02:15"
+                     }
+                   }
+                   """;
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/schedules")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", MockToken);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(response.StatusCode == HttpStatusCode.Created,
+            $"Expected 201 Created but got {response.StatusCode}. json: {body}");
+    }
+
     private static Entity[] EntityTestData()
     {
         return
@@ -100,6 +133,16 @@ public class SchedulesEndpointTestSupport : MongoTestSupport
                 ],
                 Status = Status.Created,
                 Type = Type.TestSuite
+            },
+            new Entity
+            {
+                Name = "my-microservice-entity",
+                Teams =
+                [
+                    new Team { Name = "Platform", TeamId = "platform" }, new Team { Name = "Tenant", TeamId = "tenant" }
+                ],
+                Status = Status.Created,
+                Type = Type.Microservice
             }
         ];
     }

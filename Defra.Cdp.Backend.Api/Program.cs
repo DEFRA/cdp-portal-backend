@@ -169,6 +169,7 @@ builder.Services.AddHostedService<QuartzSchedulersHostedService>();
 builder.Services.AddSingleton<IRepositoryService, RepositoryService>();
 builder.Services.AddSingleton<IDeployableArtifactsService, DeployableArtifactsService>();
 builder.Services.AddSingleton<IDeploymentsService, DeploymentsService>();
+builder.Services.AddSingleton<IServiceDeploymentExecutor, ServiceDeploymentExecutor>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
 builder.Services.AddSingleton<IEntityTopologyService, EntityTopologyService>();
 builder.Services.AddSingleton<IEcrEventsService, EcrEventsService>();

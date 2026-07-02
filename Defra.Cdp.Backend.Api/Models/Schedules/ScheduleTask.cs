@@ -4,6 +4,7 @@ namespace Defra.Cdp.Backend.Api.Models.Schedules;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(TestSuiteTask), "DeployTestSuite")]
+[JsonDerivedType(typeof(DeployServiceTask), "DeployService")]
 public abstract class ScheduleTask
 {
     [JsonIgnore] public TaskTypeEnum Type { get; protected set; }
@@ -23,9 +24,18 @@ public class TestSuiteTask : ScheduleTask
     [JsonPropertyName("profile")] public string? Profile { get; init; }
 }
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public class DeployServiceTask : ScheduleTask
+{
+    [JsonPropertyName("entityId")] public required string EntityId { get; init; }
+
+    [JsonPropertyName("environments")] public required List<string> Environments { get; init; }
+}
+
 // entity tasks for entity endpoint (entityId is passed as path parameter & not all schedule tasks are entity scheduled tasks)
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(EntityTestSuiteTask), "DeployTestSuite")]
+[JsonDerivedType(typeof(EntityDeployServiceTask), "DeployService")]
 public abstract class EntityScheduleTask : ScheduleTask;
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -38,4 +48,10 @@ public class EntityTestSuiteTask : EntityScheduleTask
     [JsonPropertyName("memory")] public required int Memory { get; init; }
 
     [JsonPropertyName("profile")] public string? Profile { get; init; }
+}
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public class EntityDeployServiceTask : EntityScheduleTask
+{
+    [JsonPropertyName("environments")] public required List<string> Environments { get; init; }
 }
