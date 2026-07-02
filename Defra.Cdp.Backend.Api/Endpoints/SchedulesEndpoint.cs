@@ -62,6 +62,21 @@ public static class SchedulesEndpoint
             }
         }
 
+        if (scheduleRequest.Task is DeployServiceTask deployServiceTask)
+        {
+            var entity = await entitiesService.GetEntity(deployServiceTask.EntityId, ct);
+
+            if (entity == null)
+            {
+                return TypedResults.NotFound("Entity not found");
+            }
+
+            if (entity.Type != Type.Microservice)
+            {
+                return TypedResults.Conflict("Entity is not a microservice");
+            }
+        }
+
         var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user);
 
         await schedulerService.Schedule(mongoSchedule, ct);

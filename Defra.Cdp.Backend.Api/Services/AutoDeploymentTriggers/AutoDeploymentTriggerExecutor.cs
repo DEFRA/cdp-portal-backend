@@ -1,9 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.FeatureToggles;
-using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Utils.Auditing;
-using Defra.Cdp.Backend.Api.Utils.Clients;
+using Defra.Cdp.Backend.Api.Services.Deployments;
 
 namespace Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 
@@ -19,9 +17,7 @@ public interface IAutoDeploymentTriggerExecutor
 
 public class AutoDeploymentTriggerExecutor(
     IAutoDeploymentTriggerService autoDeploymentTriggerService,
-    IDeploymentsService deploymentsService,
-    ISelfServiceOpsClient selfServiceOpsClient,
-    IAppConfigVersionsService appConfigVersionsService,
+    IServiceDeploymentExecutor serviceDeploymentExecutor,
     IFeatureTogglesService featureTogglesService,
     ILogger<AutoDeploymentTriggerExecutor> logger
 ) : IAutoDeploymentTriggerExecutor
@@ -47,40 +43,20 @@ public class AutoDeploymentTriggerExecutor(
         logger.LogInformation("Auto-deployment trigger found for {RepositoryName} to {Environments}",
             repositoryName, trigger.Environments);
 
+        var userDetails = new UserDetails
+        {
+            Id = AutoDeploymentConstants.AutoDeploymentId,
+            DisplayName = "Auto deployment"
+        };
+
         foreach (var environment in trigger.Environments)
         {
-            var deploymentSettings =
-                await deploymentsService.FindDeploymentSettings(repositoryName, environment, cancellationToken);
-            if (deploymentSettings == null)
-            {
-                logger.LogError(
-                    "Could not find deployment settings for repository {RepositoryName} in environment {Environment}",
-                    repositoryName, environment);
-                continue;
-            }
-
-            var configVersion =
-                await appConfigVersionsService.FindLatestAppConfigVersion(environment, cancellationToken);
-            if (configVersion == null)
-            {
-                logger.LogError("Could not find latest config version for environment: {Environment}", environment);
-                continue;
-            }
-
-            logger.LogInformation(
-                "Auto-deploying {RepositoryName} version {ImageTag} to {Environment}",
-                repositoryName, imageTag, environment);
-
-            var userDetails = new UserDetails
-            {
-                Id = AutoDeploymentConstants.AutoDeploymentId,
-                DisplayName = "Auto deployment"
-            };
-
-            await selfServiceOpsClient.AutoDeployService(repositoryName, imageTag, environment, userDetails,
-                deploymentSettings, configVersion.CommitSha, cancellationToken);
-
-            logger.Audit("Auto-deploying {Repo}:{Version} to {Environment}", repositoryName, imageTag, environment);
+            await serviceDeploymentExecutor.DeployAsync(
+                repositoryName,
+                imageTag,
+                environment,
+                userDetails,
+                cancellationToken);
         }
     }
 }

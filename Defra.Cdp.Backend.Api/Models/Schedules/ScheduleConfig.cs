@@ -157,5 +157,6 @@ public enum IntervalUnit
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TaskTypeEnum
 {
-    DeployTestSuite
+    DeployTestSuite,
+    DeployService
 }

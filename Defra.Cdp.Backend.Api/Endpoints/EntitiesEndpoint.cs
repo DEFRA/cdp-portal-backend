@@ -150,6 +150,11 @@ public static class EntitiesEndpoint
             return TypedResults.Conflict("Entity is not a test suite");
         }
 
+        if (scheduleRequest.Task is EntityDeployServiceTask && entity.Type != Type.Microservice)
+        {
+            return TypedResults.Conflict("Entity is not a microservice");
+        }
+
         var mongoSchedule = ScheduleMapper.ToMongo(scheduleRequest, user, name);
         await schedulerService.Schedule(mongoSchedule, ct);
 
@@ -206,6 +211,11 @@ public static class EntitiesEndpoint
         if (scheduleRequest.Task is EntityTestSuiteTask && entity.Type != Type.TestSuite)
         {
             return TypedResults.Conflict("Entity is not a test suite");
+        }
+
+        if (scheduleRequest.Task is EntityDeployServiceTask && entity.Type != Type.Microservice)
+        {
+            return TypedResults.Conflict("Entity is not a microservice");
         }
         
         var mongoSchedule = ScheduleMapper.ToUpdatedMongo(scheduleRequest, originalSchedule, user, name);
