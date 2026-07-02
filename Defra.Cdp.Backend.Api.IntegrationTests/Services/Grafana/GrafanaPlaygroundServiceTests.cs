@@ -98,7 +98,7 @@ public class GrafanaPlaygroundServiceTests(MongoContainerFixture fixture) : Mong
         await playgroundService.RequestUpdateForService("foo", ct);
 
         await _monoLambdaTrigger.Received().Trigger(
-            Arg.Is<MonoLambdaTriggerEvent<GrafanaListPlaygroundsTrigger>>(e => e.EventType=="create_grafana_snapshots" && e.Payload.Service == "foo"), 
+            Arg.Is<MonoLambdaTriggerEvent<GrafanaListPlaygroundsTrigger>>(e => e.EventType=="grafana_list_playgrounds" && e.Payload.Service == "foo"), 
             Arg.Is("dev"), 
             Arg.Any<CancellationToken>());
     }
