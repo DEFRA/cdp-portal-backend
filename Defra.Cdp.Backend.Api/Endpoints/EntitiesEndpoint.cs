@@ -21,7 +21,8 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class EntitiesEndpoint
 {
-    private const double GrafanaRefreshThresholdSecs = 30;
+    private const double GrafanaPlaygroundRefreshThresholdSecs = 30; // How long we cache the playground response for
+    private const long GrafanaPlaygroundWaitThresholdMs = 1900; // Just below the slow response alert threshold
     
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
@@ -383,20 +384,30 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(relationships);
     }
     
-    private static async Task<Results<NotFound, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
+    private static async Task<Results<NotFound, Accepted<ApiError>, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
+        [FromServices] IEntitiesService entitiesService,
         [FromServices] IGrafanaPlaygroundService grafanaPlaygroundService,
         string name,
         CancellationToken ct)
     {
-        var data = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
-
-        if (data == null || (DateTime.UtcNow - data.Updated).TotalSeconds > GrafanaRefreshThresholdSecs )
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+        
+        var playgroundResources = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
+        if (playgroundResources == null || (DateTime.UtcNow - playgroundResources.Updated).TotalSeconds > GrafanaPlaygroundRefreshThresholdSecs )
         {
             var requestId = await grafanaPlaygroundService.RequestUpdateForService(name, ct);
-            var result = await grafanaPlaygroundService.WaitForUpdate(requestId, 1500, ct);
+            var result = await grafanaPlaygroundService.WaitForUpdate(requestId, GrafanaPlaygroundWaitThresholdMs, ct);
+
+            if (result == null)
+            {
+                return TypedResults.Accepted($"/entities/{name}/diagnostics/playground",
+                    new ApiError("Grafana did not response in time, try again"));
+            }
             return TypedResults.Ok(result);
         }
 
-        return TypedResults.Ok(data);
+        
+        return TypedResults.Ok(playgroundResources);
     }
 }
