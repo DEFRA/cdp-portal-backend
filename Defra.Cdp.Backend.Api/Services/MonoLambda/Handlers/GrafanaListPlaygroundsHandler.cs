@@ -32,10 +32,8 @@ public record PlaygroundAlert
 {
     [JsonPropertyName("uid")] public required string Uid { get; init; }
     [JsonPropertyName("name")] public required string Name { get; init; }
-    [JsonPropertyName("type")] public required string Type { get; init; }
-    [JsonPropertyName("annotations")] public required PlaygroundAlertAnnotations Url { get; init; }
-    [JsonPropertyName("created")] public required DateTime Created { get; init; }
-    [JsonPropertyName("updated")] public required DateTime Updated { get; init; }
+    [JsonPropertyName("type")] public string Type { get; init; } = "custom";
+    [JsonPropertyName("annotations")] public PlaygroundAlertAnnotations Url { get; init; } = new();
 }
 
 [BsonIgnoreExtraElements]
@@ -43,15 +41,12 @@ public record GrafanaPlaygroundResources
 {
     [JsonPropertyName("request_id")] public required string RequestId { get; init; }
     [JsonPropertyName("service")] public required string Service { get; init; }
-    [JsonPropertyName("dashboards")] public required List<PlaygroundDashboard> Dashboards { get; init; }
-    [JsonPropertyName("alerts")] public required List<PlaygroundAlert> Alerts { get; init; }
+    [JsonPropertyName("dashboards")] public List<PlaygroundDashboard> Dashboards { get; init; } = [];
+    [JsonPropertyName("alerts")] public List<PlaygroundAlert> Alerts { get; init; } = [];
     [JsonPropertyName("updated")] public DateTime Updated { get; set; } = DateTime.UtcNow;
 }
 
-/*
- * {'event_type': 'grafana_list_playgrounds', 'request_id': 'dd808b65-7cb9-42db-b606-9f73a93de9ad', 'service': 'cdp-uploader', 'dashboards': [{'uid': 'd0d9cc1f-abef-44ca-be1a-ee503b737326', 'title': 'cdp-uploader (custom)', 'version': 2, 'url': '/d/d0d9cc1f-abef-44ca-be1a-ee503b737326/cdp-uploader-custom', 'created': '2026-06-18T15:21:13Z', 'updated': '2026-06-18T15:27:02Z'}, {'uid': 'a5bb51c6-ead8-4263-bb6f-b2edb18f1b4c', 'title': 'cdp-uploader (custom)', 'version': 1, 'url': '/d/a5bb51c6-ead8-4263-bb6f-b2edb18f1b4c/cdp-uploader-custom', 'created': '2026-06-05T07:45:10Z', 'updated': '2026-06-05T07:45:10Z'}], 'alerts': []}
- */
-public class GrafanaListPlaygroundsHandler(IGrafanaPlaygroundService grafanaPlaygroundService, ILogger<GrafanaSnapshotHandler> logger) : IMonoLambdaEventHandler
+public class GrafanaListPlaygroundsHandler(IGrafanaPlaygroundService grafanaPlaygroundService, ILogger<GrafanaListPlaygroundsHandler> logger) : IMonoLambdaEventHandler
 {
     public string EventType => "grafana_list_playgrounds";
 
