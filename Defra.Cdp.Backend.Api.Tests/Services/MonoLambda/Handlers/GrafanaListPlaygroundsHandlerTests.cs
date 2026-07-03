@@ -15,9 +15,27 @@ public class GrafanaListPlaygroundsHandlerTests
     {
         string testMessage = """
                              {
-                               "request_id": "1234",
-                               "service": "cdp-portal-backend",
-                               "dashboards": [],
+                               "event_type": "grafana_list_playgrounds",
+                               "request_id": "dd808b65-7cb9-42db-b606-9f73a93de9ad",
+                               "service": "cdp-uploader",
+                               "dashboards": [
+                                 {
+                                   "uid": "d0d9cc1f-abef-44ca-be1a-ee503b737326",
+                                   "title": "cdp-uploader (custom)",
+                                   "version": 2,
+                                   "url": "/d/d0d9cc1f-abef-44ca-be1a-ee503b737326/cdp-uploader-custom",
+                                   "created": "2026-06-18T15:21:13Z",
+                                   "updated": "2026-06-18T15:27:02Z"
+                                 },
+                                 {
+                                   "uid": "a5bb51c6-ead8-4263-bb6f-b2edb18f1b4c",
+                                   "title": "cdp-uploader (custom)",
+                                   "version": 1,
+                                   "url": "/d/a5bb51c6-ead8-4263-bb6f-b2edb18f1b4c/cdp-uploader-custom",
+                                   "created": "2026-06-05T07:45:10Z",
+                                   "updated": "2026-06-05T07:45:10Z"
+                                 }
+                               ],
                                "alerts": []
                              }
                              """;
@@ -27,6 +45,6 @@ public class GrafanaListPlaygroundsHandlerTests
         await handler.HandleAsync(msg, TestContext.Current.CancellationToken);
 
         await _grafanaPlaygroundService.Received()
-            .UpdatePlaygroundForService(Arg.Is<GrafanaPlaygroundResources>(g => g.RequestId == "1234" && g.Service == "cdp-portal-backend"), Arg.Any<CancellationToken>());
+            .UpdatePlaygroundForService(Arg.Is<GrafanaPlaygroundResources>(g => g.RequestId == "dd808b65-7cb9-42db-b606-9f73a93de9ad" && g.Service == "cdp-uploader"), Arg.Any<CancellationToken>());
     }
 }
