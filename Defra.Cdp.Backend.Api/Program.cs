@@ -117,6 +117,7 @@ if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleTask)))
         cm.AutoMap();
         cm.SetIsRootClass(true);
         cm.AddKnownType(typeof(MongoTestSuiteScheduleTask));
+        cm.AddKnownType(typeof(MongoDeployServiceScheduleTask));
     });
 }
 
