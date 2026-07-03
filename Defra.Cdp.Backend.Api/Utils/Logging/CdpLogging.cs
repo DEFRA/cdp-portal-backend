@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Defra.Cdp.Backend.Api.Utils.Auditing;
 using Elastic.Serilog.Enrichers.Web;
 using Serilog;
+using Serilog.Events;
 
 namespace Defra.Cdp.Backend.Api.Utils.Logging;
 
@@ -27,8 +28,27 @@ public static class CdpLogging
 
         var auditLogger = AuditLogger.CreateAuditLogger();
 
+        // Overrides only apply to the logger events are emitted against, so they must be set on
+        // `config` too, not just mainLogger. Can't use ReadFrom.Configuration(ctx) here as that
+        // would also re-add the WriteTo:Console sink, duplicating every log line.
+        ApplyMinimumLevel(config, ctx.Configuration.GetSection("Serilog:MinimumLevel"));
+
         config
             .WriteTo.Logger(mainLogger)
             .WriteTo.Logger(auditLogger);
+    }
+
+    private static void ApplyMinimumLevel(LoggerConfiguration config, IConfigurationSection section)
+    {
+        var defaultLevel = section.GetValue<LogEventLevel?>("Default") ?? LogEventLevel.Information;
+        config.MinimumLevel.Is(defaultLevel);
+
+        foreach (var overrideEntry in section.GetSection("Override").GetChildren())
+        {
+            if (Enum.TryParse<LogEventLevel>(overrideEntry.Value, ignoreCase: true, out var level))
+            {
+                config.MinimumLevel.Override(overrideEntry.Key, level);
+            }
+        }
     }
 }
