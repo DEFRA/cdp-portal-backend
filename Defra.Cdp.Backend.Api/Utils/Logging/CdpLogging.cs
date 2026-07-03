@@ -28,9 +28,7 @@ public static class CdpLogging
 
         var auditLogger = AuditLogger.CreateAuditLogger();
 
-        // Overrides only apply to the logger events are emitted against, so they must be set on
-        // `config` too, not just mainLogger. Can't use ReadFrom.Configuration(ctx) here as that
-        // would also re-add the WriteTo:Console sink, duplicating every log line.
+        // Must be set on `config`, not just mainLogger, or overrides are ignored.
         ApplyMinimumLevel(config, ctx.Configuration.GetSection("Serilog:MinimumLevel"));
 
         config
