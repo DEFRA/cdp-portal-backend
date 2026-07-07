@@ -177,4 +177,62 @@ public class SubscriptionValidatorTest(MongoContainerFixture fixture) : MongoTes
         Assert.Equal("SQS Subscription queue my-queue doesn't exist, check it is part of this request", errors[0]);
         Assert.Equal("SQS Subscription topic my-topic doesn't exist, check it is part of this request", errors[1]);
     }
+    
+    [Fact]
+    public async Task Test_Subscribe_Validator_passes_when_using_fifo_from_topic()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mongoFactory = CreateMongoDbClientFactory();
+        var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var validator = new CreateResourceValidator(entityResourceService);
+
+        var entity1 = new Entity
+        {
+            Name = "foo-backend",
+            Status = Status.Created,
+            Type = Type.Microservice,
+            SubType = SubType.Backend,
+            Environments =
+            {
+                { "dev", new CdpTenant()},
+                { "test", new CdpTenant()},
+                { "perf-test", new CdpTenant()},
+                { "ext-test", new CdpTenant()},
+                { "prod", new CdpTenant()}
+            }
+        };
+        await entities.Create(entity1, ct);
+        
+        var req = new CreateTenantResourceRequest
+        {
+            SqsQueues = [new CreateTenantSqsQueue
+            {
+                Name = "my-queue",
+                Fifo = true,
+                Service = "foo-backend",
+                Environments = "tenants",
+                ContentBasedDeduplication = false,
+            }],
+            SnsTopics = [new CreateTenantSnsTopic
+            {
+                Environments = "tenants",
+                Fifo = true,
+                Name = "my-topic",
+                Service = "foo-backend"
+            }],
+            Subscriptions = [new CreateTenantSubscription
+            {
+                Environments = "tenants",
+                QueueService = "foo-backend",
+                Queue = "my-queue.fifo",
+                Topic = "my-topic.fifo",
+                TopicService = "foo-backend"
+            }]
+        };
+        var errors = await validator.Validate(req, ct);
+
+        Assert.Empty(errors);
+    }
+
 }

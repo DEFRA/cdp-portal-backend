@@ -30,7 +30,7 @@ public static class SubscriptionValidator
         }
         
         // Assume that the form was populated from the existing entity data so queue will have .fifo if present
-        var requestQueues = request.SqsQueues.Select(sqs => sqs.Name).ToList();
+        var requestQueues = request.SqsQueues.Select(sqs =>  sqs.Fifo ? sqs.Name  +".fifo" : sqs.Name).ToList();
 
         var queueOwner = await entities.QueueExists(sub.Queue, envs, cancellationToken);
         if (queueOwner == null && !requestQueues.Contains(sub.Queue))
@@ -39,7 +39,7 @@ public static class SubscriptionValidator
         }
         
         // Assume that the form was populated from the existing entity data so topic will have .fifo if present
-        var requestTopics = request.SnsTopics.Select(sns => sns.Fifo ? $"{sns.Name}.fifo" : sns.Name).ToList();
+        var requestTopics = request.SnsTopics.Select(sns => sns.Fifo ? sns.Name + ".fifo" : sns.Name).ToList();
 
         var topicOwner = await entities.TopicExists(sub.Topic, envs, cancellationToken);
         if (topicOwner == null && !requestTopics.Contains(sub.Topic)) {
