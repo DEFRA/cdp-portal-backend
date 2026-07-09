@@ -33,6 +33,7 @@ public static class ResourcesEndpoint
         var resourceRequest = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
         return TypedResults.Ok(new ResourceRequestResponse
         {
+            Status = resourceRequest.Status,
             RequestedAt = resourceRequest.RequestedAt,
             Workflow = resourceRequest.Workflow
         });
@@ -48,6 +49,7 @@ public static class ResourcesEndpoint
         return resourceRequest is not null
             ? TypedResults.Ok(new ResourceRequestResponse
             {
+                Status = resourceRequest.Status,
                 RequestedAt = resourceRequest.RequestedAt,
                 Workflow = resourceRequest.Workflow,
                 PullRequest = resourceRequest.PullRequest
@@ -55,12 +57,18 @@ public static class ResourcesEndpoint
             : TypedResults.NotFound();
     }
 
-    private static async Task<Ok<List<ResourceRequestRecord>>> FindResourceRequests(
+    private static async Task<Ok<IEnumerable<ResourceRequestResponse>>> FindResourceRequests(
         [FromServices] IResourceRequestService resourceRequestService,
         [AsParameters] ResourceRequestMatcher matcher,
         CancellationToken ct)
     {
         var matches = await resourceRequestService.Find(matcher, ct);
-        return TypedResults.Ok(matches);
+        return TypedResults.Ok(matches.Select(resourceRequest => new ResourceRequestResponse
+        {
+            Status = resourceRequest.Status,
+            PullRequest = resourceRequest.PullRequest,
+            Workflow = resourceRequest.Workflow,
+            RequestedAt = resourceRequest.RequestedAt,
+        }));
     }
 }
