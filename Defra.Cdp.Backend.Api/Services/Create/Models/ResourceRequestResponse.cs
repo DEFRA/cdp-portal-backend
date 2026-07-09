@@ -12,4 +12,8 @@ public record ResourceRequestResponse
 
     [JsonPropertyName("pullRequest")]
     public ResourceRequestPullRequest? PullRequest { get; init; }
+    
+    [JsonPropertyName("status")]
+    public required string Status { get; init; }
+
 }

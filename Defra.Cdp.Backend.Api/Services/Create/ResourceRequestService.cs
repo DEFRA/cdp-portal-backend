@@ -7,10 +7,10 @@ namespace Defra.Cdp.Backend.Api.Services.Create;
 
 public static class PrStatus
 {
-    public static string Pending { get; } = "pending";
-    public static string Requested { get; } = "requested";
-    public static string Merged { get; } = "merged";
-    public static string Closed { get; } = "closed";
+    public const string Pending = "pending";
+    public const string Requested = "requested";
+    public const string Merged = "merged";
+    public const string Closed = "closed";
 
 }
 
