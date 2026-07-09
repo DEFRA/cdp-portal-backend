@@ -8,6 +8,7 @@ namespace Defra.Cdp.Backend.Api.Services.Entities;
 
 public record EntityMatcher(
     string? Name = null,
+    string[]? Names = null,
     string? PartialName = null,
     string[]? TeamIds = null,
     string? Environment = null,
@@ -29,6 +30,10 @@ public record EntityMatcher(
         else if (PartialName != null)
         {
             filter &= builder.Regex(t => t.Name, new BsonRegularExpression(PartialName, "i"));
+        } 
+        else if (Names != null)
+        {
+            filter &= builder.In(t => t.Name, Names);
         }
 
         if (TeamIds is { Length: > 0 })

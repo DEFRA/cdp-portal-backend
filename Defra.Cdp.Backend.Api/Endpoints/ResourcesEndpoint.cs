@@ -1,6 +1,8 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
+using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -31,12 +33,7 @@ public static class ResourcesEndpoint
         }
         var user = UserDetailsFrom(httpContext.User);
         var resourceRequest = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
-        return TypedResults.Ok(new ResourceRequestResponse
-        {
-            Status = resourceRequest.Status,
-            RequestedAt = resourceRequest.RequestedAt,
-            Workflow = resourceRequest.Workflow
-        });
+        return TypedResults.Ok(ResourceRequestResponse.FromRequest(resourceRequest));
     }
 
     private static async Task<Results<NotFound, Ok<ResourceRequestResponse>>> GetResourceRequest(
@@ -47,28 +44,26 @@ public static class ResourcesEndpoint
         var resourceRequest = await resourceRequestService.FindByWorkflowId(workflowRunId, ct);
 
         return resourceRequest is not null
-            ? TypedResults.Ok(new ResourceRequestResponse
-            {
-                Status = resourceRequest.Status,
-                RequestedAt = resourceRequest.RequestedAt,
-                Workflow = resourceRequest.Workflow,
-                PullRequest = resourceRequest.PullRequest
-            })
-            : TypedResults.NotFound();
+            ? TypedResults.Ok(ResourceRequestResponse.FromRequest(resourceRequest)) : TypedResults.NotFound();
     }
 
-    private static async Task<Ok<IEnumerable<ResourceRequestResponse>>> FindResourceRequests(
+    private static async Task<Results<BadRequest<ApiError>, Ok<IEnumerable<ResourceRequestResponse>>>> FindResourceRequests(
         [FromServices] IResourceRequestService resourceRequestService,
-        [AsParameters] ResourceRequestMatcher matcher,
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IUsersService usersService,
+        [AsParameters] ResourceRequestMatcher searchParams,
+        [FromQuery(Name = "teamIds")] string[]? teamsIds,
+        HttpContext httpContext,
         CancellationToken ct)
     {
-        var matches = await resourceRequestService.Find(matcher, ct);
-        return TypedResults.Ok(matches.Select(resourceRequest => new ResourceRequestResponse
+        var matcher = searchParams;
+        if (teamsIds is {Length: > 0})
         {
-            Status = resourceRequest.Status,
-            PullRequest = resourceRequest.PullRequest,
-            Workflow = resourceRequest.Workflow,
-            RequestedAt = resourceRequest.RequestedAt,
-        }));
+            var names = await entitiesService.GetEntityIds(new EntityMatcher { TeamIds = teamsIds }, ct);
+            matcher = matcher with { Name = names.ToArray() };
+        }
+        
+        var matches = await resourceRequestService.Find(matcher, ct);
+        return TypedResults.Ok(matches.Select(ResourceRequestResponse.FromRequest));
     }
 }

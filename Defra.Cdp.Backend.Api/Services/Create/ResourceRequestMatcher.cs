@@ -5,7 +5,8 @@ namespace Defra.Cdp.Backend.Api.Services.Create;
 
 public record ResourceRequestMatcher(
     string[]? Name,
-    string[]? Status
+    string[]? Status,
+    string? UserId
 )
 {
     public FilterDefinition<ResourceRequestRecord> Match()
@@ -22,6 +23,11 @@ public record ResourceRequestMatcher(
         if (Status is { Length: > 0 })
         {
             filter &= builder.In(r => r.Status, Status);
+        }
+
+        if (UserId != null)
+        {
+            filter &= builder.Eq(r => r.RequestedBy!.Id, UserId);
         }
         
         return filter;
