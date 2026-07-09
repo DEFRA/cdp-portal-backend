@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -13,9 +14,10 @@ public class ResourceRequestRecord
     [BsonIgnoreIfDefault]
     public ObjectId? Id { get; init; }
 
-    public string Status { get; init; } = "pending";
+    public string Status { get; init; } = PrStatus.Pending;
     public string EntityName { get; init; } = "";
     public List<string> Entities { get; init; } = [];
+    public List<Team> Teams { get; init; } = [];
     
     public UserDetails? RequestedBy { get; init; }
     public DateTime RequestedAt { get; init; }

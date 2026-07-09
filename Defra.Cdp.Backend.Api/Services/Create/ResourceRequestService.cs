@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
@@ -18,6 +19,7 @@ public interface IResourceRequestService
 {
     Task<ResourceRequestRecord> RecordRequest(
         List<string> entityNames,
+        List<Team> teamIds,
         UserDetails? requestedBy,
         CreateTenantResourceRequest resources,
         GenericCdpWorkflowInputs inputs,
@@ -58,6 +60,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
 
     public async Task<ResourceRequestRecord> RecordRequest(
         List<string> entityNames,
+        List<Team> teamIds,
         UserDetails? requestedBy,
         CreateTenantResourceRequest resources,
         GenericCdpWorkflowInputs inputs,
@@ -68,6 +71,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
         {
             Status = PrStatus.Pending,
             EntityName = entityNames.FirstOrDefault(""),
+            Teams = teamIds,
             Entities = entityNames,
             RequestedBy = requestedBy,
             RequestedAt = DateTime.UtcNow,

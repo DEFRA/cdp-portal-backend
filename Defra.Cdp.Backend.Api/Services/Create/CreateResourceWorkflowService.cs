@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
+using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
@@ -15,6 +16,7 @@ public interface ICreateResourceWorkflowService
 public class CreateResourceWorkflowService(IHttpClientFactory clientFactory, 
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     IResourceRequestService resourceRequestService,
+    IEntitiesService entitiesService,
     IConfiguration configuration, 
     ILogger<CreateResourceWorkflowService> logger) : ICreateResourceWorkflowService
 {
@@ -34,7 +36,11 @@ public class CreateResourceWorkflowService(IHttpClientFactory clientFactory,
         
         var response = await TriggerWorkflow(inputs, cancellationToken);
         var names = request.GetServices();
-        return await resourceRequestService.RecordRequest(names, user, request, inputs, response, cancellationToken);
+
+        var entities = await entitiesService.GetEntities(new EntityMatcher { Names = names.ToArray() },  new EntitySearchOptions { Summary = true}, cancellationToken);
+        var teams = entities.SelectMany(e => e.Teams).DistinctBy(t=>t.TeamId).ToList();
+        
+        return await resourceRequestService.RecordRequest(names, teams!, user, request, inputs, response, cancellationToken);
     }
     
     public async Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken)

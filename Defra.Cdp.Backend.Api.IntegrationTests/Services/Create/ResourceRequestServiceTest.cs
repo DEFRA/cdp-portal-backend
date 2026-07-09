@@ -2,6 +2,7 @@ using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 
@@ -11,6 +12,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 {
     private static readonly UserDetails TestUser = new() { Id = "user-123", DisplayName = "Test User" };
 
+    private readonly Team Team = new Team { Name = "Foo", TeamId = "foo" };
+    
     private static readonly GitHubTriggerWorkflowResponse TestWorkflow = new()
     {
         WorkflowRunId = 25552427454L,
@@ -37,7 +40,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
 
         var before = DateTime.UtcNow;
-        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
         var after = DateTime.UtcNow;
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
@@ -81,7 +84,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             ]
         };
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest(["multi-svc"], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["multi-svc"], [Team], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
@@ -109,7 +112,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             ]
         };
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest(resources.GetServices(), TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
@@ -136,7 +139,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         ] };
         
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest(["anon-svc"], null, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["anon-svc"], [Team], null, request, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
@@ -167,7 +170,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
 
         var updated = await service.AttachPullRequest(
             "run-123",
@@ -213,7 +216,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
 
         var updated = await service.AttachPullRequest(
             "other-run",
@@ -254,7 +257,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
 
         var updated = await service.AttachPullRequest(
             "run-123",
