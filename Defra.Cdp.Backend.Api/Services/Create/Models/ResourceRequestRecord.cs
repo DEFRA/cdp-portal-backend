@@ -13,7 +13,10 @@ public class ResourceRequestRecord
     [BsonIgnoreIfDefault]
     public ObjectId? Id { get; init; }
 
+    public string Status { get; init; } = "pending";
     public string EntityName { get; init; } = "";
+    public List<string> Entities { get; init; } = [];
+    
     public UserDetails? RequestedBy { get; init; }
     public DateTime RequestedAt { get; init; }
     public CreateTenantResourceRequest? Resources { get; init; }

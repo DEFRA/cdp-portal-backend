@@ -37,7 +37,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
 
         var before = DateTime.UtcNow;
-        await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
         var after = DateTime.UtcNow;
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
@@ -60,6 +60,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.Equal("my-test-bucket",resources.S3Buckets[0].Name);
         Assert.False(resources.S3Buckets[0].Versioning);
         Assert.Equal("dev", resources.S3Buckets[0].Environments);
+        Assert.Equal(PrStatus.Pending, record.Status);
 
         Assert.NotNull(record.Workflow);
         Assert.Equal(TestWorkflow, record.Workflow);
@@ -80,7 +81,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             ]
         };
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest("multi-svc", TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["multi-svc"], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
@@ -91,6 +92,32 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.Equal(1, await collection.CountDocumentsAsync(
             Builders<ResourceRequestRecord>.Filter.Empty,
             cancellationToken: TestContext.Current.CancellationToken));
+    }
+    
+    [Fact]
+    public async Task Should_persist_all_services_in_request()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+
+        var resources = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket { Service = "foo-frontend", Name = "bucket-one", Environments = "dev" },
+                new CreateTenantS3Bucket { Service = "foo-backend", Name = "bucket-two", Environments = "dev" }
+            ]
+        };
+        var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
+        await service.RecordRequest(resources.GetServices(), TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
+
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var record = await collection
+            .Find(Builders<ResourceRequestRecord>.Filter.Empty)
+            .FirstAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, record.Resources?.S3Buckets.Count);
+        Assert.Equivalent(new List<string> {"foo-frontend", "foo-backend"}, record.Entities);
     }
 
     [Fact]
@@ -109,7 +136,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         ] };
         
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest("anon-svc", null, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["anon-svc"], null, request, inputs, TestWorkflow, CancellationToken.None);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
         var record = await collection
@@ -140,7 +167,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
 
         var updated = await service.AttachPullRequest(
             "run-123",
@@ -163,6 +190,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.NotNull(record.PullRequest);
         Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/pull/42", record.PullRequest.Url);
         Assert.Equal(42, record.PullRequest.Number);
+        Assert.Equal(PrStatus.Requested, record.Status);
     }
 
     [Fact]
@@ -185,7 +213,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest("foo-backend", TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
 
         var updated = await service.AttachPullRequest(
             "other-run",
@@ -204,5 +232,50 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             .FirstAsync(TestContext.Current.CancellationToken);
 
         Assert.Null(record.PullRequest);
+    }
+    
+    [Fact]
+    public async Task Should_update_pr_status()
+    {
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+
+        var request = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-backend",
+                    Name = "my-test-bucket",
+                    Environments = "dev"
+                }
+            ]
+        };
+
+        var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
+        await service.RecordRequest(["foo-backend"], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+
+        var updated = await service.AttachPullRequest(
+            "run-123",
+            new ResourceRequestPullRequest
+            {
+                Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
+                Number = 42
+            },
+            CancellationToken.None);
+
+        Assert.NotNull(updated?.PullRequest);
+        
+        var merged =
+            await service.UpdatePullRequestStatus(updated.PullRequest.Number, PrStatus.Merged, CancellationToken.None);
+        
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var record = await collection
+            .Find(Builders<ResourceRequestRecord>.Filter.Empty)
+            .FirstAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(record.PullRequest);
+        Assert.Equal(PrStatus.Merged, record.Status);
     }
 }

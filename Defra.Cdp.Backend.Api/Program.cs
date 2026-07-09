@@ -220,6 +220,8 @@ builder.Services.AddSingleton<IGithubWorkflowEventHandler, AppConfigVersionsServ
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, TeamsEventHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, UsersEventHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrEventHandler>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrClosedHandler>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrMergedHandler>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();

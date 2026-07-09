@@ -33,8 +33,8 @@ public class CreateResourceWorkflowService(IHttpClientFactory clientFactory,
         var inputs = request.ToWorkflowInputs(runId, branch, title);
         
         var response = await TriggerWorkflow(inputs, cancellationToken);
-        var name = request.GetServices().FirstOrDefault("no service");
-        return await resourceRequestService.RecordRequest(name, user, request, inputs, response, cancellationToken);
+        var names = request.GetServices();
+        return await resourceRequestService.RecordRequest(names, user, request, inputs, response, cancellationToken);
     }
     
     public async Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow(GenericCdpWorkflowInputs inputs, CancellationToken cancellationToken)

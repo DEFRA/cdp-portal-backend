@@ -13,6 +13,7 @@ public static class ResourcesEndpoint
     public static void MapResourcesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/resources/requests", CreateResourceRequest).RequireAuthorization(AuthPolicies.IsTenant);
+        app.MapGet("/resources/requests", FindResourceRequests);
         app.MapGet("/resources/requests/{workflowRunId}", GetResourceRequest);
     }
 
@@ -52,5 +53,14 @@ public static class ResourcesEndpoint
                 PullRequest = resourceRequest.PullRequest
             })
             : TypedResults.NotFound();
+    }
+
+    private static async Task<Ok<List<ResourceRequestRecord>>> FindResourceRequests(
+        [FromServices] IResourceRequestService resourceRequestService,
+        [AsParameters] ResourceRequestMatcher matcher,
+        CancellationToken ct)
+    {
+        var matches = await resourceRequestService.Find(matcher, ct);
+        return TypedResults.Ok(matches);
     }
 }
