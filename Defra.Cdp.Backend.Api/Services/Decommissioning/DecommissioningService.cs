@@ -1,3 +1,4 @@
+using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
@@ -14,43 +15,63 @@ public sealed class DecommissioningService(
     IDeploymentsService deploymentsService,
     ISelfServiceOpsClient selfServiceOpsClient,
     IAutoTestRunTriggerService autoTestRunTriggerService,
-    IAutoDeploymentTriggerService autoDeploymentTriggerService
+    IAutoDeploymentTriggerService autoDeploymentTriggerService,
+    IMongoLock mongoLock
 ) : IJob
 {
     private readonly ILogger<DecommissioningService> _logger = loggerFactory.CreateLogger<DecommissioningService>();
+    private const string MongoLockName = "DecomissionServiceLock";
+
 
     public async Task Execute(IJobExecutionContext context)
     {
         try
         {
-            var pendingEntities = await entitiesService.EntitiesPendingDecommission(context.CancellationToken);
-            foreach (var entity in pendingEntities)
+            var acquiredLock = await mongoLock.Lock(MongoLockName, TimeSpan.FromSeconds(60), context.CancellationToken);
+            if (!acquiredLock)
             {
-                _logger.LogInformation("Decommissioning entity {EntityName} in status {Status}", entity.Name,
-                    entity.Status);
-                var deployments =
-                    await deploymentsService.RunningDeploymentsForService(entity.Name, context.CancellationToken);
-                if (deployments.Count > 0 && deployments.Any(d => d.Status != DeploymentStatus.Undeployed))
-                {
-                    _logger.LogWarning("Entity {EntityName} has running deployments, will try next time...",
-                        entity.Name);
-                    continue;
-                }
+                return;
+            }
 
-                if (entity.Decommissioned is not { WorkflowsTriggered: true })
+            try
+            {
+                var pendingEntities = await entitiesService.EntitiesPendingDecommission(context.CancellationToken);
+                foreach (var entity in pendingEntities)
                 {
-                    await selfServiceOpsClient.TriggerDecommissionWorkflow(entity.Name, context.CancellationToken);
-                    await entitiesService.DecommissioningWorkflowTriggered(entity.Name, context.CancellationToken);
-                    await autoTestRunTriggerService.DecommissioningWorkflowTriggered(entity.Name,
-                        context.CancellationToken);
-                    await autoDeploymentTriggerService.DecommissioningWorkflowTriggered(entity.Name,
-                        context.CancellationToken);
+                    _logger.LogInformation("Decommissioning entity {EntityName} in status {Status}", entity.Name,
+                        entity.Status);
+                    var deployments =
+                        await deploymentsService.RunningDeploymentsForService(entity.Name,
+                            context.CancellationToken);
+                    if (deployments.Count > 0 && deployments.Any(d => d.Status != DeploymentStatus.Undeployed))
+                    {
+                        _logger.LogWarning("Entity {EntityName} has running deployments, will try next time...",
+                            entity.Name);
+                        continue;
+                    }
+
+                    if (entity.Decommissioned is not { WorkflowsTriggered: true })
+                    {
+                        await selfServiceOpsClient.TriggerDecommissionWorkflow(entity.Name,
+                            context.CancellationToken);
+                        await entitiesService.DecommissioningWorkflowTriggered(entity.Name,
+                            context.CancellationToken);
+                        await autoTestRunTriggerService.DecommissioningWorkflowTriggered(entity.Name,
+                            context.CancellationToken);
+                        await autoDeploymentTriggerService.DecommissioningWorkflowTriggered(entity.Name,
+                            context.CancellationToken);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Entity {EntityName} has resources that are not ready for decommissioning.",
+                            entity.Name);
+                    }
                 }
-                else
-                {
-                    _logger.LogWarning("Entity {EntityName} has resources that are not ready for decommissioning.",
-                        entity.Name);
-                }
+            }
+            finally
+            {
+                await mongoLock.Unlock(MongoLockName, context.CancellationToken);
             }
         }
         catch (Exception ex)
