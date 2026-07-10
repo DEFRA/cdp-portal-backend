@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
+using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Create.Models;
 

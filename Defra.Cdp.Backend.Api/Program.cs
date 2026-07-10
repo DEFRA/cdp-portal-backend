@@ -17,9 +17,12 @@ using Defra.Cdp.Backend.Api.Services.EventHistory;
 using Defra.Cdp.Backend.Api.Services.FeatureToggles;
 using Defra.Cdp.Backend.Api.Services.Github;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
+using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Grafana;
+using Defra.Cdp.Backend.Api.Services.Grafana.Models;
+using Defra.Cdp.Backend.Api.Services.Grafana.Validators;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
@@ -136,6 +139,17 @@ if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleConfig)))
     });
 }
 
+if (!BsonClassMap.IsClassMapRegistered(typeof(PromotionResource)))
+{
+    BsonClassMap.RegisterClassMap<PromotionResource>(cm =>
+    {
+        cm.AutoMap();
+        cm.SetIsRootClass(true);
+        cm.AddKnownType(typeof(DashboardPromotionRequest));
+        cm.AddKnownType(typeof(AlertPromotionRequest));
+    });
+}
+
 // Mongo
 MongoClientSettings.Extensions.AddAWSAuthentication();
 builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
@@ -186,10 +200,12 @@ builder.Services.AddSingleton<IAppConfigsService, AppConfigsService>();
 builder.Services.AddSingleton<IAppConfigVersionsService, AppConfigVersionsService>();
 builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 builder.Services.AddSingleton<ITestSuiteDeployer, TestSuiteDeployer>();
-builder.Services.AddSingleton<ICreateResourceWorkflowService, CreateResourceWorkflowService>();
+builder.Services.AddSingleton<ITriggerWorkflowService, TriggerWorkflowService>();
 builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>();
 builder.Services.AddSingleton<ICreateResourceValidator, CreateResourceValidator>();
 builder.Services.AddSingleton<IEntityResourceService, EntityResourceService>();
+builder.Services.AddSingleton<IGrafanaPromotionRequestService, GrafanaPromotionRequestService>();
+builder.Services.AddSingleton<IGrafanaPromotionValidator, GrafanaPromotionValidator>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -332,6 +348,7 @@ app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
 app.MapResourcesEndpoint();
+app.MapGrafanaEndpoint();
 
 app.MapOpenApi();
 

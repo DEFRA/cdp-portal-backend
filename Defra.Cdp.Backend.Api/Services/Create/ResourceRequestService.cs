@@ -2,6 +2,7 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
@@ -41,7 +42,7 @@ public interface IResourceRequestService
 public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
     : MongoService<ResourceRequestRecord>(connectionFactory, CollectionName, loggerFactory), IResourceRequestService
 {
-    public const string CollectionName = "resourceRequests";
+    private const string CollectionName = "resourceRequests";
 
     protected override List<CreateIndexModel<ResourceRequestRecord>> DefineIndexes(
         IndexKeysDefinitionBuilder<ResourceRequestRecord> builder)
