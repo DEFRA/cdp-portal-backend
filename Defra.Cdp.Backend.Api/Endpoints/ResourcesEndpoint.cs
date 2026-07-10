@@ -2,6 +2,7 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -12,6 +13,9 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class ResourcesEndpoint
 {
+    private const string Repo = "cdp-tenant-config";
+    private const string GenericCliWorkflow = "generic-cdp-cli-workflow.yml";
+    
     public static void MapResourcesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/resources/requests", CreateResourceRequest).RequireAuthorization(AuthPolicies.IsTenant);
@@ -21,7 +25,9 @@ public static class ResourcesEndpoint
 
     private static async Task<Results<BadRequest<ApiError>, Ok<ResourceRequestResponse>>> CreateResourceRequest(
         [FromBody] CreateTenantResourceRequest request,
-        [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
+        [FromServices] ITriggerWorkflowService triggerWorkflowService,
+        [FromServices] IResourceRequestService resourceRequestService,
+        [FromServices] IEntitiesService entitiesService,
         [FromServices] ICreateResourceValidator validator,
         HttpContext httpContext,
         CancellationToken cancellationToken)
@@ -32,7 +38,21 @@ public static class ResourcesEndpoint
             return TypedResults.BadRequest(new ApiError("Invalid request", errors));
         }
         var user = UserDetailsFrom(httpContext.User);
-        var resourceRequest = await createResourceWorkflowService.CreateResources(request, user!, cancellationToken);
+        
+        var runId = Guid.NewGuid().ToString();
+        var branch = $"tenant-request-{runId}";
+        var title = $"Tenant resource request from {user?.DisplayName ?? "unknown user"}";
+        var inputs = request.ToWorkflowInputs(runId, branch, title);
+        
+        var response = await triggerWorkflowService.TriggerWorkflow(Repo, GenericCliWorkflow, inputs, cancellationToken);
+        
+        var names = request.GetServices();
+        
+        var entities = await entitiesService.GetEntities(new EntityMatcher { Names = names.ToArray() },  new EntitySearchOptions { Summary = true}, cancellationToken);
+        var teams = entities.SelectMany(e => e.Teams).DistinctBy(t=>t.TeamId).ToList();
+        
+        var resourceRequest = await resourceRequestService.RecordRequest(names, teams!, user, request, inputs, response, cancellationToken);
+        
         return TypedResults.Ok(ResourceRequestResponse.FromRequest(resourceRequest));
     }
 

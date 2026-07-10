@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Defra.Cdp.Backend.Api.Services.Create.Models;
+namespace Defra.Cdp.Backend.Api.Services.Github.Workflows;
 
 public record GitHubTriggerWorkflowResponse
 {

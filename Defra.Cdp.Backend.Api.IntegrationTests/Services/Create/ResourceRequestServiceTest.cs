@@ -3,6 +3,7 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 
@@ -11,6 +12,7 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Create;
 public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
     private static readonly UserDetails TestUser = new() { Id = "user-123", DisplayName = "Test User" };
+    private const string CollectionName = "resourceRequests";
 
     private readonly Team Team = new Team { Name = "Foo", TeamId = "foo" };
     
@@ -43,7 +45,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
         var after = DateTime.UtcNow;
 
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var records = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .ToListAsync(TestContext.Current.CancellationToken);
@@ -86,7 +88,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
         await service.RecordRequest(["multi-svc"], [Team], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
 
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
@@ -114,7 +116,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
         await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
 
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
@@ -141,7 +143,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
         await service.RecordRequest(["anon-svc"], [Team], null, request, inputs, TestWorkflow, CancellationToken.None);
 
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
@@ -185,7 +187,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/pull/42", updated.PullRequest?.Url);
         Assert.Equal(42, updated.PullRequest?.Number);
 
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
@@ -229,7 +231,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         Assert.Null(updated);
 
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
@@ -273,7 +275,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var merged =
             await service.UpdatePullRequestStatus(updated.PullRequest.Number, PrStatus.Merged, CancellationToken.None);
         
-        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(ResourceRequestService.CollectionName);
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
             .Find(Builders<ResourceRequestRecord>.Filter.Empty)
             .FirstAsync(TestContext.Current.CancellationToken);
