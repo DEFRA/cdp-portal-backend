@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 
@@ -11,6 +12,7 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Shuttering;
 
 public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
+    private static IConfiguration EmptyConfig() => new ConfigurationBuilder().Build();
 
     [Fact]
     public async Task TestShutteringStatus()
@@ -18,7 +20,7 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var connectionFactory = CreateMongoDbClientFactory();
         var entityService = new EntitiesService(connectionFactory, new NullLoggerFactory());
         var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
-        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, new NullLoggerFactory());
+        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, EmptyConfig(), new NullLoggerFactory());
         var ct = TestContext.Current.CancellationToken;
 
         await entityService.Create(_entity, ct);
@@ -44,7 +46,7 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var entitiesCollection = connectionFactory.GetCollection<Entity>("entities");
         var entityService = new EntitiesService(connectionFactory, new NullLoggerFactory());
         var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
-        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, new NullLoggerFactory());
+        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, EmptyConfig(), new NullLoggerFactory());
         var ct = TestContext.Current.CancellationToken;
 
         await entityService.Create(_entity, ct);

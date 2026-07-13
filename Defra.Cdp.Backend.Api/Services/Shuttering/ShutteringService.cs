@@ -17,11 +17,19 @@ public class ShutteringService(
     IMongoDbClientFactory connectionFactory,
     IEntitiesService entitiesService,
     IShutteringArchiveService shutteringArchiveService,
+    IConfiguration configuration,
     ILoggerFactory loggerFactory)
     : MongoService<ShutteringRecord>(connectionFactory,
         CollectionName, loggerFactory), IShutteringService
 {
     private const string CollectionName = "shutteringrecords";
+
+    private readonly ILogger<ShutteringService> _logger = loggerFactory.CreateLogger<ShutteringService>();
+
+    private readonly HashSet<string> _shutterV2Environments =
+        (configuration.GetValue<string>("ShutterV2Environments") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     public async Task Register(ShutteringRecord shutteringRecord, CancellationToken cancellationToken)
     {
@@ -57,7 +65,7 @@ public class ShutteringService(
 
                 var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered);
                 var urlType = UrlToWafUrlType(url, envConfig);
-                var waf = UrlToWaf(url, envConfig);
+                var waf = ResolveWaf(env, url, envConfig, urlData);
                 
                 output.Add(new ShutteringUrlState
                 {
@@ -97,16 +105,38 @@ public class ShutteringService(
             (false, false) => Models.ShutteringStatus.Active
         };
     }
-    
+
     /// <summary>
+    /// Resolves the WAF ACL for a URL: stored value for shutter-v2 environments, legacy heuristic otherwise.
+    /// Logs a warning if a shutter-v2 environment is missing the stored value.
+    /// </summary>
+    private string? ResolveWaf(string env, string url, CdpTenant envConfig, TenantUrl urlData)
+    {
+        if (!_shutterV2Environments.Contains(env))
+        {
+            return LegacyUrlToWaf(url, envConfig);
+        }
+
+        if (urlData.WafWebAcl == null)
+        {
+            _logger.LogWarning(
+                "Missing waf_web_acl for shutter-v2 environment {Environment}, url {Url}. " +
+                "Platform state may not have been republished since this URL was added, or cdp-tf-waf " +
+                "isn't tracking it yet.", env, url);
+        }
+
+        return urlData.WafWebAcl;
+    }
+
+    /// <summary>
+    /// Computes the WAF ACL category from tenant config. Used only for environments not yet on shutter v2.
     /// See: https://github.com/DEFRA/cdp-platform-documentation/blob/main/infrastructure/shuttering.md
-    /// This will only be needed in the short-term. Shuttering is going to be reworked so we dont need
-    /// to explicitly pass the WAF as a parameter.
+    /// Remove once shutter v2 has fully rolled out.
     /// </summary>
     /// <param name="url"></param>
     /// <param name="envConfig"></param>
     /// <returns></returns>
-    public static string UrlToWaf(string url, CdpTenant envConfig)
+    public static string LegacyUrlToWaf(string url, CdpTenant envConfig)
     {
         var isPublic = envConfig.TenantConfig?.Zone == "public";
         var isNginx = envConfig.Nginx?.Servers.ContainsKey(url);

@@ -598,11 +598,14 @@ public class TenantUrl
     [property: JsonPropertyName("ingress_type")]
     public string? IngressType { get; set; }
 
+    [property: JsonPropertyName("waf_web_acl")]
+    public string? WafWebAcl { get; set; }
+
 }
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "1acfca3bd12d19991e9006131ba448129b50b4fe25e932911a130b1c687906ac";
+    public static readonly string Version = "35e85d5662d5b62def16a18ae05cafbdcb9cd0a375e01a6709deeacb61f71762";
 }
 
 
