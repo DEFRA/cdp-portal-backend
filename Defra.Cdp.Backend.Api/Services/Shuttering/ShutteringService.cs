@@ -2,6 +2,7 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
+using Defra.Cdp.Backend.Api.Services.Notifications;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Shuttering;
@@ -17,6 +18,7 @@ public class ShutteringService(
     IMongoDbClientFactory connectionFactory,
     IEntitiesService entitiesService,
     IShutteringArchiveService shutteringArchiveService,
+    INotificationDispatcher notificationDispatcher,
     IConfiguration configuration,
     ILoggerFactory loggerFactory)
     : MongoService<ShutteringRecord>(connectionFactory,
@@ -45,6 +47,7 @@ public class ShutteringService(
             cancellationToken);
 
         await shutteringArchiveService.Archive(shutteringRecord, cancellationToken);
+        await notificationDispatcher.Dispatch(MapToEvent(shutteringRecord), cancellationToken);
     }
 
     public async Task<List<ShutteringUrlState>> ShutteringStatesForService(string name,
@@ -174,5 +177,27 @@ public class ShutteringService(
         var service = new CreateIndexModel<ShutteringRecord>(builder.Descending(s => s.ServiceName)
         );
         return [service];
+    }
+
+    private static INotificationEvent MapToEvent(ShutteringRecord shutteringRecord)
+    {
+        if (shutteringRecord.Shuttered)
+        {
+            return new ShutteredEvent
+            {
+                Entity = shutteringRecord.ServiceName,
+                Environment = shutteringRecord.Environment,
+                Url = shutteringRecord.Url,
+                ActionedByDisplayName = shutteringRecord.ActionedBy.DisplayName
+            };
+        }
+
+        return new UnshutteredEvent
+        {
+            Entity = shutteringRecord.ServiceName,
+            Environment = shutteringRecord.Environment,
+            Url = shutteringRecord.Url,
+            ActionedByDisplayName = shutteringRecord.ActionedBy.DisplayName
+        };
     }
 }
