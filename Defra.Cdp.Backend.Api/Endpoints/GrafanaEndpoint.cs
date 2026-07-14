@@ -17,8 +17,7 @@ public static class GrafanaEndpoint
     
     public static void MapGrafanaEndpoint(this IEndpointRouteBuilder app)
     {
-        // temporarily turn off auth for testing
-        app.MapPost("/grafana/promotions", GrafanaPromotionRequest); //.RequireAuthorization(AuthPolicies.IsTenant);
+        app.MapPost("/grafana/promotions", GrafanaPromotionRequest).RequireAuthorization(AuthPolicies.IsTenant);
     }
     
     private static async Task<Results<BadRequest<ApiError>, Ok>> GrafanaPromotionRequest(

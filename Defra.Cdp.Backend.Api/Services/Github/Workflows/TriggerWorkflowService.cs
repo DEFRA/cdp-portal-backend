@@ -28,8 +28,7 @@ public class TriggerWorkflowService(
         var payload = new { @ref = "main", inputs = inputs };
 
         var jsonPayload = JsonSerializer.Serialize(payload);
-
-        Console.WriteLine(jsonPayload);
+        
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         var token = await githubCredentialAndConnectionFactory.GetToken(cancellationToken);
 
