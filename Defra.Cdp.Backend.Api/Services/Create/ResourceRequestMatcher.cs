@@ -5,6 +5,7 @@ namespace Defra.Cdp.Backend.Api.Services.Create;
 
 public record ResourceRequestMatcher(
     string[]? Name,
+    string[]? TeamIds,
     string[]? Status,
     string? UserId
 )
@@ -15,12 +16,17 @@ public record ResourceRequestMatcher(
         var filter = builder.Empty;
 
         
-        if (Name is { Length: > 0 })
+        if (Name != null)
         {
             filter &= builder.AnyIn(r => r.Entities, Name);
         }
         
-        if (Status is { Length: > 0 })
+        if (TeamIds != null)
+        {
+            filter &= builder.AnyIn(new StringFieldDefinition<ResourceRequestRecord>("teams.teamId"), TeamIds);
+        }
+        
+        if (Status != null)
         {
             filter &= builder.In(r => r.Status, Status);
         }

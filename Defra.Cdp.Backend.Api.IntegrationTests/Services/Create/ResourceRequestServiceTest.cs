@@ -15,6 +15,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     private const string CollectionName = "resourceRequests";
 
     private readonly Team Team = new Team { Name = "Foo", TeamId = "foo" };
+    private readonly Team TeamTwo = new Team { Name = "BAr", TeamId = "bar" };
     
     private static readonly GitHubTriggerWorkflowResponse TestWorkflow = new()
     {
@@ -26,6 +27,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_persist_resource_request_with_entity_user_and_workflow_link()
     {
+        var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -42,7 +44,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
 
         var before = DateTime.UtcNow;
-        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, ct);
         var after = DateTime.UtcNow;
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
@@ -74,6 +76,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_persist_multiple_resources_in_single_record()
     {
+        var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -86,7 +89,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             ]
         };
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest(["multi-svc"], [Team], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["multi-svc"], [Team], TestUser, resources, inputs, TestWorkflow, ct);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
@@ -102,6 +105,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_persist_all_services_in_request()
     {
+        var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -114,7 +118,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             ]
         };
         var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, ct);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
@@ -128,6 +132,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_persist_record_with_null_user_when_no_auth_token_provided()
     {
+        var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -141,7 +146,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         ] };
         
         var inputs = request.ToWorkflowInputs("123", "foo", "foo");
-        await service.RecordRequest(["anon-svc"], [Team], null, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["anon-svc"], [Team], null, request, inputs, TestWorkflow, ct);
 
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
@@ -155,6 +160,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_attach_pull_request_to_existing_request_by_runid_and_branch()
     {
+        var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -172,7 +178,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, ct);
 
         var updated = await service.AttachPullRequest(
             "run-123",
@@ -181,7 +187,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
                 Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
                 Number = 42
             },
-            CancellationToken.None);
+            ct);
 
         Assert.NotNull(updated);
         Assert.Equal("https://github.com/DEFRA/cdp-tenant-config/pull/42", updated.PullRequest?.Url);
@@ -201,6 +207,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_not_attach_pull_request_if_no_matching_request_exists()
     {
+        var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -218,7 +225,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, ct);
 
         var updated = await service.AttachPullRequest(
             "other-run",
@@ -227,7 +234,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
                 Url = "https://github.com/DEFRA/cdp-tenant-config/pull/43",
                 Number = 43
             },
-            CancellationToken.None);
+            ct);
 
         Assert.Null(updated);
 
@@ -242,6 +249,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     [Fact]
     public async Task Should_update_pr_status()
     {
+        var ct = TestContext.Current.CancellationToken;
+        
         var mongoFactory = CreateMongoDbClientFactory();
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
 
@@ -259,7 +268,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         };
 
         var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
-        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, CancellationToken.None);
+        await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, ct);
 
         var updated = await service.AttachPullRequest(
             "run-123",
@@ -268,12 +277,12 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
                 Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
                 Number = 42
             },
-            CancellationToken.None);
+            ct);
 
         Assert.NotNull(updated?.PullRequest);
         
         var merged =
-            await service.UpdatePullRequestStatus(updated.PullRequest.Number, PrStatus.Merged, CancellationToken.None);
+            await service.UpdatePullRequestStatus(updated.PullRequest.Number, PrStatus.Merged, ct);
         
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
@@ -282,5 +291,66 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         Assert.NotNull(record.PullRequest);
         Assert.Equal(PrStatus.Merged, record.Status);
+    }
+    
+    [Fact]
+    public async Task Should_search_using_matcher()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+
+        var request1 = new CreateTenantResourceRequest();
+        var inputs1 = request1.ToWorkflowInputs("run-1", "tenant-request-run-123", "PR title");
+        await service.RecordRequest(["foo-backend", "foo-frontend"], [Team], TestUser, request1, inputs1, TestWorkflow, ct);
+        
+        var request2 = new CreateTenantResourceRequest();
+        var inputs2 = request2.ToWorkflowInputs("run-2", "tenant-request-run-321", "PR title");
+        await service.RecordRequest(["bar-backend"], [Team, TeamTwo], TestUser, request2, inputs2,
+            TestWorkflow with { WorkflowRunId = 1243443 }, ct);
+    
+
+        var updated = await service.AttachPullRequest(
+            inputs1.RunId!,
+            new ResourceRequestPullRequest
+            {
+                Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
+                Number = 42
+            },
+            ct);
+
+        var matches = await service.Find(new ResourceRequestMatcher(["foo-backend"], null, null, null), ct);
+        Assert.Single(matches);
+
+        matches = await service.Find(new ResourceRequestMatcher(["foo-frontend"], null, null, null), ct);
+        Assert.Single(matches);
+        
+        matches = await service.Find(new ResourceRequestMatcher(["foo-frontend", "bar-backend"], null, null, null), ct);
+        Assert.Equal(2, matches.Count);
+        
+        matches = await service.Find(new ResourceRequestMatcher([], null, null, null), ct);
+        Assert.Empty(matches);
+
+        matches = await service.Find(new ResourceRequestMatcher(null, null, null, null), ct);
+        Assert.Equal(2, matches.Count);
+
+        matches = await service.Find(new ResourceRequestMatcher(null, null, ["requested"], null), ct);
+        Assert.Single(matches);
+        
+        matches = await service.Find(new ResourceRequestMatcher(null, null, ["pending"], null), ct);
+        Assert.Single(matches);
+        
+        matches = await service.Find(new ResourceRequestMatcher(null, null, null, TestUser.Id), ct);
+        Assert.Equal(2, matches.Count);
+        
+        matches = await service.Find(new ResourceRequestMatcher(null, [Team.TeamId!], null, TestUser.Id), ct);
+        Assert.Equal(2, matches.Count);
+        
+        matches = await service.Find(new ResourceRequestMatcher(null, [TeamTwo.TeamId!], null, TestUser.Id), ct);
+        Assert.Single(matches);
+
+        matches = await service.Find(new ResourceRequestMatcher(null, [], null, TestUser.Id), ct);
+        Assert.Empty(matches);
     }
 }

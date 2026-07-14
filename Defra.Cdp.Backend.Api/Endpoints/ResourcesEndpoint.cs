@@ -54,18 +54,10 @@ public static class ResourcesEndpoint
         [FromServices] IResourceRequestService resourceRequestService,
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IUsersService usersService,
-        [AsParameters] ResourceRequestMatcher searchParams,
-        [FromQuery(Name = "teamIds")] string[]? teamsIds,
+        [AsParameters] ResourceRequestMatcher matcher,
         HttpContext httpContext,
         CancellationToken ct)
     {
-        var matcher = searchParams;
-        if (teamsIds is {Length: > 0})
-        {
-            var names = await entitiesService.GetEntityIds(new EntityMatcher { TeamIds = teamsIds }, ct);
-            matcher = matcher with { Name = names.ToArray() };
-        }
-        
         var matches = await resourceRequestService.Find(matcher, ct);
         return TypedResults.Ok(matches.Select(ResourceRequestResponse.FromRequest));
     }
