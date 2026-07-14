@@ -326,9 +326,7 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
         [FromRoute] string name,
         [FromBody] CreateAdminResourceRequest request,
-        [FromServices] ITriggerWorkflowService triggerWorkflowService,
-        [FromServices] IResourceRequestService resourceRequestService,
-        [FromServices] IEntitiesService entitiesService,
+        [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -348,20 +346,7 @@ public static class EntitiesEndpoint
             
             var user = UserDetailsFrom(httpContext.User);
             
-            var runId = Guid.NewGuid().ToString();
-            var branch = $"tenant-request-{runId}";
-            var title = $"Tenant resource request from {user?.DisplayName ?? "unknown user"}";
-            var inputs = mappedRequest.ToWorkflowInputs(runId, branch, title);
-
-            
-            var response = await triggerWorkflowService.TriggerWorkflow("cdp-tenant-config", "generic-cdp-cli-workflow.yml", inputs, cancellationToken);
-        
-            var names = mappedRequest.GetServices();
-        
-            var entities = await entitiesService.GetEntities(new EntityMatcher { Names = names.ToArray() },  new EntitySearchOptions { Summary = true}, cancellationToken);
-            var teams = entities.SelectMany(e => e.Teams).DistinctBy(t=>t.TeamId).ToList();
-        
-            var resourceRequest = await resourceRequestService.RecordRequest(names, teams!, user, mappedRequest, inputs, response, cancellationToken);
+            var resourceRequest = await createResourceWorkflowService.CreateResources(mappedRequest, user, cancellationToken);
             
             return TypedResults.Ok(resourceRequest.Workflow);
         }
