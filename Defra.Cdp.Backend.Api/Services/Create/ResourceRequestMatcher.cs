@@ -16,17 +16,17 @@ public record ResourceRequestMatcher(
         var filter = builder.Empty;
 
         
-        if (Name != null)
+        if (Name is { Length: > 0 })
         {
             filter &= builder.AnyIn(r => r.Entities, Name);
         }
         
-        if (TeamIds != null)
+        if (TeamIds is { Length: > 0 })
         {
             filter &= builder.AnyIn(new StringFieldDefinition<ResourceRequestRecord>("teams.teamId"), TeamIds);
         }
         
-        if (Status != null)
+        if (Status is { Length: > 0 })
         {
             filter &= builder.In(r => r.Status, Status);
         }

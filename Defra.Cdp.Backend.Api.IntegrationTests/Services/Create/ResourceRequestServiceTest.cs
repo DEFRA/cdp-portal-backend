@@ -330,7 +330,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.Equal(2, matches.Count);
         
         matches = await service.Find(new ResourceRequestMatcher([], null, null, null), ct);
-        Assert.Empty(matches);
+        Assert.Equal(2, matches.Count);
 
         matches = await service.Find(new ResourceRequestMatcher(null, null, null, null), ct);
         Assert.Equal(2, matches.Count);
@@ -351,6 +351,6 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.Single(matches);
 
         matches = await service.Find(new ResourceRequestMatcher(null, [], null, TestUser.Id), ct);
-        Assert.Empty(matches);
+        Assert.Equal(2, matches.Count);;
     }
 }
