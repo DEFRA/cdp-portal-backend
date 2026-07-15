@@ -3,10 +3,12 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
+using Defra.Cdp.Backend.Api.Services.Notifications;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
+using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Shuttering;
 
@@ -20,7 +22,8 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var connectionFactory = CreateMongoDbClientFactory();
         var entityService = new EntitiesService(connectionFactory, new NullLoggerFactory());
         var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
-        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, EmptyConfig(), new NullLoggerFactory());
+        var notificationDispatcher = Substitute.For<INotificationDispatcher>();
+        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, notificationDispatcher, EmptyConfig(), new NullLoggerFactory());
         var ct = TestContext.Current.CancellationToken;
 
         await entityService.Create(_entity, ct);
@@ -37,6 +40,13 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
 
         var missingState = await shutteringService.ShutteringStatesForService(_entity.Name, "bar.com", ct);
         Assert.Null(missingState);
+
+        await notificationDispatcher.Received(1).Dispatch(
+            Arg.Is<ShutteredEvent>(e =>
+                e.Entity == _entity.Name &&
+                e.Environment == "prod" &&
+                e.Url == "foo.com"),
+            ct);
     }
 
     [Fact]
@@ -46,7 +56,8 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var entitiesCollection = connectionFactory.GetCollection<Entity>("entities");
         var entityService = new EntitiesService(connectionFactory, new NullLoggerFactory());
         var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
-        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, EmptyConfig(), new NullLoggerFactory());
+        var notificationDispatcher = Substitute.For<INotificationDispatcher>();
+        var shutteringService = new ShutteringService(connectionFactory, entityService, shutteringArchiveService, notificationDispatcher, EmptyConfig(), new NullLoggerFactory());
         var ct = TestContext.Current.CancellationToken;
 
         await entityService.Create(_entity, ct);
@@ -88,6 +99,9 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.Active, status.Status);
+
+        await notificationDispatcher.Received(1).Dispatch(Arg.Any<ShutteredEvent>(), ct);
+        await notificationDispatcher.Received(1).Dispatch(Arg.Any<UnshutteredEvent>(), ct);
     }
 
 

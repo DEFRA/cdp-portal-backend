@@ -9,6 +9,8 @@ public static class NotificationTypes
     public const string TestPassed = "testpassed";
     public const string DeploymentFailed = "deploymentfailed";
     public const string DeploymentSuccess = "deploymentsuccess";
+    public const string Shuttered = "shuttered";
+    public const string Unshuttered = "unshuttered";
     public const string TenantResourceRequested = "tenantresourcerequested";
 
     public static readonly string[] All =
@@ -17,6 +19,8 @@ public static class NotificationTypes
         TestFailed,
         DeploymentFailed,
         DeploymentSuccess,
+        Shuttered,
+        Unshuttered,
         TenantResourceRequested
     ];
 }
@@ -85,6 +89,34 @@ public class DeploymentSuccessEvent : INotificationEvent
     public SlackMessageBody SlackMessage()
     {
         return SlackMessageTemplates.DeploymentSuccessTemplate(this);
+    }
+}
+
+public class ShutteredEvent : INotificationEvent
+{
+    public string EventType => NotificationTypes.Shuttered;
+    public required string Entity { get; init; }
+    public required string? Environment { get; init; }
+    public required string Url { get; init; }
+    public string? ActionedByDisplayName { get; init; }
+
+    public SlackMessageBody SlackMessage()
+    {
+        return SlackMessageTemplates.ShutteredTemplate(this);
+    }
+}
+
+public class UnshutteredEvent : INotificationEvent
+{
+    public string EventType => NotificationTypes.Unshuttered;
+    public required string Entity { get; init; }
+    public required string? Environment { get; init; }
+    public required string Url { get; init; }
+    public string? ActionedByDisplayName { get; init; }
+
+    public SlackMessageBody SlackMessage()
+    {
+        return SlackMessageTemplates.UnshutteredTemplate(this);
     }
 }
 

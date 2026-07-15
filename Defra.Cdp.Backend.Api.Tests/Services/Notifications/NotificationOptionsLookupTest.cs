@@ -77,7 +77,9 @@ public class NotificationOptionsLookupTest
 
         Assert.Collection(options,
             option => AssertOption(option, NotificationTypes.DeploymentFailed, Prod, PerfTest, Dev, Test, Management),
-            option => AssertOption(option, NotificationTypes.DeploymentSuccess, Prod, PerfTest, Dev, Test, Management));
+            option => AssertOption(option, NotificationTypes.DeploymentSuccess, Prod, PerfTest, Dev, Test, Management),
+            option => AssertOption(option, NotificationTypes.Shuttered, Prod, PerfTest, Dev, Test, Management),
+            option => AssertOption(option, NotificationTypes.Unshuttered, Prod, PerfTest, Dev, Test, Management));
     }
 
     private static void AssertOption(NotificationOptions option, string eventType, params string[] environments)

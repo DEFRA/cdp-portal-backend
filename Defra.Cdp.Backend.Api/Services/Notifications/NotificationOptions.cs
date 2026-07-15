@@ -34,9 +34,18 @@ public static class NotificationOptionLookup
                     EventType = NotificationTypes.DeploymentSuccess,
                     Environments = entity.Environments.Keys.ToList()
                 });
-            
+
                 // Shuttering
-                // Todo: When we add shuttering, loop though the envs and check if they have any shutter-able urls.
+                options.Add(new NotificationOptions
+                {
+                    EventType = NotificationTypes.Shuttered,
+                    Environments = entity.Environments.Keys.ToList()
+                });
+                options.Add(new NotificationOptions
+                {
+                    EventType = NotificationTypes.Unshuttered,
+                    Environments = entity.Environments.Keys.ToList()
+                });
                 break;
             case Type.TestSuite:
                 var envs = entity.Environments.Keys.ToList();
