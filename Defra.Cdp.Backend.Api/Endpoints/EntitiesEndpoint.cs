@@ -2,22 +2,18 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
-using Defra.Cdp.Backend.Api.Services.Create;
-using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.Grafana;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
-using Defra.Cdp.Backend.Api.Utils.Auth;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Type = Defra.Cdp.Backend.Api.Services.Entities.Model.Type;
-using static Defra.Cdp.Backend.Api.Utils.Auth.UserDetailsExtractor;
+
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class EntitiesEndpoint
@@ -40,7 +36,6 @@ public static class EntitiesEndpoint
         app.MapPatch("/entities/{name}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
         app.MapGet("/entities/{name}/resources", GetEntityResources);
-        app.MapPost("/entities/{name}/resources", CreateResourceForEntity).RequireAuthorization(AuthPolicies.IsAdmin);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
         app.MapGet("/entities/{name}/diagnostics/playground", GetEntityPlaygroundDashboardsAndAlerts);
@@ -321,41 +316,7 @@ public static class EntitiesEndpoint
         }
         return TypedResults.Ok(environments);
     }
-    
-    [Obsolete("To be removed when we switch to create resources")]
-    private static async Task<Results<NotFound, BadRequest<ApiError>, Ok<GitHubTriggerWorkflowResponse>>> CreateResourceForEntity(
-        [FromRoute] string name,
-        [FromBody] CreateAdminResourceRequest request,
-        [FromServices] ICreateResourceWorkflowService createResourceWorkflowService,
-        HttpContext httpContext,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            // Converts the API call used in the original admin version to the new format used in the tenant resource requests
-            var mappedRequest = new CreateTenantResourceRequest
-            {
-                S3Buckets =
-                [
-                    new CreateTenantS3Bucket
-                    {
-                        Service = request.Service, Name = request.BucketName, Environments = request.Environment
-                    }
-                ]
-            };
-            
-            var user = UserDetailsFrom(httpContext.User);
-            
-            var resourceRequest = await createResourceWorkflowService.CreateResources(mappedRequest, user, cancellationToken);
-            
-            return TypedResults.Ok(resourceRequest.Workflow);
-        }
-        catch (Exception err)
-        {
-            return TypedResults.BadRequest(new ApiError($"Failed to create resource, Unsupported resource type: {err.Message}"));
-        }
-    }
-    
+
     private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
         [FromServices] IEntitiesService entitiesService,
         string name,
