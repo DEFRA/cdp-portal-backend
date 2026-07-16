@@ -13,7 +13,7 @@ public static class PrStatus
     public const string Requested = "requested";
     public const string Merged = "merged";
     public const string Closed = "closed";
-
+    public const string Failed = "failed";
 }
 
 public interface IResourceRequestService
@@ -29,12 +29,12 @@ public interface IResourceRequestService
 
     Task<ResourceRequestRecord?> AttachPullRequest(string runId, ResourceRequestPullRequest pullRequest,
         CancellationToken cancellationToken);
-    
+
     Task<ResourceRequestRecord?> UpdatePullRequestStatus(int prNumber, string status,
         CancellationToken cancellationToken);
 
     Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default);
-    
+
     Task<List<ResourceRequestRecord>> Find(ResourceRequestMatcher matcher, CancellationToken cancellationToken = default);
 }
 
@@ -76,6 +76,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
             Entities = entityNames,
             RequestedBy = requestedBy,
             RequestedAt = DateTime.UtcNow,
+            ModifiedAt = DateTime.UtcNow,
             Resources = resources,
             Inputs = inputs,
             Workflow = workflow
@@ -94,20 +95,24 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
 
         var update = Builders<ResourceRequestRecord>.Update
             .Set(record => record.PullRequest, pullRequest)
-            .Set(record => record.Status, PrStatus.Requested);
-        
+            .Set(record => record.Status, PrStatus.Requested)
+            .Set(record => record.ModifiedAt, DateTime.UtcNow);
+
         return await Collection.FindOneAndUpdateAsync(
             filter,
             update,
             new FindOneAndUpdateOptions<ResourceRequestRecord> { ReturnDocument = ReturnDocument.After },
             cancellationToken);
     }
-    
+
     public async Task<ResourceRequestRecord?> UpdatePullRequestStatus(int prNumber, string status,
         CancellationToken cancellationToken)
     {
         var filter = Builders<ResourceRequestRecord>.Filter.Eq(record => record.PullRequest!.Number, prNumber);
-        var update = Builders<ResourceRequestRecord>.Update.Set(record => record.Status, status);
+        var update = Builders<ResourceRequestRecord>.Update
+            .Set(record => record.Status, status)
+            .Set(record => record.ModifiedAt, DateTime.UtcNow);
+            
         return await Collection.FindOneAndUpdateAsync(
             filter,
             update,
