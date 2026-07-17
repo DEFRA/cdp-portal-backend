@@ -14,7 +14,7 @@ public record PlaygroundDashboard
     [JsonPropertyName("url")] public required string Url { get; init; }
     [JsonPropertyName("created")] public required string Created { get; init; }
     [JsonPropertyName("updated")] public required string Updated { get; init; }
-    [JsonPropertyName("promoted")] public required bool Promoted { get; init; } = false;
+    [JsonPropertyName("promoted")] public bool Promoted { get; init; } = false;
 }
 
 [BsonIgnoreExtraElements]
