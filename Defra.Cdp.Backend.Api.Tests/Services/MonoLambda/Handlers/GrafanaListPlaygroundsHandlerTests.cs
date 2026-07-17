@@ -25,7 +25,8 @@ public class GrafanaListPlaygroundsHandlerTests
                                    "version": 2,
                                    "url": "/d/d0d9cc1f-abef-44ca-be1a-ee503b737326/cdp-uploader-custom",
                                    "created": "2026-06-18T15:21:13Z",
-                                   "updated": "2026-06-18T15:27:02Z"
+                                   "updated": "2026-06-18T15:27:02Z",
+                                   "promoted": true
                                  },
                                  {
                                    "uid": "a5bb51c6-ead8-4263-bb6f-b2edb18f1b4c",
@@ -33,7 +34,8 @@ public class GrafanaListPlaygroundsHandlerTests
                                    "version": 1,
                                    "url": "/d/a5bb51c6-ead8-4263-bb6f-b2edb18f1b4c/cdp-uploader-custom",
                                    "created": "2026-06-05T07:45:10Z",
-                                   "updated": "2026-06-05T07:45:10Z"
+                                   "updated": "2026-06-05T07:45:10Z",
+                                   "promoted": false
                                  }
                                ],
                                "alerts": [
