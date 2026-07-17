@@ -4,5 +4,5 @@ public class TestRunnerOptions
 {
     public const string Prefix = "TestRunner";
     public string? SnapshotDashboard { get; set; }
-    public bool Enabled { get; set; } = true;
+    public bool SnapshotDashboardEnabled { get; set; } = true;
 }
