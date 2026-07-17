@@ -12,8 +12,8 @@ public record PlaygroundDashboard
     [JsonPropertyName("title")] public required string Title { get; init; }
     [JsonPropertyName("version")] public required int Version { get; init; }
     [JsonPropertyName("url")] public required string Url { get; init; }
-    [JsonPropertyName("created")] public required string Created { get; init; }
-    [JsonPropertyName("updated")] public required string Updated { get; init; }
+    [JsonPropertyName("created")] public required DateTime Created { get; init; }
+    [JsonPropertyName("updated")] public required DateTime Updated { get; init; }
     [JsonPropertyName("promoted")] public bool Promoted { get; init; } = false;
 }
 
