@@ -47,7 +47,7 @@ public static class ResourcesEndpoint
         var resourceRequest = await resourceRequestService.FindById(id, ct);
 
         return resourceRequest is not null
-            ? TypedResults.Ok(ResourceRequestResponse.FromRequest(resourceRequest)) : TypedResults.NotFound();
+            ? TypedResults.Ok(ResourceRequestResponse.FromRequestWithResources(resourceRequest)) : TypedResults.NotFound();
     }
 
     private static async Task<Results<BadRequest<ApiError>, Ok<IEnumerable<ResourceRequestResponse>>>> FindResourceRequests(
