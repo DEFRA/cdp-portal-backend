@@ -39,7 +39,7 @@ public class GrafanaPlaygroundService(IMongoDbClientFactory connectionFactory, I
     /// <param name="cancellationToken"></param>
     public async Task UpdatePlaygroundForService(GrafanaPlaygroundResources playgrounds, CancellationToken cancellationToken)
     {
-        await Collection.ReplaceOneAsync(f => f.Service == playgrounds.Service, playgrounds,
+        await Collection.ReplaceOneAsync(f => f.Service == playgrounds.Service, playgrounds with { Updated = DateTime.UtcNow} ,
             new ReplaceOptions { IsUpsert = true }, cancellationToken);
     }
 
@@ -62,18 +62,21 @@ public class GrafanaPlaygroundService(IMongoDbClientFactory connectionFactory, I
     /// <returns>Request ID for tracking response</returns>
     public async Task<string> RequestUpdateForService(string service, CancellationToken cancellationToken)
     {
+        var requestId = Guid.NewGuid().ToString();
         var triggerEvent = new MonoLambdaTriggerEvent<GrafanaListPlaygroundsTrigger>
         {
             EventType = "grafana_list_playgrounds",
             Timestamp = DateTime.UtcNow,
             Payload = new GrafanaListPlaygroundsTrigger
             {
-                Service = service, RequestId = Guid.NewGuid().ToString()
+                Service = service, RequestId = requestId
             }
         };
+        
         await monoLambda.Trigger(triggerEvent, CdpEnvironments.Dev, cancellationToken);
-
-        return triggerEvent.Payload.RequestId;
+        Logger.LogInformation("Requested grafana playground update for {Service}, requestId {RequestId}", service, requestId);
+        
+        return requestId;
     }
 
     /// <summary>

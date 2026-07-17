@@ -14,9 +14,11 @@ public interface ITestRunSnapshotter
 public class TestRunSnapshotter(IMonoLambdaTrigger monoLambdaTrigger, IOptions<TestRunnerOptions> options) : ITestRunSnapshotter
 {
     private readonly string? _defaultDashboard = options.Value.SnapshotDashboard;
+    private readonly bool _enabled = options.Value.Enabled;
     
     public async Task Snapshot(TestRun testRun, CancellationToken cancellationToken)
     {
+        if (!_enabled) return;
         if (_defaultDashboard == null) return;
 
         // TODO: we could filter based off test type here, i.e. only snapshot perf tests etc or specific envs
