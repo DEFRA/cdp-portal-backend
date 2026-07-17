@@ -12,6 +12,9 @@ public record ResourceRequestResponse
 
     [JsonPropertyName("requestedBy")]
     public UserDetails? RequestedBy { get; init; }
+
+    [JsonPropertyName("modifiedAt")]
+    public DateTime ModifiedAt { get; init; }
     
     [JsonPropertyName("workflow")]
     public GitHubTriggerWorkflowResponse? Workflow { get; init; }
@@ -34,6 +37,7 @@ public record ResourceRequestResponse
             Workflow = record.Workflow,
             RequestedAt = record.RequestedAt,
             RequestedBy = record.RequestedBy,
+            ModifiedAt = record.ModifiedAt == DateTime.MinValue ? record.RequestedAt : record.ModifiedAt,
             Teams = record.Teams
         };
     }

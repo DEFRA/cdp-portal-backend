@@ -16,7 +16,8 @@ public class ResourceRequestRecord
     public ObjectId? Id { get; init; }
 
     public string Status { get; init; } = PrStatus.Pending;
-    public string EntityName { get; init; } = "";
+    public DateTime ModifiedAt { get; init; }
+    public string EntityName { get; init; } = "";   // TODO: deprecate?
     public List<string> Entities { get; init; } = [];
     public List<Team> Teams { get; init; } = [];
     
