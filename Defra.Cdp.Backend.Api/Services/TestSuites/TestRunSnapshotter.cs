@@ -14,7 +14,7 @@ public interface ITestRunSnapshotter
 public class TestRunSnapshotter(IMonoLambdaTrigger monoLambdaTrigger, IOptions<TestRunnerOptions> options) : ITestRunSnapshotter
 {
     private readonly string? _defaultDashboard = options.Value.SnapshotDashboard;
-    private readonly bool _enabled = options.Value.Enabled;
+    private readonly bool _enabled = options.Value.SnapshotDashboardEnabled;
     
     public async Task Snapshot(TestRun testRun, CancellationToken cancellationToken)
     {
