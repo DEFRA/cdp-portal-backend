@@ -281,8 +281,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         Assert.NotNull(updated?.PullRequest);
         
-        var merged =
-            await service.UpdatePullRequestStatus(updated.PullRequest.Number, PrStatus.Merged, ct);
+        await service.UpdatePullRequestStatus(updated.PullRequest.Number, PrStatus.Merged, ct);
         
         var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
         var record = await collection
@@ -311,7 +310,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             TestWorkflow with { WorkflowRunId = 1243443 }, ct);
     
 
-        var updated = await service.AttachPullRequest(
+        await service.AttachPullRequest(
             inputs1.RunId!,
             new ResourceRequestPullRequest
             {
@@ -320,37 +319,46 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
             },
             ct);
 
-        var matches = await service.Find(new ResourceRequestMatcher(["foo-backend"], null, null, null), ct);
+        var matches = await service.Find(new ResourceRequestMatcher(["foo-backend"], null, null, null, null), ct);
         Assert.Single(matches);
 
-        matches = await service.Find(new ResourceRequestMatcher(["foo-frontend"], null, null, null), ct);
+        matches = await service.Find(new ResourceRequestMatcher(["foo-frontend"], null, null, null, null), ct);
         Assert.Single(matches);
         
-        matches = await service.Find(new ResourceRequestMatcher(["foo-frontend", "bar-backend"], null, null, null), ct);
+        matches = await service.Find(new ResourceRequestMatcher(["foo-frontend", "bar-backend"], null, null, null, null), ct);
         Assert.Equal(2, matches.Count);
         
-        matches = await service.Find(new ResourceRequestMatcher([], null, null, null), ct);
+        matches = await service.Find(new ResourceRequestMatcher([], null, null, null, null), ct);
         Assert.Equal(2, matches.Count);
 
-        matches = await service.Find(new ResourceRequestMatcher(null, null, null, null), ct);
+        matches = await service.Find(new ResourceRequestMatcher(null, null, null, null, null), ct);
         Assert.Equal(2, matches.Count);
 
-        matches = await service.Find(new ResourceRequestMatcher(null, null, ["requested"], null), ct);
+        matches = await service.Find(new ResourceRequestMatcher(null, null, ["requested"], null, null), ct);
         Assert.Single(matches);
         
-        matches = await service.Find(new ResourceRequestMatcher(null, null, ["pending"], null), ct);
+        matches = await service.Find(new ResourceRequestMatcher(null, null, ["pending"], null, null), ct);
         Assert.Single(matches);
         
-        matches = await service.Find(new ResourceRequestMatcher(null, null, null, TestUser.Id), ct);
+        matches = await service.Find(new ResourceRequestMatcher(null, null, null, TestUser.Id, null), ct);
         Assert.Equal(2, matches.Count);
         
-        matches = await service.Find(new ResourceRequestMatcher(null, [Team.TeamId!], null, TestUser.Id), ct);
+        matches = await service.Find(new ResourceRequestMatcher(null, [Team.TeamId!], null, TestUser.Id, null), ct);
         Assert.Equal(2, matches.Count);
         
-        matches = await service.Find(new ResourceRequestMatcher(null, [TeamTwo.TeamId!], null, TestUser.Id), ct);
+        matches = await service.Find(new ResourceRequestMatcher(null, [TeamTwo.TeamId!], null, TestUser.Id, null), ct);
         Assert.Single(matches);
 
-        matches = await service.Find(new ResourceRequestMatcher(null, [], null, TestUser.Id), ct);
-        Assert.Equal(2, matches.Count);;
+        matches = await service.Find(new ResourceRequestMatcher(null, [], null, TestUser.Id, null), ct);
+        Assert.Equal(2, matches.Count);
+
+        matches = await service.Find(new ResourceRequestMatcher(null, [], null, TestUser.Id, null), ct);
+        Assert.Equal(2, matches.Count);
+
+        matches = await service.Find(new ResourceRequestMatcher(null, [], null, null, DateTime.Now.AddHours(-1)), ct);
+        Assert.Equal(2, matches.Count);
+
+        matches = await service.Find(new ResourceRequestMatcher(null, [], null, null, DateTime.Now.AddHours(1)), ct);
+        Assert.Empty(matches);
     }
 }
