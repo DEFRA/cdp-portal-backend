@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Services.Grafana;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
@@ -15,6 +14,7 @@ public record PlaygroundDashboard
     [JsonPropertyName("url")] public required string Url { get; init; }
     [JsonPropertyName("created")] public required string Created { get; init; }
     [JsonPropertyName("updated")] public required string Updated { get; init; }
+    [JsonPropertyName("promoted")] public required bool Promoted { get; init; } = false;
 }
 
 [BsonIgnoreExtraElements]
