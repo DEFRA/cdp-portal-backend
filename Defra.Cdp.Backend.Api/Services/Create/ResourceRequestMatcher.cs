@@ -7,8 +7,8 @@ public record ResourceRequestMatcher(
     string[]? Name,
     string[]? TeamIds,
     string[]? Status,
-    string? UserId
-)
+    string? UserId,
+    DateTime? ModifiedAfter)
 {
     public FilterDefinition<ResourceRequestRecord> Match()
     {
@@ -34,6 +34,11 @@ public record ResourceRequestMatcher(
         if (UserId != null)
         {
             filter &= builder.Eq(r => r.RequestedBy!.Id, UserId);
+        }
+
+        if (ModifiedAfter != null) 
+        {
+            filter &= builder.Gte(r => r.ModifiedAt, ModifiedAfter);
         }
         
         return filter;

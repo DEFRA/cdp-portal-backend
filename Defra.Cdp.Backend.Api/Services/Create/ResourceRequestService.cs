@@ -50,13 +50,18 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
         return
         [
             new CreateIndexModel<ResourceRequestRecord>(builder.Descending(r => r.RequestedAt)),
+            new CreateIndexModel<ResourceRequestRecord>(builder.Descending(r => r.ModifiedAt)),
+            new CreateIndexModel<ResourceRequestRecord>(builder.Ascending(r => r.Status)),
             new CreateIndexModel<ResourceRequestRecord>(
                 builder.Ascending(r => r.Inputs!.RunId),
-                new CreateIndexOptions { Sparse = true, Unique = true }),
+                new CreateIndexOptions { Sparse = true, Unique = true }
+            ),
             new CreateIndexModel<ResourceRequestRecord>(
                 builder.Ascending(r => r.Workflow!.WorkflowRunId),
-                new CreateIndexOptions { Sparse = true, Unique = true }),
-            new CreateIndexModel<ResourceRequestRecord>(builder.Descending(r => r.PullRequest!.Number))];
+                new CreateIndexOptions { Sparse = true, Unique = true }
+            ),
+            new CreateIndexModel<ResourceRequestRecord>(builder.Descending(r => r.PullRequest!.Number))
+        ];
     }
 
     public async Task<ResourceRequestRecord> RecordRequest(
