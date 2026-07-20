@@ -239,6 +239,7 @@ builder.Services.AddSingleton<IGithubWorkflowEventHandler, UsersEventHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrEventHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrClosedHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrMergedHandler>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestFailedHandler>();
 
 // Pending Secrets
 builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();

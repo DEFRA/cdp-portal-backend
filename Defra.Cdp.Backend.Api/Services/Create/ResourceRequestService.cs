@@ -33,6 +33,8 @@ public interface IResourceRequestService
     Task<ResourceRequestRecord?> UpdatePullRequestStatus(int prNumber, string status,
         CancellationToken cancellationToken);
 
+    Task<ResourceRequestRecord?> MarkFailed(string runId, CancellationToken cancellationToken);
+
     Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default);
 
     Task<List<ResourceRequestRecord>> Find(ResourceRequestMatcher matcher, CancellationToken cancellationToken = default);
@@ -118,6 +120,23 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
             .Set(record => record.Status, status)
             .Set(record => record.ModifiedAt, DateTime.UtcNow);
             
+        return await Collection.FindOneAndUpdateAsync(
+            filter,
+            update,
+            new FindOneAndUpdateOptions<ResourceRequestRecord> { ReturnDocument = ReturnDocument.After },
+            cancellationToken);
+    }
+
+    public async Task<ResourceRequestRecord?> MarkFailed(string runId, CancellationToken cancellationToken)
+    {
+        var filter = Builders<ResourceRequestRecord>.Filter.Where(record =>
+            record.Inputs != null &&
+            record.Inputs.RunId == runId);
+        
+        var update = Builders<ResourceRequestRecord>.Update
+            .Set(record => record.Status, PrStatus.Failed)
+            .Set(record => record.ModifiedAt, DateTime.UtcNow);
+        
         return await Collection.FindOneAndUpdateAsync(
             filter,
             update,
