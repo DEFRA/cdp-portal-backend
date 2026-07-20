@@ -291,6 +291,48 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         Assert.NotNull(record.PullRequest);
         Assert.Equal(PrStatus.Merged, record.Status);
     }
+
+    [Fact]
+    public async Task Should_mark_request_as_failed_using_run_id()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var mongoFactory = CreateMongoDbClientFactory();
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+
+        var request = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket
+                {
+                    Service = "foo-backend",
+                    Name = "my-test-bucket",
+                    Environments = "dev"
+                }
+            ]
+        };
+
+        var inputs = request.ToWorkflowInputs("run-123", "tenant-request-run-123", "PR title");
+        var created = await service.RecordRequest(["foo-backend"], [Team], TestUser, request, inputs, TestWorkflow, ct);
+
+        var before = DateTime.UtcNow;
+        var failed = await service.MarkFailed("run-123", ct);
+        var after = DateTime.UtcNow;
+
+        Assert.NotNull(failed);
+        Assert.Equal(PrStatus.Failed, failed.Status);
+        Assert.True(failed.ModifiedAt >= created.ModifiedAt);
+        Assert.InRange(failed.ModifiedAt, before.AddSeconds(-1), after.AddSeconds(1));
+
+        var collection = mongoFactory.GetCollection<ResourceRequestRecord>(CollectionName);
+        var record = await collection
+            .Find(Builders<ResourceRequestRecord>.Filter.Empty)
+            .FirstAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(PrStatus.Failed, record.Status);
+        Assert.Equal(failed.ModifiedAt, record.ModifiedAt);
+    }
     
     [Fact]
     public async Task Should_search_using_matcher()
