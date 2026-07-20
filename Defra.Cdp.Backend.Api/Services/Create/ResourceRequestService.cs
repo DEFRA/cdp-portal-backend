@@ -3,6 +3,7 @@ using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Create;
@@ -35,7 +36,7 @@ public interface IResourceRequestService
 
     Task<ResourceRequestRecord?> MarkFailed(string runId, CancellationToken cancellationToken);
 
-    Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default);
+    Task<ResourceRequestRecord?> FindById(string id, CancellationToken cancellationToken = default);
 
     Task<List<ResourceRequestRecord>> Find(ResourceRequestMatcher matcher, CancellationToken cancellationToken = default);
 }
@@ -56,10 +57,6 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
             new CreateIndexModel<ResourceRequestRecord>(builder.Ascending(r => r.Status)),
             new CreateIndexModel<ResourceRequestRecord>(
                 builder.Ascending(r => r.Inputs!.RunId),
-                new CreateIndexOptions { Sparse = true, Unique = true }
-            ),
-            new CreateIndexModel<ResourceRequestRecord>(
-                builder.Ascending(r => r.Workflow!.WorkflowRunId),
                 new CreateIndexOptions { Sparse = true, Unique = true }
             ),
             new CreateIndexModel<ResourceRequestRecord>(builder.Descending(r => r.PullRequest!.Number))
@@ -144,9 +141,10 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
             cancellationToken);
     }
 
-    public async Task<ResourceRequestRecord?> FindByWorkflowId(long workflowRunId, CancellationToken cancellationToken = default)
+    public async Task<ResourceRequestRecord?> FindById(string id, CancellationToken cancellationToken = default)
     {
-        return await Collection.Find(record => record.Workflow != null && record.Workflow.WorkflowRunId == workflowRunId)
+        var filter = Builders<ResourceRequestRecord>.Filter.Eq(record => record.Id, ObjectId.Parse(id));
+        return await Collection.Find(filter)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
