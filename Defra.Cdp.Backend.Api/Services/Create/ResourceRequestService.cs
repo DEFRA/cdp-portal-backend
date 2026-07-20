@@ -14,7 +14,6 @@ public static class PrStatus
     public const string Merged = "merged";
     public const string Closed = "closed";
     public const string Failed = "failed";
-
 }
 
 public interface IResourceRequestService
