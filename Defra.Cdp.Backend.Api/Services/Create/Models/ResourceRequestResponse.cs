@@ -2,11 +2,15 @@ using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
+using MongoDB.Bson;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Models;
 
 public record ResourceRequestResponse
 {
+    [JsonPropertyName("id")]
+    public string Id { get; init; }
+
     [JsonPropertyName("requestedAt")]
     public DateTime RequestedAt { get; init; }
 
@@ -32,6 +36,7 @@ public record ResourceRequestResponse
     {
         return new ResourceRequestResponse
         {
+            Id = record.Id.ToString()!,
             Status = record.Status,
             PullRequest = record.PullRequest,
             Workflow = record.Workflow,

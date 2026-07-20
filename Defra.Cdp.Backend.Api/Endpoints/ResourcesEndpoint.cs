@@ -17,7 +17,7 @@ public static class ResourcesEndpoint
     {
         app.MapPost("/resources/requests", CreateResourceRequest).RequireAuthorization(AuthPolicies.IsTenant);
         app.MapGet("/resources/requests", FindResourceRequests);
-        app.MapGet("/resources/requests/{workflowRunId}", GetResourceRequest);
+        app.MapGet("/resources/requests/{id}", GetResourceRequest);
     }
 
     private static async Task<Results<BadRequest<ApiError>, Ok<ResourceRequestResponse>>> CreateResourceRequest(
@@ -41,10 +41,10 @@ public static class ResourcesEndpoint
 
     private static async Task<Results<NotFound, Ok<ResourceRequestResponse>>> GetResourceRequest(
         [FromServices] IResourceRequestService resourceRequestService,
-        long workflowRunId,
+        string id,
         CancellationToken ct)
     {
-        var resourceRequest = await resourceRequestService.FindByWorkflowId(workflowRunId, ct);
+        var resourceRequest = await resourceRequestService.FindById(id, ct);
 
         return resourceRequest is not null
             ? TypedResults.Ok(ResourceRequestResponse.FromRequest(resourceRequest)) : TypedResults.NotFound();
