@@ -21,10 +21,14 @@ public record PlaygroundDashboard
     /// <summary>
     /// Helper to enrich the model with the most recent promotion requests.
     /// </summary>
-    /// <param name="requests"></param>
-    /// <returns></returns>
+    /// <param name="requests">List of the most recent promotion request for the service</param>
+    /// <returns>Updated record with a copy of the promotion request</returns>
     public PlaygroundDashboard AddPromotionRequest(List<PromotionRequestRecord> requests)
     {
+        // Skip if the dashboard has already been promoted.
+        if (Promoted) return this;
+        
+        // Only return the request if it was made after the most recent update. 
         var match = requests.Find(r =>
             r.Dashboard?.DashboardUid == Uid && r.RequestedAt > Updated);
         if (match?.Dashboard != null) PromotionRequest = match.Dashboard;
