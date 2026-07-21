@@ -44,7 +44,12 @@ public class EntityOwnerFilter(Func<HttpRequest, string?> entityNameExtractor) :
 }
 
 /// <summary>
-/// C# Extension method to simplify setting up endpoints that require the user to be an owner of the enity.
+/// C# Extension method to simplify setting up endpoints that require the user to be an owner of the entity.
+/// Usage:
+///   `app.MapGet("/record/{entityName}").RequireOwnership("entityName");`
+/// or for more complex requests:
+///   `app.MapPost("/record").RequireOwnership(r => r.Query["entityFromQueryParam"]);`
+///
 /// </summary>
 public static class EntityOwnerExtensions
 {

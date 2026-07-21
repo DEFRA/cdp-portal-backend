@@ -139,17 +139,6 @@ if (!BsonClassMap.IsClassMapRegistered(typeof(MongoScheduleConfig)))
     });
 }
 
-if (!BsonClassMap.IsClassMapRegistered(typeof(PromotionResource)))
-{
-    BsonClassMap.RegisterClassMap<PromotionResource>(cm =>
-    {
-        cm.AutoMap();
-        cm.SetIsRootClass(true);
-        cm.AddKnownType(typeof(DashboardPromotionRequest));
-        cm.AddKnownType(typeof(AlertPromotionRequest));
-    });
-}
-
 // Mongo
 MongoClientSettings.Extensions.AddAWSAuthentication();
 builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
@@ -205,6 +194,10 @@ builder.Services.AddSingleton<ITriggerWorkflowService, TriggerWorkflowService>()
 builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>();
 builder.Services.AddSingleton<ICreateResourceValidator, CreateResourceValidator>();
 builder.Services.AddSingleton<IEntityResourceService, EntityResourceService>();
+
+// Grafana alert promotion
+builder.Services.AddSingleton<IGrafanaPlaygroundService, GrafanaPlaygroundService>();
+builder.Services.AddSingleton<IGrafanaPromotionService, GrafanaPromotionService>();
 builder.Services.AddSingleton<IGrafanaPromotionRequestService, GrafanaPromotionRequestService>();
 builder.Services.AddSingleton<IGrafanaPromotionValidator, GrafanaPromotionValidator>();
 
@@ -295,8 +288,7 @@ builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>()
 builder.Services.AddSingleton<INotificationRuleService, NotificationRuleService>();
 builder.Services.AddSingleton<ISlackClient, SlackLambdaClient>();
 
-// Grafana playgrounds
-builder.Services.AddSingleton<IGrafanaPlaygroundService, GrafanaPlaygroundService>();
+
 
 // Register background SQS listeners
 builder.Services.AddHostedService<EcsEventListener>();

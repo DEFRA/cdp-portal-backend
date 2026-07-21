@@ -10,10 +10,18 @@ public interface IGrafanaPromotionRequestService
 {
     Task<PromotionRequestRecord> RecordRequest(
         UserDetails? requestedBy,
-        PromotionResource request,
+        DashboardPromotionRequest request,
+        GitHubTriggerWorkflowResponse? workflow,
+        CancellationToken cancellationToken);
+
+    Task<PromotionRequestRecord> RecordRequest(
+        UserDetails? requestedBy,
+        AlertPromotionRequest request,
         GitHubTriggerWorkflowResponse? workflow,
         CancellationToken cancellationToken);
     
+    Task<List<PromotionRequestRecord>> GetRequestsForService(string name, CancellationToken cancellationToken);
+
 }
 
 public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
@@ -33,7 +41,7 @@ public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFact
 
     public async Task<PromotionRequestRecord> RecordRequest(
         UserDetails? requestedBy,
-        PromotionResource request,
+        DashboardPromotionRequest request,
         GitHubTriggerWorkflowResponse? response,
         CancellationToken cancellationToken)
     {
@@ -42,11 +50,45 @@ public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFact
             ServiceName = request.ServiceName,
             RequestedBy = requestedBy,
             RequestedAt = DateTime.UtcNow,
-            Request = request,
+            Dashboard = request,
             Response = response
         };
 
         await Collection.InsertOneAsync(record, cancellationToken: cancellationToken);
         return record;
+    }
+
+    public async Task<PromotionRequestRecord> RecordRequest(
+        UserDetails? requestedBy,
+        AlertPromotionRequest request,
+        GitHubTriggerWorkflowResponse? workflow,
+        CancellationToken cancellationToken)
+    {
+        var record = new PromotionRequestRecord
+        {
+            ServiceName = request.ServiceName,
+            RequestedBy = requestedBy,
+            RequestedAt = DateTime.UtcNow,
+            Alert = request,
+            Response = workflow
+        };
+
+        await Collection.InsertOneAsync(record, cancellationToken: cancellationToken);
+        return record;
+    }
+
+    public async Task<List<PromotionRequestRecord>> GetRequestsForService(string name, CancellationToken cancellationToken)
+    {
+        var dashboardsPromotions = await Collection.Aggregate()
+            .Match(pr => pr.ServiceName == name && pr.Dashboard != null)
+            .SortByDescending(pr => pr.RequestedAt)
+            .Group(pr => pr.Dashboard!.DashboardUid, g => g.First())
+            .ToListAsync(cancellationToken);
+
+        var alertPromotion = await Collection.Find(pr => pr.ServiceName == name && pr.Alert != null)
+            .SortByDescending(pr => pr.RequestedAt).FirstOrDefaultAsync(cancellationToken);
+        
+        dashboardsPromotions.Add(alertPromotion);
+        return dashboardsPromotions;
     }
 }
