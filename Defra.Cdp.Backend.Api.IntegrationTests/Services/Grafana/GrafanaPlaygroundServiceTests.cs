@@ -1,10 +1,9 @@
 using Defra.Cdp.Backend.Api.IntegrationTests.Mongo;
 using Defra.Cdp.Backend.Api.Services.Grafana;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
-using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Triggers;
 using Microsoft.Extensions.Logging.Abstractions;
-using MongoDB.Driver.Linq;
 using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Grafana;
