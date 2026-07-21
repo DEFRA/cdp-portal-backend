@@ -38,7 +38,7 @@ public class GrafanaPromotionService(ITriggerWorkflowService triggerWorkflowServ
         var dashboardStatuses = new Dictionary<string, string>();
         
         var playgroundData = await playgroundService.FindPlaygroundsForService(service, cancellationToken);
-        var requests = await promotionRequestService.GetRequestsForService(service, cancellationToken);
+        var requests = await promotionRequestService.GetLatestRequestsForService(service, cancellationToken);
         
         foreach (var dashboard in playgroundData?.Dashboards ?? [])
         {
