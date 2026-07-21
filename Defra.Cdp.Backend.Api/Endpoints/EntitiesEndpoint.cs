@@ -48,8 +48,8 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/{name}/diagnostics/playground", GetEntityPlaygroundDashboardsAndAlerts);
         app.MapGet("/entities/{name}/grafana/playground", GetEntityPlaygroundDashboardsAndAlerts);
         app.MapGet("/entities/{name}/grafana/playground/promotions", GetPromotionStatus);
-        app.MapPost("/entities/{name}/grafana/playground/promotions/dashboards/{uid}", PromotePlaygroundDashboard);
-           // .RequireOwnership("name");
+        app.MapPost("/entities/{name}/grafana/playground/promotions/dashboards/{uid}", PromotePlaygroundDashboard)
+            .RequireOwnership("name");
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
     }
@@ -394,7 +394,7 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var result = await grafanaPromotionRequestService.GetRequestsForService(name, ct);
+        var result = await grafanaPromotionRequestService.GetLatestRequestsForService(name, ct);
         return TypedResults.Ok(result);
     }
 

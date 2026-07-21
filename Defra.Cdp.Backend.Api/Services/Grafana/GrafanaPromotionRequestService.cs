@@ -20,7 +20,7 @@ public interface IGrafanaPromotionRequestService
         GitHubTriggerWorkflowResponse? workflow,
         CancellationToken cancellationToken);
     
-    Task<List<PromotionRequestRecord>> GetRequestsForService(string name, CancellationToken cancellationToken);
+    Task<List<PromotionRequestRecord>> GetLatestRequestsForService(string name, CancellationToken cancellationToken);
 
 }
 
@@ -77,7 +77,15 @@ public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFact
         return record;
     }
 
-    public async Task<List<PromotionRequestRecord>> GetRequestsForService(string name, CancellationToken cancellationToken)
+    
+    /// <summary>
+    /// For each dashboard in the playground returns the most recent promotion request record.
+    /// Also returns the most recent alert promotion, if it exists.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<List<PromotionRequestRecord>> GetLatestRequestsForService(string name, CancellationToken cancellationToken)
     {
         var dashboardsPromotions = await Collection.Aggregate()
             .Match(pr => pr.ServiceName == name && pr.Dashboard != null)
