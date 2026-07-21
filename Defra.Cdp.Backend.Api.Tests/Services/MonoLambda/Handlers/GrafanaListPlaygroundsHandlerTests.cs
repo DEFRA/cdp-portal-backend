@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Services.Grafana;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 

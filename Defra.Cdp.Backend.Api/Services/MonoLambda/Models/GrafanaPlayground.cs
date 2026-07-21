@@ -30,7 +30,7 @@ public record PlaygroundDashboard
         
         // Only return the request if it was made after the most recent update. 
         var match = requests.Find(r =>
-            r.Dashboard?.DashboardUid == Uid && r.RequestedAt > Updated);
+            r.Dashboard?.DashboardUid == Uid && r.RequestedAt >= Updated);
         if (match?.Dashboard != null) PromotionRequest = match.Dashboard;
         return this;
     }
