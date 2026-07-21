@@ -55,10 +55,17 @@ public static class ResourcesEndpoint
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IUsersService usersService,
         [AsParameters] ResourceRequestMatcher matcher,
+        [FromQuery(Name = "includeResources")] bool? includeResources,
         HttpContext httpContext,
         CancellationToken ct)
     {
         var matches = await resourceRequestService.Find(matcher, ct);
-        return TypedResults.Ok(matches.Select(ResourceRequestResponse.FromRequest));
+
+        if (includeResources == true) {
+            return TypedResults.Ok(matches.Select(ResourceRequestResponse.FromRequestWithResources));
+        }
+        else {
+            return TypedResults.Ok(matches.Select(ResourceRequestResponse.FromRequest));
+        }
     }
 }
