@@ -1,5 +1,4 @@
 using Defra.Cdp.Backend.Api.Models;
-using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.Grafana;
 using Defra.Cdp.Backend.Api.Services.Grafana.Models;
 using Defra.Cdp.Backend.Api.Services.Grafana.Validators;
@@ -11,10 +10,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 
 public static class GrafanaEndpoint
 {
-    private const string Repo = "cdp-grafana-modules";
-    private const string DashboardPromotionWorkflow = "promote-custom-dashboard.yml";
-    private const string AlertPromotionWorkflow = "promote-advanaced-alerts.yml";
-    
     public static void MapGrafanaEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/grafana/promotions", GrafanaPromotionRequest).RequireAuthorization(AuthPolicies.IsTenant);
@@ -23,8 +18,7 @@ public static class GrafanaEndpoint
     private static async Task<Results<BadRequest<ApiError>, Ok>> GrafanaPromotionRequest(
         [FromBody] GrafanaPromotionRequest request,
         [FromServices] IGrafanaPromotionValidator validator,
-        [FromServices] ITriggerWorkflowService triggerWorkflowService,        
-        [FromServices] IGrafanaPromotionRequestService requestService,
+        [FromServices] IGrafanaPromotionService grafanaPromotionService,        
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -37,16 +31,12 @@ public static class GrafanaEndpoint
 
         foreach (var dashboard in request.Dashboards)
         {
-            var response = await triggerWorkflowService.TriggerWorkflow(Repo, DashboardPromotionWorkflow, dashboard,
-                cancellationToken);
-            await requestService.RecordRequest(user, dashboard, response, cancellationToken);
+            await grafanaPromotionService.PromoteDashboard(dashboard, user, cancellationToken);
         }
         
         foreach (var alert in request.Alerts)
         {
-            var response = await triggerWorkflowService.TriggerWorkflow(Repo, AlertPromotionWorkflow, alert,
-                cancellationToken);
-            await requestService.RecordRequest(user, alert, response, cancellationToken);
+            await grafanaPromotionService.PromoteAlerts(alert, user, cancellationToken);
         }
         
         return TypedResults.Ok();

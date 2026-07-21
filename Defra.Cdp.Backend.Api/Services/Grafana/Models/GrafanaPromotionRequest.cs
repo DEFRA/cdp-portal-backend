@@ -14,26 +14,12 @@ public record GrafanaPromotionRequest
     
 }
 
-public abstract record PromotionResource
+public record DashboardPromotionRequest : IGithubWorkflowInputs
 {
     [JsonPropertyName("service_name")]
     [BsonElement("service_name")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ServiceName { get; init; }
-
-    [JsonPropertyName("use_branch")]
-    [BsonElement("use_branch")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Branch { get; init; }
-}
-
-
-public record DashboardPromotionRequest : PromotionResource, IGithubWorkflowInputs
-{
-    [JsonPropertyName("dashboard_name")]
-    [BsonElement("dashboard_name")]    
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? DashboardName { get; init; }
     
     [JsonPropertyName("dashboard_uid")]    
     [BsonElement("dashboard_uid")]
@@ -51,4 +37,10 @@ public record DashboardPromotionRequest : PromotionResource, IGithubWorkflowInpu
     public string? PromotionEnvironment { get; init; }
 }
 
-public record AlertPromotionRequest : PromotionResource, IGithubWorkflowInputs;
+public record AlertPromotionRequest : IGithubWorkflowInputs
+{
+    [JsonPropertyName("service_name")]
+    [BsonElement("service_name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ServiceName { get; init; }
+}

@@ -57,15 +57,16 @@ public class GrafanaPromotionValidator(IEntityResourceService ers) : IGrafanaPro
         
         foreach (var dashboard in request.Dashboards)
         {
-            if (dashboard.DashboardUid is not null && dashboard.DashboardName is not null)
+
+            if (dashboard.DashboardUid is null)
             {
-                errors.Add("Can not have a dashboard uid and dashboard name");
+                errors.Add("Dashboard uid must be provided");
                 continue;
             }
-
-            if (dashboard.DashboardUid is null && dashboard.ServiceName is null)
+            
+            if (dashboard.ServiceName is null)
             {
-                errors.Add("If dashboard uid is not provided then service name is required");
+                errors.Add("Service name must be provided");
                 continue;
             }
 

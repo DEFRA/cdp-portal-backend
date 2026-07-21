@@ -5,10 +5,13 @@ using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Grafana;
+using Defra.Cdp.Backend.Api.Services.Grafana.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
+using Defra.Cdp.Backend.Api.Utils;
+using Defra.Cdp.Backend.Api.Utils.Auth;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -28,17 +31,27 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/filters", GetFilters);
         app.MapGet("/entities/{name}", GetEntity);
         app.MapPost("/entities/{name}/decommission", StartDecommissioning);
+        
         app.MapPost("/entities/{name}/tags", TagEntity);
         app.MapDelete("/entities/{name}/tags", UntagEntity);
+        
         app.MapPost("/entities/{name}/schedules", CreateSchedule);
         app.MapGet("/entities/{name}/schedules", GetSchedules);
         app.MapGet("/entities/{name}/schedules/{scheduleId}", GetSchedule);
         app.MapPatch("/entities/{name}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
+        
         app.MapGet("/entities/{name}/resources", GetEntityResources);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
+        
         app.MapGet("/entities/{name}/diagnostics/playground", GetEntityPlaygroundDashboardsAndAlerts);
+        app.MapGet("/entities/{name}/grafana/playground", GetEntityPlaygroundDashboardsAndAlerts);
+        app.MapGet("/entities/{name}/grafana/playground/promotions", GetPromotionStatus);
+        app.MapPost("/entities/{name}/grafana/playground/promotions/dashboards/{uid}", PromotePlaygroundDashboard);
+           // .RequireOwnership("name");
+        app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
+            .RequireOwnership("name");
     }
     
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -368,8 +381,59 @@ public static class EntitiesEndpoint
             }
             return TypedResults.Ok(result);
         }
-
-        
         return TypedResults.Ok(playgroundResources);
+    }
+
+    private static async Task<Results<NotFound, Ok<List<PromotionRequestRecord>>>> GetPromotionStatus(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IGrafanaPromotionRequestService grafanaPromotionRequestService,
+        [FromRoute] string name,
+        CancellationToken ct
+    )
+    {
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var result = await grafanaPromotionRequestService.GetRequestsForService(name, ct);
+        return TypedResults.Ok(result);
+    }
+
+    
+    
+    [EndpointDescription("Promotes a specific playground dashboard by UID")]
+    private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundDashboard(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IGrafanaPromotionService grafanaPromotionService,
+        [FromRoute] string name,
+        [FromRoute] string uid,
+        HttpContext httpContext,
+        CancellationToken ct)
+    {
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
+
+        var dashboardRequest = new DashboardPromotionRequest { DashboardUid = uid, ServiceName = name,  PromotionEnvironment = CdpEnvironments.Dev };
+        var response = await grafanaPromotionService.PromoteDashboard(dashboardRequest, user, ct);
+        return TypedResults.Ok(response);
+    }
+    
+    [EndpointDescription("Promotes custom alerts for a service from playground alerts in Dev.")]
+    private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundAlerts(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IGrafanaPromotionService grafanaPromotionService,
+        [FromRoute] string name,
+        HttpContext httpContext,
+        CancellationToken ct)
+    {
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
+
+        var alertRequest = new AlertPromotionRequest { ServiceName = name };
+        var response = await grafanaPromotionService.PromoteAlerts(alertRequest, user, ct);
+        return TypedResults.Ok(response);
     }
 }

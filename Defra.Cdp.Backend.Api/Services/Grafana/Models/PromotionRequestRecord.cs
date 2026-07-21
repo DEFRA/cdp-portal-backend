@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using MongoDB.Bson;
@@ -15,6 +16,11 @@ public class PromotionRequestRecord
     public string? ServiceName { get; init; }
     public UserDetails? RequestedBy { get; init; }
     public DateTime RequestedAt { get; init; }
-    public PromotionResource? Request { get; init; }
     public GitHubTriggerWorkflowResponse? Response { get; init; }
+    
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DashboardPromotionRequest? Dashboard { get; init; }
+    
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AlertPromotionRequest? Alert { get; init; }
 }
