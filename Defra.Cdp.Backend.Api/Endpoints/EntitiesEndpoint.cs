@@ -45,7 +45,6 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
         
-        app.MapGet("/entities/{name}/diagnostics/playground", GetEntityPlaygroundDashboardsAndAlerts);
         app.MapGet("/entities/{name}/grafana/playground", GetEntityPlaygroundDashboardsAndAlerts);
         app.MapGet("/entities/{name}/grafana/playground/promotions", GetPromotionStatus);
         app.MapPost("/entities/{name}/grafana/playground/promotions/dashboards/{uid}", PromotePlaygroundDashboard)
