@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
-using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Triggers;
 using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Driver;

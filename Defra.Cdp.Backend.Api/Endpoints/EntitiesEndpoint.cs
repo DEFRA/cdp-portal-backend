@@ -6,7 +6,7 @@ using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Grafana;
 using Defra.Cdp.Backend.Api.Services.Grafana.Models;
-using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Scheduler;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Mapping;
 using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
@@ -359,31 +359,41 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(relationships);
     }
     
+    
+    [EndpointDescription("Gets the latest playground dashboards from the Dev Environment along with any pending promotion requests for each resource.")]
     private static async Task<Results<NotFound, Accepted<ApiError>, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IGrafanaPlaygroundService grafanaPlaygroundService,
+        [FromServices] IGrafanaPromotionRequestService grafanaPromotionRequestService,
         string name,
         CancellationToken ct)
     {
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
         
+        // We cache the playground data but since its pulled from grafana in dev on demand it may be out of date.
+        // The response is async (we listen for the response on the mono-lambda queue) but is typically fast (<1000ms).
+        // If it doesn't respond in time, we return a 202 and expect the client to poll again.
         var playgroundResources = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
         if (playgroundResources == null || (DateTime.UtcNow - playgroundResources.Updated).TotalSeconds > GrafanaPlaygroundRefreshThresholdSecs )
         {
             var requestId = await grafanaPlaygroundService.RequestUpdateForService(name, ct);
-            var result = await grafanaPlaygroundService.WaitForUpdate(requestId, GrafanaPlaygroundWaitThresholdMs, ct);
+            playgroundResources = await grafanaPlaygroundService.WaitForUpdate(requestId, GrafanaPlaygroundWaitThresholdMs, ct);
 
-            if (result == null)
+            if (playgroundResources == null)
             {
                 return TypedResults.Accepted($"/entities/{name}/diagnostics/playground",
                     new ApiError("Grafana did not response in time, try again"));
             }
-            return TypedResults.Ok(result);
         }
+
+        // Look up the most recent requests and attach them to the playground data.
+        var promotionRequests = await grafanaPromotionRequestService.GetLatestRequestsForService(name, ct);
+        playgroundResources = playgroundResources.AddPromotionRequest(promotionRequests);
         return TypedResults.Ok(playgroundResources);
     }
 
+    [EndpointDescription("Gets most recent promotion requests for a service.")]
     private static async Task<Results<NotFound, Ok<List<PromotionRequestRecord>>>> GetPromotionStatus(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IGrafanaPromotionRequestService grafanaPromotionRequestService,
