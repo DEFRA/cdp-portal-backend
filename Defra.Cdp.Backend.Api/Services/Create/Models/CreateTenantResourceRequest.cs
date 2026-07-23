@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Create.Models;
 
@@ -56,7 +58,7 @@ public record CreateTenantS3Bucket
     public required string Environments  { get; init; }
 
     [JsonPropertyName("versioning")] public bool Versioning { get; init; } = false;
-    
+
     public string ToWorkflowCommand()
     {
         var versioning = Versioning ? "--versioning" : "";

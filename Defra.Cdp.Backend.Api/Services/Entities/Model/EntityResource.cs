@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -50,6 +51,12 @@ public static class EntityResourceMapper
     public static EntityResource<TenantCognitoIdentityPool> Map(TenantCognitoIdentityPool cog) => new(Cognito.Name, Cognito.Icon, cog.IdentityPoolName, cog);
     public static EntityResource<CdpBedrockProfile> Map(CdpBedrockProfile ai) => new(Bedrock.Name, Bedrock.Icon, ai.Name, ai);
 
+    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3) => new(S3.Name, S3.Icon, s3.Name, new TenantS3Bucket()
+    {
+        BucketName = s3.Name,   // TODO: Expand map
+        Versioning = s3.Versioning.ToString()
+    });
+
     public static EntityResources FromCdpTenant(CdpTenant tenant)
     {
         return new EntityResources
@@ -62,6 +69,16 @@ public static class EntityResourceMapper
             ApiGateways = tenant.ApiGateways?.Select(Map).ToList() ?? [],
             CognitoIdentityPool = tenant.CognitoIdentityPool == null ? [] : [Map(tenant.CognitoIdentityPool)],
             BedrockAi = tenant.BedrockAi?.Profiles?.Select(Map).ToList() ?? []
+        };
+    }
+
+    public static EntityResources FromCreateTenantResourceRequest(CreateTenantResourceRequest request)
+    {
+        return new EntityResources
+        {
+            S3Buckets = request.S3Buckets?.Select(Map).ToList() ?? [],
+            //SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
+            //SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? []
         };
     }
 }
