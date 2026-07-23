@@ -72,11 +72,11 @@ public static class EntityResourceMapper
         };
     }
 
-    public static EntityResources FromCreateTenantResourceRequest(CreateTenantResourceRequest request)
+    public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request)
     {
         return new EntityResources
         {
-            S3Buckets = request.S3Buckets?.Select(Map).ToList() ?? [],
+            S3Buckets = request.Resources?.S3Buckets?.Select(Map).ToList() ?? [],
             //SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
             //SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? []
         };
