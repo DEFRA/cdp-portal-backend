@@ -388,7 +388,8 @@ public static class EntitiesEndpoint
 
         // Look up the most recent requests and attach them to the playground data.
         var promotionRequests = await grafanaPromotionRequestService.GetLatestRequestsForService(name, ct);
-        playgroundResources = playgroundResources.AddPromotionRequest(promotionRequests);
+        playgroundResources.AddPromotionRequest(promotionRequests);
+
         return TypedResults.Ok(playgroundResources);
     }
 
