@@ -72,8 +72,11 @@ public static class EntityResourceMapper
         };
     }
 
-    public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request)
+    public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request, Entity entity)
     {
+        var id = request.Id;    // TODO: use in mapper
+        var name = entity.Name; // TODO: filter request resource by service
+
         return new EntityResources
         {
             S3Buckets = request.Resources?.S3Buckets?.Select(Map).ToList() ?? [],
