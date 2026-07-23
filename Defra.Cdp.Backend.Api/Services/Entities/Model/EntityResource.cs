@@ -41,7 +41,7 @@ public static class EntityResourceMapper
     public static readonly EntityResourceType ApiGateway = new("s3", "aws-api-gateway");
     public static readonly EntityResourceType Cognito = new("cognito", "aws-cognito");
     public static readonly EntityResourceType Bedrock = new("bedrock", "aws-bedrock");
-    
+
     public static EntityResource<TenantS3Bucket> Map(TenantS3Bucket s3) => new(S3.Name, S3.Icon, s3.BucketName, s3);
     public static EntityResource<TenantSqsQueue> Map(TenantSqsQueue sqs) => new(SQS.Name, SQS.Icon, sqs.Name, sqs);
     public static EntityResource<TenantSnsTopic> Map(TenantSnsTopic sns) => new(SNS.Name, SNS.Icon, sns.Name, sns);
@@ -54,7 +54,7 @@ public static class EntityResourceMapper
     public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3) => new(S3.Name, S3.Icon, s3.Name, new TenantS3Bucket()
     {
         BucketName = s3.Name,   // TODO: Expand map
-        Versioning = s3.Versioning.ToString()
+        Versioning = s3.Versioning ? "Enabled" : "Disabled"
     });
 
     public static EntityResources FromCdpTenant(CdpTenant tenant)
@@ -79,6 +79,23 @@ public static class EntityResourceMapper
             S3Buckets = request.Resources?.S3Buckets?.Select(Map).ToList() ?? [],
             //SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
             //SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? []
+        };
+    }
+}
+
+public static class EntityResourceCombiner {
+    public static EntityResources Combine(EntityResources primary, EntityResources secondary) {
+        return new EntityResources
+        {
+            S3Buckets = primary.S3Buckets.Concat(secondary.S3Buckets).ToList() ?? [],
+            SqsQueues = primary.SqsQueues,
+            SnsTopics = primary.SnsTopics,
+
+            SqlDatabase = primary.SqlDatabase,
+            Dynamodb = primary.Dynamodb,
+            ApiGateways = primary.ApiGateways,
+            CognitoIdentityPool = primary.CognitoIdentityPool,
+            BedrockAi = primary.BedrockAi
         };
     }
 }
