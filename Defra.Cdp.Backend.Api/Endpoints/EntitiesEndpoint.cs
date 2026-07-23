@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Grafana;
@@ -314,11 +315,14 @@ public static class EntitiesEndpoint
     
     private static async Task<Results<NotFound, Ok<Dictionary<string, EntityResources>>>> GetEntityResources(
         [FromServices] IEntitiesService entitiesService,
+        [FromServices] IResourceRequestService resourceRequestService,
         string name,
         CancellationToken ct)
     {
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
+
+        var resourceRequests = await resourceRequestService.Find(new ResourceRequestMatcher(["cdp-portal-backend"], null, null, null, null), ct);
 
         var environments = new Dictionary<string, EntityResources>();
 
@@ -326,6 +330,9 @@ public static class EntitiesEndpoint
         {
             environments[env] = EntityResourceMapper.FromCdpTenant(entity.Environments[env]);
         }
+
+        environments["first_request"] = EntityResourceMapper.FromResourceRequestRecord(resourceRequests.First());
+        
         return TypedResults.Ok(environments);
     }
 
