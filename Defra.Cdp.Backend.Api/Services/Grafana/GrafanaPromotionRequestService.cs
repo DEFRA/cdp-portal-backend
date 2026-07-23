@@ -95,8 +95,12 @@ public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFact
 
         var alertPromotion = await Collection.Find(pr => pr.ServiceName == name && pr.Alert != null)
             .SortByDescending(pr => pr.RequestedAt).FirstOrDefaultAsync(cancellationToken);
-        
-        dashboardsPromotions.Add(alertPromotion);
+
+        if (alertPromotion != null)
+        {
+            dashboardsPromotions.Add(alertPromotion);
+        }
+
         return dashboardsPromotions;
     }
 }

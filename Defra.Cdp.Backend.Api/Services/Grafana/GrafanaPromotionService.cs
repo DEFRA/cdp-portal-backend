@@ -32,28 +32,4 @@ public class GrafanaPromotionService(ITriggerWorkflowService triggerWorkflowServ
         var result = await promotionRequestService.RecordRequest(user, alert, response, cancellationToken);
         return result;
     }
-
-    public async Task PlaygroundStatus(string service, CancellationToken cancellationToken)
-    {
-        var dashboardStatuses = new Dictionary<string, string>();
-        
-        var playgroundData = await playgroundService.FindPlaygroundsForService(service, cancellationToken);
-        var requests = await promotionRequestService.GetLatestRequestsForService(service, cancellationToken);
-        
-        foreach (var dashboard in playgroundData?.Dashboards ?? [])
-        {
-            var lastRequest = requests.Find(r => r.Dashboard?.DashboardUid == dashboard.Uid);
-
-            if (lastRequest != null && lastRequest.RequestedAt > dashboard.Updated)
-            {
-                dashboardStatuses[dashboard.Uid] = "requested";
-            }
-            else if (dashboard.Promoted)
-            {
-                dashboardStatuses[dashboard.Uid] = dashboard.Promoted ? "promoted" : "available";
-            }
-        }
-
-        
-    }
 }
