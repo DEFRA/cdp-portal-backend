@@ -7,7 +7,16 @@ public record EntityResourceType(string Name, string Icon);
 
 
 // Available icons https://icones.js.org/collection/logos
-public record EntityResource<T>(string Resource, string Icon, string Name, T Properties);
+public record EntityResource<T>(
+    string Resource,
+    string Icon,
+    string Name,
+    T Properties
+)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ResourceRequestId { get; set; } = null;
+}
 
 public record EntityResources
 {
