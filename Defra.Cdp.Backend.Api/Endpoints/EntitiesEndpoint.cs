@@ -322,16 +322,22 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var resourceRequests = await resourceRequestService.Find(new ResourceRequestMatcher(["cdp-portal-backend"], null, null, null, null), ct);
+        var resourceRequests = await resourceRequestService.Find(new ResourceRequestMatcher([name], null, null, null, null), ct);
 
         var environments = new Dictionary<string, EntityResources>();
 
         foreach (var env in entity.Environments.Keys)
         {
             environments[env] = EntityResourceMapper.FromCdpTenant(entity.Environments[env]);
-        }
 
-        environments["first_request"] = EntityResourceMapper.FromResourceRequestRecord(resourceRequests.First());
+            foreach (var request in resourceRequests)
+            {
+                environments[env] = EntityResourceCombiner.Combine(
+                    environments[env],
+                    EntityResourceMapper.FromResourceRequestRecord(request)
+                );
+            }
+        }
         
         return TypedResults.Ok(environments);
     }
