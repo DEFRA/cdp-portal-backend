@@ -492,12 +492,14 @@ public class TenantMetadataApiDocs
 public class TenantS3Bucket
 {
     [property: JsonPropertyName("arn")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("bucket_name")]
     public string BucketName { get; set; }
 
     [property: JsonPropertyName("bucket_domain_name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? BucketDomainName { get; set; }
 
     [property: JsonPropertyName("versioning")]
@@ -509,6 +511,7 @@ public class TenantS3Bucket
 public class TenantSnsTopic
 {
     [property: JsonPropertyName("arn")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("name")]
@@ -558,12 +561,14 @@ public class TenantSqlDatabase
 public class TenantSqsQueue
 {
     [property: JsonPropertyName("arn")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("name")]
     public string Name { get; set; }
 
     [property: JsonPropertyName("url")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Url { get; set; }
 
     [property: JsonPropertyName("fifo_queue")]
