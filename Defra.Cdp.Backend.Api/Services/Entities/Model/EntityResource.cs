@@ -51,11 +51,13 @@ public static class EntityResourceMapper
     public static EntityResource<TenantCognitoIdentityPool> Map(TenantCognitoIdentityPool cog) => new(Cognito.Name, Cognito.Icon, cog.IdentityPoolName, cog);
     public static EntityResource<CdpBedrockProfile> Map(CdpBedrockProfile ai) => new(Bedrock.Name, Bedrock.Icon, ai.Name, ai);
 
-    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3) => new(S3.Name, S3.Icon, s3.Name, new TenantS3Bucket()
+    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3, string resourceRequestId) => new(S3.Name, S3.Icon, s3.Name, new TenantS3Bucket
     {
         BucketName = s3.Name,   // TODO: Expand map
         Versioning = s3.Versioning ? "Enabled" : "Disabled"
-    });
+    }){
+        ResourceRequestId = resourceRequestId
+    };
 
     public static EntityResources FromCdpTenant(CdpTenant tenant)
     {
@@ -74,12 +76,12 @@ public static class EntityResourceMapper
 
     public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request, Entity entity)
     {
-        var id = request.Id;    // TODO: use in mapper
+        var resourceRequestId = request.Id.ToString()!;
         var name = entity.Name; // TODO: filter request resource by service
 
         return new EntityResources
         {
-            S3Buckets = request.Resources?.S3Buckets?.Select(Map).ToList() ?? [],
+            S3Buckets = request.Resources?.S3Buckets?.Select(s3 => Map(s3, resourceRequestId)).ToList() ?? [],
             //SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
             //SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? []
         };
