@@ -53,7 +53,7 @@ public static class EntityResourceMapper
 
     public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3, string resourceRequestId) => new(S3.Name, S3.Icon, s3.Name, new TenantS3Bucket
     {
-        BucketName = s3.Name,   // TODO: Expand map
+        BucketName = s3.Name,   // TODO: Expand name
         Versioning = s3.Versioning ? "Enabled" : "Disabled"
     }){
         ResourceRequestId = resourceRequestId
@@ -77,11 +77,11 @@ public static class EntityResourceMapper
     public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request, Entity entity)
     {
         var resourceRequestId = request.Id.ToString()!;
-        var name = entity.Name; // TODO: filter request resource by service
+        var name = entity.Name;
 
         return new EntityResources
         {
-            S3Buckets = request.Resources?.S3Buckets?.Select(s3 => Map(s3, resourceRequestId)).ToList() ?? [],
+            S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId)).ToList() ?? [],
             //SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
             //SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? []
         };

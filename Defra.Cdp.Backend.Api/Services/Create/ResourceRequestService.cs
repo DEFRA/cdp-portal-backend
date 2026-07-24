@@ -39,6 +39,8 @@ public interface IResourceRequestService
     Task<ResourceRequestRecord?> FindById(string id, CancellationToken cancellationToken = default);
 
     Task<List<ResourceRequestRecord>> Find(ResourceRequestMatcher matcher, CancellationToken cancellationToken = default);
+
+    Task<List<ResourceRequestRecord>> FindActive(string[] services, CancellationToken cancellationToken = default);
 }
 
 
@@ -151,5 +153,13 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
     public async Task<List<ResourceRequestRecord>> Find(ResourceRequestMatcher matcher, CancellationToken cancellationToken = default)
     {
         return await Collection.Find(matcher.Match()).ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<ResourceRequestRecord>> FindActive(string[] services, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<ResourceRequestRecord>.Filter
+            .AnyIn(r => r.Entities, services);
+
+        return await Collection.Find(filter).ToListAsync(cancellationToken);
     }
 }
