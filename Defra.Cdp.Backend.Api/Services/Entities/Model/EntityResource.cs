@@ -151,7 +151,7 @@ public static class EntityResourceCombiner {
         };
     }
 
-    public static List<EntityResource<T>> Deduplicate<T>(List<EntityResource<T>> items, List<EntityResource<T>> existing) {
+    private static List<EntityResource<T>> Deduplicate<T>(List<EntityResource<T>> items, List<EntityResource<T>> existing) {
         return items.FindAll(item => existing.Find(e => e.Name == item.Name) == null);
     }
 }
