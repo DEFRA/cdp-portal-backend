@@ -66,6 +66,7 @@ public static class EntityResourceMapper
         Name = FifoName(sqs.Name, sqs.Fifo),
         FifoQueue = sqs.Fifo,
         ContentBasedDeduplication = sqs.ContentBasedDeduplication,
+        ReceiveWaitTimeSeconds = 20 // a default?
         // Subscriptions = []   // TODO: handle subs
 
         // TODO: What about these?
