@@ -344,6 +344,7 @@ public static class EntitiesEndpoint
 
     private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
         [FromServices] IEntitiesService entitiesService,
+        [FromServices] IResourceRequestService resourceRequestService,
         string name,
         string environment,
         CancellationToken ct)
@@ -351,9 +352,20 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
+        var resourceRequests = await resourceRequestService.FindActive([name], ct);
+
         var resources = entity.Environments.TryGetValue(environment, out var entityEnvironment)
             ? EntityResourceMapper.FromCdpTenant(entityEnvironment)
             : new EntityResources();
+        
+        foreach (var request in resourceRequests)
+        {
+            resources = EntityResourceCombiner.Combine(
+                resources,
+                EntityResourceMapper.FromResourceRequestRecord(request, entity)
+            );
+        }
+            
         return TypedResults.Ok(resources);
     }
     
