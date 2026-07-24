@@ -334,7 +334,7 @@ public static class EntitiesEndpoint
             {
                 environments[env] = EntityResourceCombiner.Combine(
                     environments[env],
-                    EntityResourceMapper.FromResourceRequestRecord(request, entity)
+                    EntityResourceMapper.FromResourceRequestRecord(request, entity, env)
                 );
             }
         }
@@ -362,7 +362,7 @@ public static class EntitiesEndpoint
         {
             resources = EntityResourceCombiner.Combine(
                 resources,
-                EntityResourceMapper.FromResourceRequestRecord(request, entity)
+                EntityResourceMapper.FromResourceRequestRecord(request, entity, environment)
             );
         }
             

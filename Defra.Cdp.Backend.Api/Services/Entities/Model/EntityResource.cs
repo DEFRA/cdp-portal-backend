@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 
@@ -51,9 +52,9 @@ public static class EntityResourceMapper
     public static EntityResource<TenantCognitoIdentityPool> Map(TenantCognitoIdentityPool cog) => new(Cognito.Name, Cognito.Icon, cog.IdentityPoolName, cog);
     public static EntityResource<CdpBedrockProfile> Map(CdpBedrockProfile ai) => new(Bedrock.Name, Bedrock.Icon, ai.Name, ai);
 
-    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3, string resourceRequestId) => new(S3.Name, S3.Icon, s3.Name /* TODO: example name */, new TenantS3Bucket
+    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3, string resourceRequestId, string env) => new(S3.Name, S3.Icon, ExpandBucketName(s3.Name, env), new TenantS3Bucket
     {
-        BucketName = s3.Name,   // TODO: Expand name
+        BucketName = ExpandBucketName(s3.Name, env),
         Versioning = s3.Versioning ? "Enabled" : "Disabled"
     })
     {
@@ -105,21 +106,27 @@ public static class EntityResourceMapper
         };
     }
 
-    public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request, Entity entity)
+    public static EntityResources FromResourceRequestRecord(ResourceRequestRecord request, Entity entity, string env)
     {
         var resourceRequestId = request.Id.ToString()!;
         var name = entity.Name;
 
         return new EntityResources
         {
-            S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId)).ToList() ?? [],
+            S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId, env)).ToList() ?? [],
             SqsQueues = request.Resources?.SqsQueues?.FindAll(s3 => s3.Service == name).Select(sqs => Map(sqs, resourceRequestId)).ToList() ?? [],
             SnsTopics = request.Resources?.SnsTopics?.FindAll(s3 => s3.Service == name).Select(sns => Map(sns, resourceRequestId)).ToList() ?? []
         };
     }
 
-    private static string FifoName(string name, bool isFifo) {
+    private static string FifoName(string name, bool isFifo)
+    {
         return isFifo ? name + ".fifo" : name;
+    }
+
+    private static string ExpandBucketName(string name, string env)
+    {
+        return EntityResourceService.BucketNameForEnv(name, env);
     }
 }
 
