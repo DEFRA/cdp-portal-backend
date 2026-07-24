@@ -51,14 +51,45 @@ public static class EntityResourceMapper
     public static EntityResource<TenantCognitoIdentityPool> Map(TenantCognitoIdentityPool cog) => new(Cognito.Name, Cognito.Icon, cog.IdentityPoolName, cog);
     public static EntityResource<CdpBedrockProfile> Map(CdpBedrockProfile ai) => new(Bedrock.Name, Bedrock.Icon, ai.Name, ai);
 
-    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3, string resourceRequestId) => new(S3.Name, S3.Icon, s3.Name, new TenantS3Bucket
+    public static EntityResource<TenantS3Bucket> Map(CreateTenantS3Bucket s3, string resourceRequestId) => new(S3.Name, S3.Icon, s3.Name /* TODO: example name */, new TenantS3Bucket
     {
         BucketName = s3.Name,   // TODO: Expand name
         Versioning = s3.Versioning ? "Enabled" : "Disabled"
-    }){
+    })
+    {
         ResourceRequestId = resourceRequestId
     };
 
+    public static EntityResource<TenantSqsQueue> Map(CreateTenantSqsQueue sqs, string resourceRequestId) => new(SQS.Name, SQS.Icon, FifoName(sqs.Name, sqs.Fifo), new TenantSqsQueue
+    {
+        Name = FifoName(sqs.Name, sqs.Fifo),
+        FifoQueue = sqs.Fifo,
+        ContentBasedDeduplication = sqs.ContentBasedDeduplication,
+        // Subscriptions = []   // TODO: handle subs
+
+        // TODO: What about these?
+        // ReceiveWaitTimeSeconds = 
+        // sqs.VisibilityTimeout
+        // sqs.ContentBasedDeduplication
+        // sqs.DeduplicationScope
+        // sqs.FifoThroughputLimit
+        // sqs.DqlMaxReceiveCount
+        // sqs.RedriveAllowPolicyByQueue
+    })
+    {
+        ResourceRequestId = resourceRequestId
+    };
+
+    public static EntityResource<TenantSnsTopic> Map(CreateTenantSnsTopic sns, string resourceRequestId) => new(SNS.Name, SNS.Icon, FifoName(sns.Name, sns.Fifo), new TenantSnsTopic
+    {
+        Name = FifoName(sns.Name, sns.Fifo),
+        FifoTopic = sns.Fifo,
+        ContentBasedDeduplication = sns.ContentDeduplication
+    })
+    {
+        ResourceRequestId = resourceRequestId
+    };
+    
     public static EntityResources FromCdpTenant(CdpTenant tenant)
     {
         return new EntityResources
@@ -82,9 +113,13 @@ public static class EntityResourceMapper
         return new EntityResources
         {
             S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId)).ToList() ?? [],
-            //SqsQueues = tenant.SqsQueues?.Select(Map).ToList() ?? [],
-            //SnsTopics = tenant.SnsTopics?.Select(Map).ToList() ?? []
+            SqsQueues = request.Resources?.SqsQueues?.FindAll(s3 => s3.Service == name).Select(sqs => Map(sqs, resourceRequestId)).ToList() ?? [],
+            SnsTopics = request.Resources?.SnsTopics?.FindAll(s3 => s3.Service == name).Select(sns => Map(sns, resourceRequestId)).ToList() ?? []
         };
+    }
+
+    private static string FifoName(string name, bool isFifo) {
+        return isFifo ? name + ".fifo" : name;
     }
 }
 
