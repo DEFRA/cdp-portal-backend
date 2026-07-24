@@ -131,18 +131,27 @@ public static class EntityResourceMapper
 }
 
 public static class EntityResourceCombiner {
-    public static EntityResources Combine(EntityResources primary, EntityResources secondary) {
+
+    /*
+     * Combine EntityResources based on Name. primary takes precedence over a match on secondary
+     */
+    public static EntityResources Combine(EntityResources primary, EntityResources secondary)
+    {
         return new EntityResources
         {
-            S3Buckets = primary.S3Buckets.Concat(secondary.S3Buckets).ToList() ?? [],
-            SqsQueues = primary.SqsQueues,
-            SnsTopics = primary.SnsTopics,
-
+            S3Buckets = primary.S3Buckets.Concat(Deduplicate(secondary.S3Buckets, primary.S3Buckets)).ToList() ?? [],
+            SqsQueues = primary.SqsQueues.Concat(Deduplicate(secondary.SqsQueues, primary.SqsQueues)).ToList() ?? [],
+            SnsTopics = primary.SnsTopics.Concat(Deduplicate(secondary.SnsTopics, primary.SnsTopics)).ToList() ?? [],
+            
             SqlDatabase = primary.SqlDatabase,
             Dynamodb = primary.Dynamodb,
             ApiGateways = primary.ApiGateways,
             CognitoIdentityPool = primary.CognitoIdentityPool,
             BedrockAi = primary.BedrockAi
         };
+    }
+
+    public static List<EntityResource<T>> Deduplicate<T>(List<EntityResource<T>> items, List<EntityResource<T>> existing) {
+        return items.FindAll(item => existing.Find(e => e.Name == item.Name) == null);
     }
 }
