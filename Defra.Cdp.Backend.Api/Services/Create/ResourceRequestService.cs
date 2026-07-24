@@ -157,8 +157,17 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
 
     public async Task<List<ResourceRequestRecord>> FindActive(string[] services, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<ResourceRequestRecord>.Filter
-            .AnyIn(r => r.Entities, services);
+        var builder = Builders<ResourceRequestRecord>.Filter;
+        var filter = builder.Empty;
+
+        filter &= builder.AnyIn(r => r.Entities, services);
+        filter &= builder.Or(
+            builder.In(r => r.Status, ["requested", "pending"]),
+            builder.And(
+                builder.In(r => r.Status, ["merged"]),
+                builder.Gte(r => r.ModifiedAt, DateTime.Now.AddDays(-1))
+            )
+        );
 
         return await Collection.Find(filter).ToListAsync(cancellationToken);
     }

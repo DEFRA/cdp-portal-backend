@@ -114,8 +114,8 @@ public static class EntityResourceMapper
         return new EntityResources
         {
             S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId, env)).ToList() ?? [],
-            SqsQueues = request.Resources?.SqsQueues?.FindAll(s3 => s3.Service == name).Select(sqs => Map(sqs, resourceRequestId)).ToList() ?? [],
-            SnsTopics = request.Resources?.SnsTopics?.FindAll(s3 => s3.Service == name).Select(sns => Map(sns, resourceRequestId)).ToList() ?? []
+            SqsQueues = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => Map(sqs, resourceRequestId)).ToList() ?? [],
+            SnsTopics = request.Resources?.SnsTopics?.FindAll(sns => sns.Service == name).Select(sns => Map(sns, resourceRequestId)).ToList() ?? []
         };
     }
 
