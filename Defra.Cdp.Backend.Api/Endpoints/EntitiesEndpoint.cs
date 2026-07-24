@@ -322,7 +322,7 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var resourceRequests = await resourceRequestService.Find(new ResourceRequestMatcher([name], null, null, null, null), ct);
+        var resourceRequests = await resourceRequestService.FindActive([name], ct);
 
         var environments = new Dictionary<string, EntityResources>();
 
