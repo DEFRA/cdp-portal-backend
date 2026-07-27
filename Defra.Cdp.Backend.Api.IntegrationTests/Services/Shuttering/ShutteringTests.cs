@@ -15,6 +15,12 @@ namespace Defra.Cdp.Backend.Api.IntegrationTests.Services.Shuttering;
 public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(fixture)
 {
     private static IConfiguration EmptyConfig() => new ConfigurationBuilder().Build();
+    private static IConfiguration TimeoutConfig(int seconds) =>
+        new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["ShutteringPendingTimeoutSeconds"] = seconds.ToString()
+            }).Build();
 
     [Fact]
     public async Task TestShutteringStatus()
@@ -33,10 +39,12 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var states = await shutteringService.ShutteringStatesForService(_entity.Name, ct);
         Assert.Single(states);
         Assert.Equal(ShutteringStatus.PendingShuttered, states[0].Status);
+        Assert.True(states[0].RequestedShuttered);
 
         var stateByUrl = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(stateByUrl);
         Assert.Equal(ShutteringStatus.PendingShuttered, stateByUrl.Status);
+        Assert.True(stateByUrl.RequestedShuttered);
 
         var missingState = await shutteringService.ShutteringStatesForService(_entity.Name, "bar.com", ct);
         Assert.Null(missingState);
@@ -69,6 +77,7 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         var status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.PendingShuttered, status.Status);
+        Assert.True(status.RequestedShuttered);
 
         // Update entity so that shuttering is complete
         var updatedEntity = await entityService.GetEntity(_entity.Name, ct);
@@ -81,6 +90,7 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.Shuttered, status.Status);
+        Assert.True(status.RequestedShuttered);
 
         // Unshutter the service 
         await shutteringService.Register(new ShutteringRecord("prod", _entity.Name, "foo.com", "", false, new UserDetails(),
@@ -90,6 +100,7 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.PendingActive, status.Status);
+        Assert.False(status.RequestedShuttered);
 
         // Entity updates with the new status
         updatedEntity.Environments["prod"].Urls["foo.com"].Shuttered = false;
@@ -99,9 +110,43 @@ public class ShutteringTests(MongoContainerFixture fixture) : MongoTestSupport(f
         status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
         Assert.NotNull(status);
         Assert.Equal(ShutteringStatus.Active, status.Status);
+        Assert.False(status.RequestedShuttered);
 
         await notificationDispatcher.Received(1).Dispatch(Arg.Any<ShutteredEvent>(), ct);
         await notificationDispatcher.Received(1).Dispatch(Arg.Any<UnshutteredEvent>(), ct);
+    }
+
+    [Fact]
+    public async Task TestShutteringPendingStatusTimesOut()
+    {
+        var connectionFactory = CreateMongoDbClientFactory();
+        var entityService = new EntitiesService(connectionFactory, new NullLoggerFactory());
+        var shutteringArchiveService = new ShutteringArchiveService(connectionFactory, new NullLoggerFactory());
+        var notificationDispatcher = Substitute.For<INotificationDispatcher>();
+        var shutteringService = new ShutteringService(
+            connectionFactory,
+            entityService,
+            shutteringArchiveService,
+            notificationDispatcher,
+            TimeoutConfig(60),
+            new NullLoggerFactory());
+        var ct = TestContext.Current.CancellationToken;
+
+        await entityService.Create(_entity, ct);
+        await shutteringService.Register(new ShutteringRecord(
+            "prod",
+            _entity.Name,
+            "foo.com",
+            "",
+            true,
+            new UserDetails(),
+            DateTime.UtcNow.AddSeconds(-120)), ct);
+
+        var status = await shutteringService.ShutteringStatesForService(_entity.Name, "foo.com", ct);
+
+        Assert.NotNull(status);
+        Assert.Equal(ShutteringStatus.Active, status.Status);
+        Assert.True(status.RequestedShuttered);
     }
 
 

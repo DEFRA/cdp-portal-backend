@@ -25,6 +25,7 @@ public class ShutteringService(
         CollectionName, loggerFactory), IShutteringService
 {
     private const string CollectionName = "shutteringrecords";
+    private const int DefaultPendingTimeoutSeconds = 900; // 15 minutes
 
     private readonly ILogger<ShutteringService> _logger = loggerFactory.CreateLogger<ShutteringService>();
 
@@ -32,6 +33,8 @@ public class ShutteringService(
         (configuration.GetValue<string>("ShutterV2Environments") ?? "")
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    private readonly TimeSpan _pendingTimeout = TimeSpan.FromSeconds(
+        configuration.GetValue<int>("ShutteringPendingTimeoutSeconds", DefaultPendingTimeoutSeconds));
 
     public async Task Register(ShutteringRecord shutteringRecord, CancellationToken cancellationToken)
     {
@@ -66,7 +69,8 @@ public class ShutteringService(
                     .Find(s => s.ServiceName == name && s.Url == url && s.Environment == env)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered);
+                var isTimedOut = IsPendingTimedOut(requestedState?.ActionedAt);
+                var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered, isTimedOut);
                 var urlType = UrlToWafUrlType(url, envConfig);
                 var waf = ResolveWaf(env, url, envConfig, urlData);
                 
@@ -80,6 +84,7 @@ public class ShutteringService(
                     Waf = waf,
                     LastActionedAt = requestedState?.ActionedAt,
                     LastActionedBy = requestedState?.ActionedBy,
+                    RequestedShuttered = requestedState?.Shuttered,
                     Status = status,
                     Delegated = urlData.Delegated
                 });
@@ -96,8 +101,13 @@ public class ShutteringService(
         return urls.FirstOrDefault(u => u.Url.Equals(url, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static ShutteringStatus ShutteringStatus(bool? request, bool actual)
+    public static ShutteringStatus ShutteringStatus(bool? request, bool actual, bool timedOut = false)
     {
+        if (timedOut && request is not null)
+        {
+            return actual ? Models.ShutteringStatus.Shuttered : Models.ShutteringStatus.Active;
+        }
+
         return (request, actual) switch
         {
             (null, true) => Models.ShutteringStatus.Shuttered,
@@ -107,6 +117,16 @@ public class ShutteringService(
             (false, true) => Models.ShutteringStatus.PendingActive,
             (false, false) => Models.ShutteringStatus.Active
         };
+    }
+
+    private bool IsPendingTimedOut(DateTime? actionedAt)
+    {
+        if (actionedAt is null)
+        {
+            return false;
+        }
+
+        return DateTime.UtcNow - actionedAt.Value > _pendingTimeout;
     }
 
     /// <summary>

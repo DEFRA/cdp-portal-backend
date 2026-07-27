@@ -17,6 +17,7 @@ public record ShutteringUrlState
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ShutteringStatus Status { get; set; }
 
+    public bool? RequestedShuttered { get; set; }
     public UserDetails? LastActionedBy { get; set; }
     public DateTime? LastActionedAt { get; set; }
 }
