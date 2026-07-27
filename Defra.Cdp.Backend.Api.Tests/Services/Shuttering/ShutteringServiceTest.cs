@@ -31,6 +31,18 @@ public class ShutteringServiceTest
     }
 
     [Fact]
+    public void shuttered_when_pending_active_has_timed_out()
+    {
+        Assert.Equal(ShutteringStatus.Shuttered, ShutteringService.ShutteringStatus(false, true, timedOut: true));
+    }
+
+    [Fact]
+    public void active_when_pending_shuttered_has_timed_out()
+    {
+        Assert.Equal(ShutteringStatus.Active, ShutteringService.ShutteringStatus(true, false, timedOut: true));
+    }
+
+    [Fact]
     public void correctly_detects_waf_type()
     {
         const string urlFrontend = "vanity.url";
