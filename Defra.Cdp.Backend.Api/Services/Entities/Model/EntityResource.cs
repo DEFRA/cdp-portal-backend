@@ -61,16 +61,15 @@ public static class EntityResourceMapper
         ResourceRequestId = resourceRequestId
     };
 
-    public static EntityResource<TenantSqsQueue> Map(CreateTenantSqsQueue sqs, string resourceRequestId) => new(SQS.Name, SQS.Icon, FifoName(sqs.Name, sqs.Fifo), new TenantSqsQueue
+    public static EntityResource<TenantSqsQueue> Map(CreateTenantSqsQueue sqs, string resourceRequestId, List<CreateTenantSubscription>? subscriptions) => new(SQS.Name, SQS.Icon, FifoName(sqs.Name, sqs.Fifo), new TenantSqsQueue
     {
         Name = FifoName(sqs.Name, sqs.Fifo),
         FifoQueue = sqs.Fifo,
         ContentBasedDeduplication = sqs.ContentBasedDeduplication,
-        ReceiveWaitTimeSeconds = 20 // a default?
-        // Subscriptions = []   // TODO: handle subs
+        Subscriptions = subscriptions?.FindAll(sub => sub.Queue == FifoName(sqs.Name, sqs.Fifo)).Select(sub => sub.Topic).ToList() ?? [],
 
-        // TODO: What about these?
-        // ReceiveWaitTimeSeconds = 
+        // TODO: These have no correlation between request and resource
+        ReceiveWaitTimeSeconds = 20 // a default?
         // sqs.VisibilityTimeout
         // sqs.ContentBasedDeduplication
         // sqs.DeduplicationScope
@@ -115,7 +114,7 @@ public static class EntityResourceMapper
         return new EntityResources
         {
             S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId, env)).ToList() ?? [],
-            SqsQueues = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => Map(sqs, resourceRequestId)).ToList() ?? [],
+            SqsQueues = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => Map(sqs, resourceRequestId, request.Resources?.Subscriptions)).ToList() ?? [],
             SnsTopics = request.Resources?.SnsTopics?.FindAll(sns => sns.Service == name).Select(sns => Map(sns, resourceRequestId)).ToList() ?? []
         };
     }
