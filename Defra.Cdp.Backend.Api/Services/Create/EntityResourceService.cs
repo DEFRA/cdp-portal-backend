@@ -80,7 +80,7 @@ public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IE
         return await _collection.Find(filter).Project(e => e.Name).FirstOrDefaultAsync(cancellationToken);
     }
     
-    private static string BucketNameForEnv(string name, string env)
+    public static string BucketNameForEnv(string name, string env)
     {
         // The first 5 chars of the md5 of the account id
         var envHash = env switch

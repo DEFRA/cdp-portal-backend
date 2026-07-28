@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Grafana;
@@ -314,23 +315,36 @@ public static class EntitiesEndpoint
     
     private static async Task<Results<NotFound, Ok<Dictionary<string, EntityResources>>>> GetEntityResources(
         [FromServices] IEntitiesService entitiesService,
+        [FromServices] IResourceRequestService resourceRequestService,
         string name,
         CancellationToken ct)
     {
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
+        var resourceRequests = await resourceRequestService.FindActive([name], ct);
+
         var environments = new Dictionary<string, EntityResources>();
 
         foreach (var env in entity.Environments.Keys)
         {
             environments[env] = EntityResourceMapper.FromCdpTenant(entity.Environments[env]);
+
+            foreach (var request in resourceRequests)
+            {
+                environments[env] = EntityResourceCombiner.Combine(
+                    environments[env],
+                    EntityResourceMapper.FromResourceRequestRecord(request, entity, env)
+                );
+            }
         }
+        
         return TypedResults.Ok(environments);
     }
 
     private static async Task<Results<NotFound, Ok<EntityResources>>> GetEntityResourcesForEnv(
         [FromServices] IEntitiesService entitiesService,
+        [FromServices] IResourceRequestService resourceRequestService,
         string name,
         string environment,
         CancellationToken ct)
@@ -338,9 +352,20 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
+        var resourceRequests = await resourceRequestService.FindActive([name], ct);
+
         var resources = entity.Environments.TryGetValue(environment, out var entityEnvironment)
             ? EntityResourceMapper.FromCdpTenant(entityEnvironment)
             : new EntityResources();
+        
+        foreach (var request in resourceRequests)
+        {
+            resources = EntityResourceCombiner.Combine(
+                resources,
+                EntityResourceMapper.FromResourceRequestRecord(request, entity, environment)
+            );
+        }
+            
         return TypedResults.Ok(resources);
     }
     
