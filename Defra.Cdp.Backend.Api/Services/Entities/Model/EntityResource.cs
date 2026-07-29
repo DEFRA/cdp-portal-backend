@@ -67,8 +67,6 @@ public static class EntityResourceMapper
         FifoQueue = sqs.Fifo,
         ContentBasedDeduplication = sqs.ContentBasedDeduplication,
         Subscriptions = subscriptions?.FindAll(sub => sub.Queue == FifoName(sqs.Name, sqs.Fifo)).Select(sub => sub.Topic).ToList() ?? [],
-
-        // TODO: These have no correlation between request and resource
         ReceiveWaitTimeSeconds = 20, // a default?
         RedriveAllowPolicyByQueue = sqs.RedriveAllowPolicyByQueue,
         DeduplicationScope = sqs.DeduplicationScope ?? "",

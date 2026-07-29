@@ -558,12 +558,14 @@ public class TenantSqlDatabase
 public class TenantSqsQueue
 {
     [property: JsonPropertyName("arn")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("name")]
     public string Name { get; set; }
 
     [property: JsonPropertyName("url")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Url { get; set; }
 
     [property: JsonPropertyName("fifo_queue")]
@@ -620,7 +622,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "0cb3ff615aad1d8a50381f98d0b7302044a02a0386c86e533c94d90919f2baa9";
+    public static readonly string Version = "386231a28acab3f03a368bc43f3d71de1fce30259d9ffbec5f4a52d6a67dcaed";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
