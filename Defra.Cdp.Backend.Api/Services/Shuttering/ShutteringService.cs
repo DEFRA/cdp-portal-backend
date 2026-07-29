@@ -25,7 +25,7 @@ public class ShutteringService(
         CollectionName, loggerFactory), IShutteringService
 {
     private const string CollectionName = "shutteringrecords";
-    private const int DefaultPendingTimeoutSeconds = 900; // 15 minutes
+    private const int DefaultPendingTimeoutSeconds = 1800; // 30 minutes
 
     private readonly ILogger<ShutteringService> _logger = loggerFactory.CreateLogger<ShutteringService>();
 
