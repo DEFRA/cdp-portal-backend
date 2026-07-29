@@ -492,14 +492,12 @@ public class TenantMetadataApiDocs
 public class TenantS3Bucket
 {
     [property: JsonPropertyName("arn")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("bucket_name")]
     public string BucketName { get; set; }
 
     [property: JsonPropertyName("bucket_domain_name")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? BucketDomainName { get; set; }
 
     [property: JsonPropertyName("versioning")]
@@ -511,7 +509,6 @@ public class TenantS3Bucket
 public class TenantSnsTopic
 {
     [property: JsonPropertyName("arn")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("name")]
@@ -561,14 +558,12 @@ public class TenantSqlDatabase
 public class TenantSqsQueue
 {
     [property: JsonPropertyName("arn")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Arn { get; set; }
 
     [property: JsonPropertyName("name")]
     public string Name { get; set; }
 
     [property: JsonPropertyName("url")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Url { get; set; }
 
     [property: JsonPropertyName("fifo_queue")]
@@ -582,6 +577,21 @@ public class TenantSqsQueue
 
     [property: JsonPropertyName("subscriptions")]
     public List<string> Subscriptions { get; set; }
+
+    [property: JsonPropertyName("deadletter_queue_arn")]
+    public string DeadletterQueueArn { get; set; }
+
+    [property: JsonPropertyName("deduplication_scope")]
+    public string DeduplicationScope { get; set; }
+
+    [property: JsonPropertyName("fifo_throughput_limit")]
+    public string FifoThroughputLimit { get; set; }
+
+    [property: JsonPropertyName("redrive_allow_policy_by_queue")]
+    public bool RedriveAllowPolicyByQueue { get; set; }
+
+    [property: JsonPropertyName("visibility_timeout_seconds")]
+    public int VisibilityTimeoutSeconds { get; set; }
 
 }
 
@@ -610,8 +620,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "35e85d5662d5b62def16a18ae05cafbdcb9cd0a375e01a6709deeacb61f71762";
+    public static readonly string Version = "0cb3ff615aad1d8a50381f98d0b7302044a02a0386c86e533c94d90919f2baa9";
 }
-
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
