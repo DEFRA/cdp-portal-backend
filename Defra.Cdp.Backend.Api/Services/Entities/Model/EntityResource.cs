@@ -69,13 +69,11 @@ public static class EntityResourceMapper
         Subscriptions = subscriptions?.FindAll(sub => sub.Queue == FifoName(sqs.Name, sqs.Fifo)).Select(sub => sub.Topic).ToList() ?? [],
 
         // TODO: These have no correlation between request and resource
-        ReceiveWaitTimeSeconds = 20 // a default?
-        // sqs.VisibilityTimeout
-        // sqs.ContentBasedDeduplication
-        // sqs.DeduplicationScope
-        // sqs.FifoThroughputLimit
-        // sqs.DqlMaxReceiveCount
-        // sqs.RedriveAllowPolicyByQueue
+        ReceiveWaitTimeSeconds = 20, // a default?
+        RedriveAllowPolicyByQueue = sqs.RedriveAllowPolicyByQueue,
+        DeduplicationScope = sqs.DeduplicationScope ?? "",
+        FifoThroughputLimit = sqs.FifoThroughputLimit ?? "",
+        VisibilityTimeoutSeconds = sqs.VisibilityTimeout ?? 0
     })
     {
         ResourceRequestId = resourceRequestId
