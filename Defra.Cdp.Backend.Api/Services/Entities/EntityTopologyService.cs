@@ -1,4 +1,5 @@
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -9,6 +10,9 @@ public interface IEntityTopologyService
 {
     Task<List<TopologyService>> ListTopologyOfEntity(string name, string environment,
         CancellationToken ct = default);
+
+    Task<List<TopologyService>> ListTopologyOfResourceRequest(ResourceRequestRecord request, string name, string environment,
+         CancellationToken ct = default);
 }
 
 public record QueueSubscriptions(string Service, SubType SubType, List<Team> Teams, string Queue, string Topic);
@@ -83,6 +87,12 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
 
         return LinkResources(rootService, resources, queueTopicLookup, topicLookup);
+    }
+
+    public async Task<List<TopologyService>> ListTopologyOfResourceRequest(ResourceRequestRecord request, string name, string environment,
+        CancellationToken ct = default)
+    {
+        return [];
     }
     
     public static List<TopologyService> LinkResources(TopologyService rootService,  EntityResources resources, List<QueueSubscriptions> queueTopicLookup, List<TopicOwner> topicLookup)

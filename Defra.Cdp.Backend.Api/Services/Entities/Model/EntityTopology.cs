@@ -21,3 +21,15 @@ public record TopologyService(string Name,
     List<Team> Teams,
     List<TopologyResource> Resources
 );
+
+
+public static class TopologyServiceCombiner {
+
+    /*
+     * Combine TopologyServices based on Name. primary takes precedence over a match on secondary
+     */
+    public static List<TopologyService> Combine(List<TopologyService> primary, List<TopologyService> secondary)
+    {
+        return primary;
+    }
+}
