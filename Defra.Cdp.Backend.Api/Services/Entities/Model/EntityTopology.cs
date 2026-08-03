@@ -26,10 +26,10 @@ public record TopologyService(string Name,
 public static class TopologyServiceCombiner {
 
     /*
-     * Combine TopologyServices based on Name. primary takes precedence over a match on secondary
+     * Combine TopologyServices based on TopologyResource Name. primary takes precedence over a match on secondary
      */
     public static List<TopologyService> Combine(List<TopologyService> primary, List<TopologyService> secondary)
     {
-        return primary;
+        return secondary;
     }
 }
