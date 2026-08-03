@@ -15,11 +15,16 @@ public interface IEntityTopologyService
          CancellationToken ct = default);
 }
 
-public record QueueSubscriptions(string Service, SubType SubType, List<Team> Teams, string Queue, string Topic);
+public record QueueSubscriptions(string Service, SubType SubType, List<Team> Teams, string Queue, string Topic)
+{
+    public string? ResourceRequestId { get; set; } = null;
+};
+
 public record TopicOwner(string Service, SubType SubType, List<Team> Teams, string Topic);
 
-public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) : IEntityTopologyService {
-  
+public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) : IEntityTopologyService
+{
+
     private async Task<List<QueueSubscriptions>> BuildQueueLookup(string environment, CancellationToken ct)
     {
         var collection = mongoDbClientFactory.GetCollection<Entity>("entities");
@@ -47,7 +52,14 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             .Aggregate<QueueSubscriptions>(pipeline, cancellationToken: ct)
             .ToListAsync(ct);
     }
-    
+
+    private async Task<List<QueueSubscriptions>> BuildQueueLookupFromResourceRequest(ResourceRequestRecord request, string environment, CancellationToken ct)
+    {
+        // Get Entities by QueueService?
+
+        return []; // request.Resources?.Subscriptions.Select(sub => new QueueSubscriptions(sub.QueueService, null, [], sub.Queue, sub.Topic)).ToList() ?? [];
+    }
+
     private async Task<List<TopicOwner>> BuildTopicLookup(string environment, CancellationToken ct)
     {
         var collection = mongoDbClientFactory.GetCollection<Entity>("entities");
@@ -99,21 +111,23 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         }
 
         var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
-        
-        return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), [], []);
+        var queueTopicLookup = await BuildQueueLookupFromResourceRequest(request);
+
+        return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), queueTopicLookup, []);
     }
-    
-    public static List<TopologyService> LinkResources(TopologyService rootService,  EntityResources resources, List<QueueSubscriptions> queueTopicLookup, List<TopicOwner> topicLookup)
+
+    public static List<TopologyService> LinkResources(TopologyService rootService, EntityResources resources, List<QueueSubscriptions> queueTopicLookup, List<TopicOwner> topicLookup)
     {
-        
+
         var services = new Dictionary<string, TopologyService>
         {
             [rootService.Name] = rootService
         };
 
-        
+
         // S3 Buckets
-        foreach (var resource in resources.S3Buckets.Select(resourceS3Bucket => new TopologyResource(resourceS3Bucket.Name, resourceS3Bucket.Resource, resourceS3Bucket.Icon, []){
+        foreach (var resource in resources.S3Buckets.Select(resourceS3Bucket => new TopologyResource(resourceS3Bucket.Name, resourceS3Bucket.Resource, resourceS3Bucket.Icon, [])
+        {
             ResourceRequestId = resourceS3Bucket.ResourceRequestId
         }))
         {
@@ -122,25 +136,30 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         }
 
         // SNS Topics
-        foreach (var topic in resources.SnsTopics.Select(snsTopic => new TopologyResource(snsTopic.Name, snsTopic.Resource, snsTopic.Icon, []){
+        foreach (var topic in resources.SnsTopics.Select(snsTopic => new TopologyResource(snsTopic.Name, snsTopic.Resource, snsTopic.Icon, [])
+        {
             ResourceRequestId = snsTopic.ResourceRequestId
         }))
         {
             services[rootService.Name].Resources.Add(topic);
-            
+
             // Find any other services that subscribe to it
             var subscriptions = queueTopicLookup.Where(q => q.Topic == topic.Name);
             foreach (var sub in subscriptions)
             {
-                if(sub.Service == rootService.Name) continue;
+                if (sub.Service == rootService.Name) continue;
 
                 services.TryAdd(sub.Service, new TopologyService(sub.Service, sub.SubType, sub.Teams, []));
                 // Link back to root service's topic
                 services[sub.Service].Resources.Add(
-                    new TopologyResource(sub.Queue, EntityResourceMapper.SQS.Name, EntityResourceMapper.SQS.Icon, [ new TopologyResourceLink(rootService.Name, sub.Topic, EntityResourceMapper.SNS.Name, "subscription") ]));
+                    new TopologyResource(sub.Queue, EntityResourceMapper.SQS.Name, EntityResourceMapper.SQS.Icon, [new TopologyResourceLink(rootService.Name, sub.Topic, EntityResourceMapper.SNS.Name, "subscription")])
+                    {
+                        ResourceRequestId = sub.ResourceRequestId
+                    }
+                );
             }
         }
-        
+
         // SQS Queues
         foreach (var queue in resources.SqsQueues)
         {
@@ -154,10 +173,10 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
                 var topicQueueIsSubscribedTo = topicLookup.Find(q => q.Topic == topicName);
                 resource.Links?.Add(new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, EntityResourceMapper.SNS.Name, "subscription"));
-                
+
                 // Add topics owned by services outside the current service
                 if (topicQueueIsSubscribedTo == null || topicQueueIsSubscribedTo.Service == rootService.Name) continue;
-               
+
                 services.TryAdd(topicQueueIsSubscribedTo.Service, new TopologyService(topicQueueIsSubscribedTo.Service, topicQueueIsSubscribedTo.SubType, topicQueueIsSubscribedTo.Teams, []));
                 services[topicQueueIsSubscribedTo.Service].Resources.Add(new TopologyResource(topicName, EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, []));
             }
