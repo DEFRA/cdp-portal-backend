@@ -44,6 +44,9 @@ public record PlaygroundAlertAnnotations
 
     [property: JsonPropertyName("summary")]
     public string? Summary { get; set; }
+
+    [property: JsonPropertyName("runbook_url")]
+    public string? RunbookUrl { get; set; }
 }
 
 [BsonIgnoreExtraElements]
