@@ -55,9 +55,14 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
     private async Task<List<QueueSubscriptions>> BuildQueueLookupFromResourceRequest(ResourceRequestRecord request, string environment, CancellationToken ct)
     {
-        // Get Entities by QueueService?
+        var queueServices = request.Resources?.Subscriptions.Select(sub => sub.QueueService).ToList() ?? [];
 
-        return []; // request.Resources?.Subscriptions.Select(sub => new QueueSubscriptions(sub.QueueService, null, [], sub.Queue, sub.Topic)).ToList() ?? [];
+        var entities = await mongoDbClientFactory.GetCollection<Entity>("entities").Find(e => queueServices.Contains(e.Name)).ToListAsync(ct);
+
+        return request.Resources?.Subscriptions.Select(sub => {
+            var entity = entities.Find(e => e.Name == sub.QueueService)!;
+            return new QueueSubscriptions(sub.QueueService, entity.SubType ?? SubType.Backend, entity.Teams, sub.Queue, sub.Topic);
+        }).ToList() ?? [];
     }
 
     private async Task<List<TopicOwner>> BuildTopicLookup(string environment, CancellationToken ct)
@@ -111,7 +116,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         }
 
         var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
-        var queueTopicLookup = await BuildQueueLookupFromResourceRequest(request);
+        var queueTopicLookup = await BuildQueueLookupFromResourceRequest(request, environment, ct);
 
         return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), queueTopicLookup, []);
     }
@@ -172,13 +177,22 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             {
 
                 var topicQueueIsSubscribedTo = topicLookup.Find(q => q.Topic == topicName);
-                resource.Links?.Add(new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, EntityResourceMapper.SNS.Name, "subscription"));
+                resource.Links?.Add(
+                    new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, EntityResourceMapper.SNS.Name, "subscription") {
+                        ResourceRequestId = queue.ResourceRequestId
+                    }
+                );
 
                 // Add topics owned by services outside the current service
                 if (topicQueueIsSubscribedTo == null || topicQueueIsSubscribedTo.Service == rootService.Name) continue;
 
                 services.TryAdd(topicQueueIsSubscribedTo.Service, new TopologyService(topicQueueIsSubscribedTo.Service, topicQueueIsSubscribedTo.SubType, topicQueueIsSubscribedTo.Teams, []));
-                services[topicQueueIsSubscribedTo.Service].Resources.Add(new TopologyResource(topicName, EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, []));
+                services[topicQueueIsSubscribedTo.Service].Resources.Add(
+                    new TopologyResource(topicName, EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, [])
+                    {
+                        ResourceRequestId = queue.ResourceRequestId
+                    }
+                );
             }
 
             services[rootService.Name].Resources.Add(resource);
