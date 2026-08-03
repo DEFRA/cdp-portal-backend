@@ -29,10 +29,6 @@ public class ShutteringService(
 
     private readonly ILogger<ShutteringService> _logger = loggerFactory.CreateLogger<ShutteringService>();
 
-    private readonly HashSet<string> _shutterV2Environments =
-        (configuration.GetValue<string>("ShutterV2Environments") ?? "")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
     private readonly TimeSpan _pendingTimeout = TimeSpan.FromSeconds(
         configuration.GetValue<int>("ShutteringPendingTimeoutSeconds", DefaultPendingTimeoutSeconds));
 
@@ -72,7 +68,7 @@ public class ShutteringService(
                 var isTimedOut = IsPendingTimedOut(requestedState?.ActionedAt);
                 var status = ShutteringStatus(requestedState?.Shuttered, urlData.Shuttered, isTimedOut);
                 var urlType = UrlToWafUrlType(url, envConfig);
-                var waf = ResolveWaf(env, url, envConfig, urlData);
+                var waf = ResolveWaf(env, url, urlData);
                 
                 output.Add(new ShutteringUrlState
                 {
@@ -130,51 +126,21 @@ public class ShutteringService(
     }
 
     /// <summary>
-    /// Resolves the WAF ACL for a URL: stored value for shutter-v2 environments, legacy heuristic otherwise.
-    /// Logs a warning if a shutter-v2 environment is missing the stored value.
+    /// Resolves the WAF ACL for a URL from platform state.
+    /// Logs a warning if the platform state payload is missing a value.
     /// </summary>
-    private string? ResolveWaf(string env, string url, CdpTenant envConfig, TenantUrl urlData)
+    private string? ResolveWaf(string env, string url, TenantUrl urlData)
     {
-        if (!_shutterV2Environments.Contains(env))
-        {
-            return LegacyUrlToWaf(url, envConfig);
-        }
-
         if (urlData.WafWebAcl == null)
         {
             _logger.LogWarning(
-                "Missing waf_web_acl for shutter-v2 environment {Environment}, url {Url}. " +
-                "Platform state may not have been republished since this URL was added, or cdp-tf-waf " +
-                "isn't tracking it yet.", env, url);
+                "Missing waf_web_acl in platform state for environment {Environment}, url {Url}. " +
+                "Platform state may not have been republished since this URL was added.",
+                env,
+                url);
         }
 
         return urlData.WafWebAcl;
-    }
-
-    /// <summary>
-    /// Computes the WAF ACL category from tenant config. Used only for environments not yet on shutter v2.
-    /// See: https://github.com/DEFRA/cdp-platform-documentation/blob/main/infrastructure/shuttering.md
-    /// Remove once shutter v2 has fully rolled out.
-    /// </summary>
-    /// <param name="url"></param>
-    /// <param name="envConfig"></param>
-    /// <returns></returns>
-    public static string LegacyUrlToWaf(string url, CdpTenant envConfig)
-    {
-        var isPublic = envConfig.TenantConfig?.Zone == "public";
-        var isNginx = envConfig.Nginx?.Servers.ContainsKey(url);
-        var isInternal = url.EndsWith(".defra.cloud");
-
-        return (isPublic, isNginx, isInternal) switch
-        {
-            (true, true, false) => "external_public",
-            (true, true, true) => "internal_public",
-            (false, true, true) => "internal_protected",
-
-            (true, false, false) => "api_public",
-            (false, false, false) => "api_private",
-            _ => "external_public"
-        };
     }
 
     
