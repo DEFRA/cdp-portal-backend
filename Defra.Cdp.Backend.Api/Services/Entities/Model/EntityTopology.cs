@@ -30,6 +30,21 @@ public static class TopologyServiceCombiner {
      */
     public static List<TopologyService> Combine(List<TopologyService> primary, List<TopologyService> secondary)
     {
-        return secondary;
+        return primary.Select(prime => {
+            var matchingService = secondary.Find(sec => sec.Name == prime.Name);
+            return matchingService == null ? prime : new TopologyService(prime.Name, prime.Type, prime.Teams, Combine(prime.Resources, matchingService.Resources));
+        }).ToList() ?? [];
+    }
+
+    /*
+     * Combine TopologyResources based on Name. primary takes precedence over a match on secondary
+     */
+    private static List<TopologyResource> Combine(List<TopologyResource> primary, List<TopologyResource> secondary)
+    {
+        return primary.Concat(Deduplicate(secondary, primary)).ToList() ?? [];
+    }
+
+    private static List<TopologyResource> Deduplicate(List<TopologyResource> items, List<TopologyResource> existing) {
+        return items.FindAll(item => existing.Find(e => e.Name == item.Name) == null);
     }
 }
