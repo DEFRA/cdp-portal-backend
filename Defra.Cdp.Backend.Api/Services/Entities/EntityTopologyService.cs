@@ -92,7 +92,15 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
     public async Task<List<TopologyService>> ListTopologyOfResourceRequest(ResourceRequestRecord request, string name, string environment,
         CancellationToken ct = default)
     {
-        return [];
+        var entity = await mongoDbClientFactory.GetCollection<Entity>("entities").Find(e => e.Name == name).FirstOrDefaultAsync(ct);
+        if (entity == null || !entity.Environments.ContainsKey(environment))
+        {
+            return [];
+        }
+
+        var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
+        
+        return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), [], []);
     }
     
     public static List<TopologyService> LinkResources(TopologyService rootService,  EntityResources resources, List<QueueSubscriptions> queueTopicLookup, List<TopicOwner> topicLookup)
@@ -105,14 +113,18 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
         
         // S3 Buckets
-        foreach (var resource in resources.S3Buckets.Select(resourceS3Bucket => new TopologyResource(resourceS3Bucket.Name, resourceS3Bucket.Resource, resourceS3Bucket.Icon, [])))
+        foreach (var resource in resources.S3Buckets.Select(resourceS3Bucket => new TopologyResource(resourceS3Bucket.Name, resourceS3Bucket.Resource, resourceS3Bucket.Icon, []){
+            ResourceRequestId = resourceS3Bucket.ResourceRequestId
+        }))
         {
             services[rootService.Name].Resources.Add(resource);
             // TODO: add shared access once we have the IAM data in the entity
         }
 
         // SNS Topics
-        foreach (var topic in resources.SnsTopics.Select(snsTopic => new TopologyResource(snsTopic.Name, snsTopic.Resource, snsTopic.Icon, [])))
+        foreach (var topic in resources.SnsTopics.Select(snsTopic => new TopologyResource(snsTopic.Name, snsTopic.Resource, snsTopic.Icon, []){
+            ResourceRequestId = snsTopic.ResourceRequestId
+        }))
         {
             services[rootService.Name].Resources.Add(topic);
             
@@ -132,7 +144,11 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         // SQS Queues
         foreach (var queue in resources.SqsQueues)
         {
-            var resource = new TopologyResource(queue.Name, queue.Resource, queue.Icon, []);
+            var resource = new TopologyResource(queue.Name, queue.Resource, queue.Icon, [])
+            {
+                ResourceRequestId = queue.ResourceRequestId
+            };
+
             foreach (var topicName in queue.Properties.Subscriptions)
             {
 
