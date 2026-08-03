@@ -371,11 +371,23 @@ public static class EntitiesEndpoint
     
     private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(
         [FromServices] IEntityTopologyService entityTopologyService,
+        [FromServices] IResourceRequestService resourceRequestService,
         string name,
         string environment,
         CancellationToken ct)
     {
+        var resourceRequests = await resourceRequestService.FindActive([name], ct);
+
         var relationships = await entityTopologyService.ListTopologyOfEntity(name, environment, ct);
+        
+        foreach (var request in resourceRequests)
+        {
+            relationships = TopologyServiceCombiner.Combine(
+                relationships,
+                await entityTopologyService.ListTopologyOfResourceRequest(request, name, environment, ct)
+            );
+        }
+
         if (relationships.Count == 0)
         {
             return TypedResults.NotFound();
