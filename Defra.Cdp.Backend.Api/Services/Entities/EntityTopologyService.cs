@@ -90,6 +90,18 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             .ToListAsync(ct);
     }
 
+    private async Task<List<TopicOwner>> BuildTopicLookupFromResourceRequest(ResourceRequestRecord request, string environment, CancellationToken ct)
+    {
+        var topicServices = request.Resources?.Subscriptions.Select(sub => sub.TopicService).ToList() ?? [];
+
+        var entities = await mongoDbClientFactory.GetCollection<Entity>("entities").Find(e => topicServices.Contains(e.Name)).ToListAsync(ct);
+
+        return request.Resources?.Subscriptions.Select(sub => {
+            var entity = entities.Find(e => e.Name == sub.TopicService)!;
+            return new TopicOwner(sub.TopicService, entity.SubType ?? SubType.Backend, entity.Teams, sub.Topic);
+        }).ToList() ?? [];
+    }
+
     public async Task<List<TopologyService>> ListTopologyOfEntity(string name, string environment,
         CancellationToken ct = default)
     {
@@ -117,8 +129,9 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
         var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
         var queueTopicLookup = await BuildQueueLookupFromResourceRequest(request, environment, ct);
+        var topicLookup = await BuildTopicLookupFromResourceRequest(request, environment, ct);
 
-        return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), queueTopicLookup, []);
+        return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), queueTopicLookup, topicLookup);
     }
 
     public static List<TopologyService> LinkResources(TopologyService rootService, EntityResources resources, List<QueueSubscriptions> queueTopicLookup, List<TopicOwner> topicLookup)
