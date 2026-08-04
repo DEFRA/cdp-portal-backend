@@ -30,10 +30,15 @@ public static class TopologyServiceCombiner {
      */
     public static List<TopologyService> Combine(List<TopologyService> primary, List<TopologyService> secondary)
     {
-        return primary.Select(prime => {
+        var existingServices = primary.Select(prime =>
+        {
             var matchingService = secondary.Find(sec => sec.Name == prime.Name);
             return matchingService == null ? prime : new TopologyService(prime.Name, prime.Type, prime.Teams, Combine(prime.Resources, matchingService.Resources));
         }).ToList() ?? [];
+
+        var newServices = secondary.FindAll(sec => primary.Find(prime => prime.Name == sec.Name) == null).ToList() ?? [];
+
+        return existingServices.Concat(newServices).ToList() ?? [];
     }
 
     /*
