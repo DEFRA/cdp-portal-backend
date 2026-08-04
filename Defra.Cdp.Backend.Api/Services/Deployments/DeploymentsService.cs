@@ -219,10 +219,29 @@ public class DeploymentsService(
         CancellationToken ct)
     {
         var fb = Builders<Deployment>.Filter;
-        var filter = fb.And(
-            fb.Eq(d => d.CdpDeploymentId, cdpDeploymentId));
+        var filter = fb.Eq(d => d.CdpDeploymentId, cdpDeploymentId);
+
+        if (instanceStatus.Version.HasValue)
+        {
+            // Only apply the write if we haven't stored a version yet, or the incoming version isn't stale.
+            // Guards against a redelivered/out-of-order ECS event overwriting a newer status.
+            var versionField = new StringFieldDefinition<Deployment, long?>($"instances.{instanceId}.version");
+            var versionFilter = fb.Or(
+                fb.Exists(versionField, false),
+                fb.Lte(versionField, instanceStatus.Version.Value)
+            );
+            filter = fb.And(filter, versionFilter);
+        }
+
         var update = Builders<Deployment>.Update.Set(d => d.Instances[instanceId], instanceStatus);
-        await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
+        var result = await Collection.UpdateOneAsync(filter, update, cancellationToken: ct);
+
+        if (instanceStatus.Version.HasValue && result.MatchedCount == 0)
+        {
+            Logger.LogInformation(
+                "Skipped stale instance update for {CdpDeploymentId}/{InstanceId}, incoming version {Version}",
+                cdpDeploymentId, instanceId, instanceStatus.Version.Value);
+        }
     }
 
     public async Task<Deployment?> FindDeploymentByTaskArn(string taskArn, CancellationToken ct)

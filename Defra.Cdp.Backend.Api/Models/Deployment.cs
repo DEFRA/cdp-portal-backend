@@ -147,8 +147,10 @@ public class Audit
     public UserServiceUser? User { get; set; }
 }
 
-public class DeploymentInstanceStatus(string status, DateTime updated)
+public class DeploymentInstanceStatus(string status, DateTime updated, long? version = null)
 {
     public string Status { get; init; } = status;
     public DateTime Updated { get; init; } = updated;
+    [BsonIgnoreIfNull]
+    public long? Version { get; init; } = version;
 }
