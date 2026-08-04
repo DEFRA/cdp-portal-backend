@@ -20,7 +20,10 @@ public record QueueSubscriptions(string Service, SubType SubType, List<Team> Tea
     public string? ResourceRequestId { get; set; } = null;
 };
 
-public record TopicOwner(string Service, SubType SubType, List<Team> Teams, string Topic);
+public record TopicOwner(string Service, SubType SubType, List<Team> Teams, string Topic)
+{
+    public string? ResourceRequestId { get; set; } = null;
+};
 
 public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) : IEntityTopologyService
 {
@@ -61,7 +64,9 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
         return request.Resources?.Subscriptions.Select(sub => {
             var entity = entities.Find(e => e.Name == sub.QueueService)!;
-            return new QueueSubscriptions(sub.QueueService, entity.SubType ?? SubType.Backend, entity.Teams, sub.Queue, sub.Topic);
+            return new QueueSubscriptions(sub.QueueService, entity.SubType ?? SubType.Backend, entity.Teams, sub.Queue, sub.Topic){
+                ResourceRequestId = request.Id.ToString()
+            };
         }).ToList() ?? [];
     }
 
@@ -98,7 +103,9 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
 
         return request.Resources?.Subscriptions.Select(sub => {
             var entity = entities.Find(e => e.Name == sub.TopicService)!;
-            return new TopicOwner(sub.TopicService, entity.SubType ?? SubType.Backend, entity.Teams, sub.Topic);
+            return new TopicOwner(sub.TopicService, entity.SubType ?? SubType.Backend, entity.Teams, sub.Topic){
+                ResourceRequestId = request.Id.ToString()
+            };
         }).ToList() ?? [];
     }
 
@@ -192,7 +199,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
                 var topicQueueIsSubscribedTo = topicLookup.Find(q => q.Topic == topicName);
                 resource.Links?.Add(
                     new TopologyResourceLink(topicQueueIsSubscribedTo?.Service, topicName, EntityResourceMapper.SNS.Name, "subscription") {
-                        ResourceRequestId = queue.ResourceRequestId
+                        ResourceRequestId = topicQueueIsSubscribedTo?.ResourceRequestId
                     }
                 );
 
@@ -203,7 +210,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
                 services[topicQueueIsSubscribedTo.Service].Resources.Add(
                     new TopologyResource(topicName, EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, [])
                     {
-                        ResourceRequestId = queue.ResourceRequestId
+                        ResourceRequestId = topicQueueIsSubscribedTo.ResourceRequestId
                     }
                 );
             }
@@ -211,6 +218,6 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             services[rootService.Name].Resources.Add(resource);
         }
 
-        return services.Values.OrderByDescending(s => s.Name == rootService.Name).ToList();
+        return services.Values.OrderByDescending(s => s.Name == rootService.Name).ToList() ?? [];
     }
 }
