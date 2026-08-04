@@ -57,7 +57,8 @@ public class TopologyServiceCombinerTests
     [Fact]
     public void Combine_combines_existing_with_new_resources()
     {
-        var testTeam = new Team() {
+        var testTeam = new Team()
+        {
             TeamId = "test",
             Name = "Test"
         };
@@ -86,7 +87,131 @@ public class TopologyServiceCombinerTests
                 }
             ])
         ]);
-        
+
         Assert.Equivalent(relationships, expected);
     }
+
+    [Fact]
+    public void Combine_combines_existing_with_existing_resource()
+    {
+        var testTeam = new Team()
+        {
+            TeamId = "test",
+            Name = "Test"
+        };
+
+        var primary = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-resource", "type", "icon", [])
+            ])
+        ]);
+
+        var secondary = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-resource", "type", "icon", []){
+                    ResourceRequestId = "123"
+                }
+            ])
+        ]);
+
+        var relationships = TopologyServiceCombiner.Combine(primary, secondary);
+
+        var expected = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-resource", "type", "icon", [])
+            ])
+        ]);
+
+        Assert.Equivalent(relationships, expected);
+    }
+
+    [Fact]
+    public void Combine_combines_existing_with_new_resource_with_link_to_new_service()
+    {
+        var testTeam = new Team()
+        {
+            TeamId = "test",
+            Name = "Test"
+        };
+
+        var primary = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-resource", "type", "icon", [])
+            ])
+        ]);
+
+        var secondary = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("new-resource", "type", "icon", []){
+                    ResourceRequestId = "123"
+                }
+            ]),
+            new TopologyService("new-service", SubType.Frontend, [testTeam], [
+                new TopologyResource("another-resource", EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, [
+                    new TopologyResourceLink("existing-service", "existing-resource", "type", "subscription" ){
+                        ResourceRequestId = "123"
+                    }               
+                ]){
+                    ResourceRequestId = "123"
+                }
+            ])
+        ]);
+
+        var relationships = TopologyServiceCombiner.Combine(primary, secondary);
+
+        var expected = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-resource", "type", "icon", []),
+                new TopologyResource("new-resource", "type", "icon", []){
+                    ResourceRequestId = "123"
+                }
+            ]),
+            new TopologyService("new-service", SubType.Frontend, [testTeam], [
+                new TopologyResource("another-resource", EntityResourceMapper.SNS.Name, EntityResourceMapper.SNS.Icon, [
+                    new TopologyResourceLink("existing-service", "existing-resource", "type", "subscription" ){
+                        ResourceRequestId = "123"
+                    } 
+                ]){
+                    ResourceRequestId = "123"
+                }
+            ])
+        ]);
+
+        Assert.Equivalent(relationships, expected);
+    }
+
+    // [Fact]
+    // public void Combine_combines_existing_with_new_link()
+    // {
+    //     var testTeam = new Team() {
+    //         TeamId = "test",
+    //         Name = "Test"
+    //     };
+
+    //     var primary = new List<TopologyService>([
+    //         new TopologyService("existing-service", SubType.Backend, [testTeam], [
+    //             new TopologyResource("existing-resource", "type", "icon", [])
+    //         ])
+    //     ]);
+
+    //     var secondary = new List<TopologyService>([
+    //         new TopologyService("existing-service", SubType.Backend, [testTeam], [
+    //             new TopologyResource("existing-resource", "type", "icon", [
+    //                 new TopologyResourceLink("existing-service", "")
+    //             ]){
+    //                 ResourceRequestId = "123"
+    //             }
+    //         ])
+    //     ]);
+
+    //     var relationships = TopologyServiceCombiner.Combine(primary, secondary);
+
+    //     var expected = new List<TopologyService>([
+    //         new TopologyService("existing-service", SubType.Backend, [testTeam], [
+    //             new TopologyResource("existing-resource", "type", "icon", [])
+    //         ])
+    //     ]);
+        
+    //     Assert.Equivalent(relationships, expected);
+    // }
 }
