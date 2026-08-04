@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Entities;
 public class EntityResourceCombinerTests
 {
     [Fact]
-    public void FromCdpTenant_handles_null_resource_lists()
+    public void Combine_handles_null_resource_lists()
     {
         var primary = new EntityResources();
         var secondary = new EntityResources();
@@ -24,7 +24,7 @@ public class EntityResourceCombinerTests
     }
 
     [Fact]
-    public void FromCdpTenant_combines_s3_buckets()
+    public void Combine_combines_s3_buckets()
     {
         var myBucket1 = new EntityResource<TenantS3Bucket>("type", "icon", "my-bucket-1", new TenantS3Bucket());
         var myBucket2 = new EntityResource<TenantS3Bucket>("type", "icon", "my-bucket-2", new TenantS3Bucket());
@@ -58,7 +58,7 @@ public class EntityResourceCombinerTests
     }
 
     [Fact]
-    public void FromCdpTenant_combines_sqs_queues()
+    public void Combine_combines_sqs_queues()
     {
         var myQueue1 = new EntityResource<TenantSqsQueue>("type", "icon", "my-Queue-1", new TenantSqsQueue());
         var myQueue2 = new EntityResource<TenantSqsQueue>("type", "icon", "my-Queue-2", new TenantSqsQueue());
@@ -92,7 +92,7 @@ public class EntityResourceCombinerTests
     }
 
     [Fact]
-    public void FromCdpTenant_combines_sns_topics() {
+    public void Combine_combines_sns_topics() {
         var myTopic1 = new EntityResource<TenantSnsTopic>("type", "icon", "my-Topic-1", new TenantSnsTopic());
         var myTopic2 = new EntityResource<TenantSnsTopic>("type", "icon", "my-Topic-2", new TenantSnsTopic());
         var myTopic2Request = new EntityResource<TenantSnsTopic>("type", "icon", "my-Topic-2", new TenantSnsTopic())
