@@ -7,7 +7,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Entities;
 public class EntityResourceMapperTests
 {
     [Fact]
-    public void Combine_handles_null_resource_lists()
+    public void FromCdpTenant_handles_null_resource_lists()
     {
         var tenant = new CdpTenant();
 
