@@ -180,46 +180,46 @@ public class TopologyServiceCombinerTests
         Assert.Equivalent(relationships, expected, true);
     }
 
-    // [Fact]
-    // public void Combine_combines_existing_with_new_link()
-    // {
-    //     var testTeam = new Team() {
-    //         TeamId = "test",
-    //         Name = "Test"
-    //     };
+    [Fact]
+    public void Combine_combines_existing_with_new_link()
+    {
+        var testTeam = new Team() {
+            TeamId = "test",
+            Name = "Test"
+        };
 
-    //     var primary = new List<TopologyService>([
-    //         new TopologyService("existing-service", SubType.Backend, [testTeam], [
-    //             new TopologyResource("existing-queue", "queue", "icon", []),
-    //             new TopologyResource("existing-topic", "topic", "icon", [])        
-    //         ])
-    //     ]);
+        var primary = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-queue", "queue", "icon", []),
+                new TopologyResource("existing-topic", "topic", "icon", [])        
+            ])
+        ]);
 
-    //     var secondary = new List<TopologyService>([
-    //         new TopologyService("existing-service", SubType.Backend, [testTeam], [
-    //             new TopologyResource("existing-queue", "queue", "icon", [
-    //                 new TopologyResourceLink("existing-service", "existing-topic", "type", "subscription"){
-    //                     ResourceRequestId = "123"
-    //                 }
-    //             ]){
-    //                 ResourceRequestId = "123"
-    //             }
-    //         ])
-    //     ]);
+        var secondary = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-queue", "queue", "icon", [
+                    new TopologyResourceLink("existing-service", "existing-topic", "type", "subscription"){
+                        ResourceRequestId = "123"
+                    }
+                ]){
+                    ResourceRequestId = "123"
+                }
+            ])
+        ]);
 
-    //     var relationships = TopologyServiceCombiner.Combine(primary, secondary);
+        var relationships = TopologyServiceCombiner.Combine(primary, secondary);
 
-    //     var expected = new List<TopologyService>([
-    //         new TopologyService("existing-service", SubType.Backend, [testTeam], [
-    //             new TopologyResource("existing-queue", "queue", "icon", [
-    //                 new TopologyResourceLink("existing-service", "existing-topic", "type", "subscription"){
-    //                     ResourceRequestId = "123"
-    //                 }
-    //             ]),
-    //             new TopologyResource("existing-topic", "topic", "icon", [])
-    //         ])
-    //     ]);
+        var expected = new List<TopologyService>([
+            new TopologyService("existing-service", SubType.Backend, [testTeam], [
+                new TopologyResource("existing-queue", "queue", "icon", [
+                    new TopologyResourceLink("existing-service", "existing-topic", "type", "subscription"){
+                        ResourceRequestId = "123"
+                    }
+                ]),
+                new TopologyResource("existing-topic", "topic", "icon", [])
+            ])
+        ]);
         
-    //     Assert.Equivalent(relationships, expected, true);
-    // }
+        Assert.Equivalent(relationships, expected, true);
+    }
 }
