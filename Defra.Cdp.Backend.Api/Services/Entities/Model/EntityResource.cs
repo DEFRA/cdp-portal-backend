@@ -87,7 +87,7 @@ public static class EntityResourceMapper
         ResourceRequestId = resourceRequestId
     };
 
-    public static EntityResource<TenantSqsQueue> Map(CreateTenantSubscription sub, string resourceRequestId) => new(SQS.Name, SQS.Icon, sub.QueueService, new TenantSqsQueue
+    public static EntityResource<TenantSqsQueue> Map(CreateTenantSubscription sub, string resourceRequestId) => new(SQS.Name, SQS.Icon, sub.Queue, new TenantSqsQueue
     {
         Name = sub.Queue,
         Subscriptions = [sub.Topic]
