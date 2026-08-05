@@ -59,7 +59,9 @@ public sealed record EcsEventDetail(
     [property: JsonPropertyName("stopCode")]
     string? StopCode = default,
     [property: JsonPropertyName("stoppedReason")]
-    string? StoppedReason = default
+    string? StoppedReason = default,
+    [property: JsonPropertyName("version")]
+    long? Version = default
 );
 
 public sealed record EcsEventCopy(
