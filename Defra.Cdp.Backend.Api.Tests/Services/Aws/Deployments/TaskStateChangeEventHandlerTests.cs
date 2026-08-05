@@ -50,7 +50,8 @@ public class TaskStateChangeEventHandlerTests
             TaskDefinitionArn: "arn:aws:ecs:eu-west-2:506190012364:task-definition/cdp-example-node-backend:47",
             EcsSvcDeploymentId: null,
             StoppedReason: null,
-            StopCode: null
+            StopCode: null,
+            Version: 4
         ),
         "ecs-svc/6276605373259507742",
         "ecs-svc/6276605373259507742"
@@ -87,6 +88,11 @@ public class TaskStateChangeEventHandlerTests
 
         await deploymentsService.Received().FindDeploymentByLambdaId("ecs-svc/6276605373259507742", Arg.Any<CancellationToken>());
         await deploymentsService.DidNotReceiveWithAnyArgs().FindDeploymentByTaskArn(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await deploymentsService.Received().UpdateInstance(
+            deployment.CdpDeploymentId,
+            _testEvent.Detail.TaskArn,
+            Arg.Is<DeploymentInstanceStatus>(s => s.Status == DeploymentStatus.Running && s.Version == 4),
+            Arg.Any<CancellationToken>());
         await deploymentsService.Received().UpdateOverallTaskStatus(Arg.Any<Deployment>(), Arg.Any<CancellationToken>());
     }
 

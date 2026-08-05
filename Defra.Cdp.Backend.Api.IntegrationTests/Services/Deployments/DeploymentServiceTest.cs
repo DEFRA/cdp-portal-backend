@@ -177,6 +177,71 @@ public class DeploymentServiceTest : ServiceTest
     }
 
     [Fact]
+    public async Task UpdateDeploymentInstanceUsesVersionOrdering()
+    {
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceBackendClient,
+            new NullLoggerFactory());
+
+        const string lambdaId = "ecs/12345";
+        var deployment = Deployment.FromRequest(new RequestedDeployment
+        {
+            Cpu = "1024",
+            Memory = "1024",
+            ConfigVersion = "e5fa44f2b31c1fb553b6021e7360d07d5d91ff5e",
+            Environment = "test",
+            DeploymentId = Guid.NewGuid().ToString(),
+            InstanceCount = 2,
+            Service = "version-test-backend",
+            Version = "1.0.0",
+            User = new UserDetails { Id = "9999-9999-9999", DisplayName = "Test User" }
+        });
+
+        var ct = TestContext.Current.CancellationToken;
+        await service.RegisterDeployment(deployment, ct);
+        var linked = await service.LinkDeployment(deployment.CdpDeploymentId, lambdaId, ct);
+        Assert.True(linked);
+
+        var now = DateTime.UtcNow;
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance1",
+            new DeploymentInstanceStatus(DeploymentStatus.Running, now, 5), ct);
+
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance1",
+            new DeploymentInstanceStatus(DeploymentStatus.Pending, now.AddSeconds(1), 4), ct);
+
+        var afterStaleUpdate = await service.FindDeployment(deployment.CdpDeploymentId, ct);
+        Assert.NotNull(afterStaleUpdate);
+        Assert.Equal(DeploymentStatus.Running, afterStaleUpdate.Instances["instance1"].Status);
+        Assert.Equal(5L, afterStaleUpdate.Instances["instance1"].Version);
+
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance1",
+            new DeploymentInstanceStatus(DeploymentStatus.Pending, now.AddSeconds(2), 5), ct);
+
+        var afterEqualUpdate = await service.FindDeployment(deployment.CdpDeploymentId, ct);
+        Assert.NotNull(afterEqualUpdate);
+        Assert.Equal(DeploymentStatus.Pending, afterEqualUpdate.Instances["instance1"].Status);
+        Assert.Equal(5L, afterEqualUpdate.Instances["instance1"].Version);
+
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance1",
+            new DeploymentInstanceStatus(DeploymentStatus.Running, now.AddSeconds(3), 6), ct);
+
+        var afterNewerUpdate = await service.FindDeployment(deployment.CdpDeploymentId, ct);
+        Assert.NotNull(afterNewerUpdate);
+        Assert.Equal(DeploymentStatus.Running, afterNewerUpdate.Instances["instance1"].Status);
+        Assert.Equal(6L, afterNewerUpdate.Instances["instance1"].Version);
+
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance2",
+            new DeploymentInstanceStatus(DeploymentStatus.Pending, now.AddSeconds(4)), ct);
+        await service.UpdateInstance(deployment.CdpDeploymentId, "instance2",
+            new DeploymentInstanceStatus(DeploymentStatus.Running, now.AddSeconds(5), 1), ct);
+
+        var afterLegacyUpdate = await service.FindDeployment(deployment.CdpDeploymentId, ct);
+        Assert.NotNull(afterLegacyUpdate);
+        Assert.Equal(DeploymentStatus.Running, afterLegacyUpdate.Instances["instance2"].Status);
+        Assert.Equal(1L, afterLegacyUpdate.Instances["instance2"].Version);
+    }
+
+    [Fact]
     public async Task FindWhatsRunningWhereWithNoData()
     {
         var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());

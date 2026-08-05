@@ -111,7 +111,8 @@ public class TaskStateChangeEventHandler(
             );
 
             await deploymentsService.UpdateInstance(deployment.CdpDeploymentId, instanceTaskId,
-                new DeploymentInstanceStatus(instanceStatus, ecsTaskStateChangeEvent.Timestamp), cancellationToken);
+                new DeploymentInstanceStatus(instanceStatus, ecsTaskStateChangeEvent.Timestamp,
+                    ecsTaskStateChangeEvent.Detail.Version), cancellationToken);
 
             await UpdateStatus(deployment.CdpDeploymentId, ecsTaskStateChangeEvent, cancellationToken);
         }
