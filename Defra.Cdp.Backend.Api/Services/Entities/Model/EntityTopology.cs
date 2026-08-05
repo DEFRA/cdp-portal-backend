@@ -7,6 +7,10 @@ public record TopologyResourceLink(string? Service, string? Resource, string? Ty
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ResourceRequestId { get; set; } = null;
+
+    public string GetName() {
+        return $"{Service}-{Resource}-{Type}-{Access}";
+    }
 };
 
 public record TopologyResource(string Name, string Type, string Icon, List<TopologyResourceLink>? Links)
@@ -46,10 +50,26 @@ public static class TopologyServiceCombiner {
      */
     private static List<TopologyResource> Combine(List<TopologyResource> primary, List<TopologyResource> secondary)
     {
+        var existingResources = primary.Select(prime =>
+        {
+            var matchingResource = secondary.Find(sec => sec.Name == prime.Name);
+            return matchingResource == null ? prime : new TopologyResource(prime.Name, prime.Type, prime.Icon, Combine(prime.Links ?? [], matchingResource.Links ?? []));
+        }).ToList() ?? [];
+
+        var newResources = secondary.FindAll(sec => primary.Find(prime => prime.Name == sec.Name) == null).ToList() ?? [];
+
+        return existingResources.Concat(newResources).ToList() ?? [];
+    }
+
+    /*
+     * Combine TopologyResourceLinks based on GetName. primary takes precedence over a match on secondary
+     */
+    private static List<TopologyResourceLink> Combine(List<TopologyResourceLink> primary, List<TopologyResourceLink> secondary)
+    {
         return primary.Concat(Deduplicate(secondary, primary)).ToList() ?? [];
     }
 
-    private static List<TopologyResource> Deduplicate(List<TopologyResource> items, List<TopologyResource> existing) {
-        return items.FindAll(item => existing.Find(e => e.Name == item.Name) == null);
+    private static List<TopologyResourceLink> Deduplicate(List<TopologyResourceLink> items, List<TopologyResourceLink> existing) {
+        return items.FindAll(item => existing.Find(e => e.GetName() == item.GetName()) == null);
     }
 }
