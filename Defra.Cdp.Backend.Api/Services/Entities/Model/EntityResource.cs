@@ -130,7 +130,7 @@ public static class EntityResourceMapper
         var subQueues = request.Resources?.Subscriptions?.FindAll(
              sub => (sub.QueueService == name) && (subsWithoutQueues.Find(item => item.Queue == sub.Queue) != null)
         ).Select(sub => Map(sub, resourceRequestId)) ?? [];
-        resources.SqsQueues = resources.SqsQueues.Concat(subQueues).ToList() ?? [];
+        resources.SqsQueues = [.. resources.SqsQueues, .. subQueues];
 
         return resources;
     }
@@ -155,9 +155,9 @@ public static class EntityResourceCombiner {
     {
         return new EntityResources
         {
-            S3Buckets = primary.S3Buckets.Concat(Deduplicate(secondary.S3Buckets, primary.S3Buckets)).ToList() ?? [],
-            SqsQueues = primary.SqsQueues.Concat(Deduplicate(secondary.SqsQueues, primary.SqsQueues)).ToList() ?? [],
-            SnsTopics = primary.SnsTopics.Concat(Deduplicate(secondary.SnsTopics, primary.SnsTopics)).ToList() ?? [],
+            S3Buckets = [.. primary.S3Buckets, .. Deduplicate(secondary.S3Buckets, primary.S3Buckets)],
+            SqsQueues = [.. primary.SqsQueues, .. Deduplicate(secondary.SqsQueues, primary.SqsQueues)],
+            SnsTopics = [.. primary.SnsTopics, .. Deduplicate(secondary.SnsTopics, primary.SnsTopics)],
             
             SqlDatabase = primary.SqlDatabase,
             Dynamodb = primary.Dynamodb,
