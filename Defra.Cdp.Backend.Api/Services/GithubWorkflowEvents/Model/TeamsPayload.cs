@@ -22,6 +22,8 @@ public record TeamPayload
     [JsonPropertyName("service_code")] public string? ServiceCode { get; init; }
     
     [JsonPropertyName("slack_channels")] public TeamSlackPayload? SlackChannels { get; init; }
+    
+    [JsonPropertyName("delivery_group_id")] public string? DeliveryGroupId { get; init; }
 
     public Team ToTeam()
     {
@@ -36,7 +38,8 @@ public record TeamPayload
                 NonProd = SlackChannels?.NonProd,
                 Prod = SlackChannels?.Prod,
                 Team = SlackChannels?.Team
-            } 
+            },
+            DeliveryGroupId = DeliveryGroupId,
         };
     }
     
@@ -54,7 +57,8 @@ public record TeamPayload
                 NonProd = SlackChannels?.NonProd,
                 Prod = SlackChannels?.Prod,
                 Team = SlackChannels?.Team
-            }
+            },
+            DeliveryGroupId = DeliveryGroupId
         };
     }
 }
