@@ -13,6 +13,7 @@ public record Team
     [JsonPropertyName("github")] public string? Github { get; init; }
     [JsonPropertyName("created")] public DateTime? Created { get; init; }
     [JsonPropertyName("slackChannels")] public SlackChannels? SlackChannels { get; init; }
+    [JsonPropertyName("deliveryGroupId")] public string? DeliveryGroupId { get; init; }
 }
 
 [BsonIgnoreExtraElements]
