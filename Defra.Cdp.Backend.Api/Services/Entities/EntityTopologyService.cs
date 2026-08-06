@@ -56,7 +56,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             .ToListAsync(ct);
     }
 
-    private async Task<List<QueueSubscriptions>> BuildQueueLookupFromResourceRequest(ResourceRequestRecord request, string environment, CancellationToken ct)
+    private async Task<List<QueueSubscriptions>> BuildQueueLookupFromResourceRequest(ResourceRequestRecord request, CancellationToken ct)
     {
         var queueServices = request.Resources?.Subscriptions.Select(sub => sub.QueueService).ToList() ?? [];
 
@@ -95,7 +95,7 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             .ToListAsync(ct);
     }
 
-    private async Task<List<TopicOwner>> BuildTopicLookupFromResourceRequest(ResourceRequestRecord request, string environment, CancellationToken ct)
+    private async Task<List<TopicOwner>> BuildTopicLookupFromResourceRequest(ResourceRequestRecord request, CancellationToken ct)
     {
         var topicServices = request.Resources?.Subscriptions.Select(sub => sub.TopicService).ToList() ?? [];
 
@@ -135,8 +135,8 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         }
 
         var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
-        var queueTopicLookup = await BuildQueueLookupFromResourceRequest(request, environment, ct);
-        var topicLookup = await BuildTopicLookupFromResourceRequest(request, environment, ct);
+        var queueTopicLookup = await BuildQueueLookupFromResourceRequest(request, ct);
+        var topicLookup = await BuildTopicLookupFromResourceRequest(request, ct);
 
         return LinkResources(rootService, EntityResourceMapper.FromResourceRequestRecord(request, entity, environment), queueTopicLookup, topicLookup);
     }
@@ -224,6 +224,6 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
             services[rootService.Name].Resources.Add(resource);
         }
 
-        return services.Values.OrderByDescending(s => s.Name == rootService.Name).ToList() ?? [];
+        return [.. services.Values.OrderByDescending(s => s.Name == rootService.Name)];
     }
 }

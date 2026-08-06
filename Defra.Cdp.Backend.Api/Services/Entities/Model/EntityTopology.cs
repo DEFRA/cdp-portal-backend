@@ -38,11 +38,11 @@ public static class TopologyServiceCombiner {
         {
             var matchingService = secondary.Find(sec => sec.Name == prime.Name);
             return matchingService == null ? prime : new TopologyService(prime.Name, prime.Type, prime.Teams, Combine(prime.Resources, matchingService.Resources));
-        }).ToList() ?? [];
+        }).ToList();
 
-        var newServices = secondary.FindAll(sec => primary.Find(prime => prime.Name == sec.Name) == null).ToList() ?? [];
+        var newServices = secondary.FindAll(sec => primary.Find(prime => prime.Name == sec.Name) == null).ToList();
 
-        return existingServices.Concat(newServices).ToList() ?? [];
+        return [.. existingServices, .. newServices];
     }
 
     /*
@@ -54,11 +54,11 @@ public static class TopologyServiceCombiner {
         {
             var matchingResource = secondary.Find(sec => sec.Name == prime.Name);
             return matchingResource == null ? prime : new TopologyResource(prime.Name, prime.Type, prime.Icon, Combine(prime.Links ?? [], matchingResource.Links ?? []));
-        }).ToList() ?? [];
+        }).ToList();
 
-        var newResources = secondary.FindAll(sec => primary.Find(prime => prime.Name == sec.Name) == null).ToList() ?? [];
+        var newResources = secondary.FindAll(sec => primary.Find(prime => prime.Name == sec.Name) == null).ToList();
 
-        return existingResources.Concat(newResources).ToList() ?? [];
+        return [.. existingResources, .. newResources];
     }
 
     /*
@@ -66,7 +66,7 @@ public static class TopologyServiceCombiner {
      */
     private static List<TopologyResourceLink> Combine(List<TopologyResourceLink> primary, List<TopologyResourceLink> secondary)
     {
-        return primary.Concat(Deduplicate(secondary, primary)).ToList() ?? [];
+        return [.. primary, .. Deduplicate(secondary, primary)];
     }
 
     private static List<TopologyResourceLink> Deduplicate(List<TopologyResourceLink> items, List<TopologyResourceLink> existing) {
