@@ -177,7 +177,13 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
                 services.TryAdd(sub.Service, new TopologyService(sub.Service, sub.SubType, sub.Teams, []));
                 // Link back to root service's topic
                 services[sub.Service].Resources.Add(
-                    new TopologyResource(sub.Queue, EntityResourceMapper.SQS.Name, EntityResourceMapper.SQS.Icon, [new TopologyResourceLink(rootService.Name, sub.Topic, EntityResourceMapper.SNS.Name, "subscription")])
+                    new TopologyResource(sub.Queue, EntityResourceMapper.SQS.Name, EntityResourceMapper.SQS.Icon, [
+                        new TopologyResourceLink(rootService.Name, sub.Topic, EntityResourceMapper.SNS.Name, "subscription")
+                        {
+                            ResourceRequestId = sub.ResourceRequestId
+                        }
+                    ]
+                    )
                     {
                         ResourceRequestId = sub.ResourceRequestId
                     }
