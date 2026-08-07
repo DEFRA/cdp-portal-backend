@@ -223,7 +223,7 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
         {
             Version = 1,
             TerraformSerials = new Serials(),
-            Environment = "management",
+            Environment = "dev",
             Tenants = new Dictionary<string, CdpTenantAndMetadata>
             {
                 { "service-a",  new CdpTenantAndMetadata {
@@ -246,7 +246,13 @@ public partial class EntityPlatformStateTests(MongoContainerFixture fixture) : M
             }
         };
         var userServiceTeams = new Dictionary<string, UserServiceTeam>();
-        await service.UpdateEnvironmentState(testState, userServiceTeams, TestContext.Current.CancellationToken);
+        
+        foreach (var env in CdpEnvironments.EnvironmentExcludingInfraDev)
+        {
+            testState.Environment = env;
+            await service.UpdateEnvironmentState(testState, userServiceTeams, TestContext.Current.CancellationToken);
+        }
+        
         await service.BulkUpdateEntityStatus(TestContext.Current.CancellationToken);
         var result = await service.GetEntity("service-a", TestContext.Current.CancellationToken);
         Assert.NotNull(result);
