@@ -358,10 +358,12 @@ public class EntitiesService(
 
         foreach (var kv in state.Tenants)
         {
+            
             var filter = Builders<Entity>.Filter.Eq(f => f.Name, kv.Key);
-            var update = Builders<Entity>.Update.Set(e => e.Name, kv.Key)
-                .Set(e => e.Environments[env], kv.Value.Tenant)
-                .Set(e => e.Progress[env], kv.Value.Progress);
+            var update = Builders<Entity>.Update
+                .Set(e => e.Name, kv.Key)
+                .Set(e => e.Environments[env], kv.Value.Tenant);
+             
 
             if (kv.Value.Metadata != null)
             {
@@ -393,20 +395,20 @@ public class EntitiesService(
                             : new Team { TeamId = t, Name = t })
                     .ToList() ?? [];
                 update = update.Set(e => e.Teams, teams);
-            }
 
-            // A small number of tenants aren't defined in all environments (defined in metadata.Environments)
-            // To ensure the status is calculated correctly (and to keep the calculation simple) we just set the
-            // completed status to 'true' in the envs these services aren't created in.
-            if (kv.Value.Metadata?.Environments != null)
-            {
-                var restrictedEnvs = kv.Value.Metadata.Environments;
-                var envsToSkip = CdpEnvironments.EnvironmentExcludingInfraDev.Where(e => !restrictedEnvs.Contains(e))
-                    .ToArray();
-                update = envsToSkip.Aggregate(update,
-                    (current, envToSkip) => current.Set(e => e.Progress[envToSkip].Complete, true));
+                // If the entity is restricted to specific environments override the progress field.
+                // This could be moved to the lambda...
+                if (kv.Value.Metadata?.Environments is { Count: > 0 })
+                {
+                    if (!kv.Value.Metadata.Environments.Contains(env))
+                    {
+                        kv.Value.Progress = new CreationProgress { Complete = true };
+                    }
+                }
             }
-
+            
+            update = update.Set(e => e.Progress[env], kv.Value.Progress);
+            
             models.Add(new UpdateOneModel<Entity>(filter, update) { IsUpsert = true });
         }
 
@@ -420,8 +422,8 @@ public class EntitiesService(
                 .Unset(e => e.Environments[env])
                 .Unset(e => e.Progress[env])
         ) { IsUpsert = false };
-
         models.Add(removeMissing);
+
 
         if (models.Count > 0)
         {

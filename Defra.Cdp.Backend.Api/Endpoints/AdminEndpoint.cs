@@ -1,7 +1,11 @@
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Sboms;
+using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Defra.Cdp.Backend.Api.Endpoints;
 
@@ -10,6 +14,7 @@ public static class AdminEndpoint
     public static void MapAdminEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/admin/entity/status", UpdateStatus).RequireAuthorization(AuthPolicies.IsAdmin);
+        app.MapPost("/admin/entity/load", LoadEntityStatus);
         app.MapGet("/admin/sbom/push-teams", PushSbomTeams);
         app.MapGet("/admin/auth-test/is-admin", AuthTest).RequireAuthorization(AuthPolicies.IsAdmin);
         app.MapGet("/admin/auth-test/is-tenant", AuthTest).RequireAuthorization(AuthPolicies.IsTenant);
@@ -48,5 +53,13 @@ public static class AdminEndpoint
     private static Ok<string> AuthOwnerTest(string entity, HttpRequest req, CancellationToken ct)
     {
         return TypedResults.Ok($"Owner of {entity}");
+    }
+    
+    private static async Task<Ok> LoadEntityStatus(IUserServiceBackendClient usersService, IEntitiesService entitiesService, [FromBody] PlatformStatePayload payload, CancellationToken ct)
+    {
+        var cdpTeams = await usersService.GetLatestCdpTeamsInformation(ct);
+        var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
+        await entitiesService.UpdateEnvironmentState(payload, userServiceTeams, ct);
+        return TypedResults.Ok();
     }
 }
