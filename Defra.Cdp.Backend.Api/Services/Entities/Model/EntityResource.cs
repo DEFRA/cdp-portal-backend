@@ -86,6 +86,15 @@ public static class EntityResourceMapper
     {
         ResourceRequestId = resourceRequestId
     };
+
+    public static EntityResource<TenantSqsQueue> Map(CreateTenantSubscription sub, string resourceRequestId) => new(SQS.Name, SQS.Icon, sub.Queue, new TenantSqsQueue
+    {
+        Name = sub.Queue,
+        Subscriptions = [sub.Topic]
+    })
+    {
+        ResourceRequestId = resourceRequestId
+    };
     
     public static EntityResources FromCdpTenant(CdpTenant tenant)
     {
@@ -107,12 +116,23 @@ public static class EntityResourceMapper
         var resourceRequestId = request.Id.ToString()!;
         var name = entity.Name;
 
-        return new EntityResources
+        var resources = new EntityResources
         {
             S3Buckets = request.Resources?.S3Buckets?.FindAll(s3 => s3.Service == name).Select(s3 => Map(s3, resourceRequestId, env)).ToList() ?? [],
             SqsQueues = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => Map(sqs, resourceRequestId, request.Resources?.Subscriptions)).ToList() ?? [],
             SnsTopics = request.Resources?.SnsTopics?.FindAll(sns => sns.Service == name).Select(sns => Map(sns, resourceRequestId)).ToList() ?? []
         };
+
+        // Build queue resources for any unreferenced subscriptions
+        var queueNames = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => FifoName(sqs.Name, sqs.Fifo)) ?? [];
+        var subsWithoutQueues = request.Resources?.Subscriptions.FindAll(sub => !queueNames.Contains(sub.Queue)) ?? [];
+        
+        var subQueues = request.Resources?.Subscriptions?.FindAll(
+             sub => (sub.QueueService == name) && (subsWithoutQueues.Find(item => item.Queue == sub.Queue) != null)
+        ).Select(sub => Map(sub, resourceRequestId)) ?? [];
+        resources.SqsQueues = [.. resources.SqsQueues, .. subQueues];
+
+        return resources;
     }
 
     private static string FifoName(string name, bool isFifo)
@@ -135,9 +155,9 @@ public static class EntityResourceCombiner {
     {
         return new EntityResources
         {
-            S3Buckets = primary.S3Buckets.Concat(Deduplicate(secondary.S3Buckets, primary.S3Buckets)).ToList() ?? [],
-            SqsQueues = primary.SqsQueues.Concat(Deduplicate(secondary.SqsQueues, primary.SqsQueues)).ToList() ?? [],
-            SnsTopics = primary.SnsTopics.Concat(Deduplicate(secondary.SnsTopics, primary.SnsTopics)).ToList() ?? [],
+            S3Buckets = [.. primary.S3Buckets, .. Deduplicate(secondary.S3Buckets, primary.S3Buckets)],
+            SqsQueues = [.. primary.SqsQueues, .. Deduplicate(secondary.SqsQueues, primary.SqsQueues)],
+            SnsTopics = [.. primary.SnsTopics, .. Deduplicate(secondary.SnsTopics, primary.SnsTopics)],
             
             SqlDatabase = primary.SqlDatabase,
             Dynamodb = primary.Dynamodb,
