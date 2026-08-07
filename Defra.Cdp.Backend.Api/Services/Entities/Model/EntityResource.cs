@@ -124,9 +124,9 @@ public static class EntityResourceMapper
         };
 
         // Build queue resources for any unreferenced subscriptions
-        var queueNames = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => sqs.Name) ?? [];
+        var queueNames = request.Resources?.SqsQueues?.FindAll(sqs => sqs.Service == name).Select(sqs => FifoName(sqs.Name, sqs.Fifo)) ?? [];
         var subsWithoutQueues = request.Resources?.Subscriptions.FindAll(sub => !queueNames.Contains(sub.Queue)) ?? [];
-
+        
         var subQueues = request.Resources?.Subscriptions?.FindAll(
              sub => (sub.QueueService == name) && (subsWithoutQueues.Find(item => item.Queue == sub.Queue) != null)
         ).Select(sub => Map(sub, resourceRequestId)) ?? [];
