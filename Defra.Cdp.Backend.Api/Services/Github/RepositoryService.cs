@@ -51,25 +51,6 @@ public class RepositoryService(
         return repository;
     }
 
-    public async Task<List<Repository>> AllRepositories(bool excludeTemplates, CancellationToken cancellationToken)
-    {
-        var builder = Builders<Repository>.Filter;
-        var filter = builder.Empty;
-        var withoutTemplatesFilter = builder.Eq(r => r.IsTemplate, false);
-        var withCdpTopicFilter = builder.Where(r => r.Topics.Contains("cdp"));
-
-        var findDefinition = excludeTemplates
-            ? withoutTemplatesFilter
-            : filter;
-
-        var repositories =
-            await Collection
-                .Find(findDefinition & withCdpTopicFilter)
-                .SortBy(r => r.Id)
-                .ToListAsync(cancellationToken);
-        return repositories;
-    }
-
     public async Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken)
     {
         var excludingIdsList = knownReposIds.ToList();
@@ -123,7 +104,6 @@ public class RepositoryService(
         var createdAtIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.CreatedAt));
         var teamsIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.Teams));
         var languageIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.PrimaryLanguage));
-        var isTemplateIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.IsTemplate));
         var isArchivedIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.IsArchived));
         var teamIdIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.Teams.Select(t => t.TeamId)),
             new CreateIndexOptions { Sparse = true });
@@ -133,7 +113,6 @@ public class RepositoryService(
             createdAtIndex,
             teamsIndex,
             languageIndex,
-            isTemplateIndex,
             isArchivedIndex,
             teamIdIndex
         ];

@@ -5,6 +5,7 @@ namespace Defra.Cdp.Backend.Api.Models;
 
 public record RepositoryTeam(string Github, string? TeamId, string? Name);
 
+[BsonIgnoreExtraElements]
 public sealed class Repository : IEquatable<Repository>
 {
     [BsonId]
@@ -18,10 +19,6 @@ public sealed class Repository : IEquatable<Repository>
     public string Url { get; init; } = null!;
 
     public bool IsArchived { get; init; }
-
-    public bool IsTemplate { get; init; }
-
-    public bool IsPrivate { get; init; }
 
     public DateTimeOffset CreatedAt { get; init; }
 
@@ -37,8 +34,6 @@ public sealed class Repository : IEquatable<Repository>
                PrimaryLanguage == other.PrimaryLanguage &&
                Url == other.Url &&
                IsArchived == other.IsArchived &&
-               IsTemplate == other.IsTemplate &&
-               IsPrivate == other.IsPrivate &&
                CreatedAt == other.CreatedAt &&
                Teams.ToHashSet().SetEquals(other.Teams.ToHashSet());
     }

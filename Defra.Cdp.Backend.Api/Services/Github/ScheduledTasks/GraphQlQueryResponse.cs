@@ -46,8 +46,6 @@ public record RepositoryNode(
     PrimaryLanguage? primaryLanguage,
     string url,
     bool isArchived,
-    bool isTemplate,
-    bool isPrivate,
     DateTimeOffset createdAt
 );
 
