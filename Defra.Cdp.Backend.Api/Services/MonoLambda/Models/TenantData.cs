@@ -515,6 +515,17 @@ public class TenantS3Bucket
 }
 
 [BsonIgnoreExtraElements]
+public class TenantSnsSubscriber
+{
+    [property: JsonPropertyName("queue_name")]
+    public string QueueName { get; set; }
+
+    [property: JsonPropertyName("queue_owner")]
+    public string? QueueOwner { get; set; }
+
+}
+
+[BsonIgnoreExtraElements]
 public class TenantSnsTopic
 {
     [property: JsonPropertyName("arn")]
@@ -528,6 +539,9 @@ public class TenantSnsTopic
 
     [property: JsonPropertyName("content_based_deduplication")]
     public bool ContentBasedDeduplication { get; set; }
+
+    [property: JsonPropertyName("subscribers")]
+    public List<TenantSnsSubscriber> Subscribers { get; set; }
 
 }
 
@@ -631,7 +645,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "ee863708ac467dcc02822352663a047df34c423f4c250d34a8309422bd0b37c2";
+    public static readonly string Version = "6cee1a0dd40fc6770925857267c659a5b419841addf9cc7446fbfbb975914803";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
