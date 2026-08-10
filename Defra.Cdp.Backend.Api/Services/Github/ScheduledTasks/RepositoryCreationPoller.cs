@@ -129,8 +129,6 @@ public sealed class RepositoryCreationPoller(
                     CreatedAt = repo.createdAt,
                     Description = repo.description,
                     IsArchived = repo.isArchived,
-                    IsPrivate = repo.isPrivate,
-                    IsTemplate = repo.isTemplate,
                     Url = repo.url,
                     PrimaryLanguage = repo.primaryLanguage?.name ?? "Unknown",
                     Teams = teams,
@@ -187,8 +185,6 @@ public sealed class RepositoryCreationPoller(
         description
         url
         isArchived
-        isTemplate
-        isPrivate
         createdAt
         primaryLanguage {{
           name

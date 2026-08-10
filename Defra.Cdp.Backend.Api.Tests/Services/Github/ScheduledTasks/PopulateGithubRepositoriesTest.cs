@@ -17,10 +17,10 @@ public class PopulateGithubRepositoriesTest
                     new RepositoryTeam("cdp-platform", "platform-team-id", "Platform"),
                     [
                         new RepositoryNode("repo1", topics, "desc1", new PrimaryLanguage("Javascript"),
-                            "https://url1", false, false, true, dateTimeNow),
+                            "https://url1", false, dateTimeNow),
 
                         new RepositoryNode("repo3", topics, "desc3", new PrimaryLanguage("Java"),
-                            "https://url3", false, true, false, dateTimeNow)
+                            "https://url3", false, dateTimeNow)
                     ]
                 },
                 {
@@ -28,9 +28,9 @@ public class PopulateGithubRepositoriesTest
                     [
 
                         new RepositoryNode("repo2", topics, "desc2", new PrimaryLanguage("C#"),
-                            "https://url2", false, true, true, dateTimeNow),
+                            "https://url2", false, dateTimeNow),
                         new RepositoryNode("repo3", topics, "desc3", new PrimaryLanguage("Java"),
-                            "https://url3", false, true, false, dateTimeNow)
+                            "https://url3", false, dateTimeNow)
                     ]
                 }
             });
@@ -45,8 +45,6 @@ public class PopulateGithubRepositoriesTest
                 CreatedAt = dateTimeNow,
                 Description = "desc1",
                 IsArchived = false,
-                IsPrivate = true,
-                IsTemplate = false,
                 PrimaryLanguage = "Javascript",
                 Url = "https://url1",
                 Teams = [new RepositoryTeam("cdp-platform", "platform-team-id", "Platform")]
@@ -58,8 +56,6 @@ public class PopulateGithubRepositoriesTest
                 CreatedAt = dateTimeNow,
                 Description = "desc2",
                 IsArchived = false,
-                IsPrivate = true,
-                IsTemplate = true,
                 PrimaryLanguage = "C#",
                 Url = "https://url2",
                 Teams = [new RepositoryTeam("fisheries", "fisheries-team-id", "Fisheries")]
@@ -71,8 +67,6 @@ public class PopulateGithubRepositoriesTest
                 CreatedAt = dateTimeNow,
                 Description = "desc3",
                 IsArchived = false,
-                IsPrivate = false,
-                IsTemplate = true,
                 PrimaryLanguage = "Java",
                 Url = "https://url3",
                 Teams =
