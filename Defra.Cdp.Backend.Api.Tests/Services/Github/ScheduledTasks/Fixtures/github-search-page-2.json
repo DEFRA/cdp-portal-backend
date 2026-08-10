@@ -1,0 +1,172 @@
+{
+  "data": {
+    "search": {
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "Y3Vyc29yOjQw"
+      },
+      "nodes": [
+        {
+          "name": "marine-licensing-backend-demo",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "node"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service marine-licensing-backend-demo",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/marine-licensing-backend-demo",
+          "isArchived": true,
+          "createdAt": "2024-03-14T13:53:13Z"
+        },
+        {
+          "name": "ai-model-test",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "python"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service ai-model-test",
+          "primaryLanguage": {
+            "name": "Python"
+          },
+          "url": "https://github.com/DEFRA/ai-model-test",
+          "isArchived": false,
+          "createdAt": "2025-03-20T16:39:21Z"
+        },
+        {
+          "name": "ahwr-public-user-ui",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "frontend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "node"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service ahwr-public-user-ui",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/ahwr-public-user-ui",
+          "isArchived": false,
+          "createdAt": "2025-09-30T13:43:09Z"
+        },
+        {
+          "name": "disinfectant-frontend",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "frontend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "node"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service disinfectant-frontend",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/disinfectant-frontend",
+          "isArchived": false,
+          "createdAt": "2024-06-28T10:15:54Z"
+        },
+        {
+          "name": "nrf-library",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "repository"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for nrf-library",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/nrf-library",
+          "isArchived": false,
+          "createdAt": "2026-04-28T14:07:53Z"
+        }
+      ]
+    }
+  }
+}

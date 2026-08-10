@@ -1,0 +1,172 @@
+{
+  "data": {
+    "search": {
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "Y3Vyc29yOjYw"
+      },
+      "nodes": [
+        {
+          "name": "epr-backend",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "node"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service epr-backend",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/epr-backend",
+          "isArchived": false,
+          "createdAt": "2025-04-10T09:58:41Z"
+        },
+        {
+          "name": "trade-imports-processor",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "dotnet"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service trade-imports-processor",
+          "primaryLanguage": {
+            "name": "C#"
+          },
+          "url": "https://github.com/DEFRA/trade-imports-processor",
+          "isArchived": false,
+          "createdAt": "2025-04-01T15:13:45Z"
+        },
+        {
+          "name": "pha-import-notifications",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "dotnet"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service pha-import-notifications",
+          "primaryLanguage": {
+            "name": "C#"
+          },
+          "url": "https://github.com/DEFRA/pha-import-notifications",
+          "isArchived": false,
+          "createdAt": "2024-10-29T11:04:22Z"
+        },
+        {
+          "name": "cdp-node-prototype-template",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "repository"
+                }
+              },
+              {
+                "topic": {
+                  "name": "template"
+                }
+              },
+              {
+                "topic": {
+                  "name": "prototype"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for cdp-node-prototype-template",
+          "primaryLanguage": {
+            "name": "Dockerfile"
+          },
+          "url": "https://github.com/DEFRA/cdp-node-prototype-template",
+          "isArchived": false,
+          "createdAt": "2025-07-18T12:04:13Z"
+        },
+        {
+          "name": "grant-config-woodland",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "repository"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for grant-config-woodland",
+          "primaryLanguage": {
+            "name": "Shell"
+          },
+          "url": "https://github.com/DEFRA/grant-config-woodland",
+          "isArchived": true,
+          "createdAt": "2026-03-31T15:10:51Z"
+        }
+      ]
+    }
+  }
+}
