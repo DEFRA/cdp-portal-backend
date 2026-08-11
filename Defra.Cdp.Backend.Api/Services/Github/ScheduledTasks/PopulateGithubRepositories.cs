@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -227,6 +228,8 @@ public sealed class PopulateGithubRepositories(
         string? EndCursor
     );
 
+    // Some CDP-tagged repos predate the GitHub App's installation, so GitHub returns 403 for
+    // those specifically. Treat only 403 as "no teams known".
     private async Task<List<RepositoryTeam>> GetTeamsForRepo(
         string repoName,
         Dictionary<string, RepositoryTeam> cdpTeamsByGithubSlug,
@@ -234,6 +237,15 @@ public sealed class PopulateGithubRepositories(
     {
         var teamsUrl = $"{_githubRestApiUrl}/repos/{_githubOrgName}/{repoName}/teams";
         var response = await _client.GetAsync(teamsUrl, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _logger.LogWarning(
+                "Forbidden fetching GitHub teams for repo {RepoName} (app likely lacks access to this repo). Treating as no teams.",
+                repoName);
+            return [];
+        }
+
         response.EnsureSuccessStatusCode();
 
         var githubTeams = await response.Content.ReadFromJsonAsync<List<GithubTeamSummary>>(cancellationToken) ?? [];
