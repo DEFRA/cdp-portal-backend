@@ -227,6 +227,9 @@ public sealed class PopulateGithubRepositories(
         string? EndCursor
     );
 
+    // Some CDP-tagged repos predate the GitHub App's installation (e.g. old repos never added
+    // to its selected-repository list), so GitHub returns 403 for those specifically. Treat that
+    // as "no teams known" rather than failing the whole sync run.
     private async Task<List<RepositoryTeam>> GetTeamsForRepo(
         string repoName,
         Dictionary<string, RepositoryTeam> cdpTeamsByGithubSlug,
@@ -234,7 +237,15 @@ public sealed class PopulateGithubRepositories(
     {
         var teamsUrl = $"{_githubRestApiUrl}/repos/{_githubOrgName}/{repoName}/teams";
         var response = await _client.GetAsync(teamsUrl, cancellationToken);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning(
+                "Failed to fetch GitHub teams for repo {RepoName}: {StatusCode}. Treating as no teams.",
+                repoName,
+                response.StatusCode);
+            return [];
+        }
 
         var githubTeams = await response.Content.ReadFromJsonAsync<List<GithubTeamSummary>>(cancellationToken) ?? [];
         return githubTeams
