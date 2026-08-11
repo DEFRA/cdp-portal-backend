@@ -228,10 +228,8 @@ public sealed class PopulateGithubRepositories(
         string? EndCursor
     );
 
-    // Some CDP-tagged repos predate the GitHub App's installation (e.g. old repos never added
-    // to its selected-repository list), so GitHub returns 403 for those specifically. Treat only
-    // 403 as "no teams known" and continue the sync; any other failure (auth, rate limit, GitHub
-    // outage) still fails the whole run so it isn't silently masked.
+    // Some CDP-tagged repos predate the GitHub App's installation, so GitHub returns 403 for
+    // those specifically. Treat only 403 as "no teams known".
     private async Task<List<RepositoryTeam>> GetTeamsForRepo(
         string repoName,
         Dictionary<string, RepositoryTeam> cdpTeamsByGithubSlug,
