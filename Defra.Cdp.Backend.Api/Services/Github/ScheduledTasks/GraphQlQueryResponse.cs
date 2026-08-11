@@ -2,29 +2,20 @@ namespace Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 
 public record PageInfo(
     bool hasNextPage,
-    string endCursor
+    string? endCursor
 );
 
-public record RepoQueryResponse(
-    Data? data
+public record SearchRepoQueryResponse(
+    SearchData? data
 );
 
-public record Data(
-    Organization organization
+public record SearchData(
+    SearchResults search
 );
 
-public record Organization(
-    string id,
-    Team? team
-);
-
-public record Team(
-    Repositories repositories
-);
-
-public record Repositories(
+public record SearchResults(
     PageInfo pageInfo,
-    IEnumerable<RepositoryNode> nodes
+    IEnumerable<RepositoryNode?> nodes
 );
 
 public record RepositoryTopics(
@@ -51,4 +42,8 @@ public record RepositoryNode(
 
 public record PrimaryLanguage(
     string name
+);
+
+public record GithubTeamSummary(
+    string slug
 );
