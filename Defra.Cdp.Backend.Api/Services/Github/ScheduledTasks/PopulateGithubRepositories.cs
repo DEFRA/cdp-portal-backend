@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -228,8 +229,9 @@ public sealed class PopulateGithubRepositories(
     );
 
     // Some CDP-tagged repos predate the GitHub App's installation (e.g. old repos never added
-    // to its selected-repository list), so GitHub returns 403 for those specifically. Treat that
-    // as "no teams known" rather than failing the whole sync run.
+    // to its selected-repository list), so GitHub returns 403 for those specifically. Treat only
+    // 403 as "no teams known" and continue the sync; any other failure (auth, rate limit, GitHub
+    // outage) still fails the whole run so it isn't silently masked.
     private async Task<List<RepositoryTeam>> GetTeamsForRepo(
         string repoName,
         Dictionary<string, RepositoryTeam> cdpTeamsByGithubSlug,
@@ -238,14 +240,15 @@ public sealed class PopulateGithubRepositories(
         var teamsUrl = $"{_githubRestApiUrl}/repos/{_githubOrgName}/{repoName}/teams";
         var response = await _client.GetAsync(teamsUrl, cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
+        if (response.StatusCode == HttpStatusCode.Forbidden)
         {
             _logger.LogWarning(
-                "Failed to fetch GitHub teams for repo {RepoName}: {StatusCode}. Treating as no teams.",
-                repoName,
-                response.StatusCode);
+                "Forbidden fetching GitHub teams for repo {RepoName} (app likely lacks access to this repo). Treating as no teams.",
+                repoName);
             return [];
         }
+
+        response.EnsureSuccessStatusCode();
 
         var githubTeams = await response.Content.ReadFromJsonAsync<List<GithubTeamSummary>>(cancellationToken) ?? [];
         return githubTeams
