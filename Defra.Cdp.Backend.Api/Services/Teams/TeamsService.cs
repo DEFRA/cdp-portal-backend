@@ -64,7 +64,9 @@ public class TeamsService(IMongoDbClientFactory connectionFactory, ILoggerFactor
             .Set(t => t.Description, team.Description)
             .Set(t => t.ServiceCode, team.ServiceCode)
             .Set(t => t.Github, team.Github)
+            .Set(t => t.DeliveryGroupId, team.DeliveryGroupId)
             .Set(t => t.SlackChannels, team.SlackChannels);
+        
 
         var result = await Collection.UpdateOneAsync(
             t => t.TeamId == team.TeamId,
