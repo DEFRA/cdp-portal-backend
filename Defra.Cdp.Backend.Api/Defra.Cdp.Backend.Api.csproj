@@ -53,4 +53,8 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="_lukasz_docs\example\" />
+  </ItemGroup>
+
 </Project>

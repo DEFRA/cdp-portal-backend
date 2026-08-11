@@ -1,0 +1,177 @@
+{
+  "data": {
+    "search": {
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "Y3Vyc29yOjIw"
+      },
+      "nodes": [
+        {
+          "name": "cdp-dotnet-backend-template",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "dotnet"
+                }
+              },
+              {
+                "topic": {
+                  "name": "template"
+                }
+              }
+            ]
+          },
+          "description": "C# ASP.NET Minimial API template with MongoDB, FluentValidation, Swagger and Serilog logging",
+          "primaryLanguage": {
+            "name": "C#"
+          },
+          "url": "https://github.com/DEFRA/cdp-dotnet-backend-template",
+          "isArchived": false,
+          "createdAt": "2023-08-24T07:08:56Z"
+        },
+        {
+          "name": "grants-ui",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "frontend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "node"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service grants-ui",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/grants-ui",
+          "isArchived": false,
+          "createdAt": "2025-03-19T10:08:04Z"
+        },
+        {
+          "name": "trade-imports-data-api",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "dotnet"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service trade-imports-data-api",
+          "primaryLanguage": {
+            "name": "C#"
+          },
+          "url": "https://github.com/DEFRA/trade-imports-data-api",
+          "isArchived": false,
+          "createdAt": "2025-04-01T15:11:37Z"
+        },
+        {
+          "name": "forms-runner",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "frontend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "service"
+                }
+              }
+            ]
+          },
+          "description": "Git repository for service forms-runner",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/forms-runner",
+          "isArchived": false,
+          "createdAt": "2023-11-08T14:45:21Z"
+        },
+        {
+          "name": "cdp-node-backend-template",
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "cdp"
+                }
+              },
+              {
+                "topic": {
+                  "name": "template"
+                }
+              },
+              {
+                "topic": {
+                  "name": "backend"
+                }
+              },
+              {
+                "topic": {
+                  "name": "node"
+                }
+              }
+            ]
+          },
+          "description": "Core delivery platform Node.js Backend Template",
+          "primaryLanguage": {
+            "name": "JavaScript"
+          },
+          "url": "https://github.com/DEFRA/cdp-node-backend-template",
+          "isArchived": false,
+          "createdAt": "2023-06-20T12:10:50Z"
+        }
+      ]
+    }
+  }
+}
