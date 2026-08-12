@@ -3,8 +3,6 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Defra.Cdp.Backend.Api.Models;
 
-public record RepositoryTeam(string Github, string? TeamId, string? Name);
-
 [BsonIgnoreExtraElements]
 public sealed class Repository : IEquatable<Repository>
 {
@@ -22,8 +20,6 @@ public sealed class Repository : IEquatable<Repository>
 
     public DateTimeOffset CreatedAt { get; init; }
 
-    public List<RepositoryTeam> Teams { get; init; } = null!;
-
     public IEnumerable<string> Topics { get; init; } = null!;
 
     public bool Equals(Repository? other)
@@ -34,7 +30,6 @@ public sealed class Repository : IEquatable<Repository>
                PrimaryLanguage == other.PrimaryLanguage &&
                Url == other.Url &&
                IsArchived == other.IsArchived &&
-               CreatedAt == other.CreatedAt &&
-               Teams.ToHashSet().SetEquals(other.Teams.ToHashSet());
+               CreatedAt == other.CreatedAt;
     }
 }

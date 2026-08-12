@@ -5,7 +5,6 @@ using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
-using Defra.Cdp.Backend.Api.Services.Teams;
 using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.Primitives;
 using Quartz;
@@ -21,7 +20,6 @@ public sealed class RepositoryCreationPoller(
     IEntitiesService entitiesService,
     IMongoLock mongoLock,
     IHttpClientFactory clientFactory,
-    ITeamsService teamsService,
     IGithubCredentialAndConnectionFactory githubCredentialAndConnectionFactory,
     HeaderPropagationValues headerPropagationValues)
     : IJob
@@ -56,8 +54,7 @@ public sealed class RepositoryCreationPoller(
                     headerPropagationValues.Headers ??=
                         new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
                     var githubRepos = await GetGithubRepos(entities.Select(e => e.Name).ToList(), cancellationToken);
-                    var repositoryTeams = await GetRepositoryTeams(cancellationToken);
-                    var repositories = BuildRepositories(entities, githubRepos, repositoryTeams);
+                    var repositories = BuildRepositories(entities, githubRepos);
 
                     await repositoryService.UpsertMany(repositories, cancellationToken);
                     if (repositories.Count != 0)
@@ -86,42 +83,14 @@ public sealed class RepositoryCreationPoller(
         }
     }
 
-    private async Task<Dictionary<string, RepositoryTeam>> GetRepositoryTeams(CancellationToken cancellationToken)
-    {
-        var cdpTeams = await teamsService.FindAll(cancellationToken);
-
-        return cdpTeams
-            .Where(t =>
-            {
-                if (t.Github is not null)
-                {
-                    return true;
-                }
-
-                _logger.LogWarning("Skipping team with no GitHub slug: {@UserServiceTeam}", t);
-                return false;
-            })
-            .ToDictionary(
-                t => t.TeamId,
-                t => new RepositoryTeam(t.Github!, t.TeamId, t.TeamName)
-            );
-    }
-
     private static List<Repository> BuildRepositories(
         List<Entity> entities,
-        Dictionary<string, RepositoryNode>? repositoryNodes,
-        Dictionary<string, RepositoryTeam> repositoryTeams)
+        Dictionary<string, RepositoryNode>? repositoryNodes)
     {
         return entities
             .Select(e =>
             {
                 if (repositoryNodes is null || !repositoryNodes.TryGetValue(e.Name, out var repo)) return null;
-                var teams = e.Teams?
-                    .Where(t => t.TeamId is not null &&
-                                repositoryTeams.TryGetValue(t.TeamId, out _))
-                    .Select(t => repositoryTeams[t.TeamId!])
-                    .Distinct()
-                    .ToList() ?? [];
 
                 return new Repository
                 {
@@ -131,7 +100,6 @@ public sealed class RepositoryCreationPoller(
                     IsArchived = repo.isArchived,
                     Url = repo.url,
                     PrimaryLanguage = repo.primaryLanguage?.name ?? "Unknown",
-                    Teams = teams,
                     Topics = repo.repositoryTopics.nodes.Select(t => t.topic.name)
                 };
             })

@@ -43,7 +43,3 @@ public record RepositoryNode(
 public record PrimaryLanguage(
     string name
 );
-
-public record GithubTeamSummary(
-    string slug
-);
