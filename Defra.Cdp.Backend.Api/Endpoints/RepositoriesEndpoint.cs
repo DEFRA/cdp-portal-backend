@@ -9,20 +9,6 @@ public static class RepositoriesEndpoint
 
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
-        // Template repositories
-        app.MapGet("/repositories/templates", GetTemplateRepositories);
-
-        app.MapGet("/repositories/templates/{id}", GetRepositoryById);
-
-        // Library repositories
-        app.MapGet("/repositories/libraries", GetLibraryRepositories);
-
-        // Library repository
-        app.MapGet("/repositories/libraries/{id}", GetRepositoryById);
-
-        // Get a Teams repositories
-        app.MapGet("/repositories/all/{teamId}", GetTeamRepositories);
-
         app.MapGet("/repositories/{id}", GetRepositoryById);
     }
 
@@ -35,35 +21,4 @@ public static class RepositoriesEndpoint
             : TypedResults.Ok(maybeRepository);
     }
     
-    private static async Task<Ok<List<Repository>>> GetTemplateRepositories(IRepositoryService repositoryService,
-        CancellationToken cancellationToken)
-    {
-        var repositories = await repositoryService.FindRepositoriesByTopic(CdpTopic.Template, cancellationToken);
-
-        return TypedResults.Ok(repositories);
-    }
-    
-    private static async Task<Ok<List<Repository>>> GetLibraryRepositories(IRepositoryService repositoryService,
-        CancellationToken cancellationToken)
-    {
-        var repositories = await repositoryService.FindRepositoriesByTopic(CdpTopic.Library, cancellationToken);
-
-        return TypedResults.Ok(repositories);
-    }
-
-    private static async Task<Ok<AllTeamRepositoriesResponse>> GetTeamRepositories(IRepositoryService repositoryService, string teamId,
-        CancellationToken cancellationToken)
-    {
-        var libraries = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Library,
-            cancellationToken);
-
-        var templates = await repositoryService.FindTeamRepositoriesByTopic(teamId, CdpTopic.Template,
-            cancellationToken);
-
-        return TypedResults.Ok(new AllTeamRepositoriesResponse(libraries, templates));
-    }
-
-    public sealed record AllTeamRepositoriesResponse(
-        IEnumerable<Repository> Libraries,
-        IEnumerable<Repository> Templates);
 }

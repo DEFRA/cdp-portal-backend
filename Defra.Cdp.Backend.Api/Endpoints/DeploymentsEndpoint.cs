@@ -99,7 +99,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
         {
-            deploymentFilters.Teams = teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
+            deploymentFilters.Teams = teamRecord.Select(t => new TeamFilter(t.teamId, t.name)).ToList();
         }
         return TypedResults.Ok(new DeploymentFiltersResponse{ Filters = deploymentFilters });
     }
@@ -160,7 +160,7 @@ public static class DeploymentsEndpoint
         var teamRecord = await userServiceBackendClient.GetLatestCdpTeamsInformation(cancellationToken);
         if (teamRecord != null)
             whatsRunningWhereFilters.Teams =
-                teamRecord.Select(t => new RepositoryTeam(t.github!, t.teamId, t.name)).ToList();
+                teamRecord.Select(t => new TeamFilter(t.teamId, t.name)).ToList();
         return TypedResults.Ok(new DeploymentFiltersResponse { Filters = whatsRunningWhereFilters });
     }
 

@@ -97,7 +97,6 @@ public class EntitiesServiceTest(MongoContainerFixture fixture) : MongoTestSuppo
     private readonly Repository _fooRepository = new()
     {
         Id = "foo",
-        Teams = [new RepositoryTeam("foo-team", "1234", "foo-team")],
         IsArchived = false
     };
 }

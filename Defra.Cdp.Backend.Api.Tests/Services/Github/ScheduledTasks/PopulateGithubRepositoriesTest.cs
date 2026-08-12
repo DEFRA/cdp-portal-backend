@@ -51,7 +51,7 @@ public class PopulateGithubRepositoriesTest
     }
 
     [Fact]
-    public void BuildRepositoriesUsesEntityTeamsForEntityBackedRepos()
+    public void BuildRepositoriesMapsRepositoryFieldsFromGithubNodes()
     {
         var topics = Topics.CreateMockTopics();
         var dateTimeNow = DateTimeOffset.Now;
@@ -61,23 +61,7 @@ public class PopulateGithubRepositoriesTest
                     "https://url1", false, dateTimeNow),
                 new RepositoryNode("repo2", topics, "desc2", new PrimaryLanguage("C#"),
                     "https://url2", false, dateTimeNow)
-            ],
-            new HashSet<string>(["repo1"], StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, List<RepositoryTeam>>(StringComparer.OrdinalIgnoreCase)
-            {
-                {
-                    "repo1",
-                    [
-                        new RepositoryTeam("cdp-platform", "platform-team-id", "Platform")
-                    ]
-                },
-                {
-                    "repo2",
-                    [
-                        new RepositoryTeam("fisheries", "fisheries-team-id", "Fisheries")
-                    ]
-                }
-            });
+            ]);
 
         var topicNames = topics.nodes.Select(t => t.topic.name).ToList();
         var expected = new List<Repository>
@@ -85,24 +69,22 @@ public class PopulateGithubRepositoriesTest
             new()
             {
                 Id = "repo1",
-                Topics = topicNames,
                 CreatedAt = dateTimeNow,
                 Description = "desc1",
                 IsArchived = false,
                 PrimaryLanguage = "Javascript",
                 Url = "https://url1",
-                Teams = []
+                Topics = topicNames
             },
             new()
             {
                 Id = "repo2",
-                Topics = topicNames,
                 CreatedAt = dateTimeNow,
                 Description = "desc2",
                 IsArchived = false,
                 PrimaryLanguage = "C#",
                 Url = "https://url2",
-                Teams = [new RepositoryTeam("fisheries", "fisheries-team-id", "Fisheries")]
+                Topics = topicNames
             }
         };
         
@@ -129,23 +111,16 @@ public class PopulateGithubRepositoriesTest
         };
 
         var githubRepositoryNodes = PopulateGithubRepositories.RemoveNullRepositoryNodes(repositoryNodes);
-        var githubTeamsByRepoName = new Dictionary<string, List<RepositoryTeam>>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "repo1", [new RepositoryTeam("cdp-platform", "platform-team-id", "Platform")] }
-        };
 
         var ex = Record.Exception(() =>
-            PopulateGithubRepositories.BuildRepositories(githubRepositoryNodes, new HashSet<string>(), githubTeamsByRepoName)
+            PopulateGithubRepositories.BuildRepositories(githubRepositoryNodes)
         );
 
         Assert.Null(ex);
 
-        var repositories =
-            PopulateGithubRepositories.BuildRepositories(githubRepositoryNodes, new HashSet<string>(), githubTeamsByRepoName);
+        var repositories = PopulateGithubRepositories.BuildRepositories(githubRepositoryNodes);
         Assert.Single(repositories);
         Assert.Equal("repo1", repositories[0].Id);
-        Assert.Single(repositories[0].Teams);
-        Assert.Equal("platform-team-id", repositories[0].Teams[0].TeamId);
     }
 
     [Fact]
@@ -165,11 +140,7 @@ public class PopulateGithubRepositoriesTest
             .ToList();
 
         var githubRepositoryNodes = PopulateGithubRepositories.RemoveNullRepositoryNodes(allNodes);
-        var repositories = PopulateGithubRepositories.BuildRepositories(
-            githubRepositoryNodes,
-            new HashSet<string>(),
-            new Dictionary<string, List<RepositoryTeam>>()
-        );
+        var repositories = PopulateGithubRepositories.BuildRepositories(githubRepositoryNodes);
 
         var expected = new List<Repository>
         {
@@ -241,7 +212,6 @@ public class PopulateGithubRepositoriesTest
             Url = url,
             IsArchived = isArchived,
             CreatedAt = DateTimeOffset.Parse(createdAt),
-            Teams = [],
             Topics = topics
         };
 

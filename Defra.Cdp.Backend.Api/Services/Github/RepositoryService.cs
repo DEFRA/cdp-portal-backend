@@ -1,4 +1,3 @@
-using Defra.Cdp.Backend.Api.Endpoints;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
 using MongoDB.Driver;
@@ -10,11 +9,6 @@ public interface IRepositoryService
     Task UpsertMany(IEnumerable<Repository> repositories, CancellationToken cancellationToken);
 
     Task DeleteUnknownRepos(IEnumerable<string> knownReposIds, CancellationToken cancellationToken);
-
-    Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
-        CancellationToken cancellationToken);
-
-    Task<List<Repository>> FindRepositoriesByTopic(CdpTopic topic, CancellationToken cancellationToken);
 
     Task<Repository?> FindRepositoryById(string id, CancellationToken cancellationToken);
 }
@@ -58,63 +52,17 @@ public class RepositoryService(
         await Collection.DeleteManyAsync(r => !excludingIdsList.Contains(r.Id), cancellationToken);
     }
 
-    public async Task<List<Repository>> FindTeamRepositoriesByTopic(string teamId, CdpTopic topic,
-        CancellationToken cancellationToken)
-    {
-        var topicFilter = Builders<Repository>.Filter.All(r => r.Topics, ProvideCdpTopics(topic));
-        var teamFilter = Builders<Repository>.Filter.ElemMatch(r => r.Teams, t => t.TeamId == teamId);
-
-        var repositories =
-            await Collection
-                .Find(teamFilter & topicFilter)
-                .SortBy(r => r.Id)
-                .ToListAsync(cancellationToken);
-        return repositories;
-    }
-
-    public async Task<Repository?> FindRepositoryWithTopicById(CdpTopic topic, string id,
-        CancellationToken cancellationToken)
-    {
-        var topicFilter = Builders<Repository>.Filter.All(r => r.Topics, ProvideCdpTopics(topic));
-        var repositoryFilter = Builders<Repository>.Filter.Eq(r => r.Id, id);
-
-        var repository =
-            await Collection
-                .Find(repositoryFilter & topicFilter)
-                .FirstOrDefaultAsync(cancellationToken);
-        return repository;
-    }
-
-    public async Task<List<Repository>> FindRepositoriesByTopic(CdpTopic topic, CancellationToken cancellationToken)
-    {
-        return await Collection
-            .Find(Builders<Repository>.Filter.All(r => r.Topics, ProvideCdpTopics(topic)))
-            .SortBy(r => r.Id)
-            .ToListAsync(cancellationToken);
-    }
-
-    private List<string> ProvideCdpTopics(CdpTopic topic)
-    {
-        return new List<CdpTopic> { CdpTopic.Cdp, topic }.ConvertAll<string>(t => t.ToString().ToLower());
-    }
-
-
     protected override List<CreateIndexModel<Repository>> DefineIndexes(IndexKeysDefinitionBuilder<Repository> builder)
     {
         var createdAtIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.CreatedAt));
-        var teamsIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.Teams));
         var languageIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.PrimaryLanguage));
         var isArchivedIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.IsArchived));
-        var teamIdIndex = new CreateIndexModel<Repository>(builder.Ascending(r => r.Teams.Select(t => t.TeamId)),
-            new CreateIndexOptions { Sparse = true });
 
         return
         [
             createdAtIndex,
-            teamsIndex,
             languageIndex,
-            isArchivedIndex,
-            teamIdIndex
+            isArchivedIndex
         ];
     }
 }
