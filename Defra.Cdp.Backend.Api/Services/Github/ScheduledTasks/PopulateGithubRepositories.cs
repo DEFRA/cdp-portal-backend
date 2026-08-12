@@ -69,18 +69,15 @@ public sealed class PopulateGithubRepositories(
     public static List<Repository> BuildRepositories(IEnumerable<RepositoryNode> githubRepositoryNodes)
     {
         return githubRepositoryNodes
-            .Select(repo =>
+            .Select(repo => new Repository
             {
-                return new Repository
-                {
-                    Id = repo.name,
-                    CreatedAt = repo.createdAt,
-                    Description = repo.description,
-                    IsArchived = repo.isArchived,
-                    Url = repo.url,
-                    PrimaryLanguage = repo.primaryLanguage?.name ?? "Unknown",
-                    Topics = repo.repositoryTopics.nodes.Select(t => t.topic.name)
-                };
+                Id = repo.name,
+                CreatedAt = repo.createdAt,
+                Description = repo.description,
+                IsArchived = repo.isArchived,
+                Url = repo.url,
+                PrimaryLanguage = repo.primaryLanguage?.name ?? "Unknown",
+                Topics = repo.repositoryTopics.nodes.Select(t => t.topic.name)
             })
             .ToList();
     }
