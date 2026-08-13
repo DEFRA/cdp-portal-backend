@@ -23,6 +23,7 @@ public record ServiceStatusChange
     public required string NewStatus { get; init; }
     public required string EntityId { get; init; }
     public required string Version { get; init; }
+    public string? PreviousVersion { get; init; }
     public string? UserDisplayName { get; init; }
 }
 
@@ -102,6 +103,15 @@ public class DeploymentsService(
         if (deployment.Status == Requested)
         {
             await CleanupRequestedDeployments(deployment.Service, deployment.Environment, ct);
+
+            var runningDeployments = await RunningDeploymentsForService(
+                new DeploymentMatchers { ServiceExact = deployment.Service, Environment = deployment.Environment }, ct);
+            var previousDeployment = runningDeployments.FirstOrDefault();
+            if (previousDeployment != null)
+            {
+                deployment.PreviousCdpDeploymentId = previousDeployment.CdpDeploymentId;
+                deployment.PreviousVersion = previousDeployment.Version;
+            }
         }
 
         await Collection.InsertOneAsync(await WithAuditData(deployment, ct), null, ct);
@@ -209,6 +219,7 @@ public class DeploymentsService(
             Environment = deployment.Environment,
             EntityId = deployment.Service,
             Version = deployment.Version,
+            PreviousVersion = deployment.PreviousVersion,
             UserDisplayName = deployment.User?.DisplayName,
             NewStatus = deployment.LastDeploymentStatus,
             OldStatus = oldStatus

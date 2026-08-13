@@ -84,6 +84,7 @@ public class DeploymentSuccessEvent : INotificationEvent
     public required string? Environment { get; init; }
     public required string Version { get; init; }
     public required string DeploymentId { get; init; }
+    public string? PreviousVersion { get; init; }
     public string? UserDisplayName { get; init; }
 
     public SlackMessageBody SlackMessage()

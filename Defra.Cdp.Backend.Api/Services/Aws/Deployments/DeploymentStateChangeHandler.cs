@@ -37,6 +37,7 @@ public class DeploymentStateChangeEventHandler(
                 Entity = statusChange.EntityId,
                 Environment = statusChange.Environment,
                 Version = statusChange.Version,
+                PreviousVersion = statusChange.PreviousVersion,
                 UserDisplayName = statusChange.UserDisplayName
             },
             _ => null

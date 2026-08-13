@@ -19,6 +19,10 @@ public class Deployment
     public string Environment { get; init; } = "";
     public string Service { get; init; } = "";
     public string Version { get; init; } = "";
+    [BsonIgnoreIfNull]
+    public string? PreviousCdpDeploymentId { get; set; }
+    [BsonIgnoreIfNull]
+    public string? PreviousVersion { get; set; }
 
     public UserDetails? User { get; init; }
     public string? Cpu { get; init; }
