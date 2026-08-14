@@ -53,4 +53,42 @@ public class NotificationEventsTest
         Assert.Contains("foo-backend",  message?.Blocks?[1].Fields?[1].Text);
         Assert.Contains("https://github.com/DEFRA/cdp-tenant-config/pull/99",  message?.Blocks?[1].Fields?[2].Text);
     }
+
+    [Fact]
+    public void DeploymentSuccessTemplateIncludesPreviousVersionWhenChanged()
+    {
+        var e = new DeploymentSuccessEvent
+        {
+            Entity = "foo-backend",
+            Environment = "prod",
+            Version = "2.0.0",
+            PreviousVersion = "1.9.0",
+            DeploymentId = "1234",
+            UserDisplayName = "User A"
+        };
+
+        var message = e.SlackMessage();
+        var fields = message?.Blocks?[1].Fields;
+        Assert.NotNull(fields);
+        Assert.Contains(
+            "*Version:*\n~1.9.0~ → *2.0.0*\n<https://github.com/DEFRA/foo-backend/compare/1.9.0...2.0.0|Compare on GitHub>",
+            fields.Select(f => f.Text));
+    }
+
+    [Fact]
+    public void DeploymentSuccessTemplateOmitsPreviousVersionWhenMissing()
+    {
+        var e = new DeploymentSuccessEvent
+        {
+            Entity = "foo-backend",
+            Environment = "prod",
+            Version = "2.0.0",
+            DeploymentId = "1234",
+            UserDisplayName = "User A"
+        };
+
+        var message = e.SlackMessage();
+        Assert.DoesNotContain(message?.Blocks?[1].Fields ?? [],
+            f => (f.Text ?? "").Contains("*Version:*", StringComparison.Ordinal));
+    }
 }

@@ -86,6 +86,7 @@ public class DeploymentStateChangeEventHandlerTests
                 e.Entity == statusChange.EntityId &&
                 e.Environment == statusChange.Environment &&
                 e.Version == statusChange.Version &&
+                e.PreviousVersion == statusChange.PreviousVersion &&
                 e.UserDisplayName == statusChange.UserDisplayName),
             Arg.Any<CancellationToken>());
     }
@@ -150,6 +151,7 @@ public class DeploymentStateChangeEventHandlerTests
             NewStatus = newStatus,
             EntityId = "cdp-portal-backend",
             Version = "1.2.3",
+            PreviousVersion = "1.2.2",
             UserDisplayName = "A User"
         };
     }

@@ -99,6 +99,47 @@ public class DeploymentServiceTest : ServiceTest
         Assert.NotNull(result);
         Assert.Equal([], result.Audit?.ServiceOwners);
         Assert.Null(result.Audit?.User);
+        Assert.Null(result.PreviousVersion);
+        Assert.Null(result.PreviousCdpDeploymentId);
+    }
+
+    [Fact]
+    public async Task RegisterDeploymentStoresPreviousRunningDeploymentDetails()
+    {
+        var repositoryService = new EntitiesService(_mongoFactory, new NullLoggerFactory());
+        var service = new DeploymentsService(_mongoFactory, repositoryService, _userServiceBackendClient,
+            new NullLoggerFactory());
+
+        var ct = TestContext.Current.CancellationToken;
+        var runningDeployment = new Deployment
+        {
+            CdpDeploymentId = Guid.NewGuid().ToString(),
+            Environment = "test",
+            Service = "history-test-backend",
+            Version = "1.0.0",
+            Created = DateTime.UtcNow.AddMinutes(-20),
+            Updated = DateTime.UtcNow.AddMinutes(-10),
+            Status = DeploymentStatus.Running
+        };
+        await service.RegisterDeployment(runningDeployment, ct);
+
+        var requestedDeployment = Deployment.FromRequest(new RequestedDeployment
+        {
+            Cpu = "1024",
+            Memory = "1024",
+            ConfigVersion = "e5fa44f2b31c1fb553b6021e7360d07d5d91ff5e",
+            Environment = "test",
+            DeploymentId = Guid.NewGuid().ToString(),
+            InstanceCount = 1,
+            Service = "history-test-backend",
+            Version = "1.1.0"
+        });
+        await service.RegisterDeployment(requestedDeployment, ct);
+
+        var result = await service.FindDeployment(requestedDeployment.CdpDeploymentId, ct);
+        Assert.NotNull(result);
+        Assert.Equal("1.0.0", result.PreviousVersion);
+        Assert.Equal(runningDeployment.CdpDeploymentId, result.PreviousCdpDeploymentId);
     }
 
     [Fact]
