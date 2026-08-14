@@ -27,6 +27,20 @@ public class TriggerWorkflowServiceTests
     }
 
     [Fact]
+    public async Task ReturnsNullWhenBodyIsAnEmptyStringRegardlessOfStatusCode()
+    {
+        var service = BuildService(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(string.Empty, Encoding.UTF8, "application/json")
+        });
+
+        var response = await service.TriggerWorkflow("cdp-deployments-snow", "deploy.yml",
+            new TestInputs("value"), TestContext.Current.CancellationToken);
+
+        Assert.Null(response);
+    }
+
+    [Fact]
     public async Task ReturnsDeserialisedResponseWhenBodyPresent()
     {
         var service = BuildService(_ => new HttpResponseMessage(HttpStatusCode.OK)
