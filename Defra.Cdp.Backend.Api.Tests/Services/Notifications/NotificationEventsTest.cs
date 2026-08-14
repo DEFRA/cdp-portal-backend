@@ -70,7 +70,9 @@ public class NotificationEventsTest
         var message = e.SlackMessage();
         var fields = message?.Blocks?[1].Fields;
         Assert.NotNull(fields);
-        Assert.Contains("*Version:*\n~1.9.0~ → *2.0.0*", fields.Select(f => f.Text));
+        Assert.Contains(
+            "*Version:*\n~1.9.0~ → *2.0.0*\n<https://github.com/DEFRA/foo-backend/compare/1.9.0...2.0.0|Compare on GitHub>",
+            fields.Select(f => f.Text));
     }
 
     [Fact]

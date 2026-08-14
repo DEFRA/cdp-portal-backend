@@ -15,11 +15,12 @@ public static partial class SlackMessageTemplates
 
         if (!string.IsNullOrWhiteSpace(e.PreviousVersion) && e.PreviousVersion != e.Version)
         {
+            var compareUri = $"https://github.com/DEFRA/{Uri.EscapeDataString(e.Entity)}/compare/{Uri.EscapeDataString(e.PreviousVersion)}...{Uri.EscapeDataString(e.Version)}";
             fields.Add(new TextObject
             {
                 Type = "mrkdwn",
                 Text =
-                    $"*Version:*\n~{EscapeMarkdown(e.PreviousVersion)}~ → *{EscapeMarkdown(e.Version)}*"
+                    $"*Version:*\n~{EscapeMarkdown(e.PreviousVersion)}~ → *{EscapeMarkdown(e.Version)}*\n<{compareUri}|Compare on GitHub>"
             });
         }
 
