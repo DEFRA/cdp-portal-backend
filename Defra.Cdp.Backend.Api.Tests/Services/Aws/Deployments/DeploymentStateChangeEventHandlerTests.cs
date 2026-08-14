@@ -209,7 +209,6 @@ public class DeploymentStateChangeEventHandlerTests
                 "service deployment completed", Arg.Any<CancellationToken>())
             .Returns(statusChange);
 
-        // "infra-dev" is used to test the SNOW integration end-to-end without triggering it for every prod deployment.
         var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService,
             triggerEnvironments: ["prod", "infra-dev"]);
 
