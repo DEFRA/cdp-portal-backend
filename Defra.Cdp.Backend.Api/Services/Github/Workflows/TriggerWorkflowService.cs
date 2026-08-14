@@ -45,7 +45,13 @@ public class TriggerWorkflowService(
         logger.LogInformation("Trigger GitHub {Workflow} responded with {Status}", workflow, response.StatusCode);
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<GitHubTriggerWorkflowResponse>(
-            cancellationToken: cancellationToken);
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(responseContent))
+        {
+            logger.LogInformation("Trigger GitHub {Workflow} returned an empty response body", workflow);
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<GitHubTriggerWorkflowResponse>(responseContent);
     }
 }

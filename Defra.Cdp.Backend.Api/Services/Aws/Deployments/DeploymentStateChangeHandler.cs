@@ -1,12 +1,17 @@
+using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Notifications;
+using Defra.Cdp.Backend.Api.Services.Snow;
+using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 
 public class DeploymentStateChangeEventHandler(
     IDeploymentsService deploymentsService,
     INotificationDispatcher notificationDispatcher,
+    ISnowDeploymentTriggerService snowDeploymentTriggerService,
+    IOptions<SnowOptions> snowOptions,
     ILogger<DeploymentStateChangeEventHandler> logger)
 {
     public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
@@ -14,6 +19,7 @@ public class DeploymentStateChangeEventHandler(
         logger.LogInformation("{Id} Handling EcsDeploymentStateChange Update {DeploymentId}, {Name} {Reason}", id, ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason);
         var statusChange = await deploymentsService.UpdateDeploymentStatus(ecsEvent.Detail.DeploymentId, ecsEvent.Detail.EventName, ecsEvent.Detail.Reason, cancellationToken);
         await TriggerDeploymentNotificationOnTransition(statusChange, cancellationToken);
+        await TriggerSnowWorkflowOnTransition(statusChange, cancellationToken);
     }
 
     private async Task TriggerDeploymentNotificationOnTransition(ServiceStatusChange? statusChange, CancellationToken cancellationToken)
@@ -45,5 +51,30 @@ public class DeploymentStateChangeEventHandler(
 
         if (notificationEvent != null)
             await notificationDispatcher.Dispatch(notificationEvent, cancellationToken);
+    }
+
+    private async Task TriggerSnowWorkflowOnTransition(ServiceStatusChange? statusChange,
+        CancellationToken cancellationToken)
+    {
+        if (statusChange is null || statusChange.NewStatus == statusChange.OldStatus)
+            return;
+
+        if (statusChange.NewStatus != DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED ||
+            !snowOptions.Value.TriggerEnvironments.Contains(statusChange.Environment,
+                StringComparer.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            await snowDeploymentTriggerService.TriggerDeploymentRecord(statusChange, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Failed to trigger SNOW workflow for deployment {DeploymentId} {Service} in {Environment}",
+                statusChange.DeploymentId,
+                statusChange.EntityId,
+                statusChange.Environment);
+        }
     }
 }
