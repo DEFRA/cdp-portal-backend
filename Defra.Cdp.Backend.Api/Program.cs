@@ -34,6 +34,7 @@ using Defra.Cdp.Backend.Api.Services.Scheduler.Model;
 using Defra.Cdp.Backend.Api.Services.Scheduler.TestSuiteDeployment;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Defra.Cdp.Backend.Api.Services.Shuttering;
+using Defra.Cdp.Backend.Api.Services.Snow;
 using Defra.Cdp.Backend.Api.Services.Teams;
 using Defra.Cdp.Backend.Api.Services.TenantArtifacts;
 using Defra.Cdp.Backend.Api.Services.Terminal;
@@ -156,6 +157,7 @@ builder.Services.Configure<PlatformEventListenerOptions>(
 builder.Services.Configure<DeployablesClientOptions>(builder.Configuration.GetSection(DeployablesClientOptions.Prefix));
 builder.Services.Configure<CloudWatchMetricsOptions>(builder.Configuration.GetSection(CloudWatchMetricsOptions.Prefix));
 builder.Services.Configure<TestRunnerOptions>(builder.Configuration.GetSection(TestRunnerOptions.Prefix));
+builder.Services.Configure<SnowOptions>(builder.Configuration.GetSection(SnowOptions.Prefix));
 
 // AWS Clients
 builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
@@ -194,6 +196,7 @@ builder.Services.AddSingleton<ITriggerWorkflowService, TriggerWorkflowService>()
 builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>();
 builder.Services.AddSingleton<ICreateResourceValidator, CreateResourceValidator>();
 builder.Services.AddSingleton<IEntityResourceService, EntityResourceService>();
+builder.Services.AddSingleton<ISnowDeploymentTriggerService, SnowDeploymentTriggerService>();
 
 // Grafana alert promotion
 builder.Services.AddSingleton<IGrafanaPlaygroundService, GrafanaPlaygroundService>();
