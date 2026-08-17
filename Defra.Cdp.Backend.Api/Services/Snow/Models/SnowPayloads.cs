@@ -45,7 +45,6 @@ public class SnowExtendedPayload
     [JsonPropertyName("previous_version")]
     public string? PreviousVersion { get; init; }
 
-    // TODO: assignment_group is not set, so every team's deployments currently land in
-    // cdp-deployments-snow's single default ServiceNow group. Clarify whether teams need their
-    // own assignment group, and if so, where that sys_id should be sourced from.
+    // assignment_group is intentionally not set: cdp-deployments-snow's default ServiceNow group covers
+    // every team for now, and that isn't expected to change.
 }

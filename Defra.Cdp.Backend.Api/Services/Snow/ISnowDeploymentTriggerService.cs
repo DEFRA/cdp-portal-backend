@@ -25,7 +25,7 @@ public class SnowDeploymentTriggerService(
     {
         var entity = await entitiesService.GetEntity(statusChange.EntityId, cancellationToken);
 
-        // TODO: verify this is the right team to report to ServiceNow when a service has multiple owning teams.
+        // Decided: for services with multiple owning teams, just report the first one (by team ID) to ServiceNow.
         var teamName = entity?.Teams
             .OrderBy(team => team.TeamId, StringComparer.OrdinalIgnoreCase)
             .Select(team => string.IsNullOrWhiteSpace(team.Name) ? team.TeamId : team.Name)
