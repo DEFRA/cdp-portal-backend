@@ -1,8 +1,10 @@
 using System.Text.Json;
+using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.Snow.Models;
+using Microsoft.Extensions.Options;
 using Serilog.Context;
 
 namespace Defra.Cdp.Backend.Api.Services.Snow;
@@ -15,11 +17,16 @@ public interface ISnowDeploymentTriggerService
 public class SnowDeploymentTriggerService(
     ITriggerWorkflowService triggerWorkflowService,
     IEntitiesService entitiesService,
+    IOptions<SnowOptions> snowOptions,
     ILogger<SnowDeploymentTriggerService> logger) : ISnowDeploymentTriggerService
 {
     private const string Repo = "cdp-deployments-snow";
-    private const string Workflow = "deploy.yml";
     private const string SnowWorkflowTriggerEventAction = "snow-deployment-record-triggered";
+
+    // Defaults to deploy.yml; set Snow__Workflow in the environment to point at a different workflow file.
+    private readonly string _workflow = string.IsNullOrWhiteSpace(snowOptions.Value.Workflow)
+        ? SnowOptions.DefaultWorkflow
+        : snowOptions.Value.Workflow;
 
     public async Task TriggerDeploymentRecord(ServiceStatusChange statusChange, CancellationToken cancellationToken)
     {
@@ -67,7 +74,7 @@ public class SnowDeploymentTriggerService(
                 teamName);
 
             var response =
-                await triggerWorkflowService.TriggerWorkflow(Repo, Workflow, inputs, cancellationToken);
+                await triggerWorkflowService.TriggerWorkflow(Repo, _workflow, inputs, cancellationToken);
 
             logger.LogInformation(
                 "Triggered SNOW workflow for deployment {DeploymentId}: response body present {HasWorkflowResponse}, run id {WorkflowRunId}, run url {WorkflowRunUrl}",
