@@ -146,4 +146,43 @@ public class EntityTopologyTest
         Assert.Equal("foo-topic", output[0].Topic);
         Assert.Equal(SubType.Backend, output[0].SubType);
     }
+    
+    [Fact]
+    public void Test_queue_subscriptions_fan_out_across_multiple_topics_and_subscribers()
+    {
+        var topics = new List<EntityResource<TenantSnsTopic>>
+        {
+            new(SNS.Name, SNS.Icon, "topic-one", new TenantSnsTopic
+            {
+                Name = "topic-one",
+                Subscribers =
+                [
+                    new TenantSnsSubscriber { QueueName = "queue-a", QueueOwner = "service-a" },
+                    new TenantSnsSubscriber { QueueName = "queue-b", QueueOwner = "service-b" }
+                ]
+            }),
+            new(SNS.Name, SNS.Icon, "topic-two", new TenantSnsTopic
+            {
+                Name = "topic-two",
+                Subscribers =
+                [
+                    new TenantSnsSubscriber { QueueName = "queue-c", QueueOwner = "service-a" }
+                ]
+            })
+        };
+
+        var owners = new Dictionary<string, (SubType SubType, List<Team> Teams)>
+        {
+            ["service-a"] = (SubType.Backend, [new Team { TeamId = "team-a", Name = "Team A" }]),
+            ["service-b"] = (SubType.Frontend, [new Team { TeamId = "team-b", Name = "Team B" }])
+        };
+
+        var output = EntityTopologyService.QueueSubscriptionsFromTopicSubscribers(topics, owners);
+
+        Assert.Equal(3, output.Count);
+
+        Assert.Contains(output, s => s.Topic == "topic-one" && s.Service == "service-a" && s.Queue == "queue-a" && s.SubType == SubType.Backend);
+        Assert.Contains(output, s => s.Topic == "topic-one" && s.Service == "service-b" && s.Queue == "queue-b" && s.SubType == SubType.Frontend);
+        Assert.Contains(output, s => s.Topic == "topic-two" && s.Service == "service-a" && s.Queue == "queue-c" && s.SubType == SubType.Backend);
+    }
 }
