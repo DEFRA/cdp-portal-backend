@@ -1,6 +1,7 @@
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -27,33 +28,30 @@ public record TopicOwner(string Service, SubType SubType, List<Team> Teams, stri
 
 public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) : IEntityTopologyService
 {
-
-    private async Task<List<QueueSubscriptions>> BuildQueueLookup(string environment, CancellationToken ct)
+    private async Task<List<QueueSubscriptions>> BuildQueueLookupFromTopicSubscribers(EntityResources resources, CancellationToken ct)
     {
-        var collection = mongoDbClientFactory.GetCollection<Entity>("entities");
+        var owners = resources.SnsTopics
+            .SelectMany(topic => topic.Properties.Subscribers ?? [])
+            .Select(subscriber => subscriber.QueueOwner)
+            .Where(owner => !string.IsNullOrWhiteSpace(owner))
+            .Distinct()
+            .ToList()!;
 
-        var queuePath = $"$environments.{environment}.sqsQueues";
-        var subsPath = $"$environments.{environment}.sqsQueues.subscriptions";
-        var queueNamePath = $"$environments.{environment}.sqsQueues.name";
-
-        var pipeline = new[]
+        var ownerLookup = new Dictionary<string, (SubType SubType, List<Team> Teams)>();
+        if (owners.Count != 0)
         {
-            new BsonDocument("$unwind", queuePath),
-            new BsonDocument("$unwind", subsPath),
-            new BsonDocument("$project", new BsonDocument
-            {
-                { "_id", 0 },
-                { "service", "$name" },
-                { "subType", "$subType" },
-                { "teams", "$teams" },
-                { "queue", queueNamePath },
-                { "topic", subsPath }
-            })
-        };
+            var entities = await mongoDbClientFactory
+                .GetCollection<Entity>("entities")
+                .Find(e => owners.Contains(e.Name))
+                .ToListAsync(ct);
 
-        return await collection
-            .Aggregate<QueueSubscriptions>(pipeline, cancellationToken: ct)
-            .ToListAsync(ct);
+            ownerLookup = entities.ToDictionary(
+                e => e.Name,
+                e => (e.SubType ?? SubType.Backend, e.Teams)
+            );
+        }
+
+        return QueueSubscriptionsFromTopicSubscribers(resources.SnsTopics, ownerLookup);
     }
 
     private async Task<List<QueueSubscriptions>> BuildQueueLookupFromResourceRequest(ResourceRequestRecord request, CancellationToken ct)
@@ -109,6 +107,34 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         }).ToList() ?? [];
     }
 
+    public static List<QueueSubscriptions> QueueSubscriptionsFromTopicSubscribers(
+        List<EntityResource<TenantSnsTopic>> topics,
+        Dictionary<string, (SubType SubType, List<Team> Teams)> ownerLookup
+    )
+    {
+        var subscriptions = new List<QueueSubscriptions>();
+        foreach (var topic in topics)
+        {
+            foreach (var subscriber in topic.Properties.Subscribers ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(subscriber.QueueOwner)) continue;
+
+                var owner = subscriber.QueueOwner;
+                var queueName = subscriber.QueueName;
+                if (string.IsNullOrWhiteSpace(queueName)) continue;
+
+                if (!ownerLookup.TryGetValue(owner, out var metadata))
+                {
+                    metadata = (SubType.Backend, []);
+                }
+
+                subscriptions.Add(new QueueSubscriptions(owner, metadata.SubType, metadata.Teams, queueName, topic.Name));
+            }
+        }
+
+        return subscriptions;
+    }
+
     public async Task<List<TopologyService>> ListTopologyOfEntity(string name, string environment,
         CancellationToken ct = default)
     {
@@ -117,10 +143,10 @@ public class EntityTopologyService(IMongoDbClientFactory mongoDbClientFactory) :
         {
             return [];
         }
-        var queueTopicLookup = await BuildQueueLookup(environment, ct);
-        var topicLookup = await BuildTopicLookup(environment, ct);
         var resources = EntityResourceMapper.FromCdpTenant(entity.Environments[environment]);
         var rootService = new TopologyService(entity.Name, entity.SubType, entity.Teams, []);
+        var queueTopicLookup = await BuildQueueLookupFromTopicSubscribers(resources, ct);
+        var topicLookup = await BuildTopicLookup(environment, ct);
 
         return LinkResources(rootService, resources, queueTopicLookup, topicLookup);
     }

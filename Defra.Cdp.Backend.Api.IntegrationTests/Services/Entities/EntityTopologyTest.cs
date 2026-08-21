@@ -117,4 +117,33 @@ public class EntityTopologyTest
         Assert.Equivalent(new TopologyService("foo", SubType.Backend, [], [new TopologyResource("foo-topic", SNS.Name, SNS.Icon, [])]), links[0]);
         Assert.Equivalent(new TopologyService("bar", SubType.Backend, [], [new TopologyResource("bar-queue", SQS.Name, SQS.Icon, [ new TopologyResourceLink("foo", "foo-topic", SNS.Name, "subscription")])]), links[1]);
     }
+
+    [Fact]
+    public void Test_queue_subscriptions_are_built_from_sns_topic_subscribers()
+    {
+        var topics = new List<EntityResource<TenantSnsTopic>>
+        {
+            new(SNS.Name, SNS.Icon, "foo-topic", new TenantSnsTopic
+            {
+                Name = "foo-topic",
+                Subscribers =
+                [
+                    new TenantSnsSubscriber { QueueName = "bar-queue", QueueOwner = "bar" }
+                ]
+            })
+        };
+
+        var owners = new Dictionary<string, (SubType SubType, List<Team> Teams)>
+        {
+            ["bar"] = (SubType.Backend, [])
+        };
+
+        var output = EntityTopologyService.QueueSubscriptionsFromTopicSubscribers(topics, owners);
+
+        Assert.Single(output);
+        Assert.Equal("bar", output[0].Service);
+        Assert.Equal("bar-queue", output[0].Queue);
+        Assert.Equal("foo-topic", output[0].Topic);
+        Assert.Equal(SubType.Backend, output[0].SubType);
+    }
 }
