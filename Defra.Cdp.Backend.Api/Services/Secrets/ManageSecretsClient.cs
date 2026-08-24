@@ -118,8 +118,7 @@ public class ManageSecretsClient(
             Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
         };
 
-        var region = System.Environment.GetEnvironmentVariable("AWS_REGION")
-            ?? throw new InvalidOperationException("AWS_REGION environment variable is not set.");
+        var region = System.Environment.GetEnvironmentVariable("AWS_REGION")!;
         var credentials = DefaultAWSCredentialsIdentityResolver.GetCredentials();
 
         var response = await _client.SendAsync(request, region, "execute-api", credentials, cancellationToken);

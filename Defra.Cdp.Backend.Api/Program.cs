@@ -66,6 +66,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables("CDP");
 builder.Configuration.AddEnvironmentVariables();
 
+if (string.IsNullOrWhiteSpace(System.Environment.GetEnvironmentVariable("AWS_REGION")))
+{
+    throw new InvalidOperationException("AWS_REGION environment variable is not set.");
+}
+
 // Serilog
 builder.Logging.ClearProviders();
 builder.Services.AddHttpContextAccessor();
