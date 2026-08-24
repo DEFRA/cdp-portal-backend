@@ -143,9 +143,7 @@ public class ManageSecretsClient(
             throw new InvalidOperationException("ManageSecretsApi BaseUrlTemplate is not configured.");
         }
 
-        var baseUrl = _options.BaseUrlTemplate.Contains("{environment}", StringComparison.OrdinalIgnoreCase)
-            ? _options.BaseUrlTemplate.Replace("{environment}", environment, StringComparison.OrdinalIgnoreCase)
-            : _options.BaseUrlTemplate;
+        var baseUrl = _options.BaseUrlTemplate.Replace("{environment}", environment, StringComparison.OrdinalIgnoreCase);
 
         return new Uri($"{baseUrl.TrimEnd('/')}{path}");
     }
