@@ -1,9 +1,9 @@
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Runtime;
-using Aws4RequestSigner;
 using Defra.Cdp.Backend.Api.Config;
 using Microsoft.Extensions.Options;
 
@@ -36,7 +36,7 @@ public class ManageSecretsClient(
     private readonly ManageSecretsApiOptions _options = options.Value;
     private readonly HttpClient _client = httpClientFactory.CreateClient("ManageSecretsClient");
 
-    public Task<ManageSecretsResult> AddSecretKeyValuePair(
+    public async Task<ManageSecretsResult> AddSecretKeyValuePair(
         string environment,
         string secretName,
         string secretKeyPairName,
@@ -44,29 +44,67 @@ public class ManageSecretsClient(
         CancellationToken cancellationToken
     )
     {
+        const string action = "add_secret_key_value_pair";
         var payload = new AddSecretRequest(
             SecretName: secretName,
             SecretKeyPairName: secretKeyPairName,
             SecretKeyPairValue: secretKeyPairValue
         );
-        return Send(environment, "/secrets/add-key-value-pair", payload, cancellationToken);
+        var (isSuccess, statusCode, responseBody) = await Send(
+            environment, "/secrets/add-key-value-pair", payload, cancellationToken
+        );
+
+        return BuildResult(isSuccess, statusCode, responseBody, action, secretName, secretKeyPairName);
     }
 
-    public Task<ManageSecretsResult> RemoveSecretKeyValuePair(
+    public async Task<ManageSecretsResult> RemoveSecretKeyValuePair(
         string environment,
         string secretName,
         string secretKeyPairName,
         CancellationToken cancellationToken
     )
     {
+        const string action = "remove_secret_key_value_pair";
         var payload = new RemoveSecretRequest(
             SecretName: secretName,
             SecretKeyPairName: secretKeyPairName
         );
-        return Send(environment, "/secrets/remove-key-value-pair", payload, cancellationToken);
+        var (isSuccess, statusCode, responseBody) = await Send(
+            environment, "/secrets/remove-key-value-pair", payload, cancellationToken
+        );
+
+        return BuildResult(isSuccess, statusCode, responseBody, action, secretName, secretKeyPairName);
     }
 
-    private async Task<ManageSecretsResult> Send(
+    private ManageSecretsResult BuildResult(
+        bool isSuccess,
+        HttpStatusCode statusCode,
+        string responseBody,
+        string action,
+        string secretName,
+        string secretKeyPairName
+    )
+    {
+        if (!isSuccess)
+        {
+            return ManageSecretsResult.Failure(
+                statusCode,
+                ExtractErrorMessage(responseBody) ?? "Manage secrets request failed"
+            );
+        }
+
+        logger.LogInformation(
+            "Manage secrets API {Action} succeeded for {SecretName}/{SecretKeyPairName}",
+            action,
+            secretName,
+            secretKeyPairName
+        );
+        return ManageSecretsResult.Success(
+            new ManageSecretsActionResponse(action, secretName, secretKeyPairName)
+        );
+    }
+
+    private async Task<(bool IsSuccess, HttpStatusCode StatusCode, string ResponseBody)> Send(
         string environment,
         string path,
         object payload,
@@ -80,41 +118,22 @@ public class ManageSecretsClient(
             Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
         };
 
-        var credentials = FallbackCredentialsFactory.GetCredentials();
-        var immutableCredentials = await credentials.GetCredentialsAsync();
-        if (!string.IsNullOrEmpty(immutableCredentials.Token))
-        {
-            request.Headers.TryAddWithoutValidation("X-Amz-Security-Token", immutableCredentials.Token);
-        }
-
         var region = System.Environment.GetEnvironmentVariable("AWS_REGION")
             ?? throw new InvalidOperationException("AWS_REGION environment variable is not set.");
-        var signer = new AWS4RequestSigner(immutableCredentials.AccessKey, immutableCredentials.SecretKey);
-        request = await signer.Sign(request, "execute-api", region);
+        var credentials = FallbackCredentialsFactory.GetCredentials();
 
-        var response = await _client.SendAsync(request, cancellationToken);
+        var response = await _client.SendAsync(request, region, "execute-api", credentials, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
-            var parsedBody = ParseActionResponse(responseBody);
-            logger.LogInformation(
-                "Manage secrets API {Action} succeeded for {SecretName}/{SecretKeyPairName}",
-                parsedBody.Action,
-                parsedBody.SecretName,
-                parsedBody.SecretKeyPairName
+            logger.LogWarning(
+                "Manage secrets API returned {StatusCode}: {Body}",
+                (int)response.StatusCode,
+                responseBody
             );
-            return ManageSecretsResult.Success(parsedBody);
         }
 
-        logger.LogWarning(
-            "Manage secrets API returned {StatusCode}: {Body}",
-            (int)response.StatusCode,
-            responseBody
-        );
-        return ManageSecretsResult.Failure(
-            response.StatusCode,
-            ExtractErrorMessage(responseBody) ?? "Manage secrets request failed"
-        );
+        return (response.IsSuccessStatusCode, response.StatusCode, responseBody);
     }
 
     private Uri BuildUri(string environment, string path)
@@ -129,28 +148,6 @@ public class ManageSecretsClient(
             : _options.BaseUrlTemplate;
 
         return new Uri($"{baseUrl.TrimEnd('/')}{path}");
-    }
-
-    private static ManageSecretsActionResponse ParseActionResponse(string responseBody)
-    {
-        using var document = JsonDocument.Parse(responseBody);
-        var root = document.RootElement;
-        if (root.TryGetProperty("body", out var bodyElement))
-        {
-            root = bodyElement;
-            if (root.ValueKind == JsonValueKind.String)
-            {
-                var bodyString = root.GetString();
-                if (!string.IsNullOrWhiteSpace(bodyString))
-                {
-                    return JsonSerializer.Deserialize<ManageSecretsActionResponse>(bodyString)
-                           ?? throw new InvalidOperationException("Invalid manage-secrets response body.");
-                }
-            }
-        }
-
-        var response = root.Deserialize<ManageSecretsActionResponse>();
-        return response ?? throw new InvalidOperationException("Invalid manage-secrets response.");
     }
 
     private static string? ExtractErrorMessage(string responseBody)

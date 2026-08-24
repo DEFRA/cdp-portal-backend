@@ -11,7 +11,7 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Secrets;
 public class ManageSecretsClientTests
 {
     [Fact]
-    public async Task AddSecretKeyValuePair_BuildsExpectedRequestAndParsesSuccessResponse()
+    public async Task AddSecretKeyValuePair_BuildsExpectedRequestAndBuildsSuccessResponse()
     {
         System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
         System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
@@ -22,16 +22,7 @@ public class ManageSecretsClientTests
             new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(
-                    """
-                    {
-                      "statusCode": 200,
-                      "body": {
-                        "action": "add_secret_key_value_pair",
-                        "secret_name": "cdp/services/cdp-portal-frontend",
-                        "secret_key_pair_name": "SOME_KEY"
-                      }
-                    }
-                    """,
+                    """{"statusCode": 200, "body": null}""",
                     Encoding.UTF8,
                     "application/json"
                 )
@@ -62,6 +53,8 @@ public class ManageSecretsClientTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Response);
         Assert.Equal("add_secret_key_value_pair", result.Response!.Action);
+        Assert.Equal("cdp/services/cdp-portal-frontend", result.Response!.SecretName);
+        Assert.Equal("SOME_KEY", result.Response!.SecretKeyPairName);
         Assert.Equal(
             "https://cdp-mono-lambda.api.infra-dev.cdp-int.defra.cloud/secrets/add-key-value-pair",
             handler.LastRequest?.RequestUri?.ToString()
