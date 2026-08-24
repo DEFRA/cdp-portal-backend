@@ -81,6 +81,7 @@ builder.Services.AddHttpClient("DefaultClient", HttpClientConfiguration.Default)
     .AddHeaderPropagation();
 
 builder.Services.AddHttpClient("ServiceClient", HttpClientConfiguration.Default);
+builder.Services.AddHttpClient("ManageSecretsClient", HttpClientConfiguration.Default);
 
 builder.Services.AddHttpClient("GitHubClient", HttpClientConfiguration.GitHub)
     .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
@@ -150,6 +151,8 @@ builder.Services.Configure<EcsEventListenerOptions>(builder.Configuration.GetSec
 builder.Services.Configure<EcrEventListenerOptions>(builder.Configuration.GetSection(EcrEventListenerOptions.Prefix));
 builder.Services.Configure<SecretEventListenerOptions>(
     builder.Configuration.GetSection(SecretEventListenerOptions.Prefix));
+builder.Services.Configure<ManageSecretsApiOptions>(
+    builder.Configuration.GetSection(ManageSecretsApiOptions.Prefix));
 builder.Services.Configure<GithubWorkflowEventListenerOptions>(
     builder.Configuration.GetSection(GithubWorkflowEventListenerOptions.Prefix));
 builder.Services.Configure<PlatformEventListenerOptions>(
@@ -219,6 +222,7 @@ builder.Services.AddSingleton<IAutoDeploymentTriggerExecutor, AutoDeploymentTrig
 
 // Secret Event Handlers
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
+builder.Services.AddSingleton<IManageSecretsClient, ManageSecretsClient>();
 builder.Services.AddSingleton<ISecretEventHandler, SecretEventHandler>();
 builder.Services.AddSingleton<SecretEventListener>();
 
