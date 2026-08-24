@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Amazon.Runtime;
+using Amazon.Runtime.Credentials;
 using Defra.Cdp.Backend.Api.Config;
 using Microsoft.Extensions.Options;
 
@@ -120,7 +120,7 @@ public class ManageSecretsClient(
 
         var region = System.Environment.GetEnvironmentVariable("AWS_REGION")
             ?? throw new InvalidOperationException("AWS_REGION environment variable is not set.");
-        var credentials = FallbackCredentialsFactory.GetCredentials();
+        var credentials = DefaultAWSCredentialsIdentityResolver.GetCredentials();
 
         var response = await _client.SendAsync(request, region, "execute-api", credentials, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
