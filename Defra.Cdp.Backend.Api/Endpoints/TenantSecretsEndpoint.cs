@@ -11,6 +11,9 @@ public static class TenantSecretsEndpoint
     {
         app.MapGet("secrets/{service}/{environment}", FindTenantSecrets);
         app.MapGet("secrets/{service}", FindAllTenantSecrets);
+        app.MapPost("secrets/{service}/{environment}/add", AddSecret);
+        app.MapPost("secrets/{service}/{environment}/remove", RemoveSecret);
+        // Legacy async flow only (SSOps -> cdp-secret-manager-lambda); remove once the sync flow fully replaces it.
         app.MapPost("secrets/register/pending", RegisterPendingSecret);
     }
 
@@ -73,6 +76,61 @@ public static class TenantSecretsEndpoint
         return TypedResults.Ok(registerPendingSecret);
     }
 
+    private static async Task<Results<BadRequest<ApiError>, ProblemHttpResult, Ok<ManageSecretsActionResponse>>> AddSecret(
+        [FromServices] IManageSecretsClient manageSecretsClient,
+        [FromServices] ISecretsService secretsService,
+        string service,
+        string environment,
+        AddSecretMutationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await manageSecretsClient.AddSecretKeyValuePair(
+            environment,
+            BuildTenantSecretName(service),
+            request.SecretKey,
+            request.SecretValue,
+            cancellationToken
+        );
+
+        if (!response.IsSuccess)
+        {
+            return response.StatusCode is >= System.Net.HttpStatusCode.BadRequest and < System.Net.HttpStatusCode.InternalServerError
+                ? TypedResults.BadRequest(new ApiError(response.ErrorMessage ?? "Failed to add secret"))
+                : TypedResults.Problem(detail: response.ErrorMessage, statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        await secretsService.AddSecretKey(environment, service, request.SecretKey, cancellationToken);
+        return TypedResults.Ok(response.Response!);
+    }
+
+    private static async Task<Results<BadRequest<ApiError>, ProblemHttpResult, Ok<ManageSecretsActionResponse>>> RemoveSecret(
+        [FromServices] IManageSecretsClient manageSecretsClient,
+        [FromServices] ISecretsService secretsService,
+        string service,
+        string environment,
+        RemoveSecretMutationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await manageSecretsClient.RemoveSecretKeyValuePair(
+            environment,
+            BuildTenantSecretName(service),
+            request.SecretKey,
+            cancellationToken
+        );
+
+        if (!response.IsSuccess)
+        {
+            return response.StatusCode is >= System.Net.HttpStatusCode.BadRequest and < System.Net.HttpStatusCode.InternalServerError
+                ? TypedResults.BadRequest(new ApiError(response.ErrorMessage ?? "Failed to remove secret"))
+                : TypedResults.Problem(detail: response.ErrorMessage, statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        await secretsService.RemoveSecretKey(environment, service, request.SecretKey, cancellationToken);
+        return TypedResults.Ok(response.Response!);
+    }
+
+    private static string BuildTenantSecretName(string service) => $"cdp/services/{service}";
+
     private sealed record TenantSecretsResponse(
         string Service,
         string Environment,
@@ -81,4 +139,7 @@ public static class TenantSecretsEndpoint
         string CreatedDate,
         List<string>? Pending,
         string? ExceptionMessage);
+
+    private sealed record AddSecretMutationRequest(string SecretKey, string SecretValue);
+    private sealed record RemoveSecretMutationRequest(string SecretKey);
 }
