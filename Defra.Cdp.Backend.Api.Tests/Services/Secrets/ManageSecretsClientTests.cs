@@ -33,7 +33,8 @@ public class ManageSecretsClientTests
         var options = Options.Create(
             new ManageSecretsApiOptions
             {
-                BaseUrlTemplate = "https://cdp-mono-lambda.api.{environment}.cdp-int.defra.cloud"
+                BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}",
+                RestApiIds = [new RestApiIdMapping("infra-dev", "abc123xyz9")]
             }
         );
 
@@ -56,9 +57,42 @@ public class ManageSecretsClientTests
         Assert.Equal("cdp/services/cdp-portal-frontend", result.Response!.SecretName);
         Assert.Equal("SOME_KEY", result.Response!.SecretKeyPairName);
         Assert.Equal(
-            "https://cdp-mono-lambda.api.infra-dev.cdp-int.defra.cloud/secrets/add-key-value-pair",
+            "https://abc123xyz9.execute-api.eu-west-2.amazonaws.com/infra-dev/secrets/add-key-value-pair",
             handler.LastRequest?.RequestUri?.ToString()
         );
+    }
+
+    [Fact]
+    public async Task AddSecretKeyValuePair_ThrowsWhenRestApiIdNotConfiguredForEnvironment()
+    {
+        System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
+        System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
+        System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "test-session-token");
+        System.Environment.SetEnvironmentVariable("AWS_REGION", "eu-west-2");
+
+        var handler = new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK));
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("ManageSecretsClient").Returns(new HttpClient(handler));
+        var options = Options.Create(
+            new ManageSecretsApiOptions
+            {
+                BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}"
+            }
+        );
+
+        var client = new ManageSecretsClient(
+            options,
+            factory,
+            Substitute.For<ILogger<ManageSecretsClient>>()
+        );
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => client.AddSecretKeyValuePair(
+            "dev",
+            "cdp/services/cdp-portal-frontend",
+            "SOME_KEY",
+            "some-value",
+            CancellationToken.None
+        ));
     }
 
     [Fact]
@@ -84,7 +118,8 @@ public class ManageSecretsClientTests
         var options = Options.Create(
             new ManageSecretsApiOptions
             {
-                BaseUrlTemplate = "http://localhost:3939"
+                BaseUrlTemplate = "http://localhost:3939",
+                RestApiIds = [new RestApiIdMapping("infra-dev", "local-stub")]
             }
         );
 
