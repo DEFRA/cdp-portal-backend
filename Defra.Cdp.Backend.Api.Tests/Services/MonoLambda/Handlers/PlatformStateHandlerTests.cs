@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
@@ -21,7 +22,8 @@ public class PlatformStateHandlerTests
     private readonly IEntitiesService _entitiesService = Substitute.For<IEntitiesService>();
     private readonly IUserServiceBackendClient _userServiceBackendClient = Substitute.For<IUserServiceBackendClient>();
     private readonly ISbomServiceOwnershipHandler _sbomServiceOwnershipHandler = Substitute.For<ISbomServiceOwnershipHandler>();
-    
+    private readonly IResourceRequestService _resourceRequestService = Substitute.For<IResourceRequestService>();
+
     private const string MinimalPayload = """
                                           { 
                                               "payload_version": "11111111111111111",
@@ -65,7 +67,7 @@ public class PlatformStateHandlerTests
     [Fact]
     public async Task TestUncompressedHandleMessage()
     {
-        var handler = new PlatformStateHandler(_entitiesService, _userServiceBackendClient, _sbomServiceOwnershipHandler, new NullLoggerFactory());
+        var handler = new PlatformStateHandler(_entitiesService, _resourceRequestService, _userServiceBackendClient, _sbomServiceOwnershipHandler, new NullLoggerFactory());
         var payload = JsonSerializer.Deserialize<JsonElement>(MinimalPayload);
         await handler.HandleAsync(payload, CancellationToken.None);
         await _entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(),
@@ -77,7 +79,7 @@ public class PlatformStateHandlerTests
     [Fact]
     public async Task TestCompressedPayload()
     {
-        var handler = new PlatformStateHandler(_entitiesService, _userServiceBackendClient, _sbomServiceOwnershipHandler, new NullLoggerFactory());
+        var handler = new PlatformStateHandler(_entitiesService, _resourceRequestService, _userServiceBackendClient, _sbomServiceOwnershipHandler, new NullLoggerFactory());
         var payload = JsonSerializer.Deserialize<JsonElement>(MinimalPayloadCompressed);
         await handler.HandleAsync(payload, CancellationToken.None);
         await _entitiesService.Received().UpdateEnvironmentState(Arg.Any<PlatformStatePayload>(),

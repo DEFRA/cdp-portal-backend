@@ -10,7 +10,7 @@ public interface IGrafanaPromotionService
     Task<PromotionRequestRecord> PromoteAlerts(AlertPromotionRequest alert, UserDetails? user, CancellationToken cancellationToken);
 }
 
-public class GrafanaPromotionService(ITriggerWorkflowService triggerWorkflowService, IGrafanaPromotionRequestService promotionRequestService, IGrafanaPlaygroundService playgroundService) : IGrafanaPromotionService
+public class GrafanaPromotionService(ITriggerWorkflowService triggerWorkflowService, IGrafanaPromotionRequestService promotionRequestService) : IGrafanaPromotionService
 {
     
     private const string Repo = "cdp-grafana-modules";

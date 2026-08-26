@@ -15,6 +15,7 @@ public static class PrStatus
     public const string Merged = "merged";
     public const string Closed = "closed";
     public const string Failed = "failed";
+    public const string Done = "done";
 }
 
 public interface IResourceRequestService
@@ -41,10 +42,12 @@ public interface IResourceRequestService
     Task<List<ResourceRequestRecord>> Find(ResourceRequestMatcher matcher, CancellationToken cancellationToken = default);
 
     Task<List<ResourceRequestRecord>> FindActive(string[] services, CancellationToken cancellationToken = default);
+
+    Task UpdateCompleted(CancellationToken cancellationToken = default);
 }
 
 
-public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
+public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory, IEntityResourceService entityResourceService)
     : MongoService<ResourceRequestRecord>(connectionFactory, CollectionName, loggerFactory), IResourceRequestService
 {
     private const string CollectionName = "resourceRequests";
@@ -162,13 +165,31 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
 
         filter &= builder.AnyIn(r => r.Entities, services);
         filter &= builder.Or(
-            builder.In(r => r.Status, ["requested", "pending"]),
+            builder.In(r => r.Status, [ PrStatus.Requested, PrStatus.Pending ]),
             builder.And(
-                builder.In(r => r.Status, ["merged"]),
+                builder.In(r => r.Status, [PrStatus.Merged]),
                 builder.Gte(r => r.ModifiedAt, DateTime.Now.AddDays(-1))
             )
         );
 
         return await Collection.Find(filter).ToListAsync(cancellationToken);
+    }
+    
+    public async Task UpdateCompleted(CancellationToken cancellationToken = default)
+    {
+        var activeRequests = await Find(new ResourceRequestMatcher(null, null, [PrStatus.Requested, PrStatus.Pending, PrStatus.Merged], null, null),
+            cancellationToken);
+
+        foreach (var request in activeRequests)
+        {
+            if (request.Resources != null && await entityResourceService.IsRequestCreated(request.Resources, cancellationToken))
+            {
+                var filter = Builders<ResourceRequestRecord>.Filter.Eq(r => r.Id, request.Id);
+                var update = Builders<ResourceRequestRecord>.Update
+                    .Set(record => record.Status, PrStatus.Done)
+                    .Set(record => record.ModifiedAt, DateTime.UtcNow);
+                await Collection.UpdateOneAsync(filter, update, new UpdateOptions(), cancellationToken);
+            }
+        }
     }
 }

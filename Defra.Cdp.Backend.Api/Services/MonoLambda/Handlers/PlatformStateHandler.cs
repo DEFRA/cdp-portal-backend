@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
@@ -18,7 +19,7 @@ internal class Header
     public string? Compression { get; init; }
 }
 
-public class PlatformStateHandler(IEntitiesService entitiesService, IUserServiceBackendClient userServiceBackendClient, ISbomServiceOwnershipHandler serviceOwnershipHandler, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
+public class PlatformStateHandler(IEntitiesService entitiesService, IResourceRequestService resourceRequestService, IUserServiceBackendClient userServiceBackendClient, ISbomServiceOwnershipHandler serviceOwnershipHandler, ILoggerFactory loggerFactory) : IMonoLambdaEventHandler
 {
     public string EventType => "platform_state";
     public bool PersistEvents => true;
@@ -69,13 +70,16 @@ public class PlatformStateHandler(IEntitiesService entitiesService, IUserService
         var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
         await entitiesService.UpdateEnvironmentState(state, userServiceTeams, cancellationToken);
         await entitiesService.BulkUpdateEntityStatus(cancellationToken);
-
+        
         // Entities always exist in management (mainly for ECR/build permissions) & ownership info is the same across
         // all environments.
         if (state.Environment == CdpEnvironments.Management)
         {
             await serviceOwnershipHandler.Handle(cancellationToken);
         }
+        
+        // Update any open resource requests
+        await resourceRequestService.UpdateCompleted(cancellationToken);
     }
 
     public static async Task<T> DecompressAndDeserialize<T>(string base64CompressedData)

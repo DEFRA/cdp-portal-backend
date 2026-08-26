@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
+using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 
@@ -29,7 +30,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
         {
@@ -78,7 +80,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var resources = new CreateTenantResourceRequest
         {
@@ -107,7 +110,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var resources = new CreateTenantResourceRequest
         {
@@ -134,7 +138,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest { S3Buckets = [
             new CreateTenantS3Bucket
@@ -162,7 +167,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
         {
@@ -209,7 +215,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
         {
@@ -252,7 +259,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var ct = TestContext.Current.CancellationToken;
         
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
         {
@@ -298,7 +306,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var ct = TestContext.Current.CancellationToken;
 
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
         {
@@ -340,7 +349,8 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var ct = TestContext.Current.CancellationToken;
         
         var mongoFactory = CreateMongoDbClientFactory();
-        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request1 = new CreateTenantResourceRequest();
         var inputs1 = request1.ToWorkflowInputs("run-1", "tenant-request-run-123", "PR title");
@@ -402,5 +412,159 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
 
         matches = await service.Find(new ResourceRequestMatcher(null, [], null, null, DateTime.Now.AddHours(1)), ct);
         Assert.Empty(matches);
+    }
+    
+    [Fact]
+    public async Task Should_update_completed_requests_to_done()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mongoFactory = CreateMongoDbClientFactory();
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
+        
+        var resources = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket { Service = "foo-frontend", Name = "bucket-one", Environments = "dev" }
+            ],
+            SqsQueues = [
+                new CreateTenantSqsQueue {Service = "foo-frontend", Name = "foo", Environments = "dev" }
+            ],
+            SnsTopics = [
+                new CreateTenantSnsTopic { Service = "foo-frontend", Name = "bar", Environments = "dev" }
+            ],
+            Subscriptions = [
+                new CreateTenantSubscription { Environments = "dev", Queue = "foo", Topic = "bar", QueueService = "foo-frontend", TopicService = "foo-frontend" }
+            ]
+        };
+        var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
+        await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, ct);
+        
+        await service.AttachPullRequest(
+            inputs.RunId!,
+            new ResourceRequestPullRequest
+            {
+                Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
+                Number = 42
+            },
+            ct);
+
+        await service.UpdatePullRequestStatus(42, PrStatus.Merged, ct);
+
+
+
+        var entity = new Entity
+        {
+            Name = "foo-frontend",
+            Status = Status.Created,
+            Environments =
+            {
+                { "dev", new CdpTenant
+                {
+                    S3Buckets = [new TenantS3Bucket { BucketName = "dev-bucket-one-c63f2", Arn = "s3://dev-bucket-one-c63f2"}],
+                    SqsQueues = [ new TenantSqsQueue { Name = "foo" }],
+                    SnsTopics = [ new TenantSnsTopic { Name = "bar", Subscribers = [ new TenantSnsSubscriber { QueueName = "foo", QueueOwner = "foo-frontend"}]}]
+                } }
+            }
+        };
+        
+        await mongoFactory.GetCollection<Entity>("entities").InsertOneAsync(entity, new InsertOneOptions(), ct);
+        
+        
+        // Update the merged record
+        await service.UpdateCompleted(ct);
+        var results = await service.Find(new ResourceRequestMatcher(null, null, [PrStatus.Done], null, null), ct);
+        Assert.NotEmpty(results);
+    }
+    
+    [Fact]
+    public async Task Should_not_update_incomplete_to_done()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mongoFactory = CreateMongoDbClientFactory();
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
+        
+        var resources = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket { Service = "foo-frontend", Name = "bucket-one", Environments = "dev" }
+            ],
+            SqsQueues = [
+                new CreateTenantSqsQueue {Service = "foo-frontend", Name = "foo", Environments = "dev" }
+            ],
+            SnsTopics = [
+                new CreateTenantSnsTopic { Service = "foo-frontend", Name = "bar", Environments = "dev" }
+            ],
+            Subscriptions = [
+                new CreateTenantSubscription { Environments = "dev", Queue = "foo", Topic = "bar", QueueService = "foo-frontend", TopicService = "foo-frontend" }
+            ]
+        };
+        var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
+        await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, ct);
+        
+        await service.AttachPullRequest(
+            inputs.RunId!,
+            new ResourceRequestPullRequest
+            {
+                Url = "https://github.com/DEFRA/cdp-tenant-config/pull/42",
+                Number = 42
+            },
+            ct);
+
+        await service.UpdatePullRequestStatus(42, PrStatus.Merged, ct);
+
+
+
+        var entity = new Entity
+        {
+            Name = "foo-frontend",
+            Status = Status.Created,
+            Environments =
+            {
+                { "dev", new CdpTenant
+                {
+                    S3Buckets = [],
+                    SqsQueues = [ new TenantSqsQueue { Name = "foo" }],
+                    SnsTopics = [ new TenantSnsTopic { Name = "bar", Subscribers = [ new TenantSnsSubscriber { QueueName = "foo", QueueOwner = "foo-frontend"}]}]
+                } }
+            }
+        };
+        
+        await mongoFactory.GetCollection<Entity>("entities").InsertOneAsync(entity, new InsertOneOptions(), ct);
+        
+        
+        // Update the merged record
+        await service.UpdateCompleted(ct);
+        var results = await service.Find(new ResourceRequestMatcher(null, null, [PrStatus.Done], null, null), ct);
+        Assert.Empty(results);
+    }
+    
+    [Fact]
+    public async Task Should_not_update_anything_if_nothing_is_merged()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mongoFactory = CreateMongoDbClientFactory();
+        var entityResourceService = new EntityResourceService(mongoFactory);
+        var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
+        
+        
+        var resources = new CreateTenantResourceRequest
+        {
+            S3Buckets =
+            [
+                new CreateTenantS3Bucket { Service = "foo-frontend", Name = "bucket-one", Environments = "dev" }
+            ]
+        };
+        var inputs = resources.ToWorkflowInputs("123", "foo", "foo");
+        await service.RecordRequest(resources.GetServices(), [Team], TestUser, resources, inputs, TestWorkflow, ct);
+       
+        
+        // Update the merged record
+        await service.UpdateCompleted(ct);
+        var results = await service.Find(new ResourceRequestMatcher(null, null, [PrStatus.Done], null, null), ct);
+        Assert.Empty(results);
     }
 }
