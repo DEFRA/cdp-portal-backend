@@ -18,7 +18,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
@@ -50,7 +50,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
@@ -84,7 +84,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
@@ -113,7 +113,7 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity

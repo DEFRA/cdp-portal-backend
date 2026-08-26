@@ -1,8 +1,8 @@
+using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.ScheduledTasks;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Models;
 using Defra.Cdp.Backend.Api.Services.Sboms;
-using Defra.Cdp.Backend.Api.Services.Users;
 using Defra.Cdp.Backend.Api.Utils.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +19,7 @@ public static class AdminEndpoint
         app.MapGet("/admin/auth-test/is-admin", AuthTest).RequireAuthorization(AuthPolicies.IsAdmin);
         app.MapGet("/admin/auth-test/is-tenant", AuthTest).RequireAuthorization(AuthPolicies.IsTenant);
         app.MapGet("/admin/auth-test/is-owner/{entity}", AuthOwnerTest).RequireOwnership("entity");
+        app.MapGet("/admin/resource-update", UpdateRequestStatus);
     }
 
     /// <summary>
@@ -60,6 +61,12 @@ public static class AdminEndpoint
         var cdpTeams = await usersService.GetLatestCdpTeamsInformation(ct);
         var userServiceTeams = (cdpTeams ?? []).ToDictionary(team => team.teamId!, team => team);
         await entitiesService.UpdateEnvironmentState(payload, userServiceTeams, ct);
+        return TypedResults.Ok();
+    }
+    
+    private static async Task<Ok> UpdateRequestStatus(IResourceRequestService resourceRequestService, CancellationToken ct)
+    {
+        await resourceRequestService.UpdateCompleted(ct);
         return TypedResults.Ok();
     }
 }

@@ -30,7 +30,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
@@ -80,7 +80,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var resources = new CreateTenantResourceRequest
@@ -110,7 +110,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var resources = new CreateTenantResourceRequest
@@ -138,7 +138,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest { S3Buckets = [
@@ -167,7 +167,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
@@ -215,7 +215,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
@@ -259,7 +259,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var ct = TestContext.Current.CancellationToken;
         
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
@@ -306,7 +306,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var ct = TestContext.Current.CancellationToken;
 
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request = new CreateTenantResourceRequest
@@ -349,7 +349,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
         var ct = TestContext.Current.CancellationToken;
         
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
 
         var request1 = new CreateTenantResourceRequest();
@@ -419,7 +419,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
         
         var resources = new CreateTenantResourceRequest
@@ -483,7 +483,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
         
         var resources = new CreateTenantResourceRequest
@@ -547,7 +547,7 @@ public class ResourceRequestServiceTest(MongoContainerFixture fixture) : MongoTe
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var service = new ResourceRequestService(mongoFactory, new NullLoggerFactory(), entityResourceService);
         
         

@@ -16,7 +16,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
     {
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var errors = await validator.Validate(new CreateTenantResourceRequest(),  ct);
@@ -30,7 +30,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
         
         var entity = new Entity
@@ -58,7 +58,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
@@ -87,7 +87,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
@@ -111,7 +111,7 @@ public class S3ValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(f
         var ct = TestContext.Current.CancellationToken;
         var mongoFactory = CreateMongoDbClientFactory();
         var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
-        var entityResourceService = new EntityResourceService(mongoFactory);
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
         var validator = new CreateResourceValidator(entityResourceService);
 
         var entity = new Entity
