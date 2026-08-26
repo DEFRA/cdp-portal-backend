@@ -34,7 +34,7 @@ public class ManageSecretsClientTests
             new ManageSecretsApiOptions
             {
                 BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}",
-                RestApiIds = new Dictionary<string, string> { ["infra-dev"] = "abc123xyz9" }
+                RestApiIds = [new RestApiIdMapping("infra-dev", "abc123xyz9")]
             }
         );
 
@@ -76,8 +76,7 @@ public class ManageSecretsClientTests
         var options = Options.Create(
             new ManageSecretsApiOptions
             {
-                BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}",
-                RestApiIds = new Dictionary<string, string>()
+                BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}"
             }
         );
 
@@ -120,7 +119,7 @@ public class ManageSecretsClientTests
             new ManageSecretsApiOptions
             {
                 BaseUrlTemplate = "http://localhost:3939",
-                RestApiIds = new Dictionary<string, string> { ["infra-dev"] = "local-stub" }
+                RestApiIds = [new RestApiIdMapping("infra-dev", "local-stub")]
             }
         );
 

@@ -142,7 +142,11 @@ public class ManageSecretsClient(
             throw new InvalidOperationException("ManageSecretsApi BaseUrlTemplate is not configured.");
         }
 
-        if (!_options.RestApiIds.TryGetValue(environment, out var restApiId) || string.IsNullOrWhiteSpace(restApiId))
+        var restApiId = _options.RestApiIds
+            .FirstOrDefault(mapping => string.Equals(mapping.Environment, environment, StringComparison.OrdinalIgnoreCase))
+            ?.RestApiId;
+
+        if (string.IsNullOrWhiteSpace(restApiId))
         {
             throw new InvalidOperationException(
                 $"No mono-lambda API Gateway REST API id configured for environment '{environment}'."

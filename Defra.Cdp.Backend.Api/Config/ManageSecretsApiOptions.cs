@@ -16,7 +16,11 @@ public class ManageSecretsApiOptions
 
     /// <summary>
     /// Maps a tenant environment name to the mono-lambda API Gateway's REST API id in that environment's account.
-    /// Only required when BaseUrlTemplate contains a {restApiId} placeholder.
+    /// A list rather than a Dictionary&lt;string, string&gt; because cdp-app-config's env var keys can only
+    /// contain letters, digits and underscores - environment names like "infra-dev" aren't valid dictionary
+    /// keys there. Only required when BaseUrlTemplate contains a {restApiId} placeholder.
     /// </summary>
-    public Dictionary<string, string> RestApiIds { get; init; } = new();
+    public List<RestApiIdMapping> RestApiIds { get; init; } = new();
 }
+
+public sealed record RestApiIdMapping(string Environment, string RestApiId);

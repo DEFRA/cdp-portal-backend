@@ -31,7 +31,8 @@
         "SelfServiceOpsUrl": "http://localhost:3009",
         "SelfServiceOpsSecret": "test_shared_secret_local",
         "ManageSecretsApi__BaseUrlTemplate": "http://localhost:3939",
-        "ManageSecretsApi__RestApiIds__infra-dev": "local-stub",
+        "ManageSecretsApi__RestApiIds__0__Environment": "infra-dev",
+        "ManageSecretsApi__RestApiIds__0__RestApiId": "local-stub",
         "LambdaEvents__TopicArn": "arn:aws:sns:eu-west-2:000000000000:mono-lambda-trigger-topic",
         "TenantResourceRequested__SlackChannel": "cdp-localhost-slack"
       }
