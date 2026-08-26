@@ -182,7 +182,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
 
         foreach (var request in activeRequests)
         {
-            if (request.Resources != null && await entityResourceService.IsRequestCreated(request.Resources, cancellationToken))
+            if (request.Resources != null && await entityResourceService.IsRequestComplete(request.Resources, cancellationToken))
             {
                 var filter = Builders<ResourceRequestRecord>.Filter.Eq(r => r.Id, request.Id);
                 var update = Builders<ResourceRequestRecord>.Update

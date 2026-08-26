@@ -16,7 +16,7 @@ public interface IEntityResourceService
     Task<string?> TopicExists(string name, string[] environments, CancellationToken cancellationToken);
     Task<string?> QueueExists(string name, string[] environments, CancellationToken cancellationToken);
     
-    Task<bool> IsRequestCreated(CreateTenantResourceRequest request, CancellationToken cancellationToken);
+    Task<bool> IsRequestComplete(CreateTenantResourceRequest request, CancellationToken cancellationToken);
 }
 
 public record ResourceExists
@@ -83,7 +83,7 @@ public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IE
         return await _collection.Find(filter).Project(e => e.Name).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<bool> IsRequestCreated(CreateTenantResourceRequest request, CancellationToken cancellationToken)
+    public async Task<bool> IsRequestComplete(CreateTenantResourceRequest request, CancellationToken cancellationToken)
     {
         var services = request.GetServices();
 
