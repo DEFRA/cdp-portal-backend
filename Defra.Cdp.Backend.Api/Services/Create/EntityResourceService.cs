@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Defra.Cdp.Backend.Api.Mongo;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -26,10 +27,12 @@ public record ResourceExists
     public string? Environment { get; init; }
 }
 
-public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IEntityResourceService
+public class EntityResourceService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory) : IEntityResourceService
 {
     private readonly IMongoCollection<Entity> _collection = connectionFactory.GetCollection<Entity>("entities");
 
+    private ILogger _logger = loggerFactory.CreateLogger<EntityResourceService>();
+    
     public async Task<bool> ServiceExists(string name, CancellationToken cancellationToken)
     {
         var count = await _collection.CountDocumentsAsync(f => f.Name == name, new CountOptions(), cancellationToken);
@@ -89,6 +92,7 @@ public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IE
 
         var fb = new FilterDefinitionBuilder<Entity>();
         var entities = await _collection.Find(fb.In(e => e.Name, services)).ToListAsync(cancellationToken);
+
         
         // Topics
         foreach (var s3 in request.S3Buckets)
@@ -99,8 +103,11 @@ public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IE
             
             foreach (var env in envs)
             {
-                if (!entity.Environments.TryGetValue(env, out var tenant)) return false;
-                if (!tenant.S3Buckets.Exists(q => q.BucketName == BucketNameForEnv(s3.Name, env))) return false;
+                if (!entity.Environments.TryGetValue(env, out var tenant) || !tenant.S3Buckets.Exists(q => q.BucketName == BucketNameForEnv(s3.Name, env)))
+                {
+                    _logger.LogInformation("S3 bucket missing {Name} in {Env}", s3.Name, env);
+                    return false;
+                }
             }
         }
         
@@ -113,22 +120,33 @@ public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IE
             
             foreach (var env in envs)
             {
-                if (!entity.Environments.TryGetValue(env, out var tenant)) return false;
-                if (!tenant.SqsQueues.Exists(q => q.Name == sqs.Name)) return false;
+                var queueName = sqs.Name + (sqs.Fifo ? ".fifo" : "");
+                
+                if (!entity.Environments.TryGetValue(env, out var tenant) ||
+                    !tenant.SqsQueues.Exists(q => q.Name == queueName))
+                {
+                    _logger.LogInformation("SQS queue missing {Name} in {Env}", queueName, env);
+                    return false;
+                }
             }
         }
         
         // Topics
         foreach (var sns in request.SnsTopics)
         {
+            var topicName = sns.Name + (sns.Fifo ? ".fifo" : "");
             var envs = CreateResourceEnvironments.ToCdpEnvironments(sns.Environments);
             var entity = entities.Find(e => e.Name == sns.Service);
             if (entity == null) return false;
             
             foreach (var env in envs)
             {
-                if (!entity.Environments.TryGetValue(env, out var tenant)) return false;
-                if (!tenant.SnsTopics.Exists(q => q.Name == sns.Name)) return false;
+                if (!entity.Environments.TryGetValue(env, out var tenant) ||
+                    !tenant.SnsTopics.Exists(q => q.Name == topicName))
+                {
+                    _logger.LogInformation("SNS queue missing {Name} in {Env}", topicName, env);
+                    return false;
+                }
             }
         }
         
@@ -137,15 +155,28 @@ public class EntityResourceService(IMongoDbClientFactory connectionFactory) : IE
         {
             var envs = CreateResourceEnvironments.ToCdpEnvironments(sub.Environments);
             var entity = entities.Find(e => e.Name == sub.TopicService);
-            if (entity == null) return false;
+            if (entity == null)
+            {
+                _logger.LogInformation("Entity {Entity} for subscription {Name} not found", sub.TopicService, sub.Topic);
+                return false;
+            }
             
             foreach (var env in envs)
             {
-                if (!entity.Environments.TryGetValue(env, out var tenant)) return false;
-                var topic = tenant.SnsTopics.Find(q => q.Name == sub.Topic);
-                if (topic == null) return false;
-                if (!topic.Subscribers.Exists(s => s.QueueName == sub.Queue && s.QueueOwner == sub.QueueService))
+                if (!entity.Environments.TryGetValue(env, out var tenant))
+                {
+                    _logger.LogInformation("Environment {Env} for subscription {Name} not found", env, sub.Topic);
                     return false;
+                }
+                var topic = tenant.SnsTopics.Find(q => q.Name == sub.Topic);
+                if (topic == null ||
+                    !topic.Subscribers.Exists(s => s.QueueName == sub.Queue && s.QueueOwner == sub.QueueService))
+                {
+                    _logger.LogInformation(
+                        "Subscription {Topic} -> {Queue} between {TopicService} and {QueueService} not found in {Env}",
+                        sub.Topic, sub.Queue, sub.TopicService, sub.QueueService, env);
+                    return false;
+                }
             }
         }
         return true;
