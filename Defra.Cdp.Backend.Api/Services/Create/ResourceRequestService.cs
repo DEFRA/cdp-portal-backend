@@ -167,7 +167,7 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
         filter &= builder.Or(
             builder.In(r => r.Status, [ PrStatus.Requested, PrStatus.Pending ]),
             builder.And(
-                builder.In(r => r.Status, [PrStatus.Merged]),
+                builder.In(r => r.Status, [PrStatus.Merged, PrStatus.Done]),
                 builder.Gte(r => r.ModifiedAt, DateTime.Now.AddDays(-1))
             )
         );
