@@ -31,7 +31,7 @@
     <PackageReference Include="LocalStack.Client.Extensions" Version="1.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="10.0.7" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="4.0.725402" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.9.0" />
     <PackageReference Include="MongoDB.Driver" Version="3.8.1" />
