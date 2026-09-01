@@ -2,22 +2,18 @@ using System.Net;
 using System.Text;
 using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Services.Secrets;
+using Defra.Cdp.Backend.Api.Tests.Services.MonoLambda;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.Secrets;
 
-public class ManageSecretsClientTests
+public class ManageSecretsClientTests : MonoLambdaApiClientTestBase
 {
     [Fact]
     public async Task AddSecretKeyValuePair_BuildsExpectedRequestAndBuildsSuccessResponse()
     {
-        System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
-        System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
-        System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "test-session-token");
-        System.Environment.SetEnvironmentVariable("AWS_REGION", "eu-west-2");
-
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -65,11 +61,6 @@ public class ManageSecretsClientTests
     [Fact]
     public async Task AddSecretKeyValuePair_ThrowsWhenRestApiIdNotConfiguredForEnvironment()
     {
-        System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
-        System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
-        System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "test-session-token");
-        System.Environment.SetEnvironmentVariable("AWS_REGION", "eu-west-2");
-
         var handler = new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK));
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("ManageSecretsClient").Returns(new HttpClient(handler));
@@ -98,11 +89,6 @@ public class ManageSecretsClientTests
     [Fact]
     public async Task RemoveSecretKeyValuePair_ReturnsFailureFromBadRequest()
     {
-        System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
-        System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
-        System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "test-session-token");
-        System.Environment.SetEnvironmentVariable("AWS_REGION", "eu-west-2");
-
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.BadRequest)
             {
@@ -138,19 +124,5 @@ public class ManageSecretsClientTests
         Assert.False(result.IsSuccess);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal("Bad request from API gateway", result.ErrorMessage);
-    }
-
-    private sealed class StubHttpMessageHandler(HttpResponseMessage response) : HttpMessageHandler
-    {
-        public HttpRequestMessage? LastRequest { get; private set; }
-
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken
-        )
-        {
-            LastRequest = request;
-            return Task.FromResult(response);
-        }
     }
 }

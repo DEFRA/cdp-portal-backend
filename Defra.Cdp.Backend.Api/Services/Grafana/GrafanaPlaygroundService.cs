@@ -17,11 +17,7 @@ public class GrafanaPlaygroundService(IMongoDbClientFactory connectionFactory, I
     protected override List<CreateIndexModel<GrafanaPlaygroundResources>> DefineIndexes(IndexKeysDefinitionBuilder<GrafanaPlaygroundResources> builder)
     {
         var serviceIdx = builder.Ascending(g => g.Service);
-        var requestIdx = builder.Ascending(g => g.RequestId);
-        return [
-            new CreateIndexModel<GrafanaPlaygroundResources>(serviceIdx), 
-            new CreateIndexModel<GrafanaPlaygroundResources>(requestIdx)
-        ];
+        return [new CreateIndexModel<GrafanaPlaygroundResources>(serviceIdx)];
     }
 
     /// <summary>
