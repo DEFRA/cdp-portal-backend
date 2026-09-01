@@ -1,8 +1,13 @@
 namespace Defra.Cdp.Backend.Api.Config;
 
-public class ManageSecretsApiOptions
+/// <summary>
+/// Shared config for the mono-lambda private API Gateway, used by all sync mono-lambda clients
+/// (<see cref="Services.Secrets.ManageSecretsClient"/>, <see cref="Services.Grafana.GrafanaPlaygroundsClient"/>, ...) -
+/// same API, different paths, so one REST API id lookup per environment rather than one per feature.
+/// </summary>
+public class MonoLambdaApiOptions
 {
-    public const string Prefix = "ManageSecretsApi";
+    public const string Prefix = "MonoLambdaApi";
 
     /// <summary>
     /// URL template for the mono-lambda API Gateway. Supports two placeholders:

@@ -28,12 +28,12 @@ public interface IManageSecretsClient
 }
 
 public class ManageSecretsClient(
-    IOptions<ManageSecretsApiOptions> options,
+    IOptions<MonoLambdaApiOptions> options,
     IHttpClientFactory httpClientFactory,
     ILogger<ManageSecretsClient> logger
 ) : IManageSecretsClient
 {
-    private readonly ManageSecretsApiOptions _options = options.Value;
+    private readonly MonoLambdaApiOptions _options = options.Value;
     private readonly HttpClient _client = httpClientFactory.CreateClient("ManageSecretsClient");
 
     public async Task<ManageSecretsResult> AddSecretKeyValuePair(
@@ -139,7 +139,7 @@ public class ManageSecretsClient(
     {
         if (string.IsNullOrWhiteSpace(_options.BaseUrlTemplate))
         {
-            throw new InvalidOperationException("ManageSecretsApi BaseUrlTemplate is not configured.");
+            throw new InvalidOperationException("MonoLambdaApi BaseUrlTemplate is not configured.");
         }
 
         var restApiId = _options.RestApiIds

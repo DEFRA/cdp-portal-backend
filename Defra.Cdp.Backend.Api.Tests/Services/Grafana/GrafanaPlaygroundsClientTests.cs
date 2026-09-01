@@ -1,102 +1,104 @@
 using System.Net;
 using System.Text;
 using Defra.Cdp.Backend.Api.Config;
-using Defra.Cdp.Backend.Api.Services.Secrets;
+using Defra.Cdp.Backend.Api.Services.Grafana;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
-namespace Defra.Cdp.Backend.Api.Tests.Services.Secrets;
+namespace Defra.Cdp.Backend.Api.Tests.Services.Grafana;
 
-public class ManageSecretsClientTests
+public class GrafanaPlaygroundsClientTests
 {
     [Fact]
-    public async Task AddSecretKeyValuePair_BuildsExpectedRequestAndBuildsSuccessResponse()
+    public async Task GetPlaygrounds_BuildsExpectedRequest_AndParsesWrappedResponse()
     {
         System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
         System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
         System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "test-session-token");
         System.Environment.SetEnvironmentVariable("AWS_REGION", "eu-west-2");
 
+        var responsePayload = """
+                              {"statusCode":200,"body":{"request_id":"abc-123","service":"cdp-portal-backend","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}}
+                              """;
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(
-                    """{"statusCode": 200, "body": null}""",
-                    Encoding.UTF8,
-                    "application/json"
-                )
+                Content = new StringContent(responsePayload, Encoding.UTF8, "application/json")
             }
         );
+
         var factory = Substitute.For<IHttpClientFactory>();
-        factory.CreateClient("ManageSecretsClient").Returns(new HttpClient(handler));
+        factory.CreateClient("GrafanaPlaygroundsClient").Returns(new HttpClient(handler));
         var options = Options.Create(
             new MonoLambdaApiOptions
             {
                 BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}",
-                RestApiIds = [new RestApiIdMapping("infra-dev", "abc123xyz9")]
+                RestApiIds = [new RestApiIdMapping("dev", "abc123xyz9")]
             }
         );
 
-        var client = new ManageSecretsClient(
+        var client = new GrafanaPlaygroundsClient(
             options,
             factory,
-            Substitute.For<ILogger<ManageSecretsClient>>()
+            Substitute.For<ILogger<GrafanaPlaygroundsClient>>()
         );
-        var result = await client.AddSecretKeyValuePair(
-            "infra-dev",
-            "cdp/services/cdp-portal-frontend",
-            "SOME_KEY",
-            "some-value",
-            CancellationToken.None
-        );
+
+        var result = await client.GetPlaygrounds("cdp-portal-backend", CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Response);
-        Assert.Equal("add_secret_key_value_pair", result.Response!.Action);
-        Assert.Equal("cdp/services/cdp-portal-frontend", result.Response!.SecretName);
-        Assert.Equal("SOME_KEY", result.Response!.SecretKeyPairName);
+        Assert.Equal("abc-123", result.Response!.RequestId);
         Assert.Equal(
-            "https://abc123xyz9.execute-api.eu-west-2.amazonaws.com/infra-dev/secrets/add-key-value-pair",
+            "https://abc123xyz9.execute-api.eu-west-2.amazonaws.com/dev/grafana/playgrounds/cdp-portal-backend",
             handler.LastRequest?.RequestUri?.ToString()
         );
     }
 
     [Fact]
-    public async Task AddSecretKeyValuePair_ThrowsWhenRestApiIdNotConfiguredForEnvironment()
+    public async Task GetPlaygrounds_ParsesUnwrappedResponse()
     {
         System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
         System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
         System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "test-session-token");
         System.Environment.SetEnvironmentVariable("AWS_REGION", "eu-west-2");
 
-        var handler = new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK));
-        var factory = Substitute.For<IHttpClientFactory>();
-        factory.CreateClient("ManageSecretsClient").Returns(new HttpClient(handler));
-        var options = Options.Create(
-            new MonoLambdaApiOptions
+        var responsePayload = """
+                              {"request_id":"abc-456","service":"cdp-uploader","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}
+                              """;
+        var handler = new StubHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.OK)
             {
-                BaseUrlTemplate = "https://{restApiId}.execute-api.eu-west-2.amazonaws.com/{environment}"
+                Content = new StringContent(responsePayload, Encoding.UTF8, "application/json")
             }
         );
 
-        var client = new ManageSecretsClient(
-            options,
-            factory,
-            Substitute.For<ILogger<ManageSecretsClient>>()
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("GrafanaPlaygroundsClient").Returns(new HttpClient(handler));
+        var options = Options.Create(
+            new MonoLambdaApiOptions
+            {
+                BaseUrlTemplate = "http://localhost:3939",
+                RestApiIds = [new RestApiIdMapping("dev", "local-stub")]
+            }
         );
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => client.AddSecretKeyValuePair(
-            "dev",
-            "cdp/services/cdp-portal-frontend",
-            "SOME_KEY",
-            "some-value",
-            CancellationToken.None
-        ));
+        var client = new GrafanaPlaygroundsClient(
+            options,
+            factory,
+            Substitute.For<ILogger<GrafanaPlaygroundsClient>>()
+        );
+
+        var result = await client.GetPlaygrounds("cdp-uploader", CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Response);
+        Assert.Equal("abc-456", result.Response!.RequestId);
+        Assert.Equal("cdp-uploader", result.Response.Service);
     }
 
     [Fact]
-    public async Task RemoveSecretKeyValuePair_ReturnsFailureFromBadRequest()
+    public async Task GetPlaygrounds_ReturnsFailureFromBadRequest()
     {
         System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
         System.Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
@@ -113,27 +115,23 @@ public class ManageSecretsClientTests
                 )
             }
         );
+
         var factory = Substitute.For<IHttpClientFactory>();
-        factory.CreateClient("ManageSecretsClient").Returns(new HttpClient(handler));
+        factory.CreateClient("GrafanaPlaygroundsClient").Returns(new HttpClient(handler));
         var options = Options.Create(
             new MonoLambdaApiOptions
             {
                 BaseUrlTemplate = "http://localhost:3939",
-                RestApiIds = [new RestApiIdMapping("infra-dev", "local-stub")]
+                RestApiIds = [new RestApiIdMapping("dev", "local-stub")]
             }
         );
 
-        var client = new ManageSecretsClient(
+        var client = new GrafanaPlaygroundsClient(
             options,
             factory,
-            Substitute.For<ILogger<ManageSecretsClient>>()
+            Substitute.For<ILogger<GrafanaPlaygroundsClient>>()
         );
-        var result = await client.RemoveSecretKeyValuePair(
-            "infra-dev",
-            "cdp/services/cdp-portal-frontend",
-            "SOME_KEY",
-            CancellationToken.None
-        );
+        var result = await client.GetPlaygrounds("cdp-uploader", CancellationToken.None);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
