@@ -52,10 +52,10 @@ public class GrafanaPlaygroundsClientTests : MonoLambdaApiClientTestBase
     }
 
     [Fact]
-    public async Task GetPlaygrounds_ParsesUnwrappedResponse()
+    public async Task GetPlaygrounds_BuildsExpectedRequest_WithLiteralBaseUrlTemplate()
     {
         var responsePayload = """
-                              {"request_id":"abc-456","service":"cdp-uploader","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}
+                              {"statusCode":200,"body":{"request_id":"abc-456","service":"cdp-uploader","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}}
                               """;
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
@@ -85,7 +85,46 @@ public class GrafanaPlaygroundsClientTests : MonoLambdaApiClientTestBase
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Response);
         Assert.Equal("abc-456", result.Response!.RequestId);
-        Assert.Equal("cdp-uploader", result.Response.Service);
+        Assert.Equal(
+            "http://localhost:3939/grafana/playgrounds/cdp-uploader",
+            handler.LastRequest?.RequestUri?.ToString()
+        );
+    }
+
+    [Fact]
+    public async Task GetPlaygrounds_ReturnsFailureWhenBodyIsMissing()
+    {
+        var handler = new StubHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"request_id":"abc-456","service":"cdp-uploader"}""",
+                    Encoding.UTF8,
+                    "application/json"
+                )
+            }
+        );
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("GrafanaPlaygroundsClient").Returns(new HttpClient(handler));
+        var options = Options.Create(
+            new MonoLambdaApiOptions
+            {
+                BaseUrlTemplate = "http://localhost:3939",
+                RestApiIds = [new RestApiIdMapping("dev", "local-stub")]
+            }
+        );
+
+        var client = new GrafanaPlaygroundsClient(
+            options,
+            factory,
+            Substitute.For<ILogger<GrafanaPlaygroundsClient>>()
+        );
+
+        var result = await client.GetPlaygrounds("cdp-uploader", CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadGateway, result.StatusCode);
     }
 
     [Fact]

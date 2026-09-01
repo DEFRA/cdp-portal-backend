@@ -63,27 +63,17 @@ public class GrafanaPlaygroundsClient(
         {
             using var document = JsonDocument.Parse(responseBody);
             var root = document.RootElement;
-            if (root.TryGetProperty("body", out var bodyElement))
+
+            if (!root.TryGetProperty("body", out var bodyElement))
             {
-                return bodyElement.ValueKind switch
-                {
-                    JsonValueKind.Object => JsonSerializer.Deserialize<GrafanaPlaygroundResources>(bodyElement.GetRawText()),
-                    JsonValueKind.String => JsonSerializer.Deserialize<GrafanaPlaygroundResources>(bodyElement.GetString() ?? string.Empty),
-                    _ => null
-                };
+                return null;
             }
 
-            if (root.ValueKind == JsonValueKind.String)
-            {
-                return JsonSerializer.Deserialize<GrafanaPlaygroundResources>(root.GetString() ?? string.Empty);
-            }
-
-            return JsonSerializer.Deserialize<GrafanaPlaygroundResources>(root.GetRawText());
+            return JsonSerializer.Deserialize<GrafanaPlaygroundResources>(bodyElement.GetRawText());
         }
         catch (JsonException)
         {
             return null;
         }
     }
-
 }
