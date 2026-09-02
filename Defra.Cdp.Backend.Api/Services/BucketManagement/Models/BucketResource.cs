@@ -2,14 +2,21 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 
-public record BucketObject
+/**
+ *  A BucketResource is an S3 Object treated like a File or Folder in a filesystem
+ */
+public record BucketResource
 {
-     [JsonPropertyName("name")]
-     public String Name { get; init; } = "";
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = "";
 
     [JsonPropertyName("size")]
-    public Int128 Size { get; init; } = 0;
+    public long Size { get; init; } = 0;
+
+    [JsonPropertyName("lastModified")]
+    public DateTime LastModified { get; init; }
+
 
     [JsonPropertyName("isFolder")]
-    public Boolean isFolder { get; init; } = false;
+    public bool isFolder { get; init; } = false;
 }

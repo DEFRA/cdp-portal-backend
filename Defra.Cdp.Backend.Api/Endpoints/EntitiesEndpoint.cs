@@ -55,11 +55,11 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
 
-        app.MapGet("/entities/{name}/imports/{*path}", GetImportsObject); // .RequireOwnership("name");
-        // app.MapPost("/entities/{name}/imports/{*path}", PostUploadImportsObject); // .RequireOwnership("name");
-        // app.MapPut("/entities/{name}/imports/{*path}", PutUploadImportsObject); // .RequireOwnership("name");
-        // app.MapDelete("/entities/{name}/imports/{*path}", DeleteImportsObject); // .RequireOwnership("name");
-        // app.MapPatch("/entities/{name}/imports/{*path}", RenameImportsObject); // .RequireOwnership("name");
+        app.MapGet("/entities/{name}/imports/{*path}", GetImportsResources); // .RequireOwnership("name");
+        // app.MapPost("/entities/{name}/imports/{*path}", PostUploadImportsResource); // .RequireOwnership("name");
+        // app.MapPut("/entities/{name}/imports/{*path}", PutUploadImportsResource); // .RequireOwnership("name");
+        // app.MapDelete("/entities/{name}/imports/{*path}", DeleteImportsResource); // .RequireOwnership("name");
+        // app.MapPatch("/entities/{name}/imports/{*path}", RenameImportsResource); // .RequireOwnership("name");
     }
     
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -493,7 +493,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Gets a service's import resource(s) by path")]
-    private static async Task<Results<NotFound, Ok<List<BucketObject>>>> GetImportsObject(
+    private static async Task<Results<NotFound, Ok<List<BucketResource>>>> GetImportsResources(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -507,9 +507,9 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var fullpath = $"{entity.Name}/imports/{path}"; 
+        var fullPath = $"{entity.Name}/imports/{path}"; 
 
-        var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullpath, ct);
+        var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullPath, ct);
         return TypedResults.Ok(result);
     }
 }
