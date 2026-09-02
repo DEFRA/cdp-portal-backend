@@ -1,17 +1,14 @@
 using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using Amazon.Runtime.Credentials;
 using Defra.Cdp.Backend.Api.Config;
+using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.Secrets;
 
 public interface IManageSecretsClient
 {
-    Task<ManageSecretsResult> AddSecretKeyValuePair(
+    Task<ApiResult<ManageSecretsActionResponse>> AddSecretKeyValuePair(
         string environment,
         string secretName,
         string secretKeyPairName,
@@ -19,7 +16,7 @@ public interface IManageSecretsClient
         CancellationToken cancellationToken
     );
 
-    Task<ManageSecretsResult> RemoveSecretKeyValuePair(
+    Task<ApiResult<ManageSecretsActionResponse>> RemoveSecretKeyValuePair(
         string environment,
         string secretName,
         string secretKeyPairName,
@@ -28,15 +25,12 @@ public interface IManageSecretsClient
 }
 
 public class ManageSecretsClient(
-    IOptions<ManageSecretsApiOptions> options,
+    IOptions<MonoLambdaApiOptions> options,
     IHttpClientFactory httpClientFactory,
     ILogger<ManageSecretsClient> logger
-) : IManageSecretsClient
+) : MonoLambdaApiClient(options, httpClientFactory.CreateClient("ManageSecretsClient")), IManageSecretsClient
 {
-    private readonly ManageSecretsApiOptions _options = options.Value;
-    private readonly HttpClient _client = httpClientFactory.CreateClient("ManageSecretsClient");
-
-    public async Task<ManageSecretsResult> AddSecretKeyValuePair(
+    public async Task<ApiResult<ManageSecretsActionResponse>> AddSecretKeyValuePair(
         string environment,
         string secretName,
         string secretKeyPairName,
@@ -57,7 +51,7 @@ public class ManageSecretsClient(
         return BuildResult(isSuccess, statusCode, responseBody, action, secretName, secretKeyPairName);
     }
 
-    public async Task<ManageSecretsResult> RemoveSecretKeyValuePair(
+    public async Task<ApiResult<ManageSecretsActionResponse>> RemoveSecretKeyValuePair(
         string environment,
         string secretName,
         string secretKeyPairName,
@@ -76,7 +70,7 @@ public class ManageSecretsClient(
         return BuildResult(isSuccess, statusCode, responseBody, action, secretName, secretKeyPairName);
     }
 
-    private ManageSecretsResult BuildResult(
+    private ApiResult<ManageSecretsActionResponse> BuildResult(
         bool isSuccess,
         HttpStatusCode statusCode,
         string responseBody,
@@ -87,7 +81,7 @@ public class ManageSecretsClient(
     {
         if (!isSuccess)
         {
-            return ManageSecretsResult.Failure(
+            return ApiResult<ManageSecretsActionResponse>.Failure(
                 statusCode,
                 ExtractErrorMessage(responseBody) ?? "Manage secrets request failed"
             );
@@ -99,7 +93,7 @@ public class ManageSecretsClient(
             secretName,
             secretKeyPairName
         );
-        return ManageSecretsResult.Success(
+        return ApiResult<ManageSecretsActionResponse>.Success(
             new ManageSecretsActionResponse(action, secretName, secretKeyPairName)
         );
     }
@@ -111,97 +105,24 @@ public class ManageSecretsClient(
         CancellationToken cancellationToken
     )
     {
-        var uri = BuildUri(environment, path);
-        var requestBody = JsonSerializer.Serialize(payload);
-        var request = new HttpRequestMessage(HttpMethod.Post, uri)
-        {
-            Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
-        };
-
-        var region = System.Environment.GetEnvironmentVariable("AWS_REGION")!;
-        var credentials = DefaultAWSCredentialsIdentityResolver.GetCredentials();
-
-        var response = await _client.SendAsync(request, region, "execute-api", credentials, cancellationToken);
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        var (isSuccess, statusCode, responseBody) = await SendAsync(
+            HttpMethod.Post,
+            environment,
+            path,
+            payload,
+            cancellationToken
+        );
+        if (!isSuccess)
         {
             logger.LogWarning(
                 "Manage secrets API returned {StatusCode}: {Body}",
-                (int)response.StatusCode,
+                (int)statusCode,
                 responseBody
             );
         }
 
-        return (response.IsSuccessStatusCode, response.StatusCode, responseBody);
+        return (isSuccess, statusCode, responseBody);
     }
-
-    private Uri BuildUri(string environment, string path)
-    {
-        if (string.IsNullOrWhiteSpace(_options.BaseUrlTemplate))
-        {
-            throw new InvalidOperationException("ManageSecretsApi BaseUrlTemplate is not configured.");
-        }
-
-        var restApiId = _options.RestApiIds
-            .FirstOrDefault(mapping => string.Equals(mapping.Environment, environment, StringComparison.OrdinalIgnoreCase))
-            ?.RestApiId;
-
-        if (string.IsNullOrWhiteSpace(restApiId))
-        {
-            throw new InvalidOperationException(
-                $"No mono-lambda API Gateway REST API id configured for environment '{environment}'."
-            );
-        }
-
-        var baseUrl = _options.BaseUrlTemplate
-            .Replace("{restApiId}", restApiId, StringComparison.OrdinalIgnoreCase)
-            .Replace("{environment}", environment, StringComparison.OrdinalIgnoreCase);
-
-        return new Uri($"{baseUrl.TrimEnd('/')}{path}");
-    }
-
-    private static string? ExtractErrorMessage(string responseBody)
-    {
-        if (string.IsNullOrWhiteSpace(responseBody))
-        {
-            return null;
-        }
-
-        try
-        {
-            using var document = JsonDocument.Parse(responseBody);
-            var root = document.RootElement;
-            if (root.TryGetProperty("message", out var messageElement))
-            {
-                return messageElement.GetString();
-            }
-
-            if (root.TryGetProperty("body", out var bodyElement))
-            {
-                return bodyElement.ValueKind switch
-                {
-                    JsonValueKind.String => bodyElement.GetString(),
-                    JsonValueKind.Object when bodyElement.TryGetProperty("message", out var nestedMessageElement) => nestedMessageElement.GetString(),
-                    _ => bodyElement.ToString()
-                };
-            }
-        }
-        catch (JsonException)
-        {
-            return responseBody;
-        }
-
-        return responseBody;
-    }
-}
-
-public sealed record ManageSecretsResult(bool IsSuccess, HttpStatusCode StatusCode, string? ErrorMessage, ManageSecretsActionResponse? Response)
-{
-    public static ManageSecretsResult Success(ManageSecretsActionResponse response) =>
-        new(true, HttpStatusCode.OK, null, response);
-
-    public static ManageSecretsResult Failure(HttpStatusCode statusCode, string message) =>
-        new(false, statusCode, message, null);
 }
 
 public sealed record ManageSecretsActionResponse(

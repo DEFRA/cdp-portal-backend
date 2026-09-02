@@ -23,7 +23,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class EntitiesEndpoint
 {
     private const double GrafanaPlaygroundRefreshThresholdSecs = 30; // How long we cache the playground response for
-    private const long GrafanaPlaygroundWaitThresholdMs = 1900; // Just below the slow response alert threshold
     
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
@@ -397,9 +396,10 @@ public static class EntitiesEndpoint
     
     
     [EndpointDescription("Gets the latest playground dashboards from the Dev Environment along with any pending promotion requests for each resource.")]
-    private static async Task<Results<NotFound, Accepted<ApiError>, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
+    private static async Task<Results<NotFound, ProblemHttpResult, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IGrafanaPlaygroundService grafanaPlaygroundService,
+        [FromServices] IGrafanaPlaygroundsClient grafanaPlaygroundsClient,
         [FromServices] IGrafanaPromotionRequestService grafanaPromotionRequestService,
         string name,
         CancellationToken ct)
@@ -407,20 +407,21 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
         
-        // We cache the playground data but since its pulled from grafana in dev on demand it may be out of date.
-        // The response is async (we listen for the response on the mono-lambda queue) but is typically fast (<1000ms).
-        // If it doesn't respond in time, we return a 202 and expect the client to poll again.
+        // We cache the playground data but since it's pulled from Grafana in dev on demand it may be out of date.
         var playgroundResources = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
         if (playgroundResources == null || (DateTime.UtcNow - playgroundResources.Updated).TotalSeconds > GrafanaPlaygroundRefreshThresholdSecs )
         {
-            var requestId = await grafanaPlaygroundService.RequestUpdateForService(name, ct);
-            playgroundResources = await grafanaPlaygroundService.WaitForUpdate(requestId, GrafanaPlaygroundWaitThresholdMs, ct);
-
-            if (playgroundResources == null)
+            var apiResult = await grafanaPlaygroundsClient.GetPlaygrounds(name, ct);
+            if (!apiResult.IsSuccess || apiResult.Response == null)
             {
-                return TypedResults.Accepted($"/entities/{name}/diagnostics/playground",
-                    new ApiError("Grafana did not response in time, try again"));
+                return TypedResults.Problem(
+                    detail: apiResult.ErrorMessage ?? "Unable to fetch Grafana playground resources",
+                    statusCode: (int)apiResult.StatusCode
+                );
             }
+
+            playgroundResources = apiResult.Response;
+            await grafanaPlaygroundService.UpdatePlaygroundForService(playgroundResources, ct);
         }
 
         // Look up the most recent requests and attach them to the playground data.
