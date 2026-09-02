@@ -16,7 +16,9 @@ public record BucketResource
     [JsonPropertyName("lastModified")]
     public DateTime LastModified { get; init; }
 
-
     [JsonPropertyName("isFolder")]
-    public bool isFolder { get; init; } = false;
+    public bool IsFolder { get; init; } = false;
+
+    [JsonPropertyName("url")]
+    public bool Url { get; init; }
 }

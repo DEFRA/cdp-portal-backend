@@ -492,6 +492,7 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(response);
     }
 
+
     [EndpointDescription("Gets a service's import resource(s) by path")]
     private static async Task<Results<NotFound, Ok<List<BucketResource>>>> GetImportsResources(
         [FromServices] IEntitiesService entitiesService,
@@ -509,9 +510,18 @@ public static class EntitiesEndpoint
 
         var fullPath = $"{entity.Name}/imports/{path}";
 
-        var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullPath, ct);
-        if (result == null) return TypedResults.NotFound();
-
-        return TypedResults.Ok(result);
+        var isFolder = fullPath.EndsWith('/');
+ 
+        if (isFolder) {
+            var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullPath, ct);
+            if (result == null) return TypedResults.NotFound();
+    
+            return TypedResults.Ok(result);
+        } else {
+            var result = await bucketManagementService.GetBucketResource(migrationsBucket, fullPath, ct);
+            if (result == null) return TypedResults.NotFound();
+    
+            return TypedResults.Ok(new List<BucketResource>([result]));
+        }
     }
 }
