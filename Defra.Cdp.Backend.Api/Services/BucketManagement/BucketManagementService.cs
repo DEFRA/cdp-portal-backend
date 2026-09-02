@@ -6,24 +6,29 @@ namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 
 public interface IBucketManagementService
 {
-    Task<List<BucketResource>> GetBucketResources(String bucket, String path, CancellationToken cancellationToken);
+    Task<List<BucketResource>?> GetBucketResources(String bucket, String path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 {
-    public async Task<List<BucketResource>> GetBucketResources(String bucket, String path, CancellationToken ct)
+    public async Task<List<BucketResource>?> GetBucketResources(String bucket, String path, CancellationToken ct)
     {
         var request = new ListObjectsV2Request
         {
             BucketName = bucket,
-            // Prefix = path
+            Prefix = path
         };
 
         List<BucketResource> objects = [];
         ListObjectsV2Response response;
+        
         do
         {
             response = await s3.ListObjectsV2Async(request, ct);
+
+            if (response.S3Objects == null) {
+                return null;
+            }
 
             foreach (var s3Object in response.S3Objects)
             {

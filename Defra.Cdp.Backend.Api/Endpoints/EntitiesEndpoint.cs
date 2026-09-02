@@ -55,11 +55,11 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
 
-        app.MapGet("/entities/{name}/imports/{*path}", GetImportsResources); // .RequireOwnership("name");
-        // app.MapPost("/entities/{name}/imports/{*path}", PostUploadImportsResource); // .RequireOwnership("name");
-        // app.MapPut("/entities/{name}/imports/{*path}", PutUploadImportsResource); // .RequireOwnership("name");
-        // app.MapDelete("/entities/{name}/imports/{*path}", DeleteImportsResource); // .RequireOwnership("name");
-        // app.MapPatch("/entities/{name}/imports/{*path}", RenameImportsResource); // .RequireOwnership("name");
+        app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
+        // app.MapPost("/entities/{name}/imports/{*path=}", PostUploadImportsResource); // .RequireOwnership("name");
+        // app.MapPut("/entities/{name}/imports/{*path=}", PutUploadImportsResource); // .RequireOwnership("name");
+        // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
+        // app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
     }
     
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -507,9 +507,11 @@ public static class EntitiesEndpoint
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var fullPath = $"{entity.Name}/imports/{path}"; 
+        var fullPath = $"{entity.Name}/imports/{path}";
 
         var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullPath, ct);
+        if (result == null) return TypedResults.NotFound();
+
         return TypedResults.Ok(result);
     }
 }
