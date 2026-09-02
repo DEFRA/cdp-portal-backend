@@ -54,6 +54,19 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
     }
 
     public async Task<BucketResource?> GetBucketResource(String bucket, String path, CancellationToken ct) {
-        return new BucketResource{};
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = bucket,
+            Key = path,
+            Expires = DateTime.Now.AddSeconds(10),
+            Verb = HttpVerb.GET
+        };
+
+        var url = await s3.GetPreSignedURLAsync(request);
+        
+        return new BucketResource{
+            Name = path,
+            Url = url
+        };
     }
 }
