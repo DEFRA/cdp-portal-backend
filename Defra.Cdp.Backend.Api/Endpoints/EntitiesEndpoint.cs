@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
+using Defra.Cdp.Backend.Api.Services.BucketManagement;
+using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -24,7 +26,7 @@ public static class EntitiesEndpoint
 {
     private const double GrafanaPlaygroundRefreshThresholdSecs = 30; // How long we cache the playground response for
     private const long GrafanaPlaygroundWaitThresholdMs = 1900; // Just below the slow response alert threshold
-    
+
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/entities", CreateEntity);
@@ -52,6 +54,12 @@ public static class EntitiesEndpoint
             .RequireOwnership("name");
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
+
+        app.MapGet("/entities/{name}/imports/{*path}", GetImportsObject); // .RequireOwnership("name");
+        // app.MapPost("/entities/{name}/imports/{*path}", PostUploadImportsObject); // .RequireOwnership("name");
+        // app.MapPut("/entities/{name}/imports/{*path}", PutUploadImportsObject); // .RequireOwnership("name");
+        // app.MapDelete("/entities/{name}/imports/{*path}", DeleteImportsObject); // .RequireOwnership("name");
+        // app.MapPatch("/entities/{name}/imports/{*path}", RenameImportsObject); // .RequireOwnership("name");
     }
     
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -465,7 +473,7 @@ public static class EntitiesEndpoint
         var response = await grafanaPromotionService.PromoteDashboard(dashboardRequest, user, ct);
         return TypedResults.Ok(response);
     }
-    
+
     [EndpointDescription("Promotes custom alerts for a service from playground alerts in Dev.")]
     private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundAlerts(
         [FromServices] IEntitiesService entitiesService,
@@ -482,5 +490,26 @@ public static class EntitiesEndpoint
         var alertRequest = new AlertPromotionRequest { ServiceName = name };
         var response = await grafanaPromotionService.PromoteAlerts(alertRequest, user, ct);
         return TypedResults.Ok(response);
+    }
+
+    [EndpointDescription("Gets a service's import resource(s) by path")]
+    private static async Task<Results<NotFound, Ok<List<BucketObject>>>> GetImportsObject(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IBucketManagementService bucketManagementService,
+        [FromServices] IConfiguration configuration,
+        [FromRoute] string name,
+        [FromRoute] string path,
+        CancellationToken ct
+    )
+    {
+        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+       
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var fullpath = $"{entity.Name}/imports/{path}"; 
+
+        var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullpath, ct);
+        return TypedResults.Ok(result);
     }
 }

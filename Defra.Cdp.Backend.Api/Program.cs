@@ -8,6 +8,7 @@ using Defra.Cdp.Backend.Api.Services.AutoDeploymentTriggers;
 using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
+using Defra.Cdp.Backend.Api.Services.BucketManagement;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Decommissioning;
 using Defra.Cdp.Backend.Api.Services.Deployments;
@@ -205,6 +206,7 @@ builder.Services.AddSingleton<IResourceRequestService, ResourceRequestService>()
 builder.Services.AddSingleton<ICreateResourceValidator, CreateResourceValidator>();
 builder.Services.AddSingleton<IEntityResourceService, EntityResourceService>();
 builder.Services.AddSingleton<ISnowDeploymentTriggerService, SnowDeploymentTriggerService>();
+builder.Services.AddSingleton<IBucketManagementService, BucketManagementService>();
 
 // Grafana alert promotion
 builder.Services.AddSingleton<IGrafanaPlaygroundService, GrafanaPlaygroundService>();
