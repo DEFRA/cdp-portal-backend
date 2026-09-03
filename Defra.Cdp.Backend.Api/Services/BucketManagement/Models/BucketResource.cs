@@ -10,6 +10,9 @@ public record BucketResource
     [JsonPropertyName("name")]
     public string Name { get; init; } = "";
 
+    [JsonPropertyName("path")]
+    public string Path { get; init; } = "";
+
     [JsonPropertyName("size")]
     public long Size { get; init; } = 0;
 
