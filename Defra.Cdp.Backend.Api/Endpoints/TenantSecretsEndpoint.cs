@@ -13,49 +13,23 @@ public static class TenantSecretsEndpoint
         app.MapGet("secrets/{service}", FindAllTenantSecrets);
         app.MapPost("secrets/{service}/{environment}/add", AddSecret);
         app.MapPost("secrets/{service}/{environment}/remove", RemoveSecret);
-        // Legacy async flow only (SSOps -> cdp-secret-manager-lambda); remove once the sync flow fully replaces it.
-        app.MapPost("secrets/register/pending", RegisterPendingSecret);
     }
 
     private static async Task<Results<NotFound<ApiError>, Ok<TenantSecretsResponse>>> FindTenantSecrets(
         [FromServices] ISecretsService secretsService,
-        [FromServices] IPendingSecretsService pendingSecretsService,
         string service, string environment, CancellationToken cancellationToken)
     {
         var secrets = await secretsService.FindServiceSecretsForEnvironment(environment, service, cancellationToken);
-        var pendingSecrets = await pendingSecretsService.FindPendingSecrets(environment, service, cancellationToken);
+        if (secrets == null) return TypedResults.NotFound(new ApiError("No secrets found"));
 
-        if (secrets == null && pendingSecrets == null) return TypedResults.NotFound(new ApiError("No secrets found"));
-
-        var pendingSecretKeys = pendingSecrets?.Pending.Select(p => p.SecretKey).Distinct().ToList() ?? [];
-
-        var exceptionMessage =
-            await pendingSecretsService.PullExceptionMessage(environment, service, cancellationToken);
-
-        pendingSecretKeys.Sort();
-        secrets?.Keys.Sort();
-
-        if (secrets == null)
-        {
-            return TypedResults.Ok(new TenantSecretsResponse(
-                pendingSecrets!.Service,
-                pendingSecrets.Environment,
-                pendingSecretKeys,
-                pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
-                pendingSecrets.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
-                pendingSecretKeys,
-                exceptionMessage)
-            );
-        }
+        secrets.Keys.Sort();
 
         return TypedResults.Ok(new TenantSecretsResponse(
             secrets.Service,
             secrets.Environment,
             secrets.Keys,
             secrets.LastChangedDate,
-            secrets.CreatedDate,
-            pendingSecretKeys,
-            exceptionMessage));
+            secrets.CreatedDate));
     }
 
     private static async Task<Results<NotFound<ApiError>, Ok<Dictionary<string, TenantSecretKeys>>>> FindAllTenantSecrets(
@@ -65,15 +39,6 @@ public static class TenantSecretsEndpoint
         return allSecrets.Count != 0
             ? TypedResults.Ok(allSecrets)
             : TypedResults.NotFound(new ApiError("No secrets found"));
-    }
-
-    private static async Task<Ok<RegisterPendingSecret>> RegisterPendingSecret(
-        [FromServices] IPendingSecretsService pendingSecretsService,
-        RegisterPendingSecret registerPendingSecret,
-        CancellationToken cancellationToken)
-    {
-        await pendingSecretsService.RegisterPendingSecret(registerPendingSecret, cancellationToken);
-        return TypedResults.Ok(registerPendingSecret);
     }
 
     private static async Task<Results<BadRequest<ApiError>, ProblemHttpResult, Ok<ManageSecretsActionResponse>>> AddSecret(
@@ -136,9 +101,7 @@ public static class TenantSecretsEndpoint
         string Environment,
         List<string> Keys,
         string LastChangedDate,
-        string CreatedDate,
-        List<string>? Pending,
-        string? ExceptionMessage);
+        string CreatedDate);
 
     private sealed record AddSecretMutationRequest(string SecretKey, string SecretValue);
     private sealed record RemoveSecretMutationRequest(string SecretKey);
