@@ -6,18 +6,23 @@ namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 
 public interface IBucketManagementService
 {
-    Task<List<BucketResource>?> GetBucketResources(String bucket, String path, CancellationToken cancellationToken);
-    Task<BucketResource?> GetBucketResource(String bucket, String path, CancellationToken cancellationToken);
+    Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceUrl?> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceUrl?> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 {
-    public async Task<List<BucketResource>?> GetBucketResources(String bucket, String path, CancellationToken ct)
+    const int PRE_SIGNED_URL_TTL_SECONDS = 10;
+    
+    public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
-        var request = new ListObjectsV2Request
-        {
+        var fullPath = $"{basePath}{path}";
+        
+        var request = new ListObjectsV2Request{
             BucketName = bucket,
-            Prefix = path
+            Prefix = fullPath
         };
 
         List<BucketResource> objects = [];
@@ -25,7 +30,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
         do
         {
-            response = await s3.ListObjectsV2Async(request, ct);
+            response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
@@ -53,19 +58,64 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         return objects;
     }
 
-    public async Task<BucketResource?> GetBucketResource(String bucket, String path, CancellationToken ct) {
+    public async Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    {
+        var fullPath = $"{basePath}{path}";
+
         var request = new GetPreSignedUrlRequest
         {
             BucketName = bucket,
-            Key = path,
-            Expires = DateTime.Now.AddSeconds(10),
+            Key = fullPath,
+            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
             Verb = HttpVerb.GET
         };
 
         var url = await s3.GetPreSignedURLAsync(request);
-        
-        return new BucketResource{
-            Name = path,
+
+        return new BucketResourceUrl
+        {
+            Method = "GET",
+            Url = url
+        };
+    }
+
+    public async Task<BucketResourceUrl?> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    {
+        var fullPath = $"{basePath}{path}";
+
+        var request = new CreatePresignedPostRequest
+        {
+            BucketName = bucket,
+            Key = fullPath,
+            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS)
+        };
+
+        var response = await s3.CreatePresignedPostAsync(request);
+
+        return new BucketResourceUrl
+        {
+            Method = "POST",
+            Url = response.Url
+        };
+    }
+
+    public async Task<BucketResourceUrl?> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    {
+        var fullPath = $"{basePath}{path}";
+
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = bucket,
+            Key = fullPath,
+            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
+            Verb = HttpVerb.PUT
+        };
+
+        var url = await s3.GetPreSignedURLAsync(request);
+
+        return new BucketResourceUrl
+        {
+            Method = "PUT",
             Url = url
         };
     }
