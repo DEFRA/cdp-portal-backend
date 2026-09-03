@@ -16,8 +16,8 @@ public record BucketResource
     [JsonPropertyName("size")]
     public long Size { get; set; } = 0;
 
-    [JsonPropertyName("lastModified")]
-    public DateTime LastModified { get; set; }
+    [JsonPropertyName("modifiedDate")]
+    public DateTime ModifiedDate { get; set; }
 
     [JsonPropertyName("isFolder")]
     public bool IsFolder { get; init; } = false;
