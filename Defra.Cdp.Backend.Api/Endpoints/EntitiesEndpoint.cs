@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
+using Amazon.S3;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.BucketManagement;
@@ -56,8 +57,8 @@ public static class EntitiesEndpoint
             .RequireOwnership("name");
 
         app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
-        // app.MapPost("/entities/{name}/imports/{*path=}", PostUploadImportsResource); // .RequireOwnership("name");
-        // app.MapPut("/entities/{name}/imports/{*path=}", PutUploadImportsResource); // .RequireOwnership("name");
+        app.MapPost("/entities/{name}/imports/{*path=}", PostUploadImportsResource); // .RequireOwnership("name");
+        app.MapPut("/entities/{name}/imports/{*path=}", PutUploadImportsResource); // .RequireOwnership("name");
         // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
         // app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
     }
@@ -493,8 +494,8 @@ public static class EntitiesEndpoint
     }
 
 
-    [EndpointDescription("Gets a service's import resource(s) by path")]
-    private static async Task<Results<NotFound, Ok<List<BucketResource>>>> GetImportsResources(
+    [EndpointDescription("Get a service's import resource(s) by path")]
+    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>>> GetImportsResources(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -504,24 +505,87 @@ public static class EntitiesEndpoint
     )
     {
         var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
-       
+
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var fullPath = $"{entity.Name}/imports/{path}";
+        var basePath = $"{entity.Name}/imports/";
+        var isFolder = path == "" || path.EndsWith('/');
 
-        var isFolder = fullPath.EndsWith('/');
- 
+        if (isFolder)
+        {
+            var result = await bucketManagementService.ListBucketResources(migrationsBucket, basePath, path, ct);
+            if (result == null) return TypedResults.NotFound();
+
+            return TypedResults.Ok(result);
+        }
+        else
+        {
+            var result = await bucketManagementService.GetBucketResourceUrl(migrationsBucket, basePath, path, ct);
+            if (result == null) return TypedResults.NotFound();
+
+            return TypedResults.Ok(result);
+        }
+    }
+
+    [EndpointDescription("Get a service's import resource(s) by path")]
+    private static async Task<Results<NotFound, Ok<BucketResourceUrl>>> PostUploadImportsResource(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IBucketManagementService bucketManagementService,
+        [FromServices] IConfiguration configuration,
+        [FromRoute] string name,
+        [FromRoute] string path,
+        CancellationToken ct
+    )
+    {
+        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var basePath = $"{entity.Name}/imports/";
+        var isFolder = path.EndsWith('/');
+
+        if (isFolder)
+        {
+            // TODO: create folder
+            return TypedResults.NotFound();
+        }
+        else
+        {
+            var result = await bucketManagementService.GetBucketResourcePostUrl(migrationsBucket, basePath, path, ct);
+            if (result == null) return TypedResults.NotFound();
+
+            return TypedResults.Ok(result);
+        }
+    }
+
+    [EndpointDescription("Get a service's import resource(s) by path")]
+    private static async Task<Results<NotFound, Ok<BucketResourceUrl>>> PutUploadImportsResource(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IBucketManagementService bucketManagementService,
+        [FromServices] IConfiguration configuration,
+        [FromRoute] string name,
+        [FromRoute] string path,
+        CancellationToken ct
+    )
+    {
+        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var basePath = $"{entity.Name}/imports/";
+        var isFolder = path.EndsWith('/');
+
         if (isFolder) {
-            var result = await bucketManagementService.GetBucketResources(migrationsBucket, fullPath, ct);
+            // TODO: create folder
+            return TypedResults.NotFound();
+        } else {
+            var result = await bucketManagementService.GetBucketResourcePutUrl(migrationsBucket, basePath, path, ct);
             if (result == null) return TypedResults.NotFound();
     
             return TypedResults.Ok(result);
-        } else {
-            var result = await bucketManagementService.GetBucketResource(migrationsBucket, fullPath, ct);
-            if (result == null) return TypedResults.NotFound();
-    
-            return TypedResults.Ok(new List<BucketResource>([result]));
         }
     }
 }

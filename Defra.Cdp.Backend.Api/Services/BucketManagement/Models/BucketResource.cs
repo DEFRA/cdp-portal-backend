@@ -18,7 +18,4 @@ public record BucketResource
 
     [JsonPropertyName("isFolder")]
     public bool IsFolder { get; init; } = false;
-
-    [JsonPropertyName("url")]
-    public string? Url { get; init; }
 }
