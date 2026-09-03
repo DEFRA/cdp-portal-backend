@@ -59,9 +59,9 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
                     if (resources.TryGetValue(groupedFolderName, out var resource))
                     {
                         resource.Size += s3Object.Size ?? 0;
-                        if (s3Object.LastModified > resource.LastModified)
+                        if (s3Object.LastModified > resource.ModifiedDate)
                         {
-                            resource.LastModified = s3Object.LastModified.Value;
+                            resource.ModifiedDate = s3Object.LastModified.Value;
                         }
                     }
                     else
@@ -69,7 +69,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
                         resources.Add(groupedFolderName, new BucketResource
                         {
                             Name = groupedFolderName,
-                            LastModified = s3Object.LastModified ?? DateTime.Now,
+                            ModifiedDate = s3Object.LastModified ?? DateTime.Now,
                             Size = s3Object.Size ?? 0,
                             Path = $"{path}{groupedFolderName}/",
                             IsFolder = true
@@ -82,7 +82,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
-                        LastModified = s3Object.LastModified ?? DateTime.Now,
+                        ModifiedDate = s3Object.LastModified ?? DateTime.Now,
                         Size = s3Object.Size ?? 0,
                         Path = relPath,
                         IsFolder = false
@@ -193,7 +193,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         return new BucketResource
         {
             Name = name,
-            LastModified = DateTime.Now,
+            ModifiedDate = DateTime.Now,
             Size = response.Size ?? 0,
             Path = relPath,
             IsFolder = isFolder
