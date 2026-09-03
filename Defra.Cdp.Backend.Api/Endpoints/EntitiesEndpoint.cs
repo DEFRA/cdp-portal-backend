@@ -528,7 +528,7 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Get a service's import resource(s) by path")]
+    [EndpointDescription("Create a service's import resource by POST")]
     private static async Task<Results<NotFound, Ok<BucketResourceUrl>>> PostUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
@@ -560,7 +560,7 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Get a service's import resource(s) by path")]
+    [EndpointDescription("Create a service's import resource by PUT")]
     private static async Task<Results<NotFound, Ok<BucketResourceUrl>>> PutUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
