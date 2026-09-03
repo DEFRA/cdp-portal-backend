@@ -44,7 +44,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
             foreach (var s3Object in response.S3Objects)
             {
-                var (relPath, name, isFolder) = getObjectPathInfo(basePath, path, s3Object.Key);
+                var (relPath, name, _isFolder) = getObjectPathInfo(basePath, path, s3Object.Key);
                 var groupedPath = path == "" ? relPath : relPath.Replace(path, "");
                 var isCurrentFolder = groupedPath == "";
                 var isGroupedFolder = groupedPath.Contains('/');
@@ -109,7 +109,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             }, cancellationToken
         );
 
-        if (response.S3Objects == null)
+        if (response.S3Objects == null || response.S3Objects[0].Key != fullPath)
         {
             return null; // Not Found
         }
