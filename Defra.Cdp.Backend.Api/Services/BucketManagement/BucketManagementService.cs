@@ -1,15 +1,20 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
+using Elastic.CommonSchema;
 
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 
+/**
+ *  Manage S3 Buckets where objects are treated like a Files and Folders in a filesystem
+ */
 public interface IBucketManagementService
 {
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
@@ -18,7 +23,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
     
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
-        var fullPath = $"{basePath}{path}";
+        var fullPath = getFullPath(basePath, path);
 
         var request = new ListObjectsV2Request{
             BucketName = bucket,
@@ -39,32 +44,41 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
             foreach (var s3Object in response.S3Objects)
             {
-                var relPath = basePath == "" ? s3Object.Key : s3Object.Key.Replace(basePath, "");
-                var currentPath = path == "" ? relPath : relPath.Replace(path, "");
-                var isFolder = currentPath.Contains('/');
-                var name = currentPath.Split("/")[0];
+                var (relPath, name, isFolder) = getObjectPathInfo(basePath, path, s3Object.Key);
+                var groupedPath = path == "" ? relPath : relPath.Replace(path, "");
+                var isCurrentFolder = groupedPath == "";
+                var isGroupedFolder = groupedPath.Contains('/');
+                var groupedFolderName = groupedPath.Split("/")[0];
 
-                if (isFolder) {
-                    if (resources.TryGetValue(name, out var resource))
+                if (isCurrentFolder) {
+                    continue;
+                }
+
+                if (isGroupedFolder)
+                {
+                    if (resources.TryGetValue(groupedFolderName, out var resource))
                     {
                         resource.Size += s3Object.Size ?? 0;
-                        if (s3Object.LastModified > resource.LastModified) {
+                        if (s3Object.LastModified > resource.LastModified)
+                        {
                             resource.LastModified = s3Object.LastModified.Value;
                         }
                     }
                     else
                     {
-                        resources.Add(name, new BucketResource
+                        resources.Add(groupedFolderName, new BucketResource
                         {
-                            Name = name,
+                            Name = groupedFolderName,
                             LastModified = s3Object.LastModified ?? DateTime.Now,
                             Size = s3Object.Size ?? 0,
-                            Path = $"{path}{name}/",
+                            Path = $"{path}{groupedFolderName}/",
                             IsFolder = true
                         });
                     }
 
-                } else {
+                }
+                else
+                {
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
@@ -86,7 +100,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
     public async Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
-        var fullPath = $"{basePath}{path}";
+        var fullPath = getFullPath(basePath, path);
 
         var response = await s3.ListObjectsV2Async(new ListObjectsV2Request
             {
@@ -119,7 +133,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
     public async Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
-        var fullPath = $"{basePath}{path}";
+        var fullPath = getFullPath(basePath, path);
 
         var request = new CreatePresignedPostRequest
         {
@@ -139,7 +153,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
     public async Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
-        var fullPath = $"{basePath}{path}";
+        var fullPath = getFullPath(basePath, path);
 
         var request = new GetPreSignedUrlRequest
         {
@@ -156,5 +170,46 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             Method = "PUT",
             Url = url
         };
+    }
+
+    public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    {
+        var fullPath = getFullPath(basePath, path);
+
+        if (fullPath.Last() != '/') {
+            // TODO: error
+        }
+
+        var request = new PutObjectRequest
+        {
+            BucketName = bucket,
+            Key = fullPath
+        };
+
+        var response = await s3.PutObjectAsync(request, cancellationToken);
+
+        var (relPath, name, isFolder) = getObjectPathInfo(basePath, path, fullPath);
+
+        return new BucketResource
+        {
+            Name = name,
+            LastModified = DateTime.Now,
+            Size = response.Size ?? 0,
+            Path = relPath,
+            IsFolder = isFolder
+        };
+    }
+
+    private static string getFullPath(string basePath, string path)
+    {
+        return $"{basePath}{path}";
+    }
+
+    private static (string path, string name, bool isFolder ) getObjectPathInfo(string basePath, string path, string key) {
+        var isFolder = key.Last() == '/';
+        var relPath = basePath == "" ? key : key.Replace(basePath, "");
+        var name = isFolder ? key.Split("/")[^2] : key.Split("/")[^1];
+
+        return (relPath, name, isFolder);
     }
 }
