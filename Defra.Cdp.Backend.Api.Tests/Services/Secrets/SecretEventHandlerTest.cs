@@ -13,8 +13,7 @@ public class SecretEventHandlerTest
     public async Task WillProcessGetAllSecretsPayload()
     {
         var service = Substitute.For<ISecretsService>();
-        var pendingSecretsService = Substitute.For<IPendingSecretsService>();
-        var eventHandler = new SecretEventHandler(service, pendingSecretsService,
+        var eventHandler = new SecretEventHandler(service,
             ConsoleLogger.CreateLogger<SecretEventHandler>());
 
         var mockPayload = SecretEventHandler.TryParseMessage(await File.ReadAllTextAsync("Resources/payload-get-all-secrets.json", TestContext.Current.CancellationToken));

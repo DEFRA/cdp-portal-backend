@@ -248,9 +248,6 @@ builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrClos
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrMergedHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestFailedHandler>();
 
-// Pending Secrets
-builder.Services.AddSingleton<IPendingSecretsService, PendingSecretsService>();
-
 builder.Services.AddSingleton<IShutteringService, ShutteringService>();
 builder.Services.AddSingleton<IShutteringArchiveService, ShutteringArchiveService>();
 
