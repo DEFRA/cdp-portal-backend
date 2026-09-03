@@ -531,7 +531,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Create a service's import resource by POST")]
-    private static async Task<Results<NotFound, Ok<BucketResourceUrl>>> PostUploadImportsResource(
+    private static async Task<Results<NotFound, Ok<BucketResourceUrl>, Ok<BucketResource>>> PostUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -550,8 +550,9 @@ public static class EntitiesEndpoint
 
         if (isFolder)
         {
-            // TODO: create folder
-            return TypedResults.NotFound();
+            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, ct);
+            
+            return TypedResults.Ok(result);
         }
         else
         {
@@ -563,7 +564,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Create a service's import resource by PUT")]
-    private static async Task<Results<NotFound, Ok<BucketResourceUrl>>> PutUploadImportsResource(
+    private static async Task<Results<NotFound, Ok<BucketResourceUrl>, Ok<BucketResource>>> PutUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -581,8 +582,9 @@ public static class EntitiesEndpoint
         var isFolder = path.EndsWith('/');
 
         if (isFolder) {
-            // TODO: create folder
-            return TypedResults.NotFound();
+            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, ct);
+            
+            return TypedResults.Ok(result);
         } else {
             var result = await bucketManagementService.GetBucketResourcePutUrl(migrationsBucket, basePath, path, ct);
             if (result == null) return TypedResults.NotFound();
