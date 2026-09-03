@@ -41,13 +41,16 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             {
                 var relPath = basePath == "" ? s3Object.Key : s3Object.Key.Replace(basePath, "");
                 var currentPath = path == "" ? relPath : relPath.Replace(path, "");
-                var isFolder = currentPath.Contains("/");
+                var isFolder = currentPath.Contains('/');
                 var name = currentPath.Split("/")[0];
 
                 if (isFolder) {
                     if (resources.TryGetValue(name, out var resource))
                     {
                         resource.Size += s3Object.Size ?? 0;
+                        if (s3Object.LastModified > resource.LastModified) {
+                            resource.LastModified = s3Object.LastModified.Value;
+                        }
                     }
                     else
                     {
