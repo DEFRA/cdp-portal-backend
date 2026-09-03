@@ -8,18 +8,18 @@ public interface IBucketManagementService
 {
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResourceUrl?> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResourceUrl?> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 {
-    const int PRE_SIGNED_URL_TTL_SECONDS = 10;
+    private const int PRE_SIGNED_URL_TTL_SECONDS = 10;
     
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
         var fullPath = $"{basePath}{path}";
-        
+
         var request = new ListObjectsV2Request{
             BucketName = bucket,
             Prefix = fullPath
@@ -34,7 +34,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 
             if (response.S3Objects == null)
             {
-                return null;
+                return null; // Not Found
             }
 
             foreach (var s3Object in response.S3Objects)
@@ -64,6 +64,18 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
     {
         var fullPath = $"{basePath}{path}";
 
+        var response = await s3.ListObjectsV2Async(new ListObjectsV2Request
+            {
+                BucketName = bucket,
+                Prefix = fullPath,
+            }, cancellationToken
+        );
+
+        if (response.S3Objects == null)
+        {
+            return null; // Not Found
+        }
+
         var request = new GetPreSignedUrlRequest
         {
             BucketName = bucket,
@@ -81,7 +93,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUrl?> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    public async Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
         var fullPath = $"{basePath}{path}";
 
@@ -101,7 +113,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUrl?> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    public async Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
         var fullPath = $"{basePath}{path}";
 
