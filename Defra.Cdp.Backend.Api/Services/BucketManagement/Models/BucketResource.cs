@@ -14,10 +14,10 @@ public record BucketResource
     public string Path { get; init; } = "";
 
     [JsonPropertyName("size")]
-    public long Size { get; init; } = 0;
+    public long Size { get; set; } = 0;
 
     [JsonPropertyName("lastModified")]
-    public DateTime LastModified { get; init; }
+    public DateTime LastModified { get; set; }
 
     [JsonPropertyName("isFolder")]
     public bool IsFolder { get; init; } = false;
