@@ -16,7 +16,7 @@ public static class AwsClients
             service.AddDefaultAWSOptions(configuration.GetAWSOptions());
             service.AddAwsService<IAmazonSQS>();
             service.AddAwsService<IAmazonSimpleNotificationService>();
-            service.AddAwsService<IAmazonS3>();
+            service.AddAwsService<IAmazonS3>(useServiceUrl: true);
         }
         else
         {
