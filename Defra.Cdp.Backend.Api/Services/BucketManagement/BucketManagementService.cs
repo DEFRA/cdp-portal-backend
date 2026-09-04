@@ -15,8 +15,9 @@ public interface IBucketManagementService
     Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
-    //  Task<bool?> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    // /Task<bool?> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    // TODO:
+    // Task<bool?> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    // Task<bool?> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
