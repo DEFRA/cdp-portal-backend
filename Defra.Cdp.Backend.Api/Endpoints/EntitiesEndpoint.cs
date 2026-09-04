@@ -60,7 +60,7 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/imports/{*path=}", PostUploadImportsResource); // .RequireOwnership("name");
         app.MapPut("/entities/{name}/imports/{*path=}", PutUploadImportsResource); // .RequireOwnership("name");
         app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
-        // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
+        // TODO: app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
