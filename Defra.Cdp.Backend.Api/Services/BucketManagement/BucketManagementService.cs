@@ -14,9 +14,9 @@ public interface IBucketManagementService
     Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResource?> RenameBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    //  Task<BucketResource> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    // /Task<BucketResource> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
+    //  Task<bool?> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    // /Task<bool?> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
@@ -199,7 +199,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         };
     }
 
-    public async Task<BucketResource?> RenameBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    public async Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
@@ -208,21 +208,27 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             return null; // Not Found
         }
 
-        // var request = new GetPreSignedUrlRequest
-        // {
-        //     BucketName = bucket,
-        //     Key = fullPath,
-        //     Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
-        //     Verb = HttpVerb.GET
-        //     // TODO: ResponseContentDisposition: 'attachment'
-        // };
+        var (_relpath, _name, isFolder) = getObjectPathInfo(basePath, path, fullPath);
 
-        // var url = await s3.GetPreSignedURLAsync(request);
-
-        return new BucketResource
+        if (isFolder)
         {
+            // TODO: recursive operation?
+            return null;
+        }
+        else
+        {
+            var newPath = string.Join('/', [.. fullPath.Split('/')[0..^1], newName]);
 
-        };
+            if (await bucketResourceExists(bucket, newPath, cancellationToken))
+            {
+                return null; // Not Found - TODO: Should allow override?
+            }
+
+            await s3.CopyObjectAsync(bucket, fullPath, bucket, newPath, cancellationToken);
+            await s3.DeleteObjectAsync(bucket, fullPath, cancellationToken);
+        }
+ 
+        return true;
     }
 
     private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken) {
