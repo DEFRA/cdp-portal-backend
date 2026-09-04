@@ -14,7 +14,7 @@ public interface IBucketManagementService
     Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResource> RenameBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResource?> RenameBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
     //  Task<BucketResource> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
     // /Task<BucketResource> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
@@ -199,7 +199,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUrl?> RenameBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    public async Task<BucketResource?> RenameBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
@@ -208,21 +208,20 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             return null; // Not Found
         }
 
-        var request = new GetPreSignedUrlRequest
-        {
-            BucketName = bucket,
-            Key = fullPath,
-            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
-            Verb = HttpVerb.GET
-            // TODO: ResponseContentDisposition: 'attachment'
-        };
+        // var request = new GetPreSignedUrlRequest
+        // {
+        //     BucketName = bucket,
+        //     Key = fullPath,
+        //     Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
+        //     Verb = HttpVerb.GET
+        //     // TODO: ResponseContentDisposition: 'attachment'
+        // };
 
-        var url = await s3.GetPreSignedURLAsync(request);
+        // var url = await s3.GetPreSignedURLAsync(request);
 
-        return new BucketResourceUrl
+        return new BucketResource
         {
-            Method = "GET",
-            Url = url
+
         };
     }
 
