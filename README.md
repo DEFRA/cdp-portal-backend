@@ -268,7 +268,7 @@ dotnet run --project Defra.Cdp.Backend.Api --no-launch-profile
 - Run with `.env` file
 
 ```bash
-env $(cat .env | xargs) dotnet run --project Defra.Cdp.Backend.Api --no-launch-profile
+env $(cat .env | xargs) dotnet watch run --project Defra.Cdp.Backend.Api --no-launch-profile
 ```
 
 
