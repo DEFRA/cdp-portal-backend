@@ -59,8 +59,8 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
         app.MapPost("/entities/{name}/imports/{*path=}", PostUploadImportsResource); // .RequireOwnership("name");
         app.MapPut("/entities/{name}/imports/{*path=}", PutUploadImportsResource); // .RequireOwnership("name");
-        app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
-        // app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
+        app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
+        // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -594,8 +594,8 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Delete a service's import resource")]
-    private static async Task<Results<NotFound, Ok<BucketResource>>> DeleteImportsResource(
+    [EndpointDescription("Rename a service's import resource")]
+    private static async Task<Results<NotFound, Ok<BucketResource>>> RenameImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -610,21 +610,10 @@ public static class EntitiesEndpoint
         if (entity == null) return TypedResults.NotFound();
 
         var basePath = $"{entity.Name}/imports/";
-        var isFolder = path.EndsWith('/');
 
-        if (isFolder)
-        {
-            // var result = await bucketManagementService.DeleteEmptyFolder(migrationsBucket, basePath, path, ct);
+        var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, ct);
+        if (result == null) return TypedResults.NotFound();
 
-            // TODO:
-            return TypedResults.NotFound();
-        }
-        else
-        {
-            var result = await bucketManagementService.DeleteBucketResource(migrationsBucket, basePath, path, ct);
-            if (result == null) return TypedResults.NotFound();
-
-            return TypedResults.Ok(result);
-        }
+        return TypedResults.Ok(result);
     }
 }
