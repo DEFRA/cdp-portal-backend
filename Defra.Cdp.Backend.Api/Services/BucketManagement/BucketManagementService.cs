@@ -1,7 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
-using Elastic.CommonSchema;
 
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 
@@ -20,17 +19,18 @@ public interface IBucketManagementService
 public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;
-    
+
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
-        var request = new ListObjectsV2Request{
+        var request = new ListObjectsV2Request
+        {
             BucketName = bucket,
             Prefix = fullPath
         };
 
-        var resources = new SortedDictionary<string, BucketResource>();
+        var resources = new SortedDictionary<string, BucketResource>(new ResourceCompare());
         ListObjectsV2Response response;
 
         do
@@ -50,13 +50,14 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
                 var isGroupedFolder = groupedPath.Contains('/');
                 var groupedFolderName = groupedPath.Split("/")[0];
 
-                if (isCurrentFolder) {
+                if (isCurrentFolder)
+                {
                     continue;
                 }
 
                 if (isGroupedFolder)
                 {
-                    if (resources.TryGetValue(groupedFolderName, out var resource))
+                    if (resources.TryGetValue($"{groupedFolderName}/", out var resource))
                     {
                         resource.Size += s3Object.Size ?? 0;
                         if (s3Object.LastModified > resource.ModifiedDate)
@@ -66,7 +67,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
                     }
                     else
                     {
-                        resources.Add(groupedFolderName, new BucketResource
+                        resources.Add($"{groupedFolderName}/", new BucketResource
                         {
                             Name = groupedFolderName,
                             ModifiedDate = s3Object.LastModified ?? DateTime.Now,
@@ -88,7 +89,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
                         IsFolder = false
                     });
                 }
-            
+
             }
 
             request.ContinuationToken = response.NextContinuationToken;
@@ -103,10 +104,10 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         var fullPath = getFullPath(basePath, path);
 
         var response = await s3.ListObjectsV2Async(new ListObjectsV2Request
-            {
-                BucketName = bucket,
-                Prefix = fullPath,
-            }, cancellationToken
+        {
+            BucketName = bucket,
+            Prefix = fullPath,
+        }, cancellationToken
         );
 
         if (response.S3Objects == null || response.S3Objects[0].Key != fullPath)
@@ -120,6 +121,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             Key = fullPath,
             Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
             Verb = HttpVerb.GET
+            // TODO: ResponseContentDisposition: 'attachment'
         };
 
         var url = await s3.GetPreSignedURLAsync(request);
@@ -176,7 +178,8 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
     {
         var fullPath = getFullPath(basePath, path);
 
-        if (fullPath.Last() != '/') {
+        if (fullPath.Last() != '/')
+        {
             // TODO: error
         }
 
@@ -205,11 +208,21 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
         return $"{basePath}{path}";
     }
 
-    private static (string path, string name, bool isFolder ) getObjectPathInfo(string basePath, string path, string key) {
+    private static (string path, string name, bool isFolder) getObjectPathInfo(string basePath, string path, string key)
+    {
         var isFolder = key.Last() == '/';
         var relPath = basePath == "" ? key : key.Replace(basePath, "");
         var name = isFolder ? key.Split("/")[^2] : key.Split("/")[^1];
 
         return (relPath, name, isFolder);
+    }
+}
+
+public class ResourceCompare:IComparer<string> {
+    public int Compare(string? nameA, string? nameB) {
+        var foldersCompare = (nameB?.Last() == '/').CompareTo(nameA?.Last() == '/');
+        if (foldersCompare != 0) return foldersCompare; 
+        
+        return nameA?.CompareTo(nameB) ?? 0;
     }
 }
