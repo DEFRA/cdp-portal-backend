@@ -72,4 +72,38 @@ public class BucketManagementServiceTests
         ]);
         Assert.Equivalent(expected, result, false);
     }
+
+    [Fact]
+    public async Task Test_list_resources_with_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(s_s3ListObjectsResponse));
+
+        var result = await bucketManagementService.ListBucketResources(s_bucketName, "", "folder/", TestContext.Current.CancellationToken);
+
+        var expected = new List<BucketResource>([
+            new BucketResource { Name = "empty-folder", Path = "folder/empty-folder/", Size = 0, ModifiedDate = s_modifiedDate, IsFolder = true },
+            new BucketResource { Name = "sub-folder", Path = "folder/sub-folder/", Size = 3452, ModifiedDate = s_modifiedDate, IsFolder = true },
+            new BucketResource { Name = "file-in-folder.txt", Path = "folder/file-in-folder.txt", Size = 751254, ModifiedDate = s_modifiedDate, IsFolder = false },
+        ]);
+        Assert.Equivalent(expected, result, false);
+    }
+
+    // [Fact]
+    // public async Task Test_list_resources_with_basePath_and_path()
+    // {
+    //     var s3 = Substitute.For<IAmazonS3>();
+    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+    //     s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(s_s3ListObjectsResponse));
+
+    //     var result = await bucketManagementService.ListBucketResources(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
+
+    //     var expected = new List<BucketResource>([
+    //         new BucketResource { Name = "file-in-folder.txt", Path = "sub-folder/file-in-folder.txt", Size = 3452, ModifiedDate = s_modifiedDate, IsFolder = false },
+    //     ]);
+    //     Assert.Equivalent(expected, result, false);
+    // }
 }
