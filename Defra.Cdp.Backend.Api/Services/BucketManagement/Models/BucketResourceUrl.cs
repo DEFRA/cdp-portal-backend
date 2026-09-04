@@ -8,8 +8,8 @@ namespace Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 public record BucketResourceUrl
 {
     [JsonPropertyName("method")]
-    public string? Method { get; init; }
+    public string Method { get; init; } = "";
 
     [JsonPropertyName("url")]
-    public string? Url { get; init; }
+    public string Url { get; init; } = "";
 }

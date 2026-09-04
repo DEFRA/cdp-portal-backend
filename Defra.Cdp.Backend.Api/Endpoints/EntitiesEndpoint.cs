@@ -595,12 +595,13 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Rename a service's import resource")]
-    private static async Task<Results<NotFound, Ok<BucketResource>>> RenameImportsResource(
+    private static async Task<Results<NotFound, Ok, BadRequest>> RenameImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string path,
+        [FromBody] RenameBucketResource renameBucketResource,
         CancellationToken ct
     )
     {
@@ -611,9 +612,15 @@ public static class EntitiesEndpoint
 
         var basePath = $"{entity.Name}/imports/";
 
-        var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, ct);
+        var newName = renameBucketResource.NewName;
+
+        if (newName == "") {
+            TypedResults.BadRequest("newName is required");
+        }
+
+        var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, newName, ct);
         if (result == null) return TypedResults.NotFound();
 
-        return TypedResults.Ok(result);
+        return TypedResults.Ok();
     }
 }
