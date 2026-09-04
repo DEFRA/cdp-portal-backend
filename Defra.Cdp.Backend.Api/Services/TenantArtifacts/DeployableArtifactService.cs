@@ -18,7 +18,7 @@ public interface IDeployableArtifactsService
     Task<DeployableArtifact?> FindByTag(string repo, string tag, CancellationToken cancellationToken);
 
     Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken);
-    
+
     Task<List<ArtifactVersion>> FindLatestForAll(CancellationToken cancellationToken);
 
     Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken);
@@ -36,7 +36,10 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
 
     public async Task<DeployableArtifact?> FindLatest(string repo, CancellationToken cancellationToken)
     {
-        return await Collection.Find(d => d.Repo == repo).SortByDescending(d => d.SemVer)
+        return await Collection.Find(d => d.Repo == repo)
+            .SortByDescending(d => d.SemVer)
+            // Git-flow tags (e.g. 1.6.0-dev.1/.2/.3, or 1.6.0 itself) share the same SemVer; Created picks the latest.
+            .ThenByDescending(d => d.Created)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -45,6 +48,8 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
         return await Collection.Aggregate()
             .SortBy(a => a.Repo)
             .ThenByDescending(a => a.SemVer)
+            // Git-flow tiebreak, see FindLatest above.
+            .ThenByDescending(a => a.Created)
             .Group(a => a.Repo, g => new ArtifactVersion(g.Key, g.First().Tag))
             .ToListAsync(cancellationToken);
     }
@@ -62,11 +67,12 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
 
     public async Task<List<TagInfo>> FindAllTagsForRepo(string repo, CancellationToken cancellationToken)
     {
-        var sort = Builders<DeployableArtifact>.Sort.Descending(d => d.SemVer);
         var res = await Collection
             .Find(d => d.Repo == repo)
             .Project(d => new TagInfo(d.Tag, d.Created))
-            .Sort(sort)
+            .SortByDescending(d => d.SemVer)
+            // Git-flow tiebreak, see FindLatest above.
+            .ThenByDescending(d => d.Created)
             .ToListAsync(cancellationToken);
 
         return res.Where(t => SemVer.IsSemVer(t.Tag)).ToList();
@@ -81,7 +87,7 @@ public class DeployableArtifactsService(IMongoDbClientFactory connectionFactory,
             cancellationToken
         );
     }
-    
+
     protected override List<CreateIndexModel<DeployableArtifact>> DefineIndexes(
         IndexKeysDefinitionBuilder<DeployableArtifact> builder)
     {
