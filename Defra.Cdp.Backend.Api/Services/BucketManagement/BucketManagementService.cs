@@ -20,7 +20,7 @@ public interface IBucketManagementService
     // Task<bool?> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
-public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
+public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;
 
@@ -49,7 +49,7 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
             foreach (var s3Object in response.S3Objects)
             {
                 var (relPath, name, _isFolder) = getObjectPathInfo(basePath, path, s3Object.Key);
-                var groupedPath = path == "" ? relPath : relPath.Replace(path, "");
+                var groupedPath = path == "" ? relPath : removeFirst(relPath, path);
                 var isCurrentFolder = groupedPath == "";
                 var isGroupedFolder = groupedPath.Contains('/');
                 var groupedFolderName = groupedPath.Split("/")[0];
@@ -257,10 +257,16 @@ public class BucketManagementService(IAmazonS3 s3) : IBucketManagementService
     private static (string path, string name, bool isFolder) getObjectPathInfo(string basePath, string path, string key)
     {
         var isFolder = key.Last() == '/';
-        var relPath = basePath == "" ? key : key.Replace(basePath, "");
+        var relPath = basePath == "" ? key : removeFirst(key, basePath);
         var name = isFolder ? key.Split("/")[^2] : key.Split("/")[^1];
 
         return (relPath, name, isFolder);
+    }
+
+    private static string removeFirst(string value, string removeString)
+    {
+        var index = value.IndexOf(removeString, StringComparison.Ordinal);
+        return index < 0 ? value : value.Remove(index, removeString.Length);
     }
 }
 
