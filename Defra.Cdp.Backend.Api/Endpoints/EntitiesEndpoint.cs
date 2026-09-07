@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
-using Amazon.S3;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
 using Defra.Cdp.Backend.Api.Services.BucketManagement;
@@ -57,8 +56,8 @@ public static class EntitiesEndpoint
             .RequireOwnership("name");
 
         app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
-        app.MapPost("/entities/{name}/imports/{*path=}", PostUploadImportsResource); // .RequireOwnership("name");
-        app.MapPut("/entities/{name}/imports/{*path=}", PutUploadImportsResource); // .RequireOwnership("name");
+        app.MapPost("/entities/{name}/imports/{*path=}", StartUploadImportsResource); // .RequireOwnership("name");
+        app.MapPut("/entities/{name}/imports/{*path=}", CompleteUploadImportsResource); // .RequireOwnership("name");
         app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
         // TODO: app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
     }
@@ -533,12 +532,13 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Create a service's import resource by POST")]
-    private static async Task<Results<NotFound, Ok<BucketResourceUrl>, Ok<BucketResource>>> PostUploadImportsResource(
+    private static async Task<Results<NotFound, Ok<BucketResourceParts>, Ok<BucketResource>, BadRequest<string>>> StartUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string path,
+        [FromBody] UploadBucketResource? uploadBucketResource,
         CancellationToken ct
     )
     {
@@ -558,15 +558,18 @@ public static class EntitiesEndpoint
         }
         else
         {
-            var result = await bucketManagementService.GetBucketResourcePostUrl(migrationsBucket, basePath, path, ct);
-            if (result == null) return TypedResults.NotFound();
+            if (uploadBucketResource == null) {
+                return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
+            }
+
+            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, ct);
 
             return TypedResults.Ok(result);
         }
     }
 
     [EndpointDescription("Create a service's import resource by PUT")]
-    private static async Task<Results<NotFound, Ok<BucketResourceUrl>, Ok<BucketResource>>> PutUploadImportsResource(
+    private static async Task<Results<NotFound, Ok>> CompleteUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -581,25 +584,14 @@ public static class EntitiesEndpoint
         if (entity == null) return TypedResults.NotFound();
 
         var basePath = $"{entity.Name}/imports/";
-        var isFolder = path.EndsWith('/');
 
-        if (isFolder)
-        {
-            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, ct);
+        await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, ct);
 
-            return TypedResults.Ok(result);
-        }
-        else
-        {
-            var result = await bucketManagementService.GetBucketResourcePutUrl(migrationsBucket, basePath, path, ct);
-            if (result == null) return TypedResults.NotFound();
-
-            return TypedResults.Ok(result);
-        }
+        return TypedResults.Ok();
     }
 
     [EndpointDescription("Rename a service's import resource")]
-    private static async Task<Results<NotFound, Ok, BadRequest>> RenameImportsResource(
+    private static async Task<Results<NotFound, Ok, BadRequest<string>>> RenameImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,

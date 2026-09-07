@@ -12,7 +12,8 @@ public interface IBucketManagementService
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceParts> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
+    Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
     // TODO:
@@ -23,6 +24,7 @@ public interface IBucketManagementService
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;
+    private const Int64 ONE_HUNDRED_MEGABYTES = 100 * 1024 * 1024;
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
@@ -150,25 +152,65 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUrl> GetBucketResourcePutUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    public async Task<BucketResourceParts> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
-        var request = new GetPreSignedUrlRequest
+        var numParts = ((size - 1) / ONE_HUNDRED_MEGABYTES) + 1; // Int division, rounding up
+        var parts = new List<BucketResourcePart>();
+
+        var response = await s3.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest
         {
             BucketName = bucket,
-            Key = fullPath,
-            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
-            Verb = HttpVerb.PUT
-        };
+            Key = fullPath
+        }, cancellationToken);
 
-        var url = await s3.GetPreSignedURLAsync(request);
-
-        return new BucketResourceUrl
+        var uploadId = response.UploadId;
+ 
+        var urlTasks = new List<Task<string>>();
+        for (var partNumber = 0; partNumber < numParts; partNumber++)
         {
-            Method = "PUT",
-            Url = url
+            var urlTask = s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
+            {
+                BucketName = bucket,
+                Key = fullPath,
+                Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
+                Verb = HttpVerb.PUT,
+                UploadId = uploadId,
+                PartNumber = partNumber
+            });
+            urlTasks.Add(urlTask);
+        }
+
+        await Task.WhenAll(urlTasks);
+
+        Int128 currentPosition = 0;
+        for (var partNo = 0; partNo < numParts; partNo++) {
+            var endPosition = Int128.Min(
+              currentPosition + ONE_HUNDRED_MEGABYTES,
+              size
+            );
+
+            var part = new BucketResourcePart
+            {
+                PartNumber = partNo,
+                ByteStartPosition = currentPosition,
+                ByteEndPosition = endPosition,
+                Url = await urlTasks[partNo]
+            };
+
+            parts.Add(part);
+            currentPosition += ONE_HUNDRED_MEGABYTES;
+        }
+
+        return new BucketResourceParts
+        {
+            Parts = [.. parts]
         };
+    }
+
+    public async Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CancellationToken cancellationToken) {
+        
     }
 
     public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken)
