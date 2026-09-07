@@ -23,8 +23,8 @@ public record BucketResourceUploadPart
     public string Url { get; init; } = "";
 
     [JsonPropertyName("byteStartPosition")]
-    public Int128 ByteStartPosition { get; init; } = 0;
+    public Int128 ByteStartPosition { get; init; } = 0; // Matches https://developer.mozilla.org/en-US/docs/Web/API/Blob/slice
 
     [JsonPropertyName("byteEndPosition")]
-    public Int128 ByteEndPosition { get; init; } = 0;
+    public Int128 ByteEndPosition { get; init; } = 0; // Matches https://developer.mozilla.org/en-US/docs/Web/API/Blob/slice
 }

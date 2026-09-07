@@ -178,7 +178,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
                 Verb = HttpVerb.PUT,
                 UploadId = uploadId,
-                PartNumber = partNumber
+                PartNumber = partNumber + 1
             });
             urlTasks.Add(urlTask);
         }
@@ -186,7 +186,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         await Task.WhenAll(urlTasks);
 
         Int128 currentPosition = 0;
-        for (var partNo = 0; partNo < numParts; partNo++) {
+        for (var partNumber = 0; partNumber < numParts; partNumber++) {
             var endPosition = Int128.Min(
               currentPosition + ONE_HUNDRED_MEGABYTES,
               size
@@ -194,10 +194,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
             var part = new BucketResourceUploadPart
             {
-                PartNumber = partNo,
+                PartNumber = partNumber + 1,
                 ByteStartPosition = currentPosition,
                 ByteEndPosition = endPosition,
-                Url = await urlTasks[partNo]
+                Url = await urlTasks[partNumber]
             };
 
             parts.Add(part);
