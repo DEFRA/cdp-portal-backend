@@ -531,8 +531,8 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Create a service's import resource by POST")]
-    private static async Task<Results<NotFound, Ok<BucketResourceParts>, Ok<BucketResource>, BadRequest<string>>> StartUploadImportsResource(
+    [EndpointDescription("Create/upload a service's import resource")]
+    private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>>> StartUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -568,13 +568,14 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Create a service's import resource by PUT")]
+    [EndpointDescription("Complete a service's import resource upload")]
     private static async Task<Results<NotFound, Ok>> CompleteUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string path,
+        [FromBody] CompleteBucketResourceUpload completeBucketResourceUpload,
         CancellationToken ct
     )
     {
@@ -585,7 +586,7 @@ public static class EntitiesEndpoint
 
         var basePath = $"{entity.Name}/imports/";
 
-        await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, ct);
+        await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, completeBucketResourceUpload, ct);
 
         return TypedResults.Ok();
     }

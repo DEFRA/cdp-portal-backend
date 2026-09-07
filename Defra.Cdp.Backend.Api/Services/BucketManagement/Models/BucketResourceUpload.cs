@@ -5,13 +5,16 @@ namespace Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 /**
  *  A BucketResourceParts is an preSignedUrl for an S3 Object
  */
-public record BucketResourceParts
+public record BucketResourceUpload
 {
+    [JsonPropertyName("uploadId")]
+    public string UploadId { get; init; } = "";
+
     [JsonPropertyName("parts")]
-    public BucketResourcePart[] Parts { get; init; } = [];
+    public BucketResourceUploadPart[] Parts { get; init; } = [];
 }
 
-public record BucketResourcePart
+public record BucketResourceUploadPart
 {
     [JsonPropertyName("partNumber")]
     public int PartNumber { get; init; } = 0;

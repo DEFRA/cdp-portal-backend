@@ -12,8 +12,8 @@ public interface IBucketManagementService
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResourceParts> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
-    Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
+    Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
     // TODO:
@@ -152,12 +152,13 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceParts> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
+    public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
+        // TODO: Calc part size based on size
         var numParts = ((size - 1) / ONE_HUNDRED_MEGABYTES) + 1; // Int division, rounding up
-        var parts = new List<BucketResourcePart>();
+        var parts = new List<BucketResourceUploadPart>();
 
         var response = await s3.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest
         {
@@ -191,7 +192,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
               size
             );
 
-            var part = new BucketResourcePart
+            var part = new BucketResourceUploadPart
             {
                 PartNumber = partNo,
                 ByteStartPosition = currentPosition,
@@ -203,14 +204,25 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             currentPosition += ONE_HUNDRED_MEGABYTES;
         }
 
-        return new BucketResourceParts
+        return new BucketResourceUpload
         {
+            UploadId = uploadId,
             Parts = [.. parts]
         };
     }
 
-    public async Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CancellationToken cancellationToken) {
-        
+    public async Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken) {
+        var fullPath = getFullPath(basePath, path);
+
+        await s3.CompleteMultipartUploadAsync(new CompleteMultipartUploadRequest {
+            BucketName = bucket,
+            Key = fullPath,
+            UploadId = completeBucketResourceUpload.UploadId,
+            PartETags = [.. completeBucketResourceUpload.Parts.Select(part => new PartETag{
+                PartNumber = part.PartNumber,
+                ETag = part.ETag
+            })]
+        }, cancellationToken);
     }
 
     public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken)
