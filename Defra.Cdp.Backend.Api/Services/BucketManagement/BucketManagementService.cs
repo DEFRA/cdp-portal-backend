@@ -23,7 +23,7 @@ public interface IBucketManagementService
 
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
-    private const int PRE_SIGNED_URL_TTL_SECONDS = 10;
+    private const int PRE_SIGNED_URL_TTL_SECONDS = 30;
     private const Int64 ONE_HUNDRED_MEGABYTES = 100 * 1024 * 1024;
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
