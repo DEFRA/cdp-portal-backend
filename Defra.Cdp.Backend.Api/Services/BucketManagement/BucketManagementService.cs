@@ -178,7 +178,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
                 Verb = HttpVerb.PUT,
                 UploadId = uploadId,
-                PartNumber = partNumber + 1
+                PartNumber = partNumber + 1,
+                Headers = {
+                    ContentMD5 = "UkUAIAQuiwgu2gUewQi0PA=="
+                }
             });
             urlTasks.Add(urlTask);
         }
