@@ -56,10 +56,10 @@ public static class EntitiesEndpoint
             .RequireOwnership("name");
 
         app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
-        app.MapPost("/entities/{name}/imports/{*path=}", StartUploadImportsResource); // .RequireOwnership("name");
-        app.MapPut("/entities/{name}/imports/{*path=}", CompleteUploadImportsResource); // .RequireOwnership("name");
-        app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
-        // TODO: app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
+        app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource); // .RequireOwnership("name");
+        app.MapPut("/entities/{name}/imports/{*path=}", UploadImportsResource); // .RequireOwnership("name");
+        // app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
+        // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -531,8 +531,8 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Create/upload a service's import resource")]
-    private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>>> StartUploadImportsResource(
+    [EndpointDescription("Create a service's import resource")]
+    private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>>> CreateUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -568,14 +568,17 @@ public static class EntitiesEndpoint
         }
     }
 
-    [EndpointDescription("Complete a service's import resource upload")]
-    private static async Task<Results<NotFound, Ok>> CompleteUploadImportsResource(
+    [EndpointDescription("Upload a service's import resource")]
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>>> UploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string path,
-        [FromBody] CompleteBucketResourceUpload completeBucketResourceUpload,
+        [FromHeader(Name = "content-md5")] string? contentMd5,
+        [FromQuery] string? uploadId,
+        [FromQuery] int? partNumber,
+        [FromBody] CompleteBucketResourceUpload? completeBucketResourceUpload,
         CancellationToken ct
     )
     {
@@ -586,38 +589,57 @@ public static class EntitiesEndpoint
 
         var basePath = $"{entity.Name}/imports/";
 
-        await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, completeBucketResourceUpload, ct);
+        if (uploadId == null) {
+            if (completeBucketResourceUpload == null) {
+                return TypedResults.BadRequest("Required payload missing: CompleteBucketResourceUpload");
+            }
 
-        return TypedResults.Ok();
-    }
+            await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, completeBucketResourceUpload, ct);
+            return TypedResults.Ok();
+        } else {
+            if (contentMd5 == null)
+            {
+                return TypedResults.BadRequest("Required header missing: content-md5");
+            }
 
-    [EndpointDescription("Rename a service's import resource")]
-    private static async Task<Results<NotFound, Ok, BadRequest<string>>> RenameImportsResource(
-        [FromServices] IEntitiesService entitiesService,
-        [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
-        [FromRoute] string name,
-        [FromRoute] string path,
-        [FromBody] RenameBucketResource renameBucketResource,
-        CancellationToken ct
-    )
-    {
-        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+            if (partNumber == null)
+            {
+                return TypedResults.BadRequest("Required param missing: partNumber");
+            }
 
-        var entity = await entitiesService.GetEntity(name, ct);
-        if (entity == null) return TypedResults.NotFound();
-
-        var basePath = $"{entity.Name}/imports/";
-
-        var newName = renameBucketResource.NewName;
-
-        if (newName == "") {
-            TypedResults.BadRequest("newName is required");
+            var result = await bucketManagementService.GetBucketResourceMultipartUploadUrl(migrationsBucket, basePath, path, uploadId, partNumber ?? 0, contentMd5, ct);
+            
+            return TypedResults.Ok(result);   
         }
-
-        var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, newName, ct);
-        if (result == null) return TypedResults.NotFound();
-
-        return TypedResults.Ok();
     }
+
+    // [EndpointDescription("Rename a service's import resource")]
+    // private static async Task<Results<NotFound, Ok, BadRequest<string>>> RenameImportsResource(
+    //     [FromServices] IEntitiesService entitiesService,
+    //     [FromServices] IBucketManagementService bucketManagementService,
+    //     [FromServices] IConfiguration configuration,
+    //     [FromRoute] string name,
+    //     [FromRoute] string path,
+    //     [FromBody] RenameBucketResource renameBucketResource,
+    //     CancellationToken ct
+    // )
+    // {
+    //     var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+    //     var entity = await entitiesService.GetEntity(name, ct);
+    //     if (entity == null) return TypedResults.NotFound();
+
+    //     var basePath = $"{entity.Name}/imports/";
+
+    //     var newName = renameBucketResource.NewName;
+
+    //     if (newName == "") {
+    //         TypedResults.BadRequest("newName is required");
+    //     }
+
+    //     var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, newName, ct);
+    //     if (result == null) return TypedResults.NotFound();
+
+    //     return TypedResults.Ok();
+    // }
 }

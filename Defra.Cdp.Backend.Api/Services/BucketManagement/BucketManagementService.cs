@@ -11,12 +11,14 @@ public interface IBucketManagementService
 {
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
+
+    // Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
+    Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken);
     Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
-    // TODO:
+
+    // Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
     // Task<bool?> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
     // Task<bool?> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
@@ -132,25 +134,25 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
-    {
-        var fullPath = getFullPath(basePath, path);
+    // public async Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    // {
+    //     var fullPath = getFullPath(basePath, path);
 
-        var request = new CreatePresignedPostRequest
-        {
-            BucketName = bucket,
-            Key = fullPath,
-            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS)
-        };
+    //     var request = new CreatePresignedPostRequest
+    //     {
+    //         BucketName = bucket,
+    //         Key = fullPath,
+    //         Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS)
+    //     };
 
-        var response = await s3.CreatePresignedPostAsync(request);
+    //     var response = await s3.CreatePresignedPostAsync(request);
 
-        return new BucketResourceUrl
-        {
-            Method = "POST",
-            Url = response.Url
-        };
-    }
+    //     return new BucketResourceUrl
+    //     {
+    //         Method = "POST",
+    //         Url = response.Url
+    //     };
+    // }
 
     public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
     {
@@ -167,29 +169,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         }, cancellationToken);
 
         var uploadId = response.UploadId;
- 
-        var urlTasks = new List<Task<string>>();
-        for (var partNumber = 0; partNumber < numParts; partNumber++)
-        {
-            var urlTask = s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
-            {
-                BucketName = bucket,
-                Key = fullPath,
-                Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
-                Verb = HttpVerb.PUT,
-                UploadId = uploadId,
-                PartNumber = partNumber + 1,
-                // Headers = {
-                //     ContentMD5 = "UkUAIAQuiwgu2gUewQi0PA=="
-                // }
-            });
-            urlTasks.Add(urlTask);
-        }
-
-        await Task.WhenAll(urlTasks);
 
         Int128 currentPosition = 0;
-        for (var partNumber = 0; partNumber < numParts; partNumber++) {
+        for (var partNumber = 0; partNumber < numParts; partNumber++)
+        {
             var endPosition = Int128.Min(
               currentPosition + ONE_HUNDRED_MEGABYTES,
               size
@@ -200,7 +183,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 PartNumber = partNumber + 1,
                 ByteStartPosition = currentPosition,
                 ByteEndPosition = endPosition,
-                Url = await urlTasks[partNumber]
+                QueryParams = $"uploadId={uploadId}&partNumber={partNumber + 1}"
             };
 
             parts.Add(part);
@@ -211,6 +194,29 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         {
             UploadId = uploadId,
             Parts = [.. parts]
+        };
+    }
+
+    public async Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken) {
+        var fullPath = getFullPath(basePath, path);
+
+        var url = await s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
+        {
+            BucketName = bucket,
+            Key = fullPath,
+            Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
+            Verb = HttpVerb.PUT,
+            UploadId = uploadId,
+            PartNumber = partNumber,
+            Headers = {
+                ContentMD5 = contentMd5
+            }
+        });
+
+        return new BucketResourceUrl
+        {
+            Method = "PUT",
+            Url = url
         };
     }
 
@@ -257,37 +263,37 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    public async Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken)
-    {
-        var fullPath = getFullPath(basePath, path);
+    // public async Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken)
+    // {
+    //     var fullPath = getFullPath(basePath, path);
 
-        if (!await bucketResourceExists(bucket, fullPath, cancellationToken))
-        {
-            return null; // Not Found
-        }
+    //     if (!await bucketResourceExists(bucket, fullPath, cancellationToken))
+    //     {
+    //         return null; // Not Found
+    //     }
 
-        var (_relpath, _name, isFolder) = getObjectPathInfo(basePath, path, fullPath);
+    //     var (_relpath, _name, isFolder) = getObjectPathInfo(basePath, path, fullPath);
 
-        if (isFolder)
-        {
-            // TODO: recursive operation?
-            return null;
-        }
-        else
-        {
-            var newPath = string.Join('/', [.. fullPath.Split('/')[0..^1], newName]);
+    //     if (isFolder)
+    //     {
+    //         // TODO: recursive operation?
+    //         return null;
+    //     }
+    //     else
+    //     {
+    //         var newPath = string.Join('/', [.. fullPath.Split('/')[0..^1], newName]);
 
-            if (await bucketResourceExists(bucket, newPath, cancellationToken))
-            {
-                return null; // Not Found - TODO: Should allow override?
-            }
+    //         if (await bucketResourceExists(bucket, newPath, cancellationToken))
+    //         {
+    //             return null; // Not Found - TODO: Should allow override?
+    //         }
 
-            await s3.CopyObjectAsync(bucket, fullPath, bucket, newPath, cancellationToken);
-            await s3.DeleteObjectAsync(bucket, fullPath, cancellationToken);
-        }
+    //         await s3.CopyObjectAsync(bucket, fullPath, bucket, newPath, cancellationToken);
+    //         await s3.DeleteObjectAsync(bucket, fullPath, cancellationToken);
+    //     }
  
-        return true;
-    }
+    //     return true;
+    // }
 
     private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken) {
         // Use list to support folders

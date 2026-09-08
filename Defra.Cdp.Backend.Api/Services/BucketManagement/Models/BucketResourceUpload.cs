@@ -19,8 +19,8 @@ public record BucketResourceUploadPart
     [JsonPropertyName("partNumber")]
     public int PartNumber { get; init; } = 0;
 
-    [JsonPropertyName("url")]
-    public string Url { get; init; } = "";
+    [JsonPropertyName("queryParams")]
+    public string QueryParams { get; init; } = "";
 
     [JsonPropertyName("byteStartPosition")]
     public Int128 ByteStartPosition { get; init; } = 0; // Matches https://developer.mozilla.org/en-US/docs/Web/API/Blob/slice
