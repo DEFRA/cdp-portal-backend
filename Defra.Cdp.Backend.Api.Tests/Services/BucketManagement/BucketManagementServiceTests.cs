@@ -207,4 +207,37 @@ public class BucketManagementServiceTests
         };
         Assert.Equivalent(expected, result, true);
     }
+
+    [Fact]
+    public async Task Test_get_resource_upload_part_url_with_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.GetPreSignedURLAsync(default).ReturnsForAnyArgs(Task.FromResult("https://the-presigned-url.s3.aws.com"));
+
+        var result = await bucketManagementService.GetBucketResourceMultipartUploadUrl(s_bucketName, "folder/", "sub-folder/new-file", "1234", 1, "md5#", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceUrl { Method = "PUT", Url = "https://the-presigned-url.s3.aws.com" };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
+    public async Task Test_complete_resource_upload_with_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.CompleteMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new CompleteMultipartUploadResponse()));
+
+        await bucketManagementService.CompleteBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", new CompleteBucketResourceUpload {
+            UploadId = "1234",
+            Parts = [
+                new CompleteBucketResourceUploadPart {
+                    PartNumber = 1,
+                    ETag = "123456"
+                }
+            ]
+        }, TestContext.Current.CancellationToken);
+    }
 }
