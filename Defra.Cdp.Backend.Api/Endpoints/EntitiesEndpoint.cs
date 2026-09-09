@@ -414,8 +414,6 @@ public static class EntitiesEndpoint
         if (entity == null) return TypedResults.NotFound();
 
         // We cache the playground data but since its pulled from grafana in dev on demand it may be out of date.
-        // The response is async (we listen for the response on the mono-lambda queue) but is typically fast (<1000ms).
-        // If it doesn't respond in time, we return a 202 and expect the client to poll again.
         var playgroundResources = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
         if (playgroundResources == null || (DateTime.UtcNow - playgroundResources.Updated).TotalSeconds > GrafanaPlaygroundRefreshThresholdSecs)
         {
