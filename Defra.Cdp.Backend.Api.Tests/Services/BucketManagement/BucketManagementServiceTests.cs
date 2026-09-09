@@ -146,9 +146,10 @@ public class BucketManagementServiceTests
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
 
-        var result = await bucketManagementService.GetBucketResourceUrl(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
-
-        Assert.Equivalent(null, result, true);
+        var ex = await Assert.ThrowsAsync<Exception>(async () =>
+            await bucketManagementService.GetBucketResourceUrl(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken)
+        );
+        Assert.Equal("Not a file", ex.Message);
     }
 
     [Fact]
@@ -230,7 +231,8 @@ public class BucketManagementServiceTests
 
         s3.CompleteMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new CompleteMultipartUploadResponse()));
 
-        await bucketManagementService.CompleteBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", new CompleteBucketResourceUpload {
+        await bucketManagementService.CompleteBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", new CompleteBucketResourceUpload
+        {
             UploadId = "1234",
             Parts = [
                 new CompleteBucketResourceUploadPart {
@@ -240,4 +242,51 @@ public class BucketManagementServiceTests
             ]
         }, TestContext.Current.CancellationToken);
     }
+
+
+    // [Fact]
+    // public async Task Test_create_empty_folder_basePath_and_path()
+    // {
+    //     var s3 = Substitute.For<IAmazonS3>();
+    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+    //     s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/new-folder/")));
+    //     s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
+
+    //     var result = await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/", TestContext.Current.CancellationToken);
+    //     var expected = new BucketResource { Name = "new-folder", Path = "sub-folder/new-folder/", Size = 0, IsFolder = true };
+    //     Assert.Equivalent(expected.Name, result.Name, true);
+    //     Assert.Equivalent(expected.Path, result.Path, true);
+    //     Assert.Equivalent(expected.Size, result.Size, true);
+    //     Assert.Equivalent(expected.IsFolder, result.IsFolder, true);
+    // }
+
+    // [Fact]
+    // public async Task Test_create_empty_folder_basePath_and_path_when_not_a_folder()
+    // {
+    //     var s3 = Substitute.For<IAmazonS3>();
+    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+    //     s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
+
+    //     var ex = await Assert.ThrowsAsync<Exception>(async () =>
+    //         await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/file.txt", TestContext.Current.CancellationToken)
+    //     );
+    //     Assert.Equal("Not a folder", ex.Message);
+    // }
+
+    // [Fact]
+    // public async Task Test_create_empty_folder_basePath_and_path_when_already_exists()
+    // {
+    //     var s3 = Substitute.For<IAmazonS3>();
+    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+    //     s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
+    //     s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
+
+    //     var ex = await Assert.ThrowsAsync<Exception>(async () =>
+    //         await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken)
+    //     );
+    //     Assert.Equal("Already exists", ex.Message);
+    // }
 }

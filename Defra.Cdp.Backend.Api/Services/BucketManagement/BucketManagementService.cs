@@ -106,6 +106,11 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     {
         var fullPath = getFullPath(basePath, path);
 
+        if (fullPath.Last() == '/')
+        {
+            throw new Exception("Not a file");
+        }
+
         if (!await bucketResourceExists(bucket, fullPath, cancellationToken))
         {
             return null; // Not Found
@@ -217,7 +222,12 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         if (fullPath.Last() != '/')
         {
-            // TODO: error
+            throw new Exception("Not a folder");
+        }
+
+        if (await bucketResourceExists(bucket, fullPath, cancellationToken))
+        {
+            throw new Exception("Already exists");
         }
 
         var request = new PutObjectRequest
@@ -233,7 +243,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return new BucketResource
         {
             Name = name,
-            ModifiedDate = DateTime.Now,
+            ModifiedDate = DateTime.UtcNow,
             Size = response.Size ?? 0,
             Path = relPath,
             IsFolder = isFolder
@@ -246,10 +256,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         {
             BucketName = bucket,
             Prefix = fullPath,
-        }, cancellationToken
-        );
+        }, cancellationToken);
 
-        if (response.S3Objects == null || !response.S3Objects.Exists(o => o.Key == fullPath))
+        var isFolder = fullPath.Last() == '/';
+        if (response.S3Objects == null || (!isFolder && !response.S3Objects.Exists(o => o.Key == fullPath)))
         {
             return false;
         }
