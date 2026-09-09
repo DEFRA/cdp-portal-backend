@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 
-/**
- *  A BucketResourceParts is an preSignedUrl for an S3 Object
- */
 public record CompleteBucketResourceUpload
 {
     [JsonPropertyName("uploadId")]
