@@ -123,7 +123,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS),
             Verb = HttpVerb.GET,
         };
-        request.Headers.ContentDisposition = "attachment";
+        // request.Headers.ContentDisposition = "attachment";
 
         var url = await s3.GetPreSignedURLAsync(request);
 
