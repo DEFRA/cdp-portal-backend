@@ -12,15 +12,10 @@ public interface IBucketManagementService
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 
-    // Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken);
     Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
-
-    // Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken);
-    // Task<bool?> DeleteBucketResource(string bucket, string basePath, string path, CancellationToken cancellationToken);
-    // Task<bool?> DeleteFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
@@ -136,26 +131,6 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    // public async Task<BucketResourceUrl> GetBucketResourcePostUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
-    // {
-    //     var fullPath = getFullPath(basePath, path);
-
-    //     var request = new CreatePresignedPostRequest
-    //     {
-    //         BucketName = bucket,
-    //         Key = fullPath,
-    //         Expires = DateTime.UtcNow.AddSeconds(PRE_SIGNED_URL_TTL_SECONDS)
-    //     };
-
-    //     var response = await s3.CreatePresignedPostAsync(request);
-
-    //     return new BucketResourceUrl
-    //     {
-    //         Method = "POST",
-    //         Url = response.Url
-    //     };
-    // }
-
     public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
@@ -264,38 +239,6 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             IsFolder = isFolder
         };
     }
-
-    // public async Task<bool?> RenameBucketResource(string bucket, string basePath, string path, string newName, CancellationToken cancellationToken)
-    // {
-    //     var fullPath = getFullPath(basePath, path);
-
-    //     if (!await bucketResourceExists(bucket, fullPath, cancellationToken))
-    //     {
-    //         return null; // Not Found
-    //     }
-
-    //     var (_relpath, _name, isFolder) = getObjectPathInfo(basePath, path, fullPath);
-
-    //     if (isFolder)
-    //     {
-    //         // TODO: recursive operation?
-    //         return null;
-    //     }
-    //     else
-    //     {
-    //         var newPath = string.Join('/', [.. fullPath.Split('/')[0..^1], newName]);
-
-    //         if (await bucketResourceExists(bucket, newPath, cancellationToken))
-    //         {
-    //             return null; // Not Found - TODO: Should allow override?
-    //         }
-
-    //         await s3.CopyObjectAsync(bucket, fullPath, bucket, newPath, cancellationToken);
-    //         await s3.DeleteObjectAsync(bucket, fullPath, cancellationToken);
-    //     }
- 
-    //     return true;
-    // }
 
     private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken) {
         // Use list to support folders

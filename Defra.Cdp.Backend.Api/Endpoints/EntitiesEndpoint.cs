@@ -55,11 +55,9 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
 
-        app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
-        app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource); // .RequireOwnership("name");
-        app.MapPut("/entities/{name}/imports/{*path=}", UploadImportsResource); // .RequireOwnership("name");
-        // app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
-        // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
+        app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); //.RequireOwnership("name");
+        app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource); //.RequireOwnership("name");
+        app.MapPut("/entities/{name}/imports/{*path=}", UploadImportsResource); //.RequireOwnership("name");
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
@@ -575,7 +573,6 @@ public static class EntitiesEndpoint
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string path,
-        // [FromHeader(Name = "content-md5")] string? contentMd5,
         [FromQuery] string? contentMd5,
         [FromQuery] string? uploadId,
         [FromQuery] int? partNumber,
@@ -613,34 +610,4 @@ public static class EntitiesEndpoint
             return TypedResults.Ok(result);   
         }
     }
-
-    // [EndpointDescription("Rename a service's import resource")]
-    // private static async Task<Results<NotFound, Ok, BadRequest<string>>> RenameImportsResource(
-    //     [FromServices] IEntitiesService entitiesService,
-    //     [FromServices] IBucketManagementService bucketManagementService,
-    //     [FromServices] IConfiguration configuration,
-    //     [FromRoute] string name,
-    //     [FromRoute] string path,
-    //     [FromBody] RenameBucketResource renameBucketResource,
-    //     CancellationToken ct
-    // )
-    // {
-    //     var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
-
-    //     var entity = await entitiesService.GetEntity(name, ct);
-    //     if (entity == null) return TypedResults.NotFound();
-
-    //     var basePath = $"{entity.Name}/imports/";
-
-    //     var newName = renameBucketResource.NewName;
-
-    //     if (newName == "") {
-    //         TypedResults.BadRequest("newName is required");
-    //     }
-
-    //     var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, newName, ct);
-    //     if (result == null) return TypedResults.NotFound();
-
-    //     return TypedResults.Ok();
-    // }
 }
