@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Models.Schedules;
+using Defra.Cdp.Backend.Api.Services.BucketManagement;
+using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 using Defra.Cdp.Backend.Api.Services.Create;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
@@ -23,7 +25,8 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class EntitiesEndpoint
 {
     private const double GrafanaPlaygroundRefreshThresholdSecs = 30; // How long we cache the playground response for
-    
+    private const long GrafanaPlaygroundWaitThresholdMs = 1900; // Just below the slow response alert threshold
+
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/entities", CreateEntity);
@@ -31,28 +34,34 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/filters", GetFilters);
         app.MapGet("/entities/{name}", GetEntity);
         app.MapPost("/entities/{name}/decommission", StartDecommissioning);
-        
+
         app.MapPost("/entities/{name}/tags", TagEntity);
         app.MapDelete("/entities/{name}/tags", UntagEntity);
-        
+
         app.MapPost("/entities/{name}/schedules", CreateSchedule);
         app.MapGet("/entities/{name}/schedules", GetSchedules);
         app.MapGet("/entities/{name}/schedules/{scheduleId}", GetSchedule);
         app.MapPatch("/entities/{name}/schedules/{scheduleId}", UpdateSchedule);
         app.MapDelete("/entities/{name}/schedules/{scheduleId}", DeleteSchedule);
-        
+
         app.MapGet("/entities/{name}/resources", GetEntityResources);
         app.MapGet("/entities/{name}/resources/{environment}", GetEntityResourcesForEnv);
         app.MapGet("/entities/{name}/topology/{environment}", GetEntityTopologyForEnv);
-        
+
         app.MapGet("/entities/{name}/grafana/playground", GetEntityPlaygroundDashboardsAndAlerts);
         app.MapGet("/entities/{name}/grafana/playground/promotions", GetPromotionStatus);
         app.MapPost("/entities/{name}/grafana/playground/promotions/dashboards/{uid}", PromotePlaygroundDashboard)
             .RequireOwnership("name");
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
+
+        app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources); // .RequireOwnership("name");
+        app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource); // .RequireOwnership("name");
+        app.MapPut("/entities/{name}/imports/{*path=}", UploadImportsResource); // .RequireOwnership("name");
+        // app.MapPatch("/entities/{name}/imports/{*path=}", RenameImportsResource); // .RequireOwnership("name");
+        // app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource); // .RequireOwnership("name");
     }
-    
+
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
         ISelfServiceOpsClient selfServiceOpsClient,
         string name,
@@ -126,7 +135,7 @@ public static class EntitiesEndpoint
         return TypedResults.Ok();
     }
 
-    
+
     private static async Task<Results<BadRequest<List<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Created<MongoSchedule>>> CreateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
@@ -179,7 +188,7 @@ public static class EntitiesEndpoint
 
         return TypedResults.Created($"/entities/{name}/schedules/{mongoSchedule.Id}", createdSchedule);
     }
-    
+
     private static async Task<Results<BadRequest<List<string?>>, UnauthorizedHttpResult, NotFound<string>, Conflict<string>, Ok<MongoSchedule>>> UpdateSchedule(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] ISchedulerService schedulerService,
@@ -212,7 +221,7 @@ public static class EntitiesEndpoint
         {
             return TypedResults.NotFound("Entity not found");
         }
-        
+
         var originalSchedule = (await schedulerService.FetchSchedules(
             new ScheduleMatchers { Id = scheduleId },
             ct)).FirstOrDefault();
@@ -231,14 +240,14 @@ public static class EntitiesEndpoint
         {
             return TypedResults.Conflict("Entity is not a microservice");
         }
-        
+
         var mongoSchedule = ScheduleMapper.ToUpdatedMongo(scheduleRequest, originalSchedule, user, name);
         await schedulerService.UpdateAsync(scheduleId, mongoSchedule, ct);
 
         var updatedSchedule = (await schedulerService.FetchSchedules(
             new ScheduleMatchers { Id = scheduleId },
             ct)).FirstOrDefault();
-        
+
         return TypedResults.Ok(updatedSchedule);
     }
 
@@ -311,7 +320,7 @@ public static class EntitiesEndpoint
         await schedulerService.DeleteSchedule(scheduleId, ct);
         return TypedResults.NoContent();
     }
-    
+
     private static async Task<Results<NotFound, Ok<Dictionary<string, EntityResources>>>> GetEntityResources(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IResourceRequestService resourceRequestService,
@@ -337,7 +346,7 @@ public static class EntitiesEndpoint
                 );
             }
         }
-        
+
         return TypedResults.Ok(environments);
     }
 
@@ -356,7 +365,7 @@ public static class EntitiesEndpoint
         var resources = entity.Environments.TryGetValue(environment, out var entityEnvironment)
             ? EntityResourceMapper.FromCdpTenant(entityEnvironment)
             : new EntityResources();
-        
+
         foreach (var request in resourceRequests)
         {
             resources = EntityResourceCombiner.Combine(
@@ -364,10 +373,10 @@ public static class EntitiesEndpoint
                 EntityResourceMapper.FromResourceRequestRecord(request, entity, environment)
             );
         }
-            
+
         return TypedResults.Ok(resources);
     }
-    
+
     private static async Task<Results<NotFound, Ok<List<TopologyService>>>> GetEntityTopologyForEnv(
         [FromServices] IEntityTopologyService entityTopologyService,
         [FromServices] IResourceRequestService resourceRequestService,
@@ -378,7 +387,7 @@ public static class EntitiesEndpoint
         var resourceRequests = await resourceRequestService.FindActive([name], ct);
 
         var relationships = await entityTopologyService.ListTopologyOfEntity(name, environment, ct);
-        
+
         foreach (var request in resourceRequests)
         {
             relationships = TopologyServiceCombiner.Combine(
@@ -393,8 +402,8 @@ public static class EntitiesEndpoint
         }
         return TypedResults.Ok(relationships);
     }
-    
-    
+
+
     [EndpointDescription("Gets the latest playground dashboards from the Dev Environment along with any pending promotion requests for each resource.")]
     private static async Task<Results<NotFound, ProblemHttpResult, Ok<GrafanaPlaygroundResources>>> GetEntityPlaygroundDashboardsAndAlerts(
         [FromServices] IEntitiesService entitiesService,
@@ -406,10 +415,12 @@ public static class EntitiesEndpoint
     {
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
-        
-        // We cache the playground data but since it's pulled from Grafana in dev on demand it may be out of date.
+
+        // We cache the playground data but since its pulled from grafana in dev on demand it may be out of date.
+        // The response is async (we listen for the response on the mono-lambda queue) but is typically fast (<1000ms).
+        // If it doesn't respond in time, we return a 202 and expect the client to poll again.
         var playgroundResources = await grafanaPlaygroundService.FindPlaygroundsForService(name, ct);
-        if (playgroundResources == null || (DateTime.UtcNow - playgroundResources.Updated).TotalSeconds > GrafanaPlaygroundRefreshThresholdSecs )
+        if (playgroundResources == null || (DateTime.UtcNow - playgroundResources.Updated).TotalSeconds > GrafanaPlaygroundRefreshThresholdSecs)
         {
             var apiResult = await grafanaPlaygroundsClient.GetPlaygrounds(name, ct);
             if (!apiResult.IsSuccess || apiResult.Response == null)
@@ -446,8 +457,8 @@ public static class EntitiesEndpoint
         return TypedResults.Ok(result);
     }
 
-    
-    
+
+
     [EndpointDescription("Promotes a specific playground dashboard by UID")]
     private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundDashboard(
         [FromServices] IEntitiesService entitiesService,
@@ -462,11 +473,11 @@ public static class EntitiesEndpoint
 
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
 
-        var dashboardRequest = new DashboardPromotionRequest { DashboardUid = uid, ServiceName = name,  PromotionEnvironment = CdpEnvironments.Dev };
+        var dashboardRequest = new DashboardPromotionRequest { DashboardUid = uid, ServiceName = name, PromotionEnvironment = CdpEnvironments.Dev };
         var response = await grafanaPromotionService.PromoteDashboard(dashboardRequest, user, ct);
         return TypedResults.Ok(response);
     }
-    
+
     [EndpointDescription("Promotes custom alerts for a service from playground alerts in Dev.")]
     private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundAlerts(
         [FromServices] IEntitiesService entitiesService,
@@ -484,4 +495,152 @@ public static class EntitiesEndpoint
         var response = await grafanaPromotionService.PromoteAlerts(alertRequest, user, ct);
         return TypedResults.Ok(response);
     }
+
+
+    [EndpointDescription("Get a service's import resource(s) by path")]
+    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>>> GetImportsResources(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IBucketManagementService bucketManagementService,
+        [FromServices] IConfiguration configuration,
+        [FromRoute] string name,
+        [FromRoute] string path,
+        CancellationToken ct
+    )
+    {
+        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var basePath = $"{entity.Name}/imports/";
+        var isFolder = path == "" || path.EndsWith('/');
+
+        if (isFolder)
+        {
+            var result = await bucketManagementService.ListBucketResources(migrationsBucket, basePath, path, ct);
+            if (result == null) return TypedResults.NotFound();
+
+            return TypedResults.Ok(result);
+        }
+        else
+        {
+            var result = await bucketManagementService.GetBucketResourceUrl(migrationsBucket, basePath, path, ct);
+            if (result == null) return TypedResults.NotFound();
+
+            return TypedResults.Ok(result);
+        }
+    }
+
+    [EndpointDescription("Create a service's import resource")]
+    private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>>> CreateUploadImportsResource(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IBucketManagementService bucketManagementService,
+        [FromServices] IConfiguration configuration,
+        [FromRoute] string name,
+        [FromRoute] string path,
+        [FromBody] UploadBucketResource? uploadBucketResource,
+        CancellationToken ct
+    )
+    {
+        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var basePath = $"{entity.Name}/imports/";
+        var isFolder = path.EndsWith('/');
+
+        if (isFolder)
+        {
+            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, ct);
+
+            return TypedResults.Ok(result);
+        }
+        else
+        {
+            if (uploadBucketResource == null) {
+                return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
+            }
+
+            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, ct);
+
+            return TypedResults.Ok(result);
+        }
+    }
+
+    [EndpointDescription("Upload a service's import resource")]
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>>> UploadImportsResource(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IBucketManagementService bucketManagementService,
+        [FromServices] IConfiguration configuration,
+        [FromRoute] string name,
+        [FromRoute] string path,
+        // [FromHeader(Name = "content-md5")] string? contentMd5,
+        [FromQuery] string? contentMd5,
+        [FromQuery] string? uploadId,
+        [FromQuery] int? partNumber,
+        [FromBody] CompleteBucketResourceUpload? completeBucketResourceUpload,
+        CancellationToken ct
+    )
+    {
+        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
+
+        var basePath = $"{entity.Name}/imports/";
+
+        if (uploadId == null) {
+            if (completeBucketResourceUpload == null) {
+                return TypedResults.BadRequest("Required payload missing: CompleteBucketResourceUpload");
+            }
+
+            await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, completeBucketResourceUpload, ct);
+            return TypedResults.Ok();
+        } else {
+            if (contentMd5 == null)
+            {
+                return TypedResults.BadRequest("Required header missing: content-md5");
+            }
+
+            if (partNumber == null)
+            {
+                return TypedResults.BadRequest("Required param missing: partNumber");
+            }
+
+            var result = await bucketManagementService.GetBucketResourceMultipartUploadUrl(migrationsBucket, basePath, path, uploadId, partNumber ?? 0, contentMd5, ct);
+            
+            return TypedResults.Ok(result);   
+        }
+    }
+
+    // [EndpointDescription("Rename a service's import resource")]
+    // private static async Task<Results<NotFound, Ok, BadRequest<string>>> RenameImportsResource(
+    //     [FromServices] IEntitiesService entitiesService,
+    //     [FromServices] IBucketManagementService bucketManagementService,
+    //     [FromServices] IConfiguration configuration,
+    //     [FromRoute] string name,
+    //     [FromRoute] string path,
+    //     [FromBody] RenameBucketResource renameBucketResource,
+    //     CancellationToken ct
+    // )
+    // {
+    //     var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+
+    //     var entity = await entitiesService.GetEntity(name, ct);
+    //     if (entity == null) return TypedResults.NotFound();
+
+    //     var basePath = $"{entity.Name}/imports/";
+
+    //     var newName = renameBucketResource.NewName;
+
+    //     if (newName == "") {
+    //         TypedResults.BadRequest("newName is required");
+    //     }
+
+    //     var result = await bucketManagementService.RenameBucketResource(migrationsBucket, basePath, path, newName, ct);
+    //     if (result == null) return TypedResults.NotFound();
+
+    //     return TypedResults.Ok();
+    // }
 }
