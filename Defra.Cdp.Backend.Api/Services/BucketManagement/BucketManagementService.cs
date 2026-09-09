@@ -258,13 +258,12 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             Prefix = fullPath,
         }, cancellationToken);
 
-        var isFolder = fullPath.Last() == '/';
-        if (response.S3Objects == null || (!isFolder && !response.S3Objects.Exists(o => o.Key == fullPath)))
-        {
-            return false;
-        }
+        if (response.S3Objects == null || response.S3Objects.Count == 0) return false;
 
-        return true;
+        var isFolder = fullPath.Last() == '/';
+        if (isFolder) return true;
+
+        return response.S3Objects.Exists(o => o.Key == fullPath);
     }
 
     private static string getFullPath(string basePath, string path)
