@@ -1,6 +1,5 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using Azure;
 using Defra.Cdp.Backend.Api.Services.BucketManagement;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 using NSubstitute;
@@ -108,5 +107,46 @@ public class BucketManagementServiceTests
             new BucketResource { Name = "file-in-folder.txt", Path = "sub-folder/file-in-folder.txt", Size = 3452, ModifiedDate = s_modifiedDate, IsFolder = false },
         ]);
         Assert.Equivalent(expected, result, false);
+    }
+
+    [Fact]
+    public async Task Test_get_resource_with_missing_object()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/missing-file.txt")));
+
+        var result = await bucketManagementService.GetBucketResourceUrl(s_bucketName, "folder/", "sub-folder/missing-file.txt", TestContext.Current.CancellationToken);
+
+        Assert.Equivalent(null, result, false);
+    }
+
+    [Fact]
+    public async Task Test_get_resource_with_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/file-in-folder.txt")));
+        s3.GetPreSignedURLAsync(default).ReturnsForAnyArgs(Task.FromResult("https://the-presigned-url.s3.aws.com"));
+
+        var result = await bucketManagementService.GetBucketResourceUrl(s_bucketName, "folder/", "sub-folder/file-in-folder.txt", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceUrl { Method = "GET", Url = "https://the-presigned-url.s3.aws.com" };
+        Assert.Equivalent(expected, result, false);
+    }
+
+    [Fact]
+    public async Task Test_get_resource_which_is_a_folder()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
+
+        var result = await bucketManagementService.GetBucketResourceUrl(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
+
+        Assert.Equivalent(null, result, false);
     }
 }
