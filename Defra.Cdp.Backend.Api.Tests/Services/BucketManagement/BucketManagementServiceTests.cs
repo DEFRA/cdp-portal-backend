@@ -146,7 +146,7 @@ public class BucketManagementServiceTests
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
 
-        var ex = await Assert.ThrowsAsync<Exception>(async () =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await bucketManagementService.GetBucketResourceUrl(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken)
         );
         Assert.Equal("Not a file", ex.Message);
@@ -241,6 +241,8 @@ public class BucketManagementServiceTests
                 }
             ]
         }, TestContext.Current.CancellationToken);
+
+        Assert.True(true);  // Nothing throw an error
     }
 
 
@@ -269,7 +271,7 @@ public class BucketManagementServiceTests
 
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
 
-        var ex = await Assert.ThrowsAsync<Exception>(async () =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/file.txt", TestContext.Current.CancellationToken)
         );
         Assert.Equal("Not a folder", ex.Message);
@@ -284,7 +286,7 @@ public class BucketManagementServiceTests
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
 
-        var ex = await Assert.ThrowsAsync<Exception>(async () =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken)
         );
         Assert.Equal("Already exists", ex.Message);

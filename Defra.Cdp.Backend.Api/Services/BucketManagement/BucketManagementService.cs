@@ -47,7 +47,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
             foreach (var s3Object in response.S3Objects)
             {
-                var (relPath, name, _isFolder) = getObjectPathInfo(basePath, path, s3Object.Key);
+                var (relPath, name, _) = getObjectPathInfo(basePath, s3Object.Key);
                 var groupedPath = path == "" ? relPath : removeFirst(relPath, path);
                 var isCurrentFolder = groupedPath == "";
                 var isGroupedFolder = groupedPath.Contains('/');
@@ -108,7 +108,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         if (fullPath.Last() == '/')
         {
-            throw new Exception("Not a file");
+            throw new ArgumentException("Not a file");
         }
 
         if (!await bucketResourceExists(bucket, fullPath, cancellationToken))
@@ -222,12 +222,12 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         if (fullPath.Last() != '/')
         {
-            throw new Exception("Not a folder");
+            throw new ArgumentException("Not a folder");
         }
 
         if (await bucketResourceExists(bucket, fullPath, cancellationToken))
         {
-            throw new Exception("Already exists");
+            throw new ArgumentException("Already exists");
         }
 
         var request = new PutObjectRequest
@@ -238,7 +238,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         var response = await s3.PutObjectAsync(request, cancellationToken);
 
-        var (relPath, name, isFolder) = getObjectPathInfo(basePath, path, fullPath);
+        var (relPath, name, isFolder) = getObjectPathInfo(basePath, fullPath);
 
         return new BucketResource
         {
@@ -271,7 +271,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return $"{basePath}{path}";
     }
 
-    private static (string path, string name, bool isFolder) getObjectPathInfo(string basePath, string path, string key)
+    private static (string path, string name, bool isFolder) getObjectPathInfo(string basePath, string key)
     {
         var isFolder = key.Last() == '/';
         var relPath = basePath == "" ? key : removeFirst(key, basePath);
