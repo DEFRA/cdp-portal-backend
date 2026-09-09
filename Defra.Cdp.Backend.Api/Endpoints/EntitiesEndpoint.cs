@@ -25,7 +25,6 @@ namespace Defra.Cdp.Backend.Api.Endpoints;
 public static class EntitiesEndpoint
 {
     private const double GrafanaPlaygroundRefreshThresholdSecs = 30; // How long we cache the playground response for
-    private const long GrafanaPlaygroundWaitThresholdMs = 1900; // Just below the slow response alert threshold
 
     public static void MapEntitiesEndpoint(this IEndpointRouteBuilder app)
     {
