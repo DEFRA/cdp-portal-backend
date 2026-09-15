@@ -132,7 +132,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return new BucketResourceUrl
         {
             Method = "GET",
-            Url = url
+            Url = normaliseLocalUrl(url)
         };
     }
 
@@ -198,7 +198,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return new BucketResourceUrl
         {
             Method = "PUT",
-            Url = url
+            Url = normaliseLocalUrl(url)
         };
     }
 
@@ -284,6 +284,17 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     {
         var index = value.IndexOf(removeString, StringComparison.Ordinal);
         return index < 0 ? value : value.Remove(index, removeString.Length);
+    }
+
+    // Workaround an issue with Floci forcing https URLs even when not configured 
+    private static string normaliseLocalUrl(string url)
+    {
+        if (url.StartsWith("https://localhost"))
+        {
+            return $"http://localhost{removeFirst(url, "https://localhost")}";
+        }
+
+        return url;
     }
 }
 
