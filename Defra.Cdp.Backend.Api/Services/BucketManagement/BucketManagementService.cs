@@ -21,7 +21,7 @@ public interface IBucketManagementService
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 3600;
-    private const Int64 ONE_HUNDRED_MEGABYTES = 100 * 1024 * 1024;
+    private const Int64 UPLOAD_PART_SIZE_BYTES = 10 * 1024 * 1024;
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
@@ -141,7 +141,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         var fullPath = getFullPath(basePath, path);
 
         // TODO: Calc part size based on size
-        var numParts = ((size - 1) / ONE_HUNDRED_MEGABYTES) + 1; // Int division, rounding up
+        var numParts = ((size - 1) / UPLOAD_PART_SIZE_BYTES) + 1; // Int division, rounding up
         var parts = new List<BucketResourceUploadPart>();
 
         var response = await s3.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest
@@ -156,7 +156,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         for (var partNumber = 0; partNumber < numParts; partNumber++)
         {
             var endPosition = Int128.Min(
-              currentPosition + ONE_HUNDRED_MEGABYTES,
+              currentPosition + UPLOAD_PART_SIZE_BYTES,
               size
             );
 
@@ -169,7 +169,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             };
 
             parts.Add(part);
-            currentPosition += ONE_HUNDRED_MEGABYTES;
+            currentPosition += UPLOAD_PART_SIZE_BYTES;
         }
 
         return new BucketResourceUpload
