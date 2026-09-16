@@ -111,6 +111,104 @@ public class BucketManagementServiceTests
     }
 
     [Fact]
+    public async Task Test_get_tree_at_root_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "", "", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = true,
+            SubNodes = {
+                { "folder", new BucketResourceTreeNode {
+                    Path = "folder/",
+                    IsCurrent = false
+                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
+    public async Task Test_get_tree_with_base_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "folder/", "", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = true,
+            SubNodes = {
+                { "sub-folder", new BucketResourceTreeNode {
+                    Path = "sub-folder/",
+                    IsCurrent = false
+                }},
+                { "empty-folder", new BucketResourceTreeNode {
+                    Path = "empty-folder/",
+                    IsCurrent = false
+                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
+    public async Task Test_get_tree_with_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "", "folder/", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = false,
+            SubNodes = {
+                { "folder", new BucketResourceTreeNode {
+                    Path = "folder/",
+                    IsCurrent = true,
+                    SubNodes = {
+                        { "sub-folder", new BucketResourceTreeNode {
+                            Path = "folder/sub-folder/",
+                            IsCurrent = false
+                        }},
+                        { "empty-folder", new BucketResourceTreeNode {
+                            Path = "folder/empty-folder/",
+                            IsCurrent = false
+                        }}
+                    }                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    // [Fact]
+    // public async Task Test_get_tree_with_basePath_and_path()
+    // {
+    //     var s3 = Substitute.For<IAmazonS3>();
+    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+    //     s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
+
+    //     var result = await bucketManagementService.ListBucketResources(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
+
+    //     var expected = new List<BucketResource>([
+    //         new BucketResource { Name = "file-in-folder.txt", Path = "sub-folder/file-in-folder.txt", Size = 3452, ModifiedDate = s_modifiedDate, IsFolder = false },
+    //     ]);
+    //     Assert.Equivalent(expected, result, true);
+    // }
+
+    [Fact]
     public async Task Test_get_resource_with_missing_object()
     {
         var s3 = Substitute.For<IAmazonS3>();
@@ -178,36 +276,36 @@ public class BucketManagementServiceTests
         Assert.Equivalent(expected.Parts[0], result.Parts[0], true);
     }
 
-    // [Fact]
-    // public async Task Test_start_resource_upload_with_basePath_and_path_using_large_file()
-    // {
-    //     var s3 = Substitute.For<IAmazonS3>();
-    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+    [Fact]
+    public async Task Test_start_resource_upload_with_basePath_and_path_using_large_file()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
 
-    //     s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
+        s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
-    //     var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 145000000, TestContext.Current.CancellationToken);
+        var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 145000000, TestContext.Current.CancellationToken);
 
-    //     var expected = new BucketResourceUpload
-    //     {
-    //         UploadId = "1234",
-    //         Parts = [
-    //             new BucketResourceUploadPart {
-    //                 PartNumber = 1,
-    //                 QueryParams = "uploadId=1234&partNumber=1",
-    //                 ByteStartPosition = 0,
-    //                 ByteEndPosition = ONE_HUNDRED_MEGABYTES
-    //             },
-    //             new BucketResourceUploadPart {
-    //                 PartNumber = 2,
-    //                 QueryParams = "uploadId=1234&partNumber=2",
-    //                 ByteStartPosition = ONE_HUNDRED_MEGABYTES,
-    //                 ByteEndPosition = 145000000 - ONE_HUNDRED_MEGABYTES
-    //             }
-    //         ]
-    //     };
-    //     Assert.Equivalent(expected, result, true);
-    // }
+        var expected = new BucketResourceUpload
+        {
+            UploadId = "1234",
+            Parts = [
+                new BucketResourceUploadPart {
+                    PartNumber = 1,
+                    QueryParams = "uploadId=1234&partNumber=1",
+                    ByteStartPosition = 0,
+                    ByteEndPosition = ONE_HUNDRED_MEGABYTES
+                },
+                new BucketResourceUploadPart {
+                    PartNumber = 2,
+                    QueryParams = "uploadId=1234&partNumber=2",
+                    ByteStartPosition = ONE_HUNDRED_MEGABYTES,
+                    ByteEndPosition = 145000000 - ONE_HUNDRED_MEGABYTES
+                }
+            ]
+        };
+        Assert.Equivalent(expected, result, true);
+    }
 
     [Fact]
     public async Task Test_get_resource_upload_part_url_with_basePath_and_path()
