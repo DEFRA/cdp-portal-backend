@@ -10,6 +10,7 @@ namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 public interface IBucketManagementService
 {
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 
     Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
@@ -100,6 +101,14 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         while (response.IsTruncated ?? false);
 
         return [.. resources.Values];
+    }
+
+    public async Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken) {
+        return new BucketResourceTreeNode
+        {
+            Path = "/",
+            IsCurrent = true
+        };
     }
 
     public async Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
