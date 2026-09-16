@@ -192,21 +192,32 @@ public class BucketManagementServiceTests
         Assert.Equivalent(expected, result, true);
     }
 
-    // [Fact]
-    // public async Task Test_get_tree_with_basePath_and_path()
-    // {
-    //     var s3 = Substitute.For<IAmazonS3>();
-    //     var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+    [Fact]
+    public async Task Test_get_tree_with_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
 
-    //     s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
 
-    //     var result = await bucketManagementService.ListBucketResources(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
 
-    //     var expected = new List<BucketResource>([
-    //         new BucketResource { Name = "file-in-folder.txt", Path = "sub-folder/file-in-folder.txt", Size = 3452, ModifiedDate = s_modifiedDate, IsFolder = false },
-    //     ]);
-    //     Assert.Equivalent(expected, result, true);
-    // }
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = false,
+            SubNodes = {
+                { "sub-folder", new BucketResourceTreeNode {
+                    Path = "sub-folder/",
+                    IsCurrent = true
+                }},
+                { "empty-folder", new BucketResourceTreeNode {
+                    Path = "empty-folder/",
+                    IsCurrent = false
+                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
 
     [Fact]
     public async Task Test_get_resource_with_missing_object()

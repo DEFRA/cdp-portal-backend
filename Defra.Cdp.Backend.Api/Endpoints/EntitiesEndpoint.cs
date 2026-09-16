@@ -532,7 +532,7 @@ public static class EntitiesEndpoint
             var resourceUrl = await bucketManagementService.GetBucketResourceUrl(migrationsBucket, basePath, path, ct);
             if (resourceUrl == null) return TypedResults.NotFound();
 
-            return TypedResults.Ok(result);
+            return TypedResults.Ok(resourceUrl);
         }
     }
 
