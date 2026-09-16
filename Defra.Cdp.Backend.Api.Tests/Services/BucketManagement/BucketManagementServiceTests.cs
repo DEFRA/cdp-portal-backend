@@ -111,6 +111,115 @@ public class BucketManagementServiceTests
     }
 
     [Fact]
+    public async Task Test_get_tree_at_root_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "", "", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = true,
+            SubNodes = {
+                { "folder", new BucketResourceTreeNode {
+                    Path = "folder/",
+                    IsCurrent = false
+                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
+    public async Task Test_get_tree_with_base_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "folder/", "", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = true,
+            SubNodes = {
+                { "sub-folder", new BucketResourceTreeNode {
+                    Path = "sub-folder/",
+                    IsCurrent = false
+                }},
+                { "empty-folder", new BucketResourceTreeNode {
+                    Path = "empty-folder/",
+                    IsCurrent = false
+                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
+    public async Task Test_get_tree_with_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "", "folder/", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = false,
+            SubNodes = {
+                { "folder", new BucketResourceTreeNode {
+                    Path = "folder/",
+                    IsCurrent = true,
+                    SubNodes = {
+                        { "sub-folder", new BucketResourceTreeNode {
+                            Path = "folder/sub-folder/",
+                            IsCurrent = false
+                        }},
+                        { "empty-folder", new BucketResourceTreeNode {
+                            Path = "folder/empty-folder/",
+                            IsCurrent = false
+                        }}
+                    }                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
+    public async Task Test_get_tree_with_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
+
+        var result = await bucketManagementService.GetBucketResourcesTree(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken);
+
+        var expected = new BucketResourceTreeNode {
+            Path = "",
+            IsCurrent = false,
+            SubNodes = {
+                { "sub-folder", new BucketResourceTreeNode {
+                    Path = "sub-folder/",
+                    IsCurrent = true
+                }},
+                { "empty-folder", new BucketResourceTreeNode {
+                    Path = "empty-folder/",
+                    IsCurrent = false
+                }}
+            }
+        };
+        Assert.Equivalent(expected, result, true);
+    }
+
+    [Fact]
     public async Task Test_get_resource_with_missing_object()
     {
         var s3 = Substitute.For<IAmazonS3>();

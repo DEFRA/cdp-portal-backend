@@ -493,13 +493,14 @@ public static class EntitiesEndpoint
 
 
     [EndpointDescription("Get a service's import resource(s) by path")]
-    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>>> GetImportsResources(
+    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>, Ok<BucketResourceTreeNode>>> GetImportsResources(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string path,
-        CancellationToken ct
+        CancellationToken ct,
+        [FromQuery] string view = "list"
     )
     {
         var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
@@ -512,17 +513,26 @@ public static class EntitiesEndpoint
 
         if (isFolder)
         {
-            var result = await bucketManagementService.ListBucketResources(migrationsBucket, basePath, path, ct);
-            if (result == null) return TypedResults.NotFound();
+            if (view == "tree")
+            {
+                var tree = await bucketManagementService.GetBucketResourcesTree(migrationsBucket, basePath, path, ct);
+                if (tree == null) return TypedResults.NotFound();
+    
+                return TypedResults.Ok(tree);
+            }
+            
 
-            return TypedResults.Ok(result);
+            var list = await bucketManagementService.ListBucketResources(migrationsBucket, basePath, path, ct);
+            if (list == null) return TypedResults.NotFound();
+
+            return TypedResults.Ok(list);
         }
         else
         {
-            var result = await bucketManagementService.GetBucketResourceUrl(migrationsBucket, basePath, path, ct);
-            if (result == null) return TypedResults.NotFound();
+            var resourceUrl = await bucketManagementService.GetBucketResourceUrl(migrationsBucket, basePath, path, ct);
+            if (resourceUrl == null) return TypedResults.NotFound();
 
-            return TypedResults.Ok(result);
+            return TypedResults.Ok(resourceUrl);
         }
     }
 

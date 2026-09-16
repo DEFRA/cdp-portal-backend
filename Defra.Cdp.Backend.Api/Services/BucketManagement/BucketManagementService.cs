@@ -10,6 +10,7 @@ namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 public interface IBucketManagementService
 {
     Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 
     Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
@@ -21,7 +22,7 @@ public interface IBucketManagementService
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 3600;
-    private const Int64 ONE_HUNDRED_MEGABYTES = 100 * 1024 * 1024;
+    private const Int64 UPLOAD_PART_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
@@ -102,6 +103,70 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return [.. resources.Values];
     }
 
+    public async Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken) {
+        var fullPath = getFullPath(basePath, path);
+
+        var request = new ListObjectsV2Request
+        {
+            BucketName = bucket,
+            Prefix = basePath
+        };
+
+        var tree = new BucketResourceTreeNode
+        {
+            Path = "",
+            IsCurrent = path == ""
+        };
+        ListObjectsV2Response response;
+
+        do
+        {
+            response = await s3.ListObjectsV2Async(request, cancellationToken);
+
+            if (response.S3Objects == null)
+            {
+                return null; // Not Found
+            }
+
+            foreach (var s3Object in response.S3Objects)
+            {
+                var currentNode = tree.SubNodes;
+                var subKey = removeFirst(s3Object.Key, basePath);
+                var folderParts = subKey.Split('/')[0..^1]; // Only folders
+                var index = 0;
+                foreach (var part in folderParts)
+                {
+                    index++;
+                    var currentSubPath = string.Join("/", folderParts[0..index]) + "/";
+                    var currentPath = $"{basePath}{currentSubPath}";
+
+                    if (!currentNode.ContainsKey(part))
+                    {
+                        currentNode[part] = new BucketResourceTreeNode
+                        {
+                            Path = currentSubPath,
+                            IsCurrent = path == currentSubPath
+                        };
+                    }
+                    
+                    if (fullPath.Contains(currentPath))
+                    {
+                        currentNode = currentNode[part].SubNodes;
+                    }
+                    else
+                    {
+                        break;  // No point walking further down
+                    }
+                }
+            }
+
+            request.ContinuationToken = response.NextContinuationToken;
+        }
+        while (response.IsTruncated ?? false);
+
+        return tree;
+    }
+
     public async Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
@@ -132,7 +197,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return new BucketResourceUrl
         {
             Method = "GET",
-            Url = url
+            Url = normaliseLocalUrl(url)
         };
     }
 
@@ -141,7 +206,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         var fullPath = getFullPath(basePath, path);
 
         // TODO: Calc part size based on size
-        var numParts = ((size - 1) / ONE_HUNDRED_MEGABYTES) + 1; // Int division, rounding up
+        var numParts = ((size - 1) / UPLOAD_PART_SIZE_BYTES) + 1; // Int division, rounding up
         var parts = new List<BucketResourceUploadPart>();
 
         var response = await s3.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest
@@ -156,7 +221,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         for (var partNumber = 0; partNumber < numParts; partNumber++)
         {
             var endPosition = Int128.Min(
-              currentPosition + ONE_HUNDRED_MEGABYTES,
+              currentPosition + UPLOAD_PART_SIZE_BYTES,
               size
             );
 
@@ -169,7 +234,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             };
 
             parts.Add(part);
-            currentPosition += ONE_HUNDRED_MEGABYTES;
+            currentPosition += UPLOAD_PART_SIZE_BYTES;
         }
 
         return new BucketResourceUpload
@@ -198,7 +263,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return new BucketResourceUrl
         {
             Method = "PUT",
-            Url = url
+            Url = normaliseLocalUrl(url)
         };
     }
 
@@ -284,6 +349,17 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     {
         var index = value.IndexOf(removeString, StringComparison.Ordinal);
         return index < 0 ? value : value.Remove(index, removeString.Length);
+    }
+
+    // Workaround an issue with Floci forcing https URLs on local even when not configured 
+    private static string normaliseLocalUrl(string url)
+    {
+        if (url.StartsWith("https://localhost"))
+        {
+            return $"http://localhost{removeFirst(url, "https://localhost")}";
+        }
+
+        return url;
     }
 }
 
