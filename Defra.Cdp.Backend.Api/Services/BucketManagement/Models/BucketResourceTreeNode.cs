@@ -11,5 +11,5 @@ public record BucketResourceTreeNode
     public bool IsCurrent { get; init; } = false;
 
     [JsonPropertyName("subNodes")]
-    public OrderedDictionary<string, BucketResourceTreeNode> subNodes { get; init; } = [];
+    public OrderedDictionary<string, BucketResourceTreeNode> SubNodes { get; init; } = [];
 }

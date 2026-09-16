@@ -104,11 +104,67 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     }
 
     public async Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken) {
-        return new BucketResourceTreeNode
+        var fullPath = getFullPath(basePath, path);
+
+        var request = new ListObjectsV2Request
         {
-            Path = "/",
-            IsCurrent = true
+            BucketName = bucket,
+            Prefix = basePath
         };
+
+        var tree = new BucketResourceTreeNode
+        {
+            Path = "",
+            IsCurrent = path == ""
+        };
+        ListObjectsV2Response response;
+
+        do
+        {
+            response = await s3.ListObjectsV2Async(request, cancellationToken);
+
+            if (response.S3Objects == null)
+            {
+                return null; // Not Found
+            }
+
+            foreach (var s3Object in response.S3Objects)
+            {
+                var currentNode = tree.SubNodes;
+                var subKey = removeFirst(s3Object.Key, basePath);
+                var folderParts = subKey.Split('/')[0..^1]; // Only folders
+                var index = 0;
+                foreach (var part in folderParts)
+                {
+                    index++;
+                    var currentSubPath = string.Join("/", folderParts[0..index]) + "/";
+                    var currentPath = $"{basePath}{currentSubPath}";
+
+                    if (!currentNode.ContainsKey(part))
+                    {
+                        currentNode[part] = new BucketResourceTreeNode
+                        {
+                            Path = currentSubPath,
+                            IsCurrent = path == currentSubPath
+                        };
+                    }
+                    
+                    if (fullPath.Contains(currentPath))
+                    {
+                        currentNode = currentNode[part].SubNodes;
+                    }
+                    else
+                    {
+                        break;  // No point walking further down
+                    }
+                }
+            }
+
+            request.ContinuationToken = response.NextContinuationToken;
+        }
+        while (response.IsTruncated ?? false);
+
+        return tree;
     }
 
     public async Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken)
