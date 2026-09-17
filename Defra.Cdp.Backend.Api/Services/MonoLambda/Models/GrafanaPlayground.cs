@@ -56,6 +56,8 @@ public record PlaygroundAlert
     [JsonPropertyName("name")] public required string Name { get; init; }
     [JsonPropertyName("type")] public string Type { get; init; } = "custom";
     [JsonPropertyName("annotations")] public PlaygroundAlertAnnotations Url { get; init; } = new();
+    [JsonPropertyName("revision")] public int? Revision { get; init; }
+    [JsonPropertyName("updated")] public DateTime? Updated { get; init; }
 }
 
 [BsonIgnoreExtraElements]
