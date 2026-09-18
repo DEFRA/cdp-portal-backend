@@ -21,7 +21,7 @@ public interface IBucketManagementService
 
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
-    private const int PRE_SIGNED_URL_TTL_SECONDS = 3600;
+    private const int PRE_SIGNED_URL_TTL_SECONDS = 10;  // Keep as small as possible
     private const Int64 UPLOAD_PART_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
