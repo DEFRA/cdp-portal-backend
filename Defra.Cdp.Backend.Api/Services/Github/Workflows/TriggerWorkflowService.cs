@@ -6,7 +6,7 @@ namespace Defra.Cdp.Backend.Api.Services.Github.Workflows;
 
 public interface ITriggerWorkflowService
 {
-    public Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow<T>(string repo, string workflow,
+    Task<GitHubTriggerWorkflowResponse?> TriggerWorkflow<T>(string repo, string workflow,
         T inputs, CancellationToken cancellationToken) where T : IGithubWorkflowInputs;
 }
 
