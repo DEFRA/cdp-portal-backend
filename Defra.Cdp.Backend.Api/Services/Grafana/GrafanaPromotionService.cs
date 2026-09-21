@@ -13,7 +13,7 @@ public interface IGrafanaPromotionService
 public class GrafanaPromotionService(ITriggerWorkflowService triggerWorkflowService, IGrafanaPromotionRequestService promotionRequestService) : IGrafanaPromotionService
 {
     
-    private const string Repo = "cdp-grafana-modules";
+    private const string Repo = "cdp-grafana-svc";
     private const string DashboardPromotionWorkflow = "promote-custom-dashboard.yml";
     private const string AlertPromotionWorkflow = "promote-advanaced-alerts.yml";
     
