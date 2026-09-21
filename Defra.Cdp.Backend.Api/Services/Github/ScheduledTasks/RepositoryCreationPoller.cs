@@ -28,8 +28,6 @@ public sealed class RepositoryCreationPoller(
 
     private readonly HttpClient _client = clientFactory.CreateClient("GitHubClient");
     private readonly string _githubApiUrl = $"{configuration.GetValue<string>("Github:ApiUrl")!}/graphql";
-
-
     private readonly string _githubOrgName = configuration.GetValue<string>("Github:Organisation")!;
 
     private readonly ILogger<RepositoryCreationPoller> _logger =
@@ -43,7 +41,10 @@ public sealed class RepositoryCreationPoller(
             {
                 var cancellationToken = context.CancellationToken;
 
-                var entities = (await entitiesService.GetCreatingEntities(cancellationToken))
+                var entities = (await entitiesService.GetEntities(
+                        new EntityMatcher {Statuses = [Status.Creating, Status.Decommissioning]}, 
+                        new EntitySearchOptions { Summary = true }, 
+                        cancellationToken))
                     .Where(e => e.Created?.Date == DateTime.Today)
                     .ToList();
 
