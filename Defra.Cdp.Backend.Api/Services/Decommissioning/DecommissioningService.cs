@@ -4,6 +4,7 @@ using Defra.Cdp.Backend.Api.Services.AutoTestRunTriggers;
 using Defra.Cdp.Backend.Api.Services.Aws.Deployments;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
+using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Utils.Clients;
 using Quartz;
 
@@ -35,7 +36,8 @@ public sealed class DecommissioningService(
 
             try
             {
-                var pendingEntities = await entitiesService.EntitiesPendingDecommission(context.CancellationToken);
+                var pendingEntities = await entitiesService.GetEntities(new EntityMatcher { Statuses = [Status.Decommissioning] },
+                    new EntitySearchOptions { Summary = true }, context.CancellationToken);
                 foreach (var entity in pendingEntities)
                 {
                     _logger.LogInformation("Decommissioning entity {EntityName} in status {Status}", entity.Name,

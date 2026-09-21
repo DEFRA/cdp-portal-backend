@@ -22,9 +22,9 @@ public record MigrationVersion
 
 public interface IAvailableMigrations
 {
-    public Task<List<MigrationVersion>> FindMigrationsForService(string service, CancellationToken ct);
-    public Task<List<string>> FindServicesWithMigrations(CancellationToken ct);
-    public Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct);
+    Task<List<MigrationVersion>> FindMigrationsForService(string service, CancellationToken ct);
+    Task<List<string>> FindServicesWithMigrations(CancellationToken ct);
+    Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct);
 }
 
 public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityService, IConfiguration configuration) : IAvailableMigrations
@@ -74,6 +74,7 @@ public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityServic
         return migrations.OrderByDescending(d => d.Created).ToList();
     }
 
+    
     public async Task<List<string>> FindServicesWithMigrations(CancellationToken ct)
     {
         if (_bucketName == null)
@@ -102,22 +103,14 @@ public class AvailableMigrations(IAmazonS3 client, IEntitiesService entityServic
         return services.Distinct().Select(s => s.Replace("/", "")).ToList();
     }
 
-
-
+    
     public async Task<List<string>> FindServicesWithMigrationsByTeam(List<string> teamIds, CancellationToken ct)
     {
         var migrations = await FindServicesWithMigrations(ct);
+        var entityIds =
+            await entityService.GetEntityIds(new EntityMatcher(TeamIds: teamIds.ToArray(), HasPostgres: true), ct);
 
-        var servicesForTeams = new HashSet<string>();
-
-        var entities =
-            await entityService.GetEntities(new EntityMatcher(TeamIds: teamIds.ToArray(), HasPostgres: true), ct);
-        foreach (var entity in entities)
-        {
-            servicesForTeams.Add(entity.Name);
-        }
-
-
+        var servicesForTeams = new HashSet<string>(entityIds);
         return migrations.Where(r => servicesForTeams.Contains(r)).ToList();
     }
 
