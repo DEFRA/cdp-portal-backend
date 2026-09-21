@@ -19,7 +19,7 @@ public interface IEntitiesService
     Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
 
     Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 
     Task<EntitiesService.EntityFilters>
         GetFilters(string[] teamIds, Type[] types, Status[] statuses, CancellationToken cancellationToken);
