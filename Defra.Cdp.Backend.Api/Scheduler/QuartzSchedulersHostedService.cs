@@ -15,7 +15,6 @@ public class QuartzSchedulersHostedService(
     ILoggerFactory loggerFactory)
     : IHostedService
 {
-    private IScheduler? _githubScheduler;
     private IScheduler? _repoCreationScheduler;
     private IScheduler? _decommissionScheduler;
     private IScheduler? _schedulerPollerScheduler;
@@ -23,12 +22,6 @@ public class QuartzSchedulersHostedService(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // GitHub Populate All Scheduler
-        _githubScheduler = await SetupScheduler<PopulateGithubRepositories>(
-            config.GetSection("Github"),
-            "FetchGithubRepositories",
-            cancellationToken);
-
         // Repository Creation Poller Scheduler
         _repoCreationScheduler = await SetupScheduler<RepositoryCreationPoller>(
             config.GetSection("RepositoriesCreation"),
@@ -94,9 +87,6 @@ public class QuartzSchedulersHostedService(
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_githubScheduler != null)
-            await _githubScheduler.Shutdown(waitForJobsToComplete: true, cancellationToken);
-
         if (_repoCreationScheduler != null)
             await _repoCreationScheduler.Shutdown(waitForJobsToComplete: true, cancellationToken);
 

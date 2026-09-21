@@ -174,6 +174,7 @@ builder.Services.AddAwsClients(builder.Configuration, builder.IsDevMode());
 
 // GitHub related services
 builder.Services.AddSingleton<IGithubCredentialAndConnectionFactory, GithubCredentialAndConnectionFactory>();
+builder.Services.AddSingleton<IGithubApiService, GithubApiService>();
 builder.Services.AddTransient<PopulateGithubRepositories>();
 builder.Services.AddTransient<RepositoryCreationPoller>();
 builder.Services.AddTransient<DecommissioningService>();
