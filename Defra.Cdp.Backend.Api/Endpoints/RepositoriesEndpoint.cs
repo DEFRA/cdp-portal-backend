@@ -10,7 +10,7 @@ public static class RepositoriesEndpoint
     public static void MapRepositoriesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/repositories/{id}", GetRepositoryById);
-        app.MapGet("/check-repository-exists/{id}", GetRepoExists);
+        app.MapGet("/github/repositories/{id}", GetGithubRepoExists);
     }
 
     private static async Task<Results<NotFound<ApiError>,Ok<Repository>>> GetRepositoryById(IRepositoryService repositoryService, string id,
@@ -22,7 +22,15 @@ public static class RepositoriesEndpoint
             : TypedResults.Ok(maybeRepository);
     }
     
-    private static async Task<Results<NotFound<ApiError>,Ok>> GetRepoExists(
+    /// <summary>
+    /// Performs a direct lookup on GitHub to validate if the repo name exists.
+    /// Returns 200 if the repository exists, otherwise a 404.
+    /// </summary>
+    /// <param name="githubApiService"></param>
+    /// <param name="id"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    private static async Task<Results<NotFound<ApiError>,Ok>> GetGithubRepoExists(
         IGithubApiService githubApiService, string id,
         CancellationToken cancellationToken)
     {
