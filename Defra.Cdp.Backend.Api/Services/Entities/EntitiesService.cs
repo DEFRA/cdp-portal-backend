@@ -16,13 +16,10 @@ public interface IEntitiesService
 {
     Task<Entity?> GetEntity(string entityName, CancellationToken cancellationToken);
     Task<List<string>> GetEntityIds(EntityMatcher matcher, CancellationToken cancellationToken);
-    Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken); //Used for tests
+    Task<List<Entity>> GetEntities(EntityMatcher matcher, CancellationToken cancellationToken);
 
     Task<List<Entity>> GetEntities(EntityMatcher matcher, EntitySearchOptions options,
-        CancellationToken cancellationToken);
-
-    Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken);
-    Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken);
+        CancellationToken cancellationToken = default);
 
     Task<EntitiesService.EntityFilters>
         GetFilters(string[] teamIds, Type[] types, Status[] statuses, CancellationToken cancellationToken);
@@ -210,18 +207,6 @@ public class EntitiesService(
                 })
             .Set(e => e.Status, Status.Decommissioning);
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
-    }
-
-    public async Task<List<Entity>> GetCreatingEntities(CancellationToken cancellationToken)
-    {
-        return await GetEntities(new EntityMatcher { Statuses = [Status.Creating] },
-            new EntitySearchOptions { Summary = true }, cancellationToken);
-    }
-
-    public async Task<List<Entity>> EntitiesPendingDecommission(CancellationToken cancellationToken)
-    {
-        return await GetEntities(new EntityMatcher { Statuses = [Status.Decommissioning] },
-            new EntitySearchOptions { Summary = true }, cancellationToken);
     }
 
     public async Task AddTag(string entityName, string tag, CancellationToken cancellationToken)
