@@ -15,7 +15,7 @@ public class GrafanaPromotionService(ITriggerWorkflowService triggerWorkflowServ
     
     private const string Repo = "cdp-grafana-svc";
     private const string DashboardPromotionWorkflow = "promote-custom-dashboard.yml";
-    private const string AlertPromotionWorkflow = "promote-advanaced-alerts.yml";
+    private const string AlertPromotionWorkflow = "promote-advanced-alert.yml";
     
     public async Task<PromotionRequestRecord> PromoteDashboard(DashboardPromotionRequest dashboard, UserDetails? user, CancellationToken cancellationToken)
     {
