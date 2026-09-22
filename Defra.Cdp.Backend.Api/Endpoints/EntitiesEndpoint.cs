@@ -51,8 +51,6 @@ public static class EntitiesEndpoint
         app.MapGet("/entities/{name}/grafana/playground/promotions", GetPromotionStatus);
         app.MapPost("/entities/{name}/grafana/playground/promotions/dashboards/{uid}", PromotePlaygroundDashboard)
             .RequireOwnership("name");
-        app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
-            .RequireOwnership("name");
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts/{uid}", PromotePlaygroundAlert)
             .RequireOwnership("name");
 
@@ -473,24 +471,6 @@ public static class EntitiesEndpoint
 
         var dashboardRequest = new DashboardPromotionRequest { DashboardUid = uid, ServiceName = name, PromotionEnvironment = CdpEnvironments.Dev };
         var response = await grafanaGithubWorkflowService.PromoteDashboard(dashboardRequest, user, ct);
-        return TypedResults.Ok(response);
-    }
-
-    [EndpointDescription("Promotes custom alerts for a service from playground alerts in Dev.")]
-    private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundAlerts(
-        [FromServices] IEntitiesService entitiesService,
-        [FromServices] IGrafanaGithubWorkflowService grafanaGithubWorkflowService,
-        [FromRoute] string name,
-        HttpContext httpContext,
-        CancellationToken ct)
-    {
-        var entity = await entitiesService.GetEntity(name, ct);
-        if (entity == null) return TypedResults.NotFound();
-
-        var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
-
-        var alertRequest = new AlertPromotionRequest { ServiceName = name };
-        var response = await grafanaGithubWorkflowService.PromoteAllAlerts(alertRequest, user, ct);
         return TypedResults.Ok(response);
     }
     
