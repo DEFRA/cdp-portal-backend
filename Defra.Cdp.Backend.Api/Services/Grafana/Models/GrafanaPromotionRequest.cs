@@ -43,4 +43,9 @@ public record AlertPromotionRequest : IGithubWorkflowInputs
     [BsonElement("service_name")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ServiceName { get; init; }
+    
+    [JsonPropertyName("alert_uid")]
+    [BsonElement("alert_uid")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AlertUid { get; init; }
 }

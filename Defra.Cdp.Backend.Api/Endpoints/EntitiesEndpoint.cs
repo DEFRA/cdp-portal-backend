@@ -53,6 +53,9 @@ public static class EntitiesEndpoint
             .RequireOwnership("name");
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts", PromotePlaygroundAlerts)
             .RequireOwnership("name");
+        app.MapPost("/entities/{name}/grafana/playground/promotions/alerts/{uid}", PromotePlaygroundAlert)
+            .RequireOwnership("name");
+
 
         app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources).RequireOwnership("name");
         app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource).RequireOwnership("name");
@@ -457,7 +460,7 @@ public static class EntitiesEndpoint
     [EndpointDescription("Promotes a specific playground dashboard by UID")]
     private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundDashboard(
         [FromServices] IEntitiesService entitiesService,
-        [FromServices] IGrafanaPromotionService grafanaPromotionService,
+        [FromServices] IGrafanaGithubWorkflowService grafanaGithubWorkflowService,
         [FromRoute] string name,
         [FromRoute] string uid,
         HttpContext httpContext,
@@ -469,14 +472,14 @@ public static class EntitiesEndpoint
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
 
         var dashboardRequest = new DashboardPromotionRequest { DashboardUid = uid, ServiceName = name, PromotionEnvironment = CdpEnvironments.Dev };
-        var response = await grafanaPromotionService.PromoteDashboard(dashboardRequest, user, ct);
+        var response = await grafanaGithubWorkflowService.PromoteDashboard(dashboardRequest, user, ct);
         return TypedResults.Ok(response);
     }
 
     [EndpointDescription("Promotes custom alerts for a service from playground alerts in Dev.")]
     private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundAlerts(
         [FromServices] IEntitiesService entitiesService,
-        [FromServices] IGrafanaPromotionService grafanaPromotionService,
+        [FromServices] IGrafanaGithubWorkflowService grafanaGithubWorkflowService,
         [FromRoute] string name,
         HttpContext httpContext,
         CancellationToken ct)
@@ -487,10 +490,28 @@ public static class EntitiesEndpoint
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
 
         var alertRequest = new AlertPromotionRequest { ServiceName = name };
-        var response = await grafanaPromotionService.PromoteAlerts(alertRequest, user, ct);
+        var response = await grafanaGithubWorkflowService.PromoteAllAlerts(alertRequest, user, ct);
         return TypedResults.Ok(response);
     }
+    
+    [EndpointDescription("Promotes single custom alert for a service from playground alerts in Dev.")]
+    private static async Task<Results<NotFound, Ok<PromotionRequestRecord>>> PromotePlaygroundAlert(
+        [FromServices] IEntitiesService entitiesService,
+        [FromServices] IGrafanaGithubWorkflowService grafanaGithubWorkflowService,
+        [FromRoute] string name,
+        [FromRoute] string uid,
+        HttpContext httpContext,
+        CancellationToken ct)
+    {
+        var entity = await entitiesService.GetEntity(name, ct);
+        if (entity == null) return TypedResults.NotFound();
 
+        var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
+
+        var alertRequest = new AlertPromotionRequest { ServiceName = name, AlertUid = uid};
+        var response = await grafanaGithubWorkflowService.PromoteAlert(alertRequest, user, ct);
+        return TypedResults.Ok(response);
+    }
 
     [EndpointDescription("Get a service's import resource(s) by path")]
     private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>, Ok<BucketResourceTreeNode>>> GetImportsResources(

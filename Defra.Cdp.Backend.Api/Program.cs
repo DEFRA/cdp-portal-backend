@@ -22,8 +22,6 @@ using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents;
 using Defra.Cdp.Backend.Api.Services.GithubWorkflowEvents.Services;
 using Defra.Cdp.Backend.Api.Services.Grafana;
-using Defra.Cdp.Backend.Api.Services.Grafana.Models;
-using Defra.Cdp.Backend.Api.Services.Grafana.Validators;
 using Defra.Cdp.Backend.Api.Services.Migrations;
 using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
@@ -213,9 +211,8 @@ builder.Services.AddSingleton<IBucketManagementService, BucketManagementService>
 // Grafana alert promotion
 builder.Services.AddSingleton<IGrafanaPlaygroundService, GrafanaPlaygroundService>();
 builder.Services.AddSingleton<IGrafanaPlaygroundsClient, GrafanaPlaygroundsClient>();
-builder.Services.AddSingleton<IGrafanaPromotionService, GrafanaPromotionService>();
+builder.Services.AddSingleton<IGrafanaGithubWorkflowService, GrafanaGithubWorkflowService>();
 builder.Services.AddSingleton<IGrafanaPromotionRequestService, GrafanaPromotionRequestService>();
-builder.Services.AddSingleton<IGrafanaPromotionValidator, GrafanaPromotionValidator>();
 
 // Proxy
 builder.Services.AddTransient<ProxyHttpMessageHandler>();
@@ -355,7 +352,6 @@ app.MapAuditEndpoint();
 app.MapSchedulesEndpoint();
 app.MapNotificationEndpoints();
 app.MapResourcesEndpoint();
-app.MapGrafanaEndpoint();
 
 app.MapOpenApi();
 

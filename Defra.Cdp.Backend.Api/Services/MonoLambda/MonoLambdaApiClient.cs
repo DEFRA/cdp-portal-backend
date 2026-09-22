@@ -4,7 +4,6 @@ using System.Text.Json;
 using SystemEnvironment = System.Environment;
 using Amazon.Runtime.Credentials;
 using Defra.Cdp.Backend.Api.Config;
-using Defra.Cdp.Backend.Api.Utils;
 using Microsoft.Extensions.Options;
 
 namespace Defra.Cdp.Backend.Api.Services.MonoLambda;
@@ -30,7 +29,7 @@ public abstract class MonoLambdaApiClient(IOptions<MonoLambdaApiOptions> options
         }
 
         var region = SystemEnvironment.GetEnvironmentVariable("AWS_REGION")!;
-        var credentials = DefaultAWSCredentialsIdentityResolver.GetCredentials();
+        var credentials = await DefaultAWSCredentialsIdentityResolver.GetCredentialsAsync();
 
         var response = await client.SendAsync(request, region, "execute-api", credentials, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
