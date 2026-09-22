@@ -79,6 +79,11 @@ public record GrafanaPlaygroundResources
         {
             dashboard.AddPromotionRequest(requests);
         }
+
+        foreach (var alert in Alerts)
+        {
+            
+        }
         AlertPromotionRequest = requests.Find(r => r.Alert != null)?.Alert;
         return this;
     }

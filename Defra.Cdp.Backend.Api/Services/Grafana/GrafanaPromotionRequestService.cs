@@ -93,14 +93,13 @@ public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFact
             .Group(pr => pr.Dashboard!.DashboardUid, g => g.First())
             .ToListAsync(cancellationToken);
 
-        var alertPromotion = await Collection.Find(pr => pr.ServiceName == name && pr.Alert != null)
-            .SortByDescending(pr => pr.RequestedAt).FirstOrDefaultAsync(cancellationToken);
+        var alertPromotion = await Collection.Aggregate()
+            .Match(pr => pr.ServiceName == name && pr.Alert != null)
+            .SortByDescending(pr => pr.RequestedAt)
+            .Group(pr => pr.Alert!.AlertUid, g => g.First())
+            .ToListAsync(cancellationToken);
 
-        if (alertPromotion != null)
-        {
-            dashboardsPromotions.Add(alertPromotion);
-        }
-
+        dashboardsPromotions.AddRange(alertPromotion);
         return dashboardsPromotions;
     }
 }
