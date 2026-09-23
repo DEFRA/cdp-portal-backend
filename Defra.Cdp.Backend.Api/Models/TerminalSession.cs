@@ -17,6 +17,9 @@ public class TerminalSession
 
     [property: JsonPropertyName("user")]
     public required UserDetails User { get; set; }
+    
+    [property: JsonPropertyName("tool")]
+    public string? Tool { get; set; }
 
     public DateTime Requested { get; set; } = DateTime.UtcNow;
 }
