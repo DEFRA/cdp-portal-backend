@@ -59,10 +59,10 @@ public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoT
             .Start();
         var client = host.GetTestClient();
 
-        var prodSession = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
+        var prodSession = new TerminalSession { Token = "123456", Environment = "prod", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" }, Tool = "terminal"};
         var prodResponse = await client.PostAsJsonAsync("/terminals", prodSession, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, prodResponse.StatusCode);
-        var testSession = new TerminalSession { Token = "123456", Environment = "test", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" } };
+        var testSession = new TerminalSession { Token = "123456", Environment = "test", Service = "foo-backend", User = new UserDetails { DisplayName = "user1", Id = "1" }, Tool = "terminal" };
         var testResponse = await client.PostAsJsonAsync("/terminals", testSession, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, testResponse.StatusCode);
 
@@ -77,6 +77,8 @@ public class TerminalEndpointTestSupport(MongoContainerFixture fixture) : MongoT
         Assert.Equal(prodSession.Token, saved.Token);
         Assert.Equal(prodSession.User.DisplayName, saved.User.DisplayName);
         Assert.Equal(prodSession.User.Id, saved.User.Id);
+        Assert.Equal(prodSession.Tool, saved.Tool);
+        
         // Mongo doesn't store dates with the precision as datetime.utcnow
         Assert.InRange(saved.Requested, prodSession.Requested.Subtract(TimeSpan.FromMilliseconds(1)), prodSession.Requested.Add(TimeSpan.FromMilliseconds(1)));
 
