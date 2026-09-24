@@ -59,6 +59,20 @@ public record PlaygroundAlert
     [JsonPropertyName("version")] public int? Version { get; init; }
     [JsonPropertyName("revision")] public string? Revision { get; init; }
     [JsonPropertyName("updated")] public DateTime? Updated { get; init; }
+    [JsonPropertyName("promoted")] public bool Promoted { get; init; }
+        
+    [BsonIgnore]
+    [JsonPropertyName("promotion_request")] public AlertPromotionRequest? PromotionRequest { get; set; }
+
+    public PlaygroundAlert AddPromotionRequest(List<PromotionRequestRecord> requests)
+    {
+        if (Promoted) return this;
+        
+        var match = requests.Find(r =>
+            r.Alert?.AlertUid == Uid && r.RequestedAt >= Updated);
+        if (match?.Alert != null) PromotionRequest = match.Alert;
+        return this;
+    }
 }
 
 [BsonIgnoreExtraElements]
@@ -69,10 +83,7 @@ public record GrafanaPlaygroundResources
     [JsonPropertyName("dashboards")] public List<PlaygroundDashboard> Dashboards { get; init; } = [];
     [JsonPropertyName("alerts")] public List<PlaygroundAlert> Alerts { get; init; } = [];
     [JsonPropertyName("updated")] public DateTime Updated { get; set; } = DateTime.UtcNow;
-    
-    [JsonPropertyName("alerts_promotion_request")] public AlertPromotionRequest? AlertPromotionRequest { get; set; }
 
-    
     public GrafanaPlaygroundResources AddPromotionRequest(List<PromotionRequestRecord> requests)
     {
         foreach (var dashboard in Dashboards)
@@ -82,9 +93,9 @@ public record GrafanaPlaygroundResources
 
         foreach (var alert in Alerts)
         {
-            
+            alert.AddPromotionRequest(requests);
         }
-        AlertPromotionRequest = requests.Find(r => r.Alert != null)?.Alert;
+
         return this;
     }
 }

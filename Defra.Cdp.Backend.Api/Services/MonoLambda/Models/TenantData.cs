@@ -39,6 +39,12 @@ public class AlertAnnotations
     [property: JsonPropertyName("summary")]
     public string Summary { get; set; }
 
+    [property: JsonPropertyName("source_uid")]
+    public string? SourceUid { get; set; }
+
+    [property: JsonPropertyName("source_version")]
+    public string? SourceVersion { get; set; }
+
 }
 
 [BsonIgnoreExtraElements]
@@ -648,7 +654,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "1ef671e8d623cdf403beabc1e0847f06a5164f41660f2cf06e45d26b4f4fbafd";
+    public static readonly string Version = "635ea972815adc007e6daf5796671770fa3300b5464a2b0d3601d37673eab6f1";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.

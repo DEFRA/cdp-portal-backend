@@ -42,7 +42,7 @@ public class GrafanaPlaygroundsClient(
             );
         }
 
-        var resources = ParseResponseBody(responseBody);
+        var resources = ParseResponseBody(responseBody, logger);
         if (resources == null)
         {
             logger.LogWarning("Grafana playground API returned malformed success body: {Body}", responseBody);
@@ -52,7 +52,7 @@ public class GrafanaPlaygroundsClient(
         return ApiResult<GrafanaPlaygroundResources>.Success(resources);
     }
 
-    private static GrafanaPlaygroundResources? ParseResponseBody(string responseBody)
+    private static GrafanaPlaygroundResources? ParseResponseBody(string responseBody, ILogger<GrafanaPlaygroundsClient> logger)
     {
         if (string.IsNullOrWhiteSpace(responseBody))
         {
@@ -66,13 +66,15 @@ public class GrafanaPlaygroundsClient(
 
             if (!root.TryGetProperty("body", out var bodyElement))
             {
+                logger.LogError("Playground response has no body");
                 return null;
             }
 
             return JsonSerializer.Deserialize<GrafanaPlaygroundResources>(bodyElement.GetRawText());
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
+            logger.LogError(exception, "failed to parse playground response body");
             return null;
         }
     }
