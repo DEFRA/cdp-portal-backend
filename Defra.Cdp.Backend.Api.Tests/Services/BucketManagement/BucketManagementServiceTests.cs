@@ -1,7 +1,9 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.BucketManagement;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
+using Defra.Cdp.Backend.Api.Services.Users;
 using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.BucketManagement;
@@ -11,6 +13,11 @@ public class BucketManagementServiceTests
     private static readonly string s_bucketName = "test-bucket";
     private static readonly DateTime s_modifiedDate = DateTime.Now;
     private const Int64 ONE_HUNDRED_MEGABYTES = 100 * 1024 * 1024;
+    private static readonly UserDetails s_user = new()
+    {
+        Id = "test",
+        DisplayName = "Test User"
+    };
 
     private static ListObjectsV2Response filteredListResponse(string prefix = "") {
         return new ListObjectsV2Response
@@ -269,7 +276,7 @@ public class BucketManagementServiceTests
 
         s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
-        var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 45000, TestContext.Current.CancellationToken);
+        var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 45000, s_user, TestContext.Current.CancellationToken);
 
         var expected = new BucketResourceUpload
         {
@@ -295,7 +302,7 @@ public class BucketManagementServiceTests
 
         s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
-        var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 145000000, TestContext.Current.CancellationToken);
+        var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 145000000, s_user, TestContext.Current.CancellationToken);
 
         var expected = new BucketResourceUpload
         {
@@ -364,7 +371,7 @@ public class BucketManagementServiceTests
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/new-folder/")));
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
 
-        var result = await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/", TestContext.Current.CancellationToken);
+        var result = await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/", s_user, TestContext.Current.CancellationToken);
         var expected = new BucketResource { Name = "new-folder", Path = "sub-folder/new-folder/", Size = 0, IsFolder = true };
         Assert.Equivalent(expected.Name, result.Name, true);
         Assert.Equivalent(expected.Path, result.Path, true);
@@ -381,7 +388,7 @@ public class BucketManagementServiceTests
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
-            await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/file.txt", TestContext.Current.CancellationToken)
+            await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/file.txt", s_user, TestContext.Current.CancellationToken)
         );
         Assert.Equal("Not a folder", ex.Message);
     }
@@ -396,7 +403,7 @@ public class BucketManagementServiceTests
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
-            await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/", TestContext.Current.CancellationToken)
+            await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/", s_user, TestContext.Current.CancellationToken)
         );
         Assert.Equal("Already exists", ex.Message);
     }
