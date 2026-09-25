@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 
@@ -19,6 +20,12 @@ public record BucketResource
     [JsonPropertyName("modifiedDate")]
     public DateTime ModifiedDate { get; set; }
 
+    [JsonPropertyName("createdDate")]
+    public DateTime CreatedDate { get; set; }
+
     [JsonPropertyName("isFolder")]
     public bool IsFolder { get; init; } = false;
+
+    [JsonPropertyName("user")]
+    public UserDetails User { get; set; } = new UserDetails();
 }
