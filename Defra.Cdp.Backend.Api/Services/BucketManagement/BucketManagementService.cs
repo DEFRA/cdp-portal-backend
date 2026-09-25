@@ -50,7 +50,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
             foreach (var s3Object in response.S3Objects)
             {
-                var (relPath, name, _) = getObjectPathInfo(basePath, s3Object.Key);
+                var (relPath, name, isFolder) = getObjectPathInfo(basePath, s3Object.Key);
                 var groupedPath = path == "" ? relPath : removeFirst(relPath, path);
                 var isCurrentFolder = groupedPath == "";
                 var isGroupedFolder = groupedPath.Contains('/');
@@ -73,6 +73,14 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                     }
                     else
                     {
+                        if (isFolder) // Actual folder key
+                        {
+                            Console.WriteLine(s3Object.Key);
+                            var (user, createdDate) = await getBucketResourceMetadata(bucket, s3Object.Key, cancellationToken);
+                            Console.WriteLine(user.DisplayName);
+                            Console.WriteLine(createdDate);
+                        }
+
                         resources.Add($"{groupedFolderName}/", new BucketResource
                         {
                             Name = groupedFolderName,
@@ -85,14 +93,19 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
                 }
                 else
-                {
+                {                  
+                    Console.WriteLine(s3Object.Key);
+                    var (user, createdDate) = await getBucketResourceMetadata(bucket, s3Object.Key, cancellationToken);
+                    Console.WriteLine(user.DisplayName);
+                    Console.WriteLine(createdDate);
+
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
                         ModifiedDate = s3Object.LastModified ?? DateTime.Now,
                         Size = s3Object.Size ?? 0,
                         Path = relPath,
-                        IsFolder = false,
+                        IsFolder = false
                     });
                 }
 
@@ -219,9 +232,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         request.Metadata.Add("userId", user.Id);
         request.Metadata.Add("userDisplayName", user.DisplayName);
         request.Metadata.Add("createdDate", DateTime.UtcNow.ToIso8601BasicDateTime());
+        Console.WriteLine(DateTime.UtcNow.ToIso8601BasicDateTime());
 
         var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
-
+    
         var uploadId = response.UploadId;
 
         Int128 currentPosition = 0;
@@ -329,7 +343,8 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken) {
+    private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken)
+    {
         // Use list to support folders
         var response = await s3.ListObjectsV2Async(new ListObjectsV2Request
         {
@@ -343,6 +358,25 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         if (isFolder) return true;
 
         return response.S3Objects.Exists(o => o.Key == fullPath);
+    }
+
+    private async Task<(UserDetails user, DateTime createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
+        var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
+        {
+            BucketName = bucket,
+            Key = fullPath,
+        }, cancellationToken);
+
+        var metadata = response.Metadata;
+
+        return (
+            new UserDetails
+            {
+                Id = metadata["userId"] ?? "",
+                DisplayName = metadata["userDisplayName"] ?? ""
+            },
+            DateTime.UtcNow //.Parse(metadata["createdDate"], null, DateTimeStyles.RoundtripKind)
+        );
     }
 
     private static string getFullPath(string basePath, string path)
