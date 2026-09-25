@@ -15,7 +15,7 @@ public interface IBucketManagementService
     Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 
-    Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
+    Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, UserDetails user, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken);
     Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken);
@@ -203,19 +203,24 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
+    public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, UserDetails user, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
-        // TODO: Calc part size based on size
+        // TODO: Calc part size based on size?
         var numParts = ((size - 1) / UPLOAD_PART_SIZE_BYTES) + 1; // Int division, rounding up
         var parts = new List<BucketResourceUploadPart>();
 
-        var response = await s3.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest
+        var request = new InitiateMultipartUploadRequest
         {
             BucketName = bucket,
             Key = fullPath
-        }, cancellationToken);
+        };
+        request.Metadata.Add("userId", user.Id);
+        request.Metadata.Add("userDisplayName", user.DisplayName);
+        request.Metadata.Add("createdDate", DateTime.UtcNow.ToIso8601BasicDateTime());
+
+        var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
 
         var uploadId = response.UploadId;
 

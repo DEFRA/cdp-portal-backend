@@ -570,7 +570,7 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
-            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, ct);
+            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, user, ct);
 
             return TypedResults.Ok(result);
         }
