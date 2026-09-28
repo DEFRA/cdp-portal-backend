@@ -385,8 +385,6 @@ public class BucketManagementServiceTests
         var s3 = Substitute.For<IAmazonS3>();
         var bucketManagementService = Substitute.For<BucketManagementService>(s3);
 
-        s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
-
         var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/file.txt", s_user, TestContext.Current.CancellationToken)
         );
