@@ -1,11 +1,14 @@
+using System.Globalization;
 using Amazon.S3;
 using Amazon.S3.Model;
+using AwsSignatureVersion4.Private;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 
 /**
- *  Manage S3 Buckets where objects are treated like a Files and Folders in a filesystem
+ *  Manage S3 Buckets where objects are treated like Files and Folders in a filesystem
  */
 public interface IBucketManagementService
 {
@@ -13,16 +16,17 @@ public interface IBucketManagementService
     Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken);
     Task<BucketResourceUrl?> GetBucketResourceUrl(string bucket, string basePath, string path, CancellationToken cancellationToken);
 
-    Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken);
+    Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, UserDetails user, CancellationToken cancellationToken);
     Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken);
     Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken);
-    Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken);
+    Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken);
 }
 
 public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;  // Keep as small as possible
     private const Int64 UPLOAD_PART_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
+    private const string ISOFORMAT = "yyyy-MM-dd\\THH:mm:ss.fffK";
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
@@ -67,6 +71,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                         if (s3Object.LastModified > resource.ModifiedDate)
                         {
                             resource.ModifiedDate = s3Object.LastModified.Value;
+                            resource.folderModifedDateResourceKey = s3Object.Key;
                         }
                     }
                     else
@@ -74,7 +79,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                         resources.Add($"{groupedFolderName}/", new BucketResource
                         {
                             Name = groupedFolderName,
-                            ModifiedDate = s3Object.LastModified ?? DateTime.Now,
+                            ModifiedDate = s3Object.LastModified,
                             Size = s3Object.Size ?? 0,
                             Path = $"{path}{groupedFolderName}/",
                             IsFolder = true
@@ -83,11 +88,11 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
                 }
                 else
-                {
+                {                  
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
-                        ModifiedDate = s3Object.LastModified ?? DateTime.Now,
+                        ModifiedDate = s3Object.LastModified,
                         Size = s3Object.Size ?? 0,
                         Path = relPath,
                         IsFolder = false
@@ -100,7 +105,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         }
         while (response.IsTruncated ?? false);
 
-        return [.. resources.Values];
+        return await enrichWithMetadata([.. resources.Values], bucket, basePath, cancellationToken);
     }
 
     public async Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken) {
@@ -201,20 +206,25 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
-    public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, CancellationToken cancellationToken)
+    public async Task<BucketResourceUpload> StartBucketResourceMultipartUpload(string bucket, string basePath, string path, Int128 size, UserDetails user, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
-        // TODO: Calc part size based on size
+        // TODO: Calc part size based on size?
         var numParts = ((size - 1) / UPLOAD_PART_SIZE_BYTES) + 1; // Int division, rounding up
         var parts = new List<BucketResourceUploadPart>();
 
-        var response = await s3.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest
+        var request = new InitiateMultipartUploadRequest
         {
             BucketName = bucket,
             Key = fullPath
-        }, cancellationToken);
+        };
 
+        var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
+        addMetadata(request.Metadata, user, createdDate ?? DateTime.UtcNow);
+
+        var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
+    
         var uploadId = response.UploadId;
 
         Int128 currentPosition = 0;
@@ -281,7 +291,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         }, cancellationToken);
     }
 
-    public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, CancellationToken cancellationToken)
+    public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken)
     {
         var fullPath = getFullPath(basePath, path);
 
@@ -295,11 +305,14 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             throw new ArgumentException("Already exists");
         }
 
+        var createdDate = DateTime.UtcNow;
+
         var request = new PutObjectRequest
         {
             BucketName = bucket,
             Key = fullPath
         };
+        addMetadata(request.Metadata, user, createdDate);
 
         var response = await s3.PutObjectAsync(request, cancellationToken);
 
@@ -308,14 +321,17 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return new BucketResource
         {
             Name = name,
-            ModifiedDate = DateTime.UtcNow,
+            CreatedDate = createdDate,
+            ModifiedDate = createdDate,
             Size = response.Size ?? 0,
             Path = relPath,
-            IsFolder = isFolder
+            IsFolder = isFolder,
+            User = user
         };
     }
 
-    private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken) {
+    private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken)
+    {
         // Use list to support folders
         var response = await s3.ListObjectsV2Async(new ListObjectsV2Request
         {
@@ -360,6 +376,63 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         }
 
         return url;
+    }
+
+    private static void addMetadata(MetadataCollection metadata, UserDetails user, DateTime createdDate)
+    {
+        metadata.Add("userId", user.Id);
+        metadata.Add("userDisplayName", user.DisplayName);
+        metadata.Add("createdDate", createdDate.ToString(ISOFORMAT));
+    }
+
+    private async Task<(UserDetails? user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
+        try {
+            var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
+            {
+                BucketName = bucket,
+                Key = fullPath,
+            }, cancellationToken);
+    
+            var metadata = response.Metadata;
+
+            DateTime? cratedDate = null;
+            try
+            {
+                cratedDate = DateTime.ParseExact(metadata["createdDate"], ISOFORMAT, CultureInfo.InvariantCulture).ToUniversalTime();
+            } catch {}
+            
+            return (
+                metadata["userId"] == null ? null : new UserDetails
+                {
+                    Id = metadata["userId"],
+                    DisplayName = metadata["userDisplayName"] ?? ""
+                },
+                cratedDate
+            );
+        } catch {
+            return (
+                null,
+                null
+            );
+        }
+    }
+
+    private async Task<List<BucketResource>> enrichWithMetadata(List<BucketResource> resources, string bucket, string basePath, CancellationToken cancellationToken) {
+        await Task.WhenAll(resources.Select(async resource =>
+        {           
+            var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, cancellationToken);
+            resource.User = user;
+            resource.CreatedDate = createdDate;
+
+            // Override user with last modified child's user
+            if (resource.folderModifedDateResourceKey != null)
+            {
+                var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, cancellationToken);
+                resource.User = childUser;
+            }
+        }));
+
+        return resources;
     }
 }
 

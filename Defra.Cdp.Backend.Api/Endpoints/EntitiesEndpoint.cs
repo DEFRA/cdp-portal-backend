@@ -54,7 +54,6 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts/{uid}", PromotePlaygroundAlert)
             .RequireOwnership("name");
 
-
         app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources).RequireOwnership("name");
         app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource).RequireOwnership("name");
         app.MapPut("/entities/{name}/imports/{*path=}", UploadImportsResource).RequireOwnership("name");
@@ -545,6 +544,7 @@ public static class EntitiesEndpoint
         [FromRoute] string name,
         [FromRoute] string path,
         [FromBody] UploadBucketResource? uploadBucketResource,
+        HttpContext httpContext,
         CancellationToken ct
     )
     {
@@ -556,9 +556,11 @@ public static class EntitiesEndpoint
         var basePath = $"{entity.Name}/imports/";
         var isFolder = path.EndsWith('/');
 
+        var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
+
         if (isFolder)
         {
-            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, ct);
+            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, user, ct);
 
             return TypedResults.Ok(result);
         }
@@ -568,7 +570,7 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
-            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, ct);
+            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, user, ct);
 
             return TypedResults.Ok(result);
         }
