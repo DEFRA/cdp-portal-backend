@@ -219,7 +219,9 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             BucketName = bucket,
             Key = fullPath
         };
-        addMetadata(request.Metadata, user);
+
+        var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
+        addMetadata(request.Metadata, user, createdDate);
 
         var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
     
@@ -310,7 +312,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             BucketName = bucket,
             Key = fullPath
         };
-        addMetadata(request.Metadata, user);
+        addMetadata(request.Metadata, user, null);
 
         var response = await s3.PutObjectAsync(request, cancellationToken);
 
@@ -376,11 +378,11 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return url;
     }
 
-    private static void addMetadata(MetadataCollection metadata, UserDetails user)
+    private static void addMetadata(MetadataCollection metadata, UserDetails user, DateTime? createdDate)
     {
         metadata.Add("userId", user.Id);
         metadata.Add("userDisplayName", user.DisplayName);
-        metadata.Add("createdDate", DateTime.UtcNow.ToString(ISOFORMAT));
+        metadata.Add("createdDate", (createdDate ?? DateTime.UtcNow).ToString(ISOFORMAT));
     }
 
     private async Task<(UserDetails? user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
