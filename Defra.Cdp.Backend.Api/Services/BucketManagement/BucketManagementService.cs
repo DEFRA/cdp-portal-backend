@@ -1,3 +1,4 @@
+using System.Globalization;
 using Amazon.S3;
 using Amazon.S3.Model;
 using AwsSignatureVersion4.Private;
@@ -7,7 +8,7 @@ using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 namespace Defra.Cdp.Backend.Api.Services.BucketManagement;
 
 /**
- *  Manage S3 Buckets where objects are treated like a Files and Folders in a filesystem
+ *  Manage S3 Buckets where objects are treated like Files and Folders in a filesystem
  */
 public interface IBucketManagementService
 {
@@ -25,6 +26,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;  // Keep as small as possible
     private const Int64 UPLOAD_PART_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
+    private const string ISOFORMAT = "yyyy-MM-dd\\THH:mm:ss.fffK";
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
@@ -73,14 +75,6 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                     }
                     else
                     {
-                        if (isFolder) // Actual folder key
-                        {
-                            Console.WriteLine(s3Object.Key);
-                            var (user, createdDate) = await getBucketResourceMetadata(bucket, s3Object.Key, cancellationToken);
-                            Console.WriteLine(user.DisplayName);
-                            Console.WriteLine(createdDate);
-                        }
-
                         resources.Add($"{groupedFolderName}/", new BucketResource
                         {
                             Name = groupedFolderName,
@@ -94,11 +88,6 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 }
                 else
                 {                  
-                    Console.WriteLine(s3Object.Key);
-                    var (user, createdDate) = await getBucketResourceMetadata(bucket, s3Object.Key, cancellationToken);
-                    Console.WriteLine(user.DisplayName);
-                    Console.WriteLine(createdDate);
-
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
@@ -115,7 +104,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         }
         while (response.IsTruncated ?? false);
 
-        return [.. resources.Values];
+        return await enrichWithMetadata([.. resources.Values], bucket, basePath, cancellationToken);
     }
 
     public async Task<BucketResourceTreeNode?> GetBucketResourcesTree(string bucket, string basePath, string path, CancellationToken cancellationToken) {
@@ -229,10 +218,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             BucketName = bucket,
             Key = fullPath
         };
-        request.Metadata.Add("userId", user.Id);
-        request.Metadata.Add("userDisplayName", user.DisplayName);
-        request.Metadata.Add("createdDate", DateTime.UtcNow.ToIso8601BasicDateTime());
-        Console.WriteLine(DateTime.UtcNow.ToIso8601BasicDateTime());
+        addMetadata(request.Metadata, user);
 
         var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
     
@@ -323,9 +309,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             BucketName = bucket,
             Key = fullPath
         };
-        request.Metadata.Add("userId", user.Id);
-        request.Metadata.Add("userDisplayName", user.DisplayName);
-        request.Metadata.Add("createdDate", createdDate.ToIso8601BasicDateTime());
+        addMetadata(request.Metadata, user);
 
         var response = await s3.PutObjectAsync(request, cancellationToken);
 
@@ -360,25 +344,6 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return response.S3Objects.Exists(o => o.Key == fullPath);
     }
 
-    private async Task<(UserDetails user, DateTime createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
-        var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
-        {
-            BucketName = bucket,
-            Key = fullPath,
-        }, cancellationToken);
-
-        var metadata = response.Metadata;
-
-        return (
-            new UserDetails
-            {
-                Id = metadata["userId"] ?? "",
-                DisplayName = metadata["userDisplayName"] ?? ""
-            },
-            DateTime.UtcNow //.Parse(metadata["createdDate"], null, DateTimeStyles.RoundtripKind)
-        );
-    }
-
     private static string getFullPath(string basePath, string path)
     {
         return $"{basePath}{path}";
@@ -408,6 +373,56 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         }
 
         return url;
+    }
+
+    private static void addMetadata(MetadataCollection metadata, UserDetails user)
+    {
+        metadata.Add("userId", user.Id);
+        metadata.Add("userDisplayName", user.DisplayName);
+        metadata.Add("createdDate", DateTime.UtcNow.ToString(ISOFORMAT));
+    }
+
+    private async Task<(UserDetails user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
+        try {
+            var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
+            {
+                BucketName = bucket,
+                Key = fullPath,
+            }, cancellationToken);
+    
+            var metadata = response.Metadata;
+
+            DateTime? cratedDate = null;
+            try
+            {
+                cratedDate = DateTime.ParseExact(metadata["createdDate"], ISOFORMAT, CultureInfo.InvariantCulture).ToUniversalTime();
+            } catch {}
+            
+            return (
+                new UserDetails
+                {
+                    Id = metadata["userId"] ?? "",
+                    DisplayName = metadata["userDisplayName"] ?? ""
+                },
+                cratedDate
+            );
+        } catch {
+            return (
+                new UserDetails(),
+                null
+            );
+        }
+    }
+
+    private async Task<List<BucketResource>> enrichWithMetadata(List<BucketResource> resources, string bucket, string basePath, CancellationToken cancellationToken) {
+        await Task.WhenAll(resources.Select(async resource =>
+        {
+            var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, cancellationToken);
+            resource.User = user;
+            resource.CreatedDate = createdDate;
+        }));
+
+        return resources;
     }
 }
 
