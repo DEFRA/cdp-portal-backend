@@ -27,7 +27,7 @@ public record BucketResource
     public bool IsFolder { get; init; } = false;
 
     [JsonPropertyName("user")]
-    public UserDetails User { get; set; } = new UserDetails();
+    public UserDetails? User { get; set; }
 
     // Used when enriching with Metadata
     [JsonIgnore]

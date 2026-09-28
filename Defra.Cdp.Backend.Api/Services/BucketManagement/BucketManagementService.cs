@@ -383,7 +383,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         metadata.Add("createdDate", DateTime.UtcNow.ToString(ISOFORMAT));
     }
 
-    private async Task<(UserDetails user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
+    private async Task<(UserDetails? user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
         try {
             var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
             {
@@ -400,16 +400,16 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             } catch {}
             
             return (
-                new UserDetails
+                metadata["userId"] == null ? null : new UserDetails
                 {
-                    Id = metadata["userId"] ?? "",
+                    Id = metadata["userId"],
                     DisplayName = metadata["userDisplayName"] ?? ""
                 },
                 cratedDate
             );
         } catch {
             return (
-                new UserDetails(),
+                null,
                 null
             );
         }
