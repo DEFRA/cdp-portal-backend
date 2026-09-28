@@ -52,7 +52,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
             foreach (var s3Object in response.S3Objects)
             {
-                var (relPath, name, isFolder) = getObjectPathInfo(basePath, s3Object.Key);
+                var (relPath, name, _) = getObjectPathInfo(basePath, s3Object.Key);
                 var groupedPath = path == "" ? relPath : removeFirst(relPath, path);
                 var isCurrentFolder = groupedPath == "";
                 var isGroupedFolder = groupedPath.Contains('/');
@@ -71,6 +71,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                         if (s3Object.LastModified > resource.ModifiedDate)
                         {
                             resource.ModifiedDate = s3Object.LastModified.Value;
+                            resource.folderModifedDateResourceKey = s3Object.Key;
                         }
                     }
                     else
@@ -78,7 +79,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                         resources.Add($"{groupedFolderName}/", new BucketResource
                         {
                             Name = groupedFolderName,
-                            ModifiedDate = s3Object.LastModified ?? DateTime.Now,
+                            ModifiedDate = s3Object.LastModified,
                             Size = s3Object.Size ?? 0,
                             Path = $"{path}{groupedFolderName}/",
                             IsFolder = true
@@ -91,7 +92,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
-                        ModifiedDate = s3Object.LastModified ?? DateTime.Now,
+                        ModifiedDate = s3Object.LastModified,
                         Size = s3Object.Size ?? 0,
                         Path = relPath,
                         IsFolder = false
@@ -416,10 +417,17 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
     private async Task<List<BucketResource>> enrichWithMetadata(List<BucketResource> resources, string bucket, string basePath, CancellationToken cancellationToken) {
         await Task.WhenAll(resources.Select(async resource =>
-        {
+        {           
             var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, cancellationToken);
             resource.User = user;
             resource.CreatedDate = createdDate;
+
+            // Override user with last modified child's user
+            if (resource.folderModifedDateResourceKey != null)
+            {
+                var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, cancellationToken);
+                resource.User = childUser;
+            }
         }));
 
         return resources;

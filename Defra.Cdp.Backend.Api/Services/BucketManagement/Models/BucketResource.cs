@@ -18,14 +18,18 @@ public record BucketResource
     public long Size { get; set; } = 0;
 
     [JsonPropertyName("modifiedDate")]
-    public DateTime ModifiedDate { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
     [JsonPropertyName("createdDate")]
-    public DateTime CreatedDate { get; set; }
+    public DateTime? CreatedDate { get; set; }
 
     [JsonPropertyName("isFolder")]
     public bool IsFolder { get; init; } = false;
 
     [JsonPropertyName("user")]
     public UserDetails User { get; set; } = new UserDetails();
+
+    // Used when enriching with Metadata
+    [JsonIgnore]
+    public string? folderModifedDateResourceKey { get; set; }
 }
