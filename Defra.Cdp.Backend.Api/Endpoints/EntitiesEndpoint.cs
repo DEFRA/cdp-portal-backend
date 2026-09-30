@@ -538,7 +538,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Create a service's import resource")]
-    private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>>> CreateUploadImportsResource(
+    private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>, UnauthorizedHttpResult>> CreateUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -559,6 +559,11 @@ public static class EntitiesEndpoint
 
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
 
+        if (user == null)
+        {
+            return TypedResults.Unauthorized();
+        }
+
         if (isFolder)
         {
             var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, user, ct);
@@ -567,7 +572,8 @@ public static class EntitiesEndpoint
         }
         else
         {
-            if (uploadBucketResource == null) {
+            if (uploadBucketResource == null)
+            {
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
@@ -627,7 +633,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Delete a service's import resource")]
-    private static async Task<Results<NotFound, Ok, BadRequest<string>>> DeleteImportsResource(
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, UnauthorizedHttpResult>> DeleteImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
@@ -642,8 +648,13 @@ public static class EntitiesEndpoint
         if (entity == null) return TypedResults.NotFound();
 
         var basePath = $"{entity.Name}/imports/";
-        
+
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
+
+        if (user == null)
+        {
+            return TypedResults.Unauthorized();
+        }
 
         await bucketManagementService.DeleteBucketResource(migrationsBucket, basePath, path, user, ct);
 
