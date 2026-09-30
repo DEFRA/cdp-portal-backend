@@ -23,7 +23,7 @@ public interface IBucketManagementService
     Task DeleteBucketResource(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken);
 }
 
-public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
+public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementService> logger):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;  // Keep as small as possible
     private const Int64 UPLOAD_PART_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
@@ -44,12 +44,16 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         do
         {
+            logger.LogInformation("Listing bucket{bucket} for prefix {fullPath}", bucket, fullPath);
             response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
+                logger.LogWarning("No listings for bucket {bucket} for prefix {fullPath}", bucket, fullPath);
                 return null; // Not Found
             }
+
+            logger.LogInformation("Found {count} resources listing bucket {bucket} for prefix {fullPath}", response.S3Objects.Count, bucket, fullPath);
 
             foreach (var s3Object in response.S3Objects)
             {
@@ -89,7 +93,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
                 }
                 else
-                {                  
+                {
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
@@ -127,12 +131,16 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         do
         {
+            logger.LogInformation("Listing bucket{bucket} for prefix {fullPath}", bucket, basePath);
             response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
+                logger.LogWarning("No listings for bucket {bucket} for prefix {fullPath}", bucket, basePath);
                 return null; // Not Found
             }
+
+            logger.LogInformation("Found {count} resources listing bucket {bucket} for prefix {fullPath}", response.S3Objects.Count, bucket, basePath);
 
             foreach (var s3Object in response.S3Objects)
             {
@@ -198,8 +206,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             }   
         };
 
+        logger.LogInformation("Getting preSigned GET URL for bucket {bucket} key {fullPath}", bucket, fullPath);
         var url = await s3.GetPreSignedURLAsync(request);
-
+        logger.LogInformation("Successfully got preSigned GET URL for bucket {bucket} key {fullPath}", bucket, fullPath);
+        
         return new BucketResourceUrl
         {
             Method = "GET",
@@ -353,7 +363,9 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             Key = fullPath
         };
 
+        logger.LogInformation("Deleting object for bucket {bucket} key {fullPath}", bucket, fullPath);
         await s3.DeleteObjectAsync(request, cancellationToken);
+        logger.LogInformation("Sucessfully deleted object for bucket {bucket} key {fullPath}", bucket, fullPath);
     }
 
     private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken)
@@ -432,11 +444,13 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     {
         try
         {
+            logger.LogInformation("Getting metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
             var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
             {
                 BucketName = bucket,
                 Key = fullPath,
             }, cancellationToken);
+            logger.LogInformation("Successfully got metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
 
             var metadata = response.Metadata;
 
@@ -475,7 +489,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             DestinationKey = fullPath
         };
         addMetadata(metadataRequest.Metadata, user, createdDate);
+
+        logger.LogInformation("Setting metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
         await s3.CopyObjectAsync(metadataRequest, cancellationToken);
+        logger.LogInformation("Sucessfully set metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
     }
 
     private async Task<List<BucketResource>> enrichWithMetadata(List<BucketResource> resources, string bucket, string basePath, CancellationToken cancellationToken) {
