@@ -354,8 +354,8 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
             }
         }
 
-        var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
-        await setBucketResourceMetadata(bucket, fullPath, user, createdDate, cancellationToken);
+        // var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
+        // await setBucketResourceMetadata(bucket, fullPath, user, createdDate, cancellationToken);
 
         var request = new DeleteObjectRequest
         {
