@@ -423,4 +423,51 @@ public class BucketManagementServiceTests
         );
         Assert.Equal("Already exists", ex.Message);
     }
+
+    [Fact]
+    public async Task Test_delete_empty_folder_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/empty-folder/")));
+        s3.DeleteObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new DeleteObjectResponse()));
+
+        await bucketManagementService.DeleteBucketResource(s_bucketName, "folder/", "empty-folder/", s_user, TestContext.Current.CancellationToken);
+
+        await s3.ReceivedWithAnyArgs().DeleteObjectAsync(default, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Test_delete_non_empty_folder_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
+        s3.DeleteObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new DeleteObjectResponse()));
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            bucketManagementService.DeleteBucketResource(s_bucketName, "folder/", "sub-folder/", s_user, TestContext.Current.CancellationToken)
+        );
+
+        await s3.DidNotReceiveWithAnyArgs().DeleteObjectAsync(default, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Test_delete_file_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/file-in-folder.txt")));
+        s3.DeleteObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new DeleteObjectResponse()));
+
+        await bucketManagementService.DeleteBucketResource(s_bucketName, "folder/", "file-in-folder.txt", s_user, TestContext.Current.CancellationToken);
+
+        await s3.ReceivedWithAnyArgs().DeleteObjectAsync(default, TestContext.Current.CancellationToken);
+    }
 }

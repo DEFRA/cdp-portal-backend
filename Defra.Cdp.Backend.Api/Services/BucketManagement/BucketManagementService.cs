@@ -496,7 +496,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
                 var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, ct);
                 resource.User = childUser;
             }
-        }));
+        });
 
         return resources;
     }
