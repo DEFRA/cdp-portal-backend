@@ -1,7 +1,6 @@
 using System.Globalization;
 using Amazon.S3;
 using Amazon.S3.Model;
-using AwsSignatureVersion4.Private;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 
@@ -44,16 +43,16 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
 
         do
         {
-            logger.LogInformation("Listing bucket{bucket} for prefix {fullPath}", bucket, fullPath);
+            logger.LogInformation("Listing bucket {Bucket} for prefix {FullPath}", bucket, fullPath);
             response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
-                logger.LogWarning("No listings for bucket {bucket} for prefix {fullPath}", bucket, fullPath);
+                logger.LogWarning("No listings for bucket {Bucket} for prefix {FullPath}", bucket, fullPath);
                 return null; // Not Found
             }
 
-            logger.LogInformation("Found {count} resources listing bucket {bucket} for prefix {fullPath}", response.S3Objects.Count, bucket, fullPath);
+            logger.LogInformation("Found {Count} resources listing bucket {Bucket} for prefix {FullPath}", response.S3Objects.Count, bucket, fullPath);
 
             foreach (var s3Object in response.S3Objects)
             {
@@ -131,16 +130,16 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
 
         do
         {
-            logger.LogInformation("Listing bucket{bucket} for prefix {fullPath}", bucket, basePath);
+            logger.LogInformation("Listing bucket {Bucket} for prefix {FullPath}", bucket, basePath);
             response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
-                logger.LogWarning("No listings for bucket {bucket} for prefix {fullPath}", bucket, basePath);
+                logger.LogWarning("No listings for bucket {Bucket} for prefix {FullPath}", bucket, basePath);
                 return null; // Not Found
             }
 
-            logger.LogInformation("Found {count} resources listing bucket {bucket} for prefix {fullPath}", response.S3Objects.Count, bucket, basePath);
+            logger.LogInformation("Found {Count} resources listing bucket {Bucket} for prefix {FullPath}", response.S3Objects.Count, bucket, basePath);
 
             foreach (var s3Object in response.S3Objects)
             {
@@ -206,9 +205,9 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
             }   
         };
 
-        logger.LogInformation("Getting preSigned GET URL for bucket {bucket} key {fullPath}", bucket, fullPath);
+        logger.LogInformation("Getting preSigned GET URL for bucket {Bucket} key {FullPath}", bucket, fullPath);
         var url = await s3.GetPreSignedURLAsync(request);
-        logger.LogInformation("Successfully got preSigned GET URL for bucket {bucket} key {fullPath}", bucket, fullPath);
+        logger.LogInformation("Successfully got preSigned GET URL for bucket {Bucket} key {FullPath}", bucket, fullPath);
         
         return new BucketResourceUrl
         {
@@ -235,10 +234,10 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
         addMetadata(request.Metadata, user, createdDate ?? DateTime.UtcNow);
 
         
-        logger.LogInformation("Starting multipart upload for bucket {bucket} key {fullPath}", bucket, fullPath);
+        logger.LogInformation("Starting multipart upload for bucket {Bucket} key {FullPath}", bucket, fullPath);
         var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
         var uploadId = response.UploadId;
-        logger.LogInformation("Started multipart upload for bucket {bucket} key {fullPath} with uploadId {uploadId}", bucket, fullPath, uploadId);
+        logger.LogInformation("Started multipart upload for bucket {Bucket} key {FullPath} with uploadId {UploadId}", bucket, fullPath, uploadId);
 
         Int128 currentPosition = 0;
         for (var partNumber = 0; partNumber < numParts; partNumber++)
@@ -270,7 +269,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
     public async Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken) {
         var fullPath = getFullPath(basePath, path);
 
-        logger.LogInformation("Getting preSigned PUT URL for bucket {bucket} key {fullPath} with uploadId {} for part {}", bucket, fullPath, uploadId, partNumber);
+        logger.LogInformation("Getting preSigned PUT URL for bucket {Bucket} key {FullPath} with uploadId {UploadId} for part {PartNumber}", bucket, fullPath, uploadId, partNumber);
         var url = await s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
         {
             BucketName = bucket,
@@ -283,7 +282,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
                 ContentMD5 = contentMd5
             }
         });
-        logger.LogInformation("Got preSigned PUT URL for bucket {bucket} key {fullPath} with uploadId {} for part {}", bucket, fullPath, uploadId, partNumber);
+        logger.LogInformation("Got preSigned PUT URL for bucket {Bucket} key {FullPath} with uploadId {UploadId} for part {PartNumber}", bucket, fullPath, uploadId, partNumber);
         
         return new BucketResourceUrl
         {
@@ -295,7 +294,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
     public async Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken) {
         var fullPath = getFullPath(basePath, path);
 
-        logger.LogInformation("Completing multipart upload for bucket {bucket} key {fullPath} with uploadId {uploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
+        logger.LogInformation("Completing multipart upload for bucket {Bucket} key {FullPath} with uploadId {UploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
         await s3.CompleteMultipartUploadAsync(new CompleteMultipartUploadRequest
         {
             BucketName = bucket,
@@ -306,7 +305,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
                 ETag = part.ETag
             })]
         }, cancellationToken);
-        logger.LogInformation("Completed multipart upload for bucket {bucket} key {fullPath} with uploadId {uploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
+        logger.LogInformation("Completed multipart upload for bucket {Bucket} key {FullPath} with uploadId {UploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
     }
 
     public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken)
@@ -367,9 +366,9 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
             Key = fullPath
         };
 
-        logger.LogInformation("Deleting object for bucket {bucket} key {fullPath}", bucket, fullPath);
+        logger.LogInformation("Deleting object for bucket {Bucket} key {FullPath}", bucket, fullPath);
         await s3.DeleteObjectAsync(request, cancellationToken);
-        logger.LogInformation("Sucessfully deleted object for bucket {bucket} key {fullPath}", bucket, fullPath);
+        logger.LogInformation("Sucessfully deleted object for bucket {Bucket} key {FullPath}", bucket, fullPath);
     }
 
     private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken)
@@ -448,13 +447,13 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
     {
         try
         {
-            logger.LogInformation("Getting metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
+            logger.LogInformation("Getting metadata for bucket {Bucket} key {FullPath}", bucket, fullPath);
             var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
             {
                 BucketName = bucket,
                 Key = fullPath,
             }, cancellationToken);
-            logger.LogInformation("Successfully got metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
+            logger.LogInformation("Successfully got metadata for bucket {Bucket} key {FullPath}", bucket, fullPath);
 
             var metadata = response.Metadata;
 
