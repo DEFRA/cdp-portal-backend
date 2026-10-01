@@ -354,9 +354,6 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
             }
         }
 
-        // var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
-        // await setBucketResourceMetadata(bucket, fullPath, user, createdDate, cancellationToken);
-
         var request = new DeleteObjectRequest
         {
             BucketName = bucket,
@@ -479,33 +476,17 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
         }
     }
 
-    private async Task setBucketResourceMetadata(string bucket, string fullPath, UserDetails user, DateTime? createdDate, CancellationToken cancellationToken)
-    {
-        var metadataRequest = new CopyObjectRequest
-        {
-            SourceBucket = bucket,
-            SourceKey = fullPath,
-            DestinationBucket = bucket,
-            DestinationKey = fullPath
-        };
-        addMetadata(metadataRequest.Metadata, user, createdDate);
-
-        logger.LogInformation("Setting metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
-        await s3.CopyObjectAsync(metadataRequest, cancellationToken);
-        logger.LogInformation("Sucessfully set metadata for bucket {bucket} key {fullPath}", bucket, fullPath);
-    }
-
     private async Task<List<BucketResource>> enrichWithMetadata(List<BucketResource> resources, string bucket, string basePath, CancellationToken cancellationToken) {
-        await Task.WhenAll(resources.Select(async resource =>
+        await Parallel.ForEachAsync(resources, new ParallelOptions { MaxDegreeOfParallelism = 16, CancellationToken = cancellationToken }, async (resource, ct) =>
         {           
-            var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, cancellationToken);
+            var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, ct);
             resource.User = user;
             resource.CreatedDate = createdDate;
 
             // Override user with last modified child's user
             if (resource.folderModifedDateResourceKey != null)
             {
-                var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, cancellationToken);
+                var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, ct);
                 resource.User = childUser;
             }
         }));
