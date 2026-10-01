@@ -3,7 +3,7 @@ using Amazon.S3.Model;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.BucketManagement;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
-using Defra.Cdp.Backend.Api.Services.Users;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.BucketManagement;
@@ -52,7 +52,8 @@ public class BucketManagementServiceTests
     public async Task Test_list_resources_at_root_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
 
@@ -69,7 +70,8 @@ public class BucketManagementServiceTests
     public async Task Test_list_resources_with_base_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/")));
 
@@ -87,7 +89,8 @@ public class BucketManagementServiceTests
     public async Task Test_list_resources_with_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/")));
 
@@ -105,7 +108,8 @@ public class BucketManagementServiceTests
     public async Task Test_list_resources_with_basePath_and_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
 
@@ -121,7 +125,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_tree_at_root_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
 
@@ -144,7 +149,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_tree_with_base_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
 
@@ -171,7 +177,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_tree_with_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
 
@@ -203,7 +210,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_tree_with_basePath_and_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("")));
 
@@ -230,7 +238,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_resource_with_missing_object()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/missing-file.txt")));
 
@@ -243,7 +252,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_resource_with_basePath_and_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/file-in-folder.txt")));
         s3.GetPreSignedURLAsync(default).ReturnsForAnyArgs(Task.FromResult("https://the-presigned-url.s3.aws.com"));
@@ -258,7 +268,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_resource_which_is_a_folder()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
 
@@ -272,7 +283,8 @@ public class BucketManagementServiceTests
     public async Task Test_start_resource_upload_with_basePath_and_path_using_small_file()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
@@ -298,7 +310,8 @@ public class BucketManagementServiceTests
     public async Task Test_start_resource_upload_with_basePath_and_path_using_large_file()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
@@ -329,7 +342,8 @@ public class BucketManagementServiceTests
     public async Task Test_get_resource_upload_part_url_with_basePath_and_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.GetPreSignedURLAsync(default).ReturnsForAnyArgs(Task.FromResult("https://the-presigned-url.s3.aws.com"));
 
@@ -343,7 +357,8 @@ public class BucketManagementServiceTests
     public async Task Test_complete_resource_upload_with_basePath_and_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.CompleteMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new CompleteMultipartUploadResponse()));
 
@@ -366,7 +381,8 @@ public class BucketManagementServiceTests
     public async Task Test_create_empty_folder_basePath_and_path()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/new-folder/")));
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
@@ -383,7 +399,8 @@ public class BucketManagementServiceTests
     public async Task Test_create_empty_folder_basePath_and_path_when_not_a_folder()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/new-folder/file.txt", s_user, TestContext.Current.CancellationToken)
@@ -395,7 +412,8 @@ public class BucketManagementServiceTests
     public async Task Test_create_empty_folder_basePath_and_path_when_already_exists()
     {
         var s3 = Substitute.For<IAmazonS3>();
-        var bucketManagementService = Substitute.For<BucketManagementService>(s3);
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
         s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
         s3.PutObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new PutObjectResponse()));
@@ -404,5 +422,52 @@ public class BucketManagementServiceTests
             await bucketManagementService.CreateEmptyFolder(s_bucketName, "folder/", "sub-folder/", s_user, TestContext.Current.CancellationToken)
         );
         Assert.Equal("Already exists", ex.Message);
+    }
+
+    [Fact]
+    public async Task Test_delete_empty_folder_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/empty-folder/")));
+        s3.DeleteObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new DeleteObjectResponse()));
+
+        await bucketManagementService.DeleteBucketResource(s_bucketName, "folder/", "empty-folder/", s_user, TestContext.Current.CancellationToken);
+
+        await s3.ReceivedWithAnyArgs().DeleteObjectAsync(default, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Test_delete_non_empty_folder_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/")));
+        s3.DeleteObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new DeleteObjectResponse()));
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            bucketManagementService.DeleteBucketResource(s_bucketName, "folder/", "sub-folder/", s_user, TestContext.Current.CancellationToken)
+        );
+
+        await s3.DidNotReceiveWithAnyArgs().DeleteObjectAsync(default, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Test_delete_file_basePath_and_path()
+    {
+        var s3 = Substitute.For<IAmazonS3>();
+        var logger = Substitute.For<ILogger<BucketManagementService>>();
+        var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
+
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/file-in-folder.txt")));
+        s3.DeleteObjectAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new DeleteObjectResponse()));
+
+        await bucketManagementService.DeleteBucketResource(s_bucketName, "folder/", "file-in-folder.txt", s_user, TestContext.Current.CancellationToken);
+
+        await s3.ReceivedWithAnyArgs().DeleteObjectAsync(default, TestContext.Current.CancellationToken);
     }
 }

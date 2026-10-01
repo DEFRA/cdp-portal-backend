@@ -1,7 +1,6 @@
 using System.Globalization;
 using Amazon.S3;
 using Amazon.S3.Model;
-using AwsSignatureVersion4.Private;
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.BucketManagement.Models;
 
@@ -20,13 +19,14 @@ public interface IBucketManagementService
     Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken);
     Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken);
     Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken);
+    Task DeleteBucketResource(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken);
 }
 
-public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
+public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementService> logger):IBucketManagementService
 {
     private const int PRE_SIGNED_URL_TTL_SECONDS = 10;  // Keep as small as possible
     private const Int64 UPLOAD_PART_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
-    private const string ISOFORMAT = "yyyy-MM-dd\\THH:mm:ss.fffK";
+    private const string ISO_FORMAT = "yyyy-MM-dd\\THH:mm:ss.fffK";
 
     public async Task<List<BucketResource>?> ListBucketResources(string bucket, string basePath, string path, CancellationToken cancellationToken)
     {
@@ -43,12 +43,16 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         do
         {
+            logger.LogInformation("Listing bucket {Bucket} for prefix {FullPath}", bucket, fullPath);
             response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
+                logger.LogWarning("No listings for bucket {Bucket} for prefix {FullPath}", bucket, fullPath);
                 return null; // Not Found
             }
+
+            logger.LogInformation("Found {Count} resources listing bucket {Bucket} for prefix {FullPath}", response.S3Objects.Count, bucket, fullPath);
 
             foreach (var s3Object in response.S3Objects)
             {
@@ -88,7 +92,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
                 }
                 else
-                {                  
+                {
                     resources.Add(name, new BucketResource
                     {
                         Name = name,
@@ -126,12 +130,16 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
 
         do
         {
+            logger.LogInformation("Listing bucket {Bucket} for prefix {FullPath}", bucket, basePath);
             response = await s3.ListObjectsV2Async(request, cancellationToken);
 
             if (response.S3Objects == null)
             {
+                logger.LogWarning("No listings for bucket {Bucket} for prefix {FullPath}", bucket, basePath);
                 return null; // Not Found
             }
+
+            logger.LogInformation("Found {Count} resources listing bucket {Bucket} for prefix {FullPath}", response.S3Objects.Count, bucket, basePath);
 
             foreach (var s3Object in response.S3Objects)
             {
@@ -197,8 +205,10 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
             }   
         };
 
+        logger.LogInformation("Getting preSigned GET URL for bucket {Bucket} key {FullPath}", bucket, fullPath);
         var url = await s3.GetPreSignedURLAsync(request);
-
+        logger.LogInformation("Successfully got preSigned GET URL for bucket {Bucket} key {FullPath}", bucket, fullPath);
+        
         return new BucketResourceUrl
         {
             Method = "GET",
@@ -223,9 +233,11 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
         addMetadata(request.Metadata, user, createdDate ?? DateTime.UtcNow);
 
+        
+        logger.LogInformation("Starting multipart upload for bucket {Bucket} key {FullPath}", bucket, fullPath);
         var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
-    
         var uploadId = response.UploadId;
+        logger.LogInformation("Started multipart upload for bucket {Bucket} key {FullPath} with uploadId {UploadId}", bucket, fullPath, uploadId);
 
         Int128 currentPosition = 0;
         for (var partNumber = 0; partNumber < numParts; partNumber++)
@@ -257,6 +269,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     public async Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken) {
         var fullPath = getFullPath(basePath, path);
 
+        logger.LogInformation("Getting preSigned PUT URL for bucket {Bucket} key {FullPath} with uploadId {UploadId} for part {PartNumber}", bucket, fullPath, uploadId, partNumber);
         var url = await s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
         {
             BucketName = bucket,
@@ -269,7 +282,8 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 ContentMD5 = contentMd5
             }
         });
-
+        logger.LogInformation("Got preSigned PUT URL for bucket {Bucket} key {FullPath} with uploadId {UploadId} for part {PartNumber}", bucket, fullPath, uploadId, partNumber);
+        
         return new BucketResourceUrl
         {
             Method = "PUT",
@@ -280,7 +294,9 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     public async Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken) {
         var fullPath = getFullPath(basePath, path);
 
-        await s3.CompleteMultipartUploadAsync(new CompleteMultipartUploadRequest {
+        logger.LogInformation("Completing multipart upload for bucket {Bucket} key {FullPath} with uploadId {UploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
+        await s3.CompleteMultipartUploadAsync(new CompleteMultipartUploadRequest
+        {
             BucketName = bucket,
             Key = fullPath,
             UploadId = completeBucketResourceUpload.UploadId,
@@ -289,6 +305,7 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 ETag = part.ETag
             })]
         }, cancellationToken);
+        logger.LogInformation("Completed multipart upload for bucket {Bucket} key {FullPath} with uploadId {UploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
     }
 
     public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken)
@@ -330,6 +347,30 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         };
     }
 
+    public async Task DeleteBucketResource(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken)
+    {
+        var fullPath = getFullPath(basePath, path);
+        var isFolder = fullPath.Last() == '/';
+
+        if (isFolder)
+        {
+            if (!await isFolderEmpty(bucket, fullPath, cancellationToken))
+            {
+                throw new ArgumentException("Folder is not empty");
+            }
+        }
+
+        var request = new DeleteObjectRequest
+        {
+            BucketName = bucket,
+            Key = fullPath
+        };
+
+        logger.LogInformation("Deleting object for bucket {Bucket} key {FullPath}", bucket, fullPath);
+        await s3.DeleteObjectAsync(request, cancellationToken);
+        logger.LogInformation("Sucessfully deleted object for bucket {Bucket} key {FullPath}", bucket, fullPath);
+    }
+
     private async Task<bool> bucketResourceExists(string bucket, string fullPath, CancellationToken cancellationToken)
     {
         // Use list to support folders
@@ -345,6 +386,20 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         if (isFolder) return true;
 
         return response.S3Objects.Exists(o => o.Key == fullPath);
+    }
+
+    private async Task<bool> isFolderEmpty(string bucket, string fullPath, CancellationToken cancellationToken)
+    {
+        var response = await s3.ListObjectsV2Async(new ListObjectsV2Request
+        {
+            BucketName = bucket,
+            Prefix = fullPath,
+            MaxKeys = 10
+        }, cancellationToken);
+
+        if (response.S3Objects == null || response.S3Objects.Count == 0) return false;
+
+        return response.S3Objects.Count == 1 && response.S3Objects.First().Key == fullPath;
     }
 
     private static string getFullPath(string basePath, string path)
@@ -378,29 +433,37 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
         return url;
     }
 
-    private static void addMetadata(MetadataCollection metadata, UserDetails user, DateTime createdDate)
+    private static void addMetadata(MetadataCollection metadata, UserDetails user, DateTime? createdDate)
     {
         metadata.Add("userId", user.Id);
         metadata.Add("userDisplayName", user.DisplayName);
-        metadata.Add("createdDate", createdDate.ToString(ISOFORMAT));
+        if (createdDate != null)
+        {
+            metadata.Add("createdDate", createdDate?.ToString(ISO_FORMAT));
+        }
     }
 
-    private async Task<(UserDetails? user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken) {
-        try {
+    private async Task<(UserDetails? user, DateTime? createdDate)> getBucketResourceMetadata(string bucket, string fullPath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            logger.LogInformation("Getting metadata for bucket {Bucket} key {FullPath}", bucket, fullPath);
             var response = await s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
             {
                 BucketName = bucket,
                 Key = fullPath,
             }, cancellationToken);
-    
+            logger.LogInformation("Successfully got metadata for bucket {Bucket} key {FullPath}", bucket, fullPath);
+
             var metadata = response.Metadata;
 
             DateTime? cratedDate = null;
             try
             {
-                cratedDate = DateTime.ParseExact(metadata["createdDate"], ISOFORMAT, CultureInfo.InvariantCulture).ToUniversalTime();
-            } catch {}
-            
+                cratedDate = DateTime.ParseExact(metadata["createdDate"], ISO_FORMAT, CultureInfo.InvariantCulture).ToUniversalTime();
+            }
+            catch { }
+
             return (
                 metadata["userId"] == null ? null : new UserDetails
                 {
@@ -409,7 +472,9 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
                 },
                 cratedDate
             );
-        } catch {
+        }
+        catch
+        {
             return (
                 null,
                 null
@@ -418,19 +483,19 @@ public class BucketManagementService(IAmazonS3 s3):IBucketManagementService
     }
 
     private async Task<List<BucketResource>> enrichWithMetadata(List<BucketResource> resources, string bucket, string basePath, CancellationToken cancellationToken) {
-        await Task.WhenAll(resources.Select(async resource =>
+        await Parallel.ForEachAsync(resources, new ParallelOptions { MaxDegreeOfParallelism = 16, CancellationToken = cancellationToken }, async (resource, ct) =>
         {           
-            var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, cancellationToken);
+            var (user, createdDate) = await getBucketResourceMetadata(bucket, basePath + resource.Path, ct);
             resource.User = user;
             resource.CreatedDate = createdDate;
 
             // Override user with last modified child's user
             if (resource.folderModifedDateResourceKey != null)
             {
-                var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, cancellationToken);
+                var (childUser, _) = await getBucketResourceMetadata(bucket, resource.folderModifedDateResourceKey, ct);
                 resource.User = childUser;
             }
-        }));
+        });
 
         return resources;
     }
