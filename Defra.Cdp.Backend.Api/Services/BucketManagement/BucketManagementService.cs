@@ -234,9 +234,11 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
         var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
         addMetadata(request.Metadata, user, createdDate ?? DateTime.UtcNow);
 
+        
+        logger.LogInformation("Starting multipart upload for bucket {bucket} key {fullPath}", bucket, fullPath);
         var response = await s3.InitiateMultipartUploadAsync(request, cancellationToken);
-    
         var uploadId = response.UploadId;
+        logger.LogInformation("Started multipart upload for bucket {bucket} key {fullPath} with uploadId {uploadId}", bucket, fullPath, uploadId);
 
         Int128 currentPosition = 0;
         for (var partNumber = 0; partNumber < numParts; partNumber++)
@@ -268,6 +270,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
     public async Task<BucketResourceUrl> GetBucketResourceMultipartUploadUrl(string bucket, string basePath, string path, string uploadId, int partNumber, string contentMd5, CancellationToken cancellationToken) {
         var fullPath = getFullPath(basePath, path);
 
+        logger.LogInformation("Getting preSigned PUT URL for bucket {bucket} key {fullPath} with uploadId {} for part {}", bucket, fullPath, uploadId, partNumber);
         var url = await s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
         {
             BucketName = bucket,
@@ -280,7 +283,8 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
                 ContentMD5 = contentMd5
             }
         });
-
+        logger.LogInformation("Got preSigned PUT URL for bucket {bucket} key {fullPath} with uploadId {} for part {}", bucket, fullPath, uploadId, partNumber);
+        
         return new BucketResourceUrl
         {
             Method = "PUT",
@@ -291,7 +295,9 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
     public async Task CompleteBucketResourceMultipartUpload(string bucket, string basePath, string path, CompleteBucketResourceUpload completeBucketResourceUpload, CancellationToken cancellationToken) {
         var fullPath = getFullPath(basePath, path);
 
-        await s3.CompleteMultipartUploadAsync(new CompleteMultipartUploadRequest {
+        logger.LogInformation("Completing multipart upload for bucket {bucket} key {fullPath} with uploadId {uploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
+        await s3.CompleteMultipartUploadAsync(new CompleteMultipartUploadRequest
+        {
             BucketName = bucket,
             Key = fullPath,
             UploadId = completeBucketResourceUpload.UploadId,
@@ -300,6 +306,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
                 ETag = part.ETag
             })]
         }, cancellationToken);
+        logger.LogInformation("Completed multipart upload for bucket {bucket} key {fullPath} with uploadId {uploadId}", bucket, fullPath, completeBucketResourceUpload.UploadId);
     }
 
     public async Task<BucketResource> CreateEmptyFolder(string bucket, string basePath, string path, UserDetails user, CancellationToken cancellationToken)
