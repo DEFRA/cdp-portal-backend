@@ -220,6 +220,12 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
     {
         var fullPath = getFullPath(basePath, path);
 
+        
+        if (await bucketResourceExists(bucket, fullPath, cancellationToken))
+        {
+            throw new ArgumentException("Already exists");
+        }
+
         // TODO: Calc part size based on size?
         var numParts = ((size - 1) / UPLOAD_PART_SIZE_BYTES) + 1; // Int division, rounding up
         var parts = new List<BucketResourceUploadPart>();
@@ -229,9 +235,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
             BucketName = bucket,
             Key = fullPath
         };
-
-        var (_, createdDate) = await getBucketResourceMetadata(bucket, fullPath, cancellationToken);
-        addMetadata(request.Metadata, user, createdDate ?? DateTime.UtcNow);
+        addMetadata(request.Metadata, user, DateTime.UtcNow);
 
         
         logger.LogInformation("Starting multipart upload for bucket {Bucket} key {FullPath}", bucket, fullPath);
@@ -300,6 +304,7 @@ public class BucketManagementService(IAmazonS3 s3, ILogger<BucketManagementServi
             BucketName = bucket,
             Key = fullPath,
             UploadId = completeBucketResourceUpload.UploadId,
+            IfNoneMatch = "*",
             PartETags = [.. completeBucketResourceUpload.Parts.Select(part => new PartETag{
                 PartNumber = part.PartNumber,
                 ETag = part.ETag
