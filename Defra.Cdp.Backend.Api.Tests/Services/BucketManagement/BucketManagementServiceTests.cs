@@ -286,6 +286,7 @@ public class BucketManagementServiceTests
         var logger = Substitute.For<ILogger<BucketManagementService>>();
         var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/new-file")));
         s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
         var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 45000, s_user, TestContext.Current.CancellationToken);
@@ -313,6 +314,7 @@ public class BucketManagementServiceTests
         var logger = Substitute.For<ILogger<BucketManagementService>>();
         var bucketManagementService = Substitute.For<BucketManagementService>(s3, logger);
 
+        s3.ListObjectsV2Async(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(filteredListResponse("folder/sub-folder/new-file")));
         s3.InitiateMultipartUploadAsync(default, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(new InitiateMultipartUploadResponse { UploadId = "1234" }));
 
         var result = await bucketManagementService.StartBucketResourceMultipartUpload(s_bucketName, "folder/", "sub-folder/new-file", 145000000, s_user, TestContext.Current.CancellationToken);
