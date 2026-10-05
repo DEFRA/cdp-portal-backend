@@ -72,19 +72,10 @@ public abstract class MonoLambdaApiClient(IOptions<MonoLambdaApiOptions> options
         {
             using var document = JsonDocument.Parse(responseBody);
             var root = document.RootElement;
+
             if (root.TryGetProperty("message", out var messageElement))
             {
                 return messageElement.GetString();
-            }
-
-            if (root.TryGetProperty("body", out var bodyElement))
-            {
-                return bodyElement.ValueKind switch
-                {
-                    JsonValueKind.String => bodyElement.GetString(),
-                    JsonValueKind.Object when bodyElement.TryGetProperty("message", out var nestedMessageElement) => nestedMessageElement.GetString(),
-                    _ => bodyElement.ToString()
-                };
             }
         }
         catch (JsonException)

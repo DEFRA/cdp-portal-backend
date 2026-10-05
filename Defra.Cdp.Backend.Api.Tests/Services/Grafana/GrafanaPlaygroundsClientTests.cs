@@ -12,10 +12,10 @@ namespace Defra.Cdp.Backend.Api.Tests.Services.Grafana;
 public class GrafanaPlaygroundsClientTests : MonoLambdaApiClientTestBase
 {
     [Fact]
-    public async Task GetPlaygrounds_BuildsExpectedRequest_AndParsesWrappedResponse()
+    public async Task GetPlaygrounds_BuildsExpectedRequest_AndParsesResponse()
     {
         var responsePayload = """
-                              {"statusCode":200,"body":{"request_id":"abc-123","service":"cdp-portal-backend","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}}
+                              {"request_id":"abc-123","service":"cdp-portal-backend","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}
                               """;
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
@@ -55,7 +55,7 @@ public class GrafanaPlaygroundsClientTests : MonoLambdaApiClientTestBase
     public async Task GetPlaygrounds_BuildsExpectedRequest_WithLiteralBaseUrlTemplate()
     {
         var responsePayload = """
-                              {"statusCode":200,"body":{"request_id":"abc-456","service":"cdp-uploader","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}}
+                              {"request_id":"abc-456","service":"cdp-uploader","dashboards":[],"alerts":[],"updated":"2026-09-01T10:00:00Z"}
                               """;
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
@@ -97,11 +97,7 @@ public class GrafanaPlaygroundsClientTests : MonoLambdaApiClientTestBase
         var handler = new StubHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(
-                    """{"request_id":"abc-456","service":"cdp-uploader"}""",
-                    Encoding.UTF8,
-                    "application/json"
-                )
+                Content = new StringContent("{}", Encoding.UTF8, "application/json")
             }
         );
 
