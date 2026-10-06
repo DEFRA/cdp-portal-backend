@@ -1,8 +1,10 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Create.Models;
 using Defra.Cdp.Backend.Api.Services.Entities.Model;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -48,7 +50,7 @@ public interface IResourceRequestService
 
 
 public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory, IEntityResourceService entityResourceService)
-    : MongoService<ResourceRequestRecord>(connectionFactory, CollectionName, loggerFactory), IResourceRequestService
+    : MongoService<ResourceRequestRecord>(connectionFactory, CollectionName, loggerFactory), IResourceRequestService, IStatsReporter
 {
     private const string CollectionName = "resourceRequests";
 
@@ -191,5 +193,12 @@ public class ResourceRequestService(IMongoDbClientFactory connectionFactory, ILo
                 await Collection.UpdateOneAsync(filter, update, new UpdateOptions(), cancellationToken);
             }
         }
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var totalRequests = await Collection.CountDocumentsAsync(r => r.Status == PrStatus.Done,
+            new CountOptions(), cancellationToken);
+        metrics.RecordCount("TotalTenantResourceRequests", null, totalRequests);
     }
 }

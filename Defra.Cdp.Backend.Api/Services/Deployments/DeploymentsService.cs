@@ -498,6 +498,9 @@ public class DeploymentsService(
         var totalDeployments = await Collection.CountDocumentsAsync(FilterDefinition<Deployment>.Empty, null, cancellationToken);
         metrics.RecordCount("DeploymentsTotal", null , totalDeployments);
 
+        var totalDeploymentsExcludingAutoDeploy = await Collection.CountDocumentsAsync(d => d.User!.Id != AutoDeploymentConstants.AutoDeploymentId, null, cancellationToken);
+        metrics.RecordCount("DeploymentsTotalExcludingAuto", null , totalDeploymentsExcludingAutoDeploy);
+        
         var pipeline = new EmptyPipelineDefinition<Deployment>()
             .Group(x => x.Environment, g => new 
             { 

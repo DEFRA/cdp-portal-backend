@@ -1,7 +1,9 @@
 using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Mongo;
+using Defra.Cdp.Backend.Api.Services.Aws;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
 using Defra.Cdp.Backend.Api.Services.Grafana.Models;
+using Defra.Cdp.Backend.Api.Services.Usage;
 using MongoDB.Driver;
 
 namespace Defra.Cdp.Backend.Api.Services.Grafana;
@@ -25,7 +27,7 @@ public interface IGrafanaPromotionRequestService
 }
 
 public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFactory, ILoggerFactory loggerFactory)
-    : MongoService<PromotionRequestRecord>(connectionFactory, CollectionName, loggerFactory), IGrafanaPromotionRequestService
+    : MongoService<PromotionRequestRecord>(connectionFactory, CollectionName, loggerFactory), IGrafanaPromotionRequestService, IStatsReporter
 {
     private const string CollectionName = "promotionRequests";
 
@@ -101,5 +103,14 @@ public class GrafanaPromotionRequestService(IMongoDbClientFactory connectionFact
 
         dashboardsPromotions.AddRange(alertPromotion);
         return dashboardsPromotions;
+    }
+
+    public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
+    {
+        var dashboardsPromoted = await Collection.CountDocumentsAsync(pr => pr.Dashboard != null, new CountOptions(), cancellationToken);
+        var alertsPromoted = await Collection.CountDocumentsAsync(pr => pr.Alert != null, new CountOptions(), cancellationToken);
+        
+        metrics.RecordCount("DashboardsPromoted", null, dashboardsPromoted);
+        metrics.RecordCount("AlertsPromoted", null, alertsPromoted);
     }
 }
