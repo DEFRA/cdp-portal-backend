@@ -68,7 +68,8 @@ public class DatabaseMigration
             Environment = request.Environment,
             Version = request.Version,
             User = request.User,
-            ImportTarget = request.ImportTarget
+            ImportTarget = request.ImportTarget,
+            Kind = "import"
         };
     }
 }
