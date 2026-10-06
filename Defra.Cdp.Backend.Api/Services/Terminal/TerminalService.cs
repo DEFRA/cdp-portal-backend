@@ -38,17 +38,33 @@ public class TerminalService(IMongoDbClientFactory connectionFactory, ILoggerFac
             Collection.CountDocumentsAsync(FilterDefinition<TerminalSession>.Empty, null, cancellationToken);
         metrics.RecordCount("TerminalSessionsTotal", null, totalSessions);
         
-        var pipeline = new EmptyPipelineDefinition<TerminalSession>()
+        var environmentPipeline = new EmptyPipelineDefinition<TerminalSession>()
             .Group(x => x.Environment, g => new 
             { 
                 Environment = g.Key, 
                 Count = g.Count() 
             });
 
-        var result = await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
-        foreach (var r in result)
+        var environmentResult = await Collection.Aggregate(environmentPipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var r in environmentResult)
         {
             metrics.RecordCount("TerminalSessionsByEnv", new Dictionary<string, string>{ {"Environment", r.Environment} } , r.Count);
+        }
+        
+        var toolPipeline = new EmptyPipelineDefinition<TerminalSession>()
+            .Group(x => x.Tool, g => new 
+            { 
+                Tool = g.Key,
+                Count = g.Count() 
+            });
+        
+        var toolResult = await Collection.Aggregate(toolPipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        foreach (var r in toolResult)
+        {
+            var tool = r.Tool ?? "terminal";
+            // Omit the admin only images
+            if(tool.EndsWith("_latest")) continue;
+            metrics.RecordCount("TerminalSessionsByTool", new Dictionary<string, string>{ {"Tool", tool} } , r.Count);
         }
     }
 }
