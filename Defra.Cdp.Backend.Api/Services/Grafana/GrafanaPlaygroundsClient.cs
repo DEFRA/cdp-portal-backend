@@ -61,16 +61,7 @@ public class GrafanaPlaygroundsClient(
 
         try
         {
-            using var document = JsonDocument.Parse(responseBody);
-            var root = document.RootElement;
-
-            if (!root.TryGetProperty("body", out var bodyElement))
-            {
-                logger.LogError("Playground response has no body");
-                return null;
-            }
-
-            return JsonSerializer.Deserialize<GrafanaPlaygroundResources>(bodyElement.GetRawText());
+            return JsonSerializer.Deserialize<GrafanaPlaygroundResources>(responseBody);
         }
         catch (JsonException exception)
         {
