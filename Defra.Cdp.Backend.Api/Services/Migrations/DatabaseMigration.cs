@@ -47,6 +47,11 @@ public class DatabaseMigration
     [property: JsonPropertyName("importTarget")]
     public string? ImportTarget { get; init; }
 
+    [property: JsonPropertyName("importPath")]
+    public string? ImportPath { get; init; }
+
+    
+
     public static DatabaseMigration FromRequest(DatabaseMigrationRequest request)
     {
         return new DatabaseMigration
@@ -66,10 +71,11 @@ public class DatabaseMigration
             CdpMigrationId = request.CdpImportId,
             Service = request.Service,
             Environment = request.Environment,
-            Version = request.Version,
+            Version = "",
             User = request.User,
+            Kind = "import",
             ImportTarget = request.ImportTarget,
-            Kind = "import"
+            ImportPath = request.Path
         };
     }
 }
@@ -103,8 +109,8 @@ public class DataImportRequest
     [property: JsonPropertyName("environment")]
     public required string Environment { get; init; }
 
-    [property: JsonPropertyName("version")]
-    public required string Version { get; init; }
+    [property: JsonPropertyName("path")]
+    public required string Path { get; init; }
 
     [property: JsonPropertyName("importTarget")]
     public required string ImportTarget { get; init; }
