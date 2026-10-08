@@ -71,7 +71,7 @@ public class DatabaseMigration
             CdpMigrationId = request.CdpImportId,
             Service = request.Service,
             Environment = request.Environment,
-            Version = "",
+            Version = "0.0.0",
             User = request.User,
             Kind = "import",
             ImportTarget = request.ImportTarget,
