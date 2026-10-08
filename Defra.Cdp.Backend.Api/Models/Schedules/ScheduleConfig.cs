@@ -2,11 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CronExpressionDescriptor;
+using Defra.Cdp.Backend.Api.Services.Scheduler;
 
 namespace Defra.Cdp.Backend.Api.Models.Schedules;
 
 [JsonConverter(typeof(ScheduleConfigConverter))]
-public abstract class ScheduleConfig
+public abstract class ScheduleConfig: IValidatableObject
 {
     public abstract string GetCronExpression();
     public abstract string GetDescription();
@@ -16,6 +17,26 @@ public abstract class ScheduleConfig
     [JsonPropertyName("startDate")] public virtual DateTime StartDate { get; set; } = DateTime.UtcNow;
 
     [JsonPropertyName("endDate")] public virtual DateTime? EndDate { get; set; }
+
+    [JsonPropertyName("timezone")] public virtual string Timezone { get; set; } = "Europe/London";
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        try
+        {
+            TimeZoneInfo.FindSystemTimeZoneById(Timezone);
+        }
+        catch (Exception ex) when (
+            ex is TimeZoneNotFoundException ||
+            ex is InvalidTimeZoneException)
+        {
+            return [new ValidationResult(
+                $"Invalid IANA timezone: {Timezone}.",
+                [nameof(Timezone)])];
+        }
+
+        return [];
+    }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -31,24 +52,29 @@ public class OnceConfig : ScheduleConfig, IValidatableObject
             .AtMinute(RunAt.Minute)
             .Build();
 
-    public override string GetDescription() => $"Once at {RunAt:dd MMM yyyy HH:mm}";
+    public override string GetDescription() => $"Once at {RunAt:dd MMM yyyy HH:mm} ({Timezone})";
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    public new IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var now = DateTime.UtcNow;
+        var results = base.Validate(validationContext).ToList();
+        
+        var runAtUtc = ScheduleTimezone.ToUtc(RunAt, Timezone);
 
-        if (RunAt < now)
-            yield return new ValidationResult(
-                "runAt must be in the future (UTC).",
+        if (runAtUtc <= DateTime.UtcNow)
+        {
+            results.Add(new ValidationResult(
+                "runAt must be in the future.",
                 [nameof(RunAt)]
-            );
+            ));
+        }
+        return results;
     }
 }
 
 public abstract class RecurringConfig : ScheduleConfig
 {
     public override string GetDescription() =>
-        ExpressionDescriptor.GetDescription(GetCronExpression());
+        $"{ExpressionDescriptor.GetDescription(GetCronExpression())} ({Timezone})";
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

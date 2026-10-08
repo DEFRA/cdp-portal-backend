@@ -42,20 +42,21 @@ public record MongoSchedule
 
     public DateTime? RecalculateNextRun(DateTime? from = null)
     {
-        var baseTime = from ?? DateTime.UtcNow;
+        var timezone = TimeZoneInfo.FindSystemTimeZoneById(Config.Timezone);
+        var fromUtc = from ?? DateTime.UtcNow;
 
-        var next = CronExpression
+        var nextUtc = CronExpression
             .Parse(Cron)
-            .GetNextOccurrence(baseTime);
+            .GetNextOccurrence(fromUtc, timezone);
 
-        if (!next.HasValue ||
-            (Config.EndDate.HasValue && next.Value > Config.EndDate.Value))
+        if (!nextUtc.HasValue ||
+            (Config.EndDate.HasValue && nextUtc.Value > Config.EndDate.Value))
         {
             NextRunAt = null;
             return null;
         }
 
-        NextRunAt = next;
+        NextRunAt = nextUtc;
         return NextRunAt;
     }
 }

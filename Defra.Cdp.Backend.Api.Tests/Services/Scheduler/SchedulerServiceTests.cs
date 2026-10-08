@@ -13,7 +13,7 @@ public class SchedulerDomainTests
     {
         var task = new MongoTestSuiteScheduleTask { EntityId = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
 
-        var config = new MongoCronRecurringConfig { Expression = "*/1 * * * *" }; // every minute
+        var config = new MongoCronRecurringConfig { Expression = "*/1 * * * *", Timezone = "Europe/London"}; // every minute
         var schedule = new MongoSchedule(true, config.Expression, "desc", task, config,
             new MongoUserDetails { Id = "u", DisplayName = "n" });
 
@@ -33,7 +33,7 @@ public class SchedulerDomainTests
 
         var config = new MongoCronRecurringConfig
         {
-            Expression = "*/1 * * * *", EndDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(-1)
+            Expression = "*/1 * * * *", EndDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(-1), Timezone = "Europe/London"
         };
         var schedule = new MongoSchedule(true, config.Expression, "desc", task, config,
             new MongoUserDetails { Id = "u", DisplayName = "n" });
@@ -100,5 +100,77 @@ public class SchedulerDomainTests
         await task.ExecuteAsync(services, nextRunAt, logger, TestContext.Current.CancellationToken);
 
         await deployer.DidNotReceiveWithAnyArgs().DeployAsync(default!, default!, default, default, default, default);
+    }
+
+    [Fact]
+    public void RecalculateNextRun_UsesTimezone_Gmt()
+    {
+        var task = new MongoTestSuiteScheduleTask { EntityId = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
+
+        var config = new MongoCronRecurringConfig { Expression = "0 8 * * *", Timezone = "Europe/London" };
+
+        var schedule = new MongoSchedule(
+            true,
+            config.Expression,
+            "desc",
+            task,
+            config,
+            new MongoUserDetails { Id = "u", DisplayName = "n" });
+
+        var from = new DateTime(2025, 1, 1, 7, 0, 0, DateTimeKind.Utc);
+
+        var next = schedule.RecalculateNextRun(from);
+
+        Assert.Equal(
+            new DateTime(2025, 1, 1, 8, 0, 0, DateTimeKind.Utc),
+            next);
+    }
+
+    [Fact]
+    public void RecalculateNextRun_UsesTimezone_Bst()
+    {
+        var task = new MongoTestSuiteScheduleTask { EntityId = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
+
+        var config = new MongoCronRecurringConfig { Expression = "0 8 * * *", Timezone = "Europe/London" };
+
+        var schedule = new MongoSchedule(
+            true,
+            config.Expression,
+            "desc",
+            task,
+            config,
+            new MongoUserDetails { Id = "u", DisplayName = "n" });
+
+        var from = new DateTime(2025, 7, 1, 6, 0, 0, DateTimeKind.Utc);
+
+        var next = schedule.RecalculateNextRun(from);
+
+        Assert.Equal(
+            new DateTime(2025, 7, 1, 7, 0, 0, DateTimeKind.Utc),
+            next);
+    }
+
+    [Fact]
+    public void RecalculateNextRun_ReturnsOccurrenceAfterFrom()
+    {
+        var task = new MongoTestSuiteScheduleTask { EntityId = "suite", Environment = "dev", Cpu = 1, Memory = 256 };
+
+        var config = new MongoCronRecurringConfig { Expression = "0 8 * * *", Timezone = "Europe/London" };
+
+        var schedule = new MongoSchedule(
+            true,
+            config.Expression,
+            "desc",
+            task,
+            config,
+            new MongoUserDetails { Id = "u", DisplayName = "n" });
+
+        var from = new DateTime(2025, 1, 1, 8, 0, 0, DateTimeKind.Utc);
+
+        var next = schedule.RecalculateNextRun(from);
+
+        Assert.Equal(
+            new DateTime(2025, 1, 2, 8, 0, 0, DateTimeKind.Utc),
+            next);
     }
 }
