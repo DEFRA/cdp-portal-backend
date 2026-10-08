@@ -66,7 +66,7 @@ public class SchedulerPollerTests
             cron: "0 0 * * *", // dummy cron
             description: "desc",
             task: task,
-            config: new MongoOnceConfig { RunAt = DateTime.UtcNow },
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow, Timezone = "UTC" },
             new MongoUserDetails { DisplayName = "name", Id = "id" }
         ) { NextRunAt = DateTime.UtcNow };
 
@@ -125,7 +125,7 @@ public class SchedulerPollerTests
             cron: "0 0 * * *", // dummy cron
             description: "desc",
             task: task,
-            config: new MongoOnceConfig { RunAt = DateTime.UtcNow },
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow, Timezone = "UTC" },
             new MongoUserDetails { DisplayName = "name", Id = "id" }
         ) { NextRunAt = DateTime.UtcNow };
 
@@ -144,8 +144,8 @@ public class SchedulerPollerTests
             Arg.Any<string>(),
             Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
-        
-        
+
+
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
     }
 
@@ -174,7 +174,7 @@ public class SchedulerPollerTests
             cron: "0 0 * * *",
             description: "desc",
             task: task,
-            config: new MongoOnceConfig { RunAt = DateTime.UtcNow.AddHours(-2) },
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow.AddHours(-2), Timezone = "UTC" },
             new MongoUserDetails { DisplayName = "name", Id = "id" }
         ) { NextRunAt = DateTime.UtcNow.AddHours(-2) };
 
@@ -218,5 +218,92 @@ public class SchedulerPollerTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => poller.Execute(context));
 
         await mongoLock.Received(1).Unlock("processScheduledTasks", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Continues_WhenOneTaskThrows_AndUpdatesSuccessfulSchedules()
+    {
+        var schedulerService = Substitute.For<ISchedulerService>();
+        var mongoLock = Substitute.For<IMongoLock>();
+        var serviceProvider = Substitute.For<IServiceProvider>();
+        var scopeFactory = Substitute.For<IServiceScopeFactory>();
+        var scope = Substitute.For<IServiceScope>();
+        var context = Substitute.For<IJobExecutionContext>();
+
+        mongoLock.Lock(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        serviceProvider.GetService(typeof(IServiceScopeFactory)).Returns(scopeFactory);
+        scopeFactory.CreateScope().Returns(scope);
+        scope.ServiceProvider.Returns(serviceProvider);
+
+        var failedTask = Substitute.For<MongoScheduleTask>();
+        failedTask.ExecuteAsync(
+                Arg.Any<IServiceProvider>(),
+                Arg.Any<DateTime?>(),
+                Arg.Any<ILogger<object>>(),
+                Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw new Exception("boom"));
+
+        var successfulTask = Substitute.For<MongoScheduleTask>();
+        successfulTask.ExecuteAsync(
+                Arg.Any<IServiceProvider>(),
+                Arg.Any<DateTime?>(),
+                Arg.Any<ILogger<object>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var failedSchedule = new MongoSchedule(
+            enabled: true,
+            cron: "0 0 * * *",
+            description: "failed",
+            task: failedTask,
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow, Timezone = "UTC" },
+            new MongoUserDetails { DisplayName = "name", Id = "id" }) { NextRunAt = DateTime.UtcNow };
+
+        var successfulSchedule = new MongoSchedule(
+            enabled: true,
+            cron: "0 0 * * *",
+            description: "successful",
+            task: successfulTask,
+            config: new MongoOnceConfig { RunAt = DateTime.UtcNow, Timezone = "UTC" },
+            new MongoUserDetails { DisplayName = "name", Id = "id" }) { NextRunAt = DateTime.UtcNow };
+
+        schedulerService.FetchDueSchedules(Arg.Any<CancellationToken>())
+            .Returns([failedSchedule, successfulSchedule]);
+
+        var poller = new SchedulerPoller(
+            _loggerFactory,
+            schedulerService,
+            mongoLock,
+            serviceProvider);
+
+        await poller.Execute(context);
+
+        await failedTask.Received(1).ExecuteAsync(
+            Arg.Any<IServiceProvider>(),
+            Arg.Any<DateTime?>(),
+            Arg.Any<ILogger<object>>(),
+            Arg.Any<CancellationToken>());
+
+        await successfulTask.Received(1).ExecuteAsync(
+            Arg.Any<IServiceProvider>(),
+            Arg.Any<DateTime?>(),
+            Arg.Any<ILogger<object>>(),
+            Arg.Any<CancellationToken>());
+
+        await schedulerService.DidNotReceive().UpdateNextRunAtAsync(
+            failedSchedule.Id,
+            Arg.Any<DateTime?>(),
+            Arg.Any<CancellationToken>());
+
+        await schedulerService.Received(1).UpdateNextRunAtAsync(
+            successfulSchedule.Id,
+            Arg.Any<DateTime?>(),
+            Arg.Any<CancellationToken>());
+
+        await mongoLock.Received(1).Unlock(
+            "processScheduledTasks",
+            Arg.Any<CancellationToken>());
     }
 }

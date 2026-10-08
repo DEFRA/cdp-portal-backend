@@ -17,6 +17,8 @@ public abstract class MongoScheduleConfig
     [JsonPropertyName("startDate")] public virtual DateTime StartDate { get; set; } = DateTime.UtcNow;
 
     [JsonPropertyName("endDate")] public virtual DateTime? EndDate { get; set; }
+    
+    [JsonPropertyName("timezone")] public virtual required string Timezone { get; init; }
 }
 
 public class MongoOnceConfig : MongoScheduleConfig
