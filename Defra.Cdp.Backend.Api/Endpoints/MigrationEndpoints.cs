@@ -14,13 +14,15 @@ public static class MigrationEndpoints
         app.MapGet("/migrations/runs/{id}", FindMigrationById);
         app.MapGet("/migrations/runs", SearchMigrationRuns);
         app.MapGet("/migrations/latest/{service}", FindLatestForService);
-        app.MapPost("/migrations/runs", RunMigration);
+        app.MapPost("/migrations/runs", RecordMigrationRun);
+
+        app.MapPost("/imports/runs", RecordImportRun);
     }
 
     /**
      * List services that have database migrations available
     */
-    static async Task<Ok<List<string>>> ListServicesWithMigrations(IAvailableMigrations availableMigrations, string[]? teamIds, CancellationToken cancellationToken)
+    private static async Task<Ok<List<string>>> ListServicesWithMigrations(IAvailableMigrations availableMigrations, string[]? teamIds, CancellationToken cancellationToken)
     {
         if (teamIds is { Length: > 0 })
         {
@@ -36,7 +38,7 @@ public static class MigrationEndpoints
     /**
      * List available schema versions for a given service.
      */
-    static async Task<Ok<List<MigrationVersion>>> ListAvailableMigrationsForService(IAvailableMigrations availableMigrations, string service, CancellationToken cancellationToken)
+    private static async Task<Ok<List<MigrationVersion>>> ListAvailableMigrationsForService(IAvailableMigrations availableMigrations, string service, CancellationToken cancellationToken)
     {
         var result = await availableMigrations.FindMigrationsForService(service, cancellationToken);
         return TypedResults.Ok(result);
@@ -45,7 +47,7 @@ public static class MigrationEndpoints
     /**
      * Returns a specific run by the internal CDP Migration ID.
      */
-    static async Task<Ok<DatabaseMigration>> FindMigrationById(IDatabaseMigrationService migrationService, string id, CancellationToken cancellationToken)
+    private static async Task<Ok<DatabaseMigration>> FindMigrationById(IDatabaseMigrationService migrationService, string id, CancellationToken cancellationToken)
     {
         var result = await migrationService.FindByCdpMigrationId(id, cancellationToken);
         return TypedResults.Ok(result);
@@ -55,7 +57,7 @@ public static class MigrationEndpoints
     /**
      * Returns a specific run by the internal CDP Migration ID.
      */
-    static async Task<Ok<List<DatabaseMigration>>> FindLatestForService(IDatabaseMigrationService migrationService, string service, CancellationToken cancellationToken)
+    private static async Task<Ok<List<DatabaseMigration>>> FindLatestForService(IDatabaseMigrationService migrationService, string service, CancellationToken cancellationToken)
     {
         var result = await migrationService.LatestForService(service, cancellationToken);
         return TypedResults.Ok(result);
@@ -64,7 +66,7 @@ public static class MigrationEndpoints
     /**
      * Returns a specific run by the internal CDP Migration ID.
      */
-    static async Task<Ok<List<DatabaseMigration>>> SearchMigrationRuns(IDatabaseMigrationService migrationService,
+    private static async Task<Ok<List<DatabaseMigration>>> SearchMigrationRuns(IDatabaseMigrationService migrationService,
         string? cdpMigrationId,
         string? buildId,
         string? service,
@@ -86,12 +88,24 @@ public static class MigrationEndpoints
 
 
     /**
-     * Triggers a new migration run.
+     * Record a new migration run.
      */
-    static async Task<Ok> RunMigration(
+    private static async Task<Ok> RecordMigrationRun(
         [FromServices] IDatabaseMigrationService migrationService,
-        [FromServices] IRepositoryService repositoryService,
         [FromBody] DatabaseMigrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var migration = DatabaseMigration.FromRequest(request);
+        await migrationService.CreateMigration(migration, cancellationToken);
+        return TypedResults.Ok();
+    }
+
+    /**
+     * Record a new import run.
+     */
+    private static async Task<Ok> RecordImportRun(
+        [FromServices] IDatabaseMigrationService migrationService,
+        [FromBody] DataImportRequest request,
         CancellationToken cancellationToken)
     {
         var migration = DatabaseMigration.FromRequest(request);

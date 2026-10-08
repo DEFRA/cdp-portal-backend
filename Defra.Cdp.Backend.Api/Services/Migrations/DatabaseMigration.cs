@@ -41,7 +41,16 @@ public class DatabaseMigration
     [property: JsonPropertyName("updated")]
     public DateTime Updated { get; init; } = DateTime.Now;
 
-    [property: JsonPropertyName("status")] public string Status { get; init; } = CodeBuildStatuses.Requested;
+    [property: JsonPropertyName("status")] 
+    public string Status { get; init; } = CodeBuildStatuses.Requested;
+
+    [property: JsonPropertyName("importTarget")]
+    public string? ImportTarget { get; init; }
+
+    [property: JsonPropertyName("importPath")]
+    public string? ImportPath { get; init; }
+
+    
 
     public static DatabaseMigration FromRequest(DatabaseMigrationRequest request)
     {
@@ -52,6 +61,21 @@ public class DatabaseMigration
             Environment = request.Environment,
             Version = request.Version,
             User = request.User
+        };
+    }
+
+    public static DatabaseMigration FromRequest(DataImportRequest request)
+    {
+        return new DatabaseMigration
+        {
+            CdpMigrationId = request.CdpImportId,
+            Service = request.Service,
+            Environment = request.Environment,
+            Version = "0.0.0",
+            User = request.User,
+            Kind = "import",
+            ImportTarget = request.ImportTarget,
+            ImportPath = request.Path
         };
     }
 }
@@ -69,6 +93,27 @@ public class DatabaseMigrationRequest
 
     [property: JsonPropertyName("version")]
     public required string Version { get; init; }
+
+    [property: JsonPropertyName("user")]
+    public required UserDetails User { get; init; }
+}
+
+public class DataImportRequest
+{
+    [property: JsonPropertyName("cdpImportId")]
+    public required string CdpImportId { get; init; }
+
+    [property: JsonPropertyName("service")]
+    public required string Service { get; init; }
+
+    [property: JsonPropertyName("environment")]
+    public required string Environment { get; init; }
+
+    [property: JsonPropertyName("path")]
+    public required string Path { get; init; }
+
+    [property: JsonPropertyName("importTarget")]
+    public required string ImportTarget { get; init; }
 
     [property: JsonPropertyName("user")]
     public required UserDetails User { get; init; }
