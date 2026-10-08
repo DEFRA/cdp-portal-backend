@@ -92,7 +92,6 @@ public static class MigrationEndpoints
      */
     private static async Task<Ok> RecordMigrationRun(
         [FromServices] IDatabaseMigrationService migrationService,
-        [FromServices] IRepositoryService repositoryService,
         [FromBody] DatabaseMigrationRequest request,
         CancellationToken cancellationToken)
     {
@@ -106,7 +105,6 @@ public static class MigrationEndpoints
      */
     private static async Task<Ok> RecordImportRun(
         [FromServices] IDatabaseMigrationService migrationService,
-        [FromServices] IRepositoryService repositoryService,
         [FromBody] DataImportRequest request,
         CancellationToken cancellationToken)
     {
