@@ -24,7 +24,7 @@ namespace Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 
 public class SecretUpdatesHandler(ISecretsService secretsService, ILogger<SecretUpdatesHandler> logger) : IMonoLambdaEventHandler
 {
-    public string EventType => "";
+    public string EventType => "get_all_secret_keys";
     public bool PersistEvents => false;
     public async Task HandleAsync(JsonElement message, CancellationToken cancellationToken)
     {
