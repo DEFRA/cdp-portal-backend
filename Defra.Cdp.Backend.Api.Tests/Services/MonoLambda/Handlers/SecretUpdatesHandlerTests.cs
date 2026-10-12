@@ -1,16 +1,25 @@
 using System.Text.Json;
+using Amazon.SQS;
+using Amazon.SQS.Model;
+using Defra.Cdp.Backend.Api.Config;
 using Defra.Cdp.Backend.Api.Models;
+using Defra.Cdp.Backend.Api.Services.EventHistory;
+using Defra.Cdp.Backend.Api.Services.MonoLambda;
 using Defra.Cdp.Backend.Api.Services.MonoLambda.Handlers;
 using Defra.Cdp.Backend.Api.Services.Secrets;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace Defra.Cdp.Backend.Api.Tests.Services.MonoLambda.Handlers;
 
 public class SecretUpdatesHandlerTests
 {
-    
     private readonly ISecretsService _secretsService = Substitute.For<ISecretsService>();
+    private readonly IEventHistoryFactory _eventHistoryFactory = Substitute.For<IEventHistoryFactory>();
+    private readonly IAmazonSQS _sqs = Substitute.For<IAmazonSQS>();
+    private readonly IOptions<MonoLambdaOptions> _config = new OptionsWrapper<MonoLambdaOptions>(
+        new MonoLambdaOptions { QueueUrl = "http://queue.url", Enabled = true });
 
     
     [Fact]
@@ -82,6 +91,40 @@ public class SecretUpdatesHandlerTests
         
         await _secretsService.Received().UpdateSecrets(
             Arg.Is<List<TenantSecrets>>(l => l.Count == 1 && l[0].Environment == "infra-dev" && l[0].Service == "my-service"  ), 
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Test_get_all_secret_keys_message_is_dispatched_via_listener()
+    {
+        var testMessage = """
+                          {
+                            "event_type": "get_all_secret_keys",
+                            "get_all_secret_keys": true,
+                            "secretKeys": {
+                              "cdp/services/my-service": {
+                                "keys": ["KEY_ONE", "KEY_TWO"],
+                                "lastChangedDate": "2024-01-01T12:00:00+00:00",
+                                "createdDate": "2024-01-01T10:00:00+00:00"
+                              }
+                            },
+                            "exception": "",
+                            "environment": "infra-dev",
+                            "timestamp": "2024-01-01T12:00:00+00:00"
+                          }
+                          """;
+
+        _secretsService.FindAllSecretsForEnvironment(Arg.Is("infra-dev"), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var handler = new SecretUpdatesHandler(_secretsService, NullLogger<SecretUpdatesHandler>.Instance);
+        var listener = new MonoLambdaEventListener(_sqs, _eventHistoryFactory, _config, [handler],
+            NullLogger<MonoLambdaEventListener>.Instance);
+
+        await listener.Handle(new Message { MessageId = "1234", Body = testMessage }, TestContext.Current.CancellationToken);
+
+        await _secretsService.Received().UpdateSecrets(
+            Arg.Is<List<TenantSecrets>>(l => l.Count == 1 && l[0].Environment == "infra-dev" && l[0].Service == "my-service"),
             Arg.Any<CancellationToken>());
     }
 }
