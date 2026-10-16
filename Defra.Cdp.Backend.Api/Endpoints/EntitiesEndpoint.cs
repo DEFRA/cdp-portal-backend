@@ -54,10 +54,10 @@ public static class EntitiesEndpoint
         app.MapPost("/entities/{name}/grafana/playground/promotions/alerts/{uid}", PromotePlaygroundAlert)
             .RequireOwnership("name");
 
-        app.MapGet("/entities/{name}/imports/{*path=}", GetImportsResources).RequireOwnership("name");
-        app.MapPost("/entities/{name}/imports/{*path=}", CreateUploadImportsResource).RequireOwnership("name");
-        app.MapPut("/entities/{name}/imports/{*path=}", UploadImportsResource).RequireOwnership("name");
-        app.MapDelete("/entities/{name}/imports/{*path=}", DeleteImportsResource).RequireOwnership("name");
+        app.MapGet("/entities/{name}/imports/{environment}/{*path=}", GetImportsResources).RequireOwnership("name");
+        app.MapPost("/entities/{name}/imports/{environment}/{*path=}", CreateUploadImportsResource).RequireOwnership("name");
+        app.MapPut("/entities/{name}/imports/{environment}/{*path=}", UploadImportsResource).RequireOwnership("name");
+        app.MapDelete("/entities/{name}/imports/{environment}/{*path=}", DeleteImportsResource).RequireOwnership("name");
     }
 
     private static async Task<Ok> StartDecommissioning(IEntitiesService entitiesService,
