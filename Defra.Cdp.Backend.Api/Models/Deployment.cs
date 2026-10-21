@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Defra.Cdp.Backend.Api.Utils;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -15,12 +16,13 @@ public class Deployment
 
     public string CdpDeploymentId { get; init; } = "";
     public string? LambdaId { get; init; } // ID of run lambda that maps to ECS startedBy message 
-
     public string Environment { get; init; } = "";
     public string Service { get; init; } = "";
     public string Version { get; init; } = "";
+    
     [BsonIgnoreIfNull]
     public string? PreviousCdpDeploymentId { get; set; }
+    
     [BsonIgnoreIfNull]
     public string? PreviousVersion { get; set; }
 
@@ -46,6 +48,9 @@ public class Deployment
     public List<TestRun> DeploymentTestRuns { get; set; } = [];
 
     public string? TaskDefinitionArn { get; set; }
+    
+    [BsonIgnoreIfNull]
+    public ServiceNowChangeRequest? ServiceNowChangeRequest { get; set; }
 
     // Audit data is not returned in the API
     [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
@@ -68,7 +73,15 @@ public class Deployment
             Created = DateTime.UtcNow,
             Updated = DateTime.UtcNow,
             Status = Requested,
-            ConfigVersion = req.ConfigVersion
+            ConfigVersion = req.ConfigVersion,
+            ServiceNowChangeRequest = req.Environment is CdpEnvironments.Prod or CdpEnvironments.InfraDev
+                ? new ServiceNowChangeRequest
+                {
+                    CdpDeploymentId = req.DeploymentId,
+                    Service = req.Service,
+                    Status = "requested"
+                }
+                : null
         };
     }
 
@@ -100,7 +113,15 @@ public class Deployment
             Updated = DateTime.UtcNow,
             Status = req.DesiredCount > 0 ? Requested : Undeployed,
             ConfigVersion = commitSha,
-            LambdaId = e.Detail.EcsDeploymentId
+            LambdaId = e.Detail.EcsDeploymentId,
+            ServiceNowChangeRequest = req.Environment is CdpEnvironments.Prod or CdpEnvironments.InfraDev
+                ? new ServiceNowChangeRequest
+                {
+                    CdpDeploymentId = e.CdpDeploymentId,
+                    Service = req.ContainerImage,
+                    Status = "requested"
+                }
+                : null            
         };
     }
 

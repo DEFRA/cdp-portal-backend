@@ -33,7 +33,11 @@ public interface IDeploymentsService
     Task<bool> LinkDeployment(string cdpId, string lambdaId, CancellationToken ct);
     Task UpdateOverallTaskStatus(Deployment deployment, CancellationToken ct);
     Task<Deployment?> FindDeploymentByLambdaId(string lambdaId, CancellationToken ct);
-    Task<ServiceStatusChange?> UpdateDeploymentStatus(string lambdaId, string eventName, string reason, CancellationToken ct);
+
+    Task<ServiceStatusChange?> UpdateDeploymentStatus(string lambdaId, string eventName, string reason,
+        CancellationToken ct);
+
+    Task<bool> UpdateServiceNowChangeRequest(ServiceNowChangeRequest changeRequest, CancellationToken ct);
 
     Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus,
         CancellationToken ct);
@@ -205,7 +209,7 @@ public class DeploymentsService(
         if (deployment == null) return null;
 
         var oldStatus = deployment.LastDeploymentStatus;
-        
+
         deployment.LastDeploymentStatus = eventName;
         var update = new UpdateDefinitionBuilder<Deployment>()
             .Set(d => d.LastDeploymentStatus, eventName)
@@ -224,6 +228,21 @@ public class DeploymentsService(
             NewStatus = deployment.LastDeploymentStatus,
             OldStatus = oldStatus
         };
+    }
+
+    public async Task<bool> UpdateServiceNowChangeRequest(
+        ServiceNowChangeRequest changeRequest,
+        CancellationToken ct)
+    {
+        var update = new UpdateDefinitionBuilder<Deployment>()
+            .Set(d => d.ServiceNowChangeRequest, changeRequest);
+
+        var result = await Collection.UpdateOneAsync(
+            d => d.CdpDeploymentId == changeRequest.CdpDeploymentId,
+            update,
+            cancellationToken: ct);
+
+        return result.MatchedCount > 0;
     }
 
     public async Task UpdateInstance(string cdpDeploymentId, string instanceId, DeploymentInstanceStatus instanceStatus,
@@ -320,7 +339,10 @@ public class DeploymentsService(
         if (query.Favourites?.Length > 0)
         {
             var servicesOwnedByTeam = await entitiesService.GetEntityIds(
-                new EntityMatcher { Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites },
+                new EntityMatcher
+                {
+                    Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites
+                },
                 ct);
             deployments = deployments.OrderByDescending(d => servicesOwnedByTeam.Contains(d.Service)).ToList();
         }
@@ -375,7 +397,10 @@ public class DeploymentsService(
         if (query.Favourites?.Length > 0)
         {
             var servicesOwnedByTeam = await entitiesService.GetEntityIds(
-                new EntityMatcher { Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites },
+                new EntityMatcher
+                {
+                    Types = [Type.Microservice], Statuses = [Status.Created], TeamIds = query.Favourites
+                },
                 ct);
             deployments = deployments.OrderByDescending(d =>
                 servicesOwnedByTeam.Contains((d.Deployment?.Service ?? d.Migration?.Service)!)
@@ -495,23 +520,24 @@ public class DeploymentsService(
 
     public async Task ReportStats(ICloudWatchMetricsService metrics, CancellationToken cancellationToken)
     {
-        var totalDeployments = await Collection.CountDocumentsAsync(FilterDefinition<Deployment>.Empty, null, cancellationToken);
-        metrics.RecordCount("DeploymentsTotal", null , totalDeployments);
+        var totalDeployments =
+            await Collection.CountDocumentsAsync(FilterDefinition<Deployment>.Empty, null, cancellationToken);
+        metrics.RecordCount("DeploymentsTotal", null, totalDeployments);
 
-        var totalDeploymentsExcludingAutoDeploy = await Collection.CountDocumentsAsync(d => d.User!.Id != AutoDeploymentConstants.AutoDeploymentId, null, cancellationToken);
-        metrics.RecordCount("DeploymentsTotalExcludingAuto", null , totalDeploymentsExcludingAutoDeploy);
-        
+        var totalDeploymentsExcludingAutoDeploy =
+            await Collection.CountDocumentsAsync(d => d.User!.Id != AutoDeploymentConstants.AutoDeploymentId, null,
+                cancellationToken);
+        metrics.RecordCount("DeploymentsTotalExcludingAuto", null, totalDeploymentsExcludingAutoDeploy);
+
         var pipeline = new EmptyPipelineDefinition<Deployment>()
-            .Group(x => x.Environment, g => new 
-            { 
-                Environment = g.Key, 
-                Count = g.Count()
-            });
+            .Group(x => x.Environment, g => new { Environment = g.Key, Count = g.Count() });
 
-        var totalByEnvironment = await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
+        var totalByEnvironment =
+            await Collection.Aggregate(pipeline, null, cancellationToken).ToListAsync(cancellationToken);
         foreach (var deployment in totalByEnvironment)
         {
-            metrics.RecordCount("DeploymentsTotalByEnvironment", new Dictionary<string, string>{ {"Environment", deployment.Environment} } , deployment.Count);
+            metrics.RecordCount("DeploymentsTotalByEnvironment",
+                new Dictionary<string, string> { { "Environment", deployment.Environment } }, deployment.Count);
         }
     }
 }
@@ -571,7 +597,7 @@ public record DeploymentMatchers(
         {
             filter &= builder.In(d => d.Service, Services);
         }
-        
+
         if (From != null || To != null)
         {
             var from = string.IsNullOrWhiteSpace(From) ? DateTime.MinValue : DateTime.Parse(From);
