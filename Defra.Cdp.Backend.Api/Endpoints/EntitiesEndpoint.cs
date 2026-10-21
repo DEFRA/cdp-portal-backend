@@ -494,13 +494,14 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Get a service's import resource(s) by path")]
-    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>, Ok<BucketResourceTreeNode>>> GetImportsResources(
+    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>, Ok<BucketResourceTreeNode>, UnauthorizedHttpResult>> GetImportsResources(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string environment,
         [FromRoute] string path,
+        HttpContext httpContext,
         CancellationToken ct,
         [FromQuery] string view = "list"
     )
@@ -531,6 +532,14 @@ public static class EntitiesEndpoint
         }
         else
         {
+            if (environment == "prod") {
+                var hasBreakGlass = httpContext.User.HasClaim("cdp", CdpScopes.BreakGlass);
+
+                if (!hasBreakGlass) {
+                    return TypedResults.Unauthorized();
+                }
+            }
+
             var resourceUrl = await bucketManagementService.GetBucketResourceUrl(importsBucket, basePath, path, ct);
             if (resourceUrl == null) return TypedResults.NotFound();
 
@@ -578,6 +587,14 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
+            if (environment == "prod") {
+                var hasBreakGlass = httpContext.User.HasClaim("cdp", CdpScopes.BreakGlass);
+    
+                if (!hasBreakGlass) {
+                    return TypedResults.Unauthorized();
+                }
+            }
+
             var result = await bucketManagementService.StartBucketResourceMultipartUpload(importsBucket, basePath, path, uploadBucketResource.Size, user, ct);
 
             return TypedResults.Ok(result);
@@ -585,7 +602,7 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Upload a service's import resource")]
-    private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>>> UploadImportsResource(
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>, UnauthorizedHttpResult>> UploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromRoute] string name,
@@ -595,6 +612,7 @@ public static class EntitiesEndpoint
         [FromQuery] string? uploadId,
         [FromQuery] int? partNumber,
         [FromBody] CompleteBucketResourceUpload? completeBucketResourceUpload,
+        HttpContext httpContext,
         CancellationToken ct
     )
     {
@@ -604,6 +622,14 @@ public static class EntitiesEndpoint
         if (entity == null) return TypedResults.NotFound();
 
         var basePath = $"{entity.Name}/";
+
+        if (environment == "prod") {
+            var hasBreakGlass = httpContext.User.HasClaim("cdp", CdpScopes.BreakGlass);
+
+            if (!hasBreakGlass) {
+                return TypedResults.Unauthorized();
+            }
+        }
 
         if (uploadId == null)
         {
