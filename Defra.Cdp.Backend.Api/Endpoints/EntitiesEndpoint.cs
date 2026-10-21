@@ -542,7 +542,6 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>, UnauthorizedHttpResult>> CreateUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string environment,
         [FromRoute] string path,
@@ -589,7 +588,6 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>>> UploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string environment,
         [FromRoute] string path,
@@ -639,7 +637,6 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok, BadRequest<string>, UnauthorizedHttpResult>> DeleteImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
         [FromRoute] string name,
         [FromRoute] string environment,
         [FromRoute] string path,
