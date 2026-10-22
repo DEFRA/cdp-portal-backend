@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Defra.Cdp.Backend.Api.Config;
+using Defra.Cdp.Backend.Api.Models;
 using Defra.Cdp.Backend.Api.Services.Deployments;
 using Defra.Cdp.Backend.Api.Services.Entities;
 using Defra.Cdp.Backend.Api.Services.Github.Workflows;
@@ -17,6 +18,7 @@ public interface ISnowDeploymentTriggerService
 public class SnowDeploymentTriggerService(
     ITriggerWorkflowService triggerWorkflowService,
     IEntitiesService entitiesService,
+    IDeploymentsService deploymentsService,    
     IOptions<SnowOptions> snowOptions,
     ILogger<SnowDeploymentTriggerService> logger) : ISnowDeploymentTriggerService
 {
@@ -75,6 +77,15 @@ public class SnowDeploymentTriggerService(
 
             var response =
                 await triggerWorkflowService.TriggerWorkflow(Repo, _workflow, inputs, cancellationToken);
+
+            await deploymentsService.UpdateServiceNowChangeRequest(
+                new ServiceNowChangeRequest
+                {
+                    CdpDeploymentId = statusChange.DeploymentId,
+                    Service = statusChange.EntityId,
+                    Status = "requested",
+                    WorkflowRunUrl = response?.WorkflowRunUrl
+                }, cancellationToken);
 
             logger.LogInformation(
                 "Triggered SNOW workflow for deployment {DeploymentId}: response body present {HasWorkflowResponse}, run id {WorkflowRunId}, run url {WorkflowRunUrl}",

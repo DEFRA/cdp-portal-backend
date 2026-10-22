@@ -73,15 +73,7 @@ public class Deployment
             Created = DateTime.UtcNow,
             Updated = DateTime.UtcNow,
             Status = Requested,
-            ConfigVersion = req.ConfigVersion,
-            ServiceNowChangeRequest = req.Environment is CdpEnvironments.Prod or CdpEnvironments.InfraDev
-                ? new ServiceNowChangeRequest
-                {
-                    CdpDeploymentId = req.DeploymentId,
-                    Service = req.Service,
-                    Status = "requested"
-                }
-                : null
+            ConfigVersion = req.ConfigVersion
         };
     }
 
@@ -113,15 +105,7 @@ public class Deployment
             Updated = DateTime.UtcNow,
             Status = req.DesiredCount > 0 ? Requested : Undeployed,
             ConfigVersion = commitSha,
-            LambdaId = e.Detail.EcsDeploymentId,
-            ServiceNowChangeRequest = req.Environment is CdpEnvironments.Prod or CdpEnvironments.InfraDev
-                ? new ServiceNowChangeRequest
-                {
-                    CdpDeploymentId = e.CdpDeploymentId,
-                    Service = req.ContainerImage,
-                    Status = "requested"
-                }
-                : null            
+            LambdaId = e.Detail.EcsDeploymentId
         };
     }
 
