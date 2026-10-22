@@ -587,14 +587,6 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
-            if (environment == CdpEnvironments.Prod) {
-                var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
-    
-                if (!hasBreakGlass) {
-                    return TypedResults.Unauthorized();
-                }
-            }
-
             var result = await bucketManagementService.StartBucketResourceMultipartUpload(importsBucket, basePath, path, uploadBucketResource.Size, user, ct);
 
             return TypedResults.Ok(result);
