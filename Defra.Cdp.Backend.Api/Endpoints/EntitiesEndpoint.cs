@@ -532,8 +532,8 @@ public static class EntitiesEndpoint
         }
         else
         {
-            if (environment == "prod") {
-                var hasBreakGlass = httpContext.User.HasClaim("cdp", CdpScopes.BreakGlass);
+            if (environment == CdpEnvironments.Prod) {
+                var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
 
                 if (!hasBreakGlass) {
                     return TypedResults.Unauthorized();
@@ -587,8 +587,8 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
-            if (environment == "prod") {
-                var hasBreakGlass = httpContext.User.HasClaim("cdp", CdpScopes.BreakGlass);
+            if (environment == CdpEnvironments.Prod) {
+                var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
     
                 if (!hasBreakGlass) {
                     return TypedResults.Unauthorized();
@@ -623,8 +623,8 @@ public static class EntitiesEndpoint
 
         var basePath = $"{entity.Name}/";
 
-        if (environment == "prod") {
-            var hasBreakGlass = httpContext.User.HasClaim("cdp", CdpScopes.BreakGlass);
+        if (environment == CdpEnvironments.Prod) {
+            var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
 
             if (!hasBreakGlass) {
                 return TypedResults.Unauthorized();
