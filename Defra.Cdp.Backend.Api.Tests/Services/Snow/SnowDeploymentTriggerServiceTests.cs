@@ -41,7 +41,8 @@ public class SnowDeploymentTriggerServiceTests
             .Returns(new GitHubTriggerWorkflowResponse { WorkflowRunId = 12345 });
 
         var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService, deploymentService,
-            Options.Create(new SnowOptions()), NullLogger<SnowDeploymentTriggerService>.Instance);
+            Options.Create(new SnowOptions { Workflows = new Dictionary<string, string> { ["prod"] = "deploy.yml" } }),
+            NullLogger<SnowDeploymentTriggerService>.Instance);
         var statusChange = new ServiceStatusChange
         {
             DeploymentId = "deployment-123",
@@ -97,7 +98,8 @@ public class SnowDeploymentTriggerServiceTests
             .Returns(new GitHubTriggerWorkflowResponse());
 
         var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService, deploymentService,
-            Options.Create(new SnowOptions()), NullLogger<SnowDeploymentTriggerService>.Instance);
+            Options.Create(new SnowOptions { Workflows = new Dictionary<string, string> { ["prod"] = "deploy.yml" } }),
+            NullLogger<SnowDeploymentTriggerService>.Instance);
         var statusChange = new ServiceStatusChange
         {
             DeploymentId = "deployment-123",
@@ -142,7 +144,10 @@ public class SnowDeploymentTriggerServiceTests
             .Returns(new GitHubTriggerWorkflowResponse());
 
         var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService, deploymentService,
-            Options.Create(new SnowOptions { Workflow = "infra-dev.yml" }),
+            Options.Create(new SnowOptions
+            {
+                Workflows = new Dictionary<string, string> { ["infra-dev"] = "infra-dev.yml" }
+            }),
             NullLogger<SnowDeploymentTriggerService>.Instance);
         var statusChange = new ServiceStatusChange
         {
@@ -159,6 +164,41 @@ public class SnowDeploymentTriggerServiceTests
         await triggerWorkflowService.Received(1).TriggerWorkflow(
             "cdp-deployments-snow",
             "infra-dev.yml",
+            Arg.Any<SnowDeploymentWorkflowInputs>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DoesNotTriggerWorkflowWhenEnvironmentIsNotConfigured()
+    {
+        var triggerWorkflowService = Substitute.For<ITriggerWorkflowService>();
+        var entitiesService = Substitute.For<IEntitiesService>();
+        var deploymentService = Substitute.For<IDeploymentsService>();
+
+        var service = new SnowDeploymentTriggerService(
+            triggerWorkflowService,
+            entitiesService,
+            deploymentService,
+            Options.Create(new SnowOptions { Workflows = { ["prod"] = "deploy.yml" } }),
+            NullLogger<SnowDeploymentTriggerService>.Instance);
+
+        var statusChange = new ServiceStatusChange
+        {
+            DeploymentId = "deployment-123",
+            Environment = "infra-dev",
+            OldStatus = "SERVICE_DEPLOYMENT_IN_PROGRESS",
+            NewStatus = "SERVICE_DEPLOYMENT_COMPLETED",
+            EntityId = "cdp-portal-backend",
+            Version = "1.2.3"
+        };
+
+        await service.TriggerDeploymentRecord(
+            statusChange,
+            TestContext.Current.CancellationToken);
+
+        await triggerWorkflowService.DidNotReceive().TriggerWorkflow(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
             Arg.Any<SnowDeploymentWorkflowInputs>(),
             Arg.Any<CancellationToken>());
     }
