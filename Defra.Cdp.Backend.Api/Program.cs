@@ -247,6 +247,7 @@ builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrEven
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrClosedHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestPrMergedHandler>();
 builder.Services.AddSingleton<IGithubWorkflowEventHandler, ResourceRequestFailedHandler>();
+builder.Services.AddSingleton<IGithubWorkflowEventHandler, ServiceNowChangeRequestHandler>();
 
 builder.Services.AddSingleton<IShutteringService, ShutteringService>();
 builder.Services.AddSingleton<IShutteringArchiveService, ShutteringArchiveService>();
