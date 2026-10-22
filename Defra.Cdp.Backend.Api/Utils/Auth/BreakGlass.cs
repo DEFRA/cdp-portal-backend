@@ -5,7 +5,7 @@ namespace Defra.Cdp.Backend.Api.Utils.Auth;
 
 public static class BreakGlass
 {
-    public static bool HasBreakGlass(ClaimsPrincipal user, Entity? entity) {
+    public static bool HasBreakGlass(ClaimsPrincipal user, Entity? entity = null) {
         if (user.HasClaim("cdp", CdpScopes.BreakGlass)) {
             return true;
         };
