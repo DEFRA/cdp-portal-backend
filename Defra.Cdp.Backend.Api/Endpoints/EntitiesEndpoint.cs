@@ -615,14 +615,6 @@ public static class EntitiesEndpoint
 
         var basePath = $"{entity.Name}/";
 
-        if (environment == CdpEnvironments.Prod) {
-            var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
-
-            if (!hasBreakGlass) {
-                return TypedResults.Unauthorized();
-            }
-        }
-
         if (uploadId == null)
         {
             if (completeBucketResourceUpload == null)
