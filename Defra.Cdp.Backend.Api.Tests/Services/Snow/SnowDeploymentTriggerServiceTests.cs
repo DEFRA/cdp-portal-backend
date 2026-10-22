@@ -21,6 +21,7 @@ public class SnowDeploymentTriggerServiceTests
     {
         var triggerWorkflowService = Substitute.For<ITriggerWorkflowService>();
         var entitiesService = Substitute.For<IEntitiesService>();
+        var deploymentService = Substitute.For<IDeploymentsService>();
 
         entitiesService.GetEntity("cdp-portal-backend", Arg.Any<CancellationToken>())
             .Returns(new Entity
@@ -39,7 +40,7 @@ public class SnowDeploymentTriggerServiceTests
                 Arg.Any<CancellationToken>())
             .Returns(new GitHubTriggerWorkflowResponse { WorkflowRunId = 12345 });
 
-        var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService,
+        var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService, deploymentService,
             Options.Create(new SnowOptions()), NullLogger<SnowDeploymentTriggerService>.Instance);
         var statusChange = new ServiceStatusChange
         {
@@ -83,20 +84,19 @@ public class SnowDeploymentTriggerServiceTests
     {
         var triggerWorkflowService = Substitute.For<ITriggerWorkflowService>();
         var entitiesService = Substitute.For<IEntitiesService>();
+        var deploymentService = Substitute.For<IDeploymentsService>();
 
         entitiesService.GetEntity("cdp-portal-backend", Arg.Any<CancellationToken>())
             .Returns(new Entity
             {
-                Name = "cdp-portal-backend",
-                Type = EntityType.Microservice,
-                Status = EntityStatus.Created
+                Name = "cdp-portal-backend", Type = EntityType.Microservice, Status = EntityStatus.Created
             });
         triggerWorkflowService
             .TriggerWorkflow(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<SnowDeploymentWorkflowInputs>(),
                 Arg.Any<CancellationToken>())
             .Returns(new GitHubTriggerWorkflowResponse());
 
-        var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService,
+        var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService, deploymentService,
             Options.Create(new SnowOptions()), NullLogger<SnowDeploymentTriggerService>.Instance);
         var statusChange = new ServiceStatusChange
         {
@@ -129,20 +129,19 @@ public class SnowDeploymentTriggerServiceTests
     {
         var triggerWorkflowService = Substitute.For<ITriggerWorkflowService>();
         var entitiesService = Substitute.For<IEntitiesService>();
+        var deploymentService = Substitute.For<IDeploymentsService>();
 
         entitiesService.GetEntity("cdp-portal-backend", Arg.Any<CancellationToken>())
             .Returns(new Entity
             {
-                Name = "cdp-portal-backend",
-                Type = EntityType.Microservice,
-                Status = EntityStatus.Created
+                Name = "cdp-portal-backend", Type = EntityType.Microservice, Status = EntityStatus.Created
             });
         triggerWorkflowService
             .TriggerWorkflow(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<SnowDeploymentWorkflowInputs>(),
                 Arg.Any<CancellationToken>())
             .Returns(new GitHubTriggerWorkflowResponse());
 
-        var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService,
+        var service = new SnowDeploymentTriggerService(triggerWorkflowService, entitiesService, deploymentService,
             Options.Create(new SnowOptions { Workflow = "infra-dev.yml" }),
             NullLogger<SnowDeploymentTriggerService>.Instance);
         var statusChange = new ServiceStatusChange
