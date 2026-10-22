@@ -186,41 +186,6 @@ public class DeploymentStateChangeEventHandlerTests
     }
 
     [Fact]
-    public async Task TriggersSnowWorkflowWhenAdditionalEnvironmentIsConfigured()
-    {
-        var deploymentsService = Substitute.For<IDeploymentsService>();
-        var notificationDispatcher = Substitute.For<INotificationDispatcher>();
-        var snowDeploymentTriggerService = Substitute.For<ISnowDeploymentTriggerService>();
-        var statusChange = StatusChange(
-            oldStatus: DeploymentStatus.SERVICE_DEPLOYMENT_IN_PROGRESS,
-            newStatus: DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
-            environment: "infra-dev");
-        var completedEvent = _deploymentFailedEvent with
-        {
-            Detail = _deploymentFailedEvent.Detail with
-            {
-                EventType = "INFO",
-                EventName = DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
-                Reason = "service deployment completed"
-            }
-        };
-
-        deploymentsService
-            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
-                "service deployment completed", Arg.Any<CancellationToken>())
-            .Returns(statusChange);
-
-        var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService,
-            new Dictionary<string, string> { ["prod"] = "deploy.yml", ["infra-dev"] = "infra-dev.yml" });
-
-        await handler.Handle("message-1", completedEvent, TestContext.Current.CancellationToken);
-
-        await snowDeploymentTriggerService.Received(1).TriggerDeploymentRecord(
-            Arg.Is<ServiceStatusChange>(change => change.Environment == "infra-dev"),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task SwallowsSnowTriggerExceptions()
     {
         var deploymentsService = Substitute.For<IDeploymentsService>();
@@ -260,19 +225,13 @@ public class DeploymentStateChangeEventHandlerTests
     private static DeploymentStateChangeEventHandler Handler(
         IDeploymentsService deploymentsService,
         INotificationDispatcher notificationDispatcher,
-        ISnowDeploymentTriggerService snowDeploymentTriggerService,
-        Dictionary<string, string>? workflows = null)
+        ISnowDeploymentTriggerService snowDeploymentTriggerService)
     {
-        var snowOptions = Options.Create(new SnowOptions
-        {
-            Workflows = workflows ?? new Dictionary<string, string> { { "infra-dev", "infra-dev.yml" } }
-        });
 
         return new DeploymentStateChangeEventHandler(
             deploymentsService,
             notificationDispatcher,
             snowDeploymentTriggerService,
-            snowOptions,
             NullLogger<DeploymentStateChangeEventHandler>.Instance);
     }
 
