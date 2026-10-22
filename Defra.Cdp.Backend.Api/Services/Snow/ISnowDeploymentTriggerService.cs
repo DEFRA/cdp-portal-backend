@@ -25,13 +25,13 @@ public class SnowDeploymentTriggerService(
     private const string Repo = "cdp-deployments-snow";
     private const string SnowWorkflowTriggerEventAction = "snow-deployment-record-triggered";
 
-    // Defaults to deploy.yml; set Snow__Workflow in the environment to point at a different workflow file.
-    private readonly string _workflow = string.IsNullOrWhiteSpace(snowOptions.Value.Workflow)
-        ? SnowOptions.DefaultWorkflow
-        : snowOptions.Value.Workflow;
-
     public async Task TriggerDeploymentRecord(ServiceStatusChange statusChange, CancellationToken cancellationToken)
     {
+        if (!snowOptions.Value.Workflows.TryGetValue(statusChange.Environment, out var workflow))
+        {
+            return;
+        }
+
         var entity = await entitiesService.GetEntity(statusChange.EntityId, cancellationToken);
 
         // Decided: for services with multiple owning teams, just report the first one (by team ID) to ServiceNow.
@@ -67,6 +67,7 @@ public class SnowDeploymentTriggerService(
 
         using (LogContext.PushProperty("event.action", SnowWorkflowTriggerEventAction))
         {
+            
             logger.LogInformation(
                 "Triggering SNOW deployment record for {Service} {Version} in {Environment}, deployment {DeploymentId}, team {TeamName}",
                 statusChange.EntityId,
@@ -76,7 +77,7 @@ public class SnowDeploymentTriggerService(
                 teamName);
 
             var response =
-                await triggerWorkflowService.TriggerWorkflow(Repo, _workflow, inputs, cancellationToken);
+                await triggerWorkflowService.TriggerWorkflow(Repo, workflow, inputs, cancellationToken);
 
             await deploymentsService.UpdateServiceNowChangeRequest(
                 new ServiceNowChangeRequest

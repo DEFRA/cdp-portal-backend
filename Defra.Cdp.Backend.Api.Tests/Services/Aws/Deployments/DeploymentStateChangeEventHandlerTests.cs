@@ -36,7 +36,8 @@ public class DeploymentStateChangeEventHandlerTests
             newStatus: DeploymentStatus.SERVICE_DEPLOYMENT_FAILED);
 
         deploymentsService
-            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_FAILED, "service deployment failed", Arg.Any<CancellationToken>())
+            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_FAILED,
+                "service deployment failed", Arg.Any<CancellationToken>())
             .Returns(statusChange);
 
         var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService);
@@ -81,7 +82,8 @@ public class DeploymentStateChangeEventHandlerTests
         };
 
         deploymentsService
-            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED, "service deployment completed", Arg.Any<CancellationToken>())
+            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
+                "service deployment completed", Arg.Any<CancellationToken>())
             .Returns(statusChange);
 
         var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService);
@@ -97,9 +99,6 @@ public class DeploymentStateChangeEventHandlerTests
                 e.PreviousVersion == statusChange.PreviousVersion &&
                 e.UserDisplayName == statusChange.UserDisplayName),
             Arg.Any<CancellationToken>());
-        await snowDeploymentTriggerService.DidNotReceive().TriggerDeploymentRecord(
-            Arg.Any<ServiceStatusChange>(),
-            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -110,7 +109,8 @@ public class DeploymentStateChangeEventHandlerTests
         var snowDeploymentTriggerService = Substitute.For<ISnowDeploymentTriggerService>();
 
         deploymentsService
-            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_FAILED, "service deployment failed", Arg.Any<CancellationToken>())
+            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_FAILED,
+                "service deployment failed", Arg.Any<CancellationToken>())
             .Returns(StatusChange(
                 oldStatus: DeploymentStatus.SERVICE_DEPLOYMENT_FAILED,
                 newStatus: DeploymentStatus.SERVICE_DEPLOYMENT_FAILED));
@@ -135,7 +135,8 @@ public class DeploymentStateChangeEventHandlerTests
         var snowDeploymentTriggerService = Substitute.For<ISnowDeploymentTriggerService>();
 
         deploymentsService
-            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_FAILED, "service deployment failed", Arg.Any<CancellationToken>())
+            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_FAILED,
+                "service deployment failed", Arg.Any<CancellationToken>())
             .ReturnsNull();
 
         var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService);
@@ -210,47 +211,12 @@ public class DeploymentStateChangeEventHandlerTests
             .Returns(statusChange);
 
         var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService,
-            triggerEnvironments: ["prod", "infra-dev"]);
+            new Dictionary<string, string> { ["prod"] = "deploy.yml", ["infra-dev"] = "infra-dev.yml" });
 
         await handler.Handle("message-1", completedEvent, TestContext.Current.CancellationToken);
 
         await snowDeploymentTriggerService.Received(1).TriggerDeploymentRecord(
             Arg.Is<ServiceStatusChange>(change => change.Environment == "infra-dev"),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task DoesNotTriggerSnowWorkflowForEnvironmentNotInConfiguredList()
-    {
-        var deploymentsService = Substitute.For<IDeploymentsService>();
-        var notificationDispatcher = Substitute.For<INotificationDispatcher>();
-        var snowDeploymentTriggerService = Substitute.For<ISnowDeploymentTriggerService>();
-        var statusChange = StatusChange(
-            oldStatus: DeploymentStatus.SERVICE_DEPLOYMENT_IN_PROGRESS,
-            newStatus: DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
-            environment: "infra-dev");
-        var completedEvent = _deploymentFailedEvent with
-        {
-            Detail = _deploymentFailedEvent.Detail with
-            {
-                EventType = "INFO",
-                EventName = DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
-                Reason = "service deployment completed"
-            }
-        };
-
-        deploymentsService
-            .UpdateDeploymentStatus("ecs-svc/123", DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED,
-                "service deployment completed", Arg.Any<CancellationToken>())
-            .Returns(statusChange);
-
-        var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService,
-            triggerEnvironments: ["prod"]);
-
-        await handler.Handle("message-1", completedEvent, TestContext.Current.CancellationToken);
-
-        await snowDeploymentTriggerService.DidNotReceive().TriggerDeploymentRecord(
-            Arg.Any<ServiceStatusChange>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -279,7 +245,8 @@ public class DeploymentStateChangeEventHandlerTests
                 "service deployment completed", Arg.Any<CancellationToken>())
             .Returns(statusChange);
         snowDeploymentTriggerService
-            .When(service => service.TriggerDeploymentRecord(Arg.Any<ServiceStatusChange>(), Arg.Any<CancellationToken>()))
+            .When(service =>
+                service.TriggerDeploymentRecord(Arg.Any<ServiceStatusChange>(), Arg.Any<CancellationToken>()))
             .Do(_ => throw new InvalidOperationException("Boom"));
 
         var handler = Handler(deploymentsService, notificationDispatcher, snowDeploymentTriggerService);
@@ -294,11 +261,11 @@ public class DeploymentStateChangeEventHandlerTests
         IDeploymentsService deploymentsService,
         INotificationDispatcher notificationDispatcher,
         ISnowDeploymentTriggerService snowDeploymentTriggerService,
-        string[]? triggerEnvironments = null)
+        Dictionary<string, string>? workflows = null)
     {
         var snowOptions = Options.Create(new SnowOptions
         {
-            TriggerEnvironments = triggerEnvironments ?? ["prod"]
+            Workflows = workflows ?? new Dictionary<string, string> { { "infra-dev", "infra-dev.yml" } }
         });
 
         return new DeploymentStateChangeEventHandler(

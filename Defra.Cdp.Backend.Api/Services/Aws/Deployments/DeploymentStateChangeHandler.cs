@@ -56,14 +56,12 @@ public class DeploymentStateChangeEventHandler(
     private async Task TriggerSnowWorkflowOnTransition(ServiceStatusChange? statusChange,
         CancellationToken cancellationToken)
     {
-        if (statusChange is null || statusChange.NewStatus == statusChange.OldStatus)
+        if (statusChange is null ||
+            statusChange.NewStatus == statusChange.OldStatus ||
+            statusChange.NewStatus != DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED)
+        {
             return;
-
-        if (statusChange.NewStatus != DeploymentStatus.SERVICE_DEPLOYMENT_COMPLETED ||
-            !snowOptions.Value.TriggerEnvironments.Contains(statusChange.Environment,
-                StringComparer.OrdinalIgnoreCase))
-            return;
-
+        }
         try
         {
             await snowDeploymentTriggerService.TriggerDeploymentRecord(statusChange, cancellationToken);
