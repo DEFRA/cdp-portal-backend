@@ -494,43 +494,53 @@ public static class EntitiesEndpoint
     }
 
     [EndpointDescription("Get a service's import resource(s) by path")]
-    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>, Ok<BucketResourceTreeNode>>> GetImportsResources(
+    private static async Task<Results<NotFound, Ok<List<BucketResource>>, Ok<BucketResourceUrl>, Ok<BucketResourceTreeNode>, UnauthorizedHttpResult>> GetImportsResources(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
         [FromServices] IConfiguration configuration,
         [FromRoute] string name,
+        [FromRoute] string environment,
         [FromRoute] string path,
+        HttpContext httpContext,
         CancellationToken ct,
         [FromQuery] string view = "list"
     )
     {
-        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
-
+        var importsBucket = $"cdp-{environment}-imports";
+        
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var basePath = $"{entity.Name}/imports/";
+        var basePath = $"{entity.Name}/";
         var isFolder = path == "" || path.EndsWith('/');
 
         if (isFolder)
         {
             if (view == "tree")
             {
-                var tree = await bucketManagementService.GetBucketResourcesTree(migrationsBucket, basePath, path, ct);
+                var tree = await bucketManagementService.GetBucketResourcesTree(importsBucket, basePath, path, ct);
                 if (tree == null) return TypedResults.NotFound();
     
                 return TypedResults.Ok(tree);
             }
             
 
-            var list = await bucketManagementService.ListBucketResources(migrationsBucket, basePath, path, ct);
+            var list = await bucketManagementService.ListBucketResources(importsBucket, basePath, path, ct);
             if (list == null) return TypedResults.NotFound();
 
             return TypedResults.Ok(list);
         }
         else
         {
-            var resourceUrl = await bucketManagementService.GetBucketResourceUrl(migrationsBucket, basePath, path, ct);
+            if (environment == CdpEnvironments.Prod) {
+                var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
+
+                if (!hasBreakGlass) {
+                    return TypedResults.Unauthorized();
+                }
+            }
+
+            var resourceUrl = await bucketManagementService.GetBucketResourceUrl(importsBucket, basePath, path, ct);
             if (resourceUrl == null) return TypedResults.NotFound();
 
             return TypedResults.Ok(resourceUrl);
@@ -541,20 +551,20 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok<BucketResourceUpload>, Ok<BucketResource>, BadRequest<string>, UnauthorizedHttpResult>> CreateUploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
         [FromRoute] string name,
+        [FromRoute] string environment,
         [FromRoute] string path,
         [FromBody] UploadBucketResource? uploadBucketResource,
         HttpContext httpContext,
         CancellationToken ct
     )
     {
-        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
-
+        var importsBucket = $"cdp-{environment}-imports";
+        
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var basePath = $"{entity.Name}/imports/";
+        var basePath = $"{entity.Name}/";
         var isFolder = path.EndsWith('/');
 
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
@@ -566,7 +576,7 @@ public static class EntitiesEndpoint
 
         if (isFolder)
         {
-            var result = await bucketManagementService.CreateEmptyFolder(migrationsBucket, basePath, path, user, ct);
+            var result = await bucketManagementService.CreateEmptyFolder(importsBucket, basePath, path, user, ct);
 
             return TypedResults.Ok(result);
         }
@@ -577,32 +587,41 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: UploadBucketResource");
             }
 
-            var result = await bucketManagementService.StartBucketResourceMultipartUpload(migrationsBucket, basePath, path, uploadBucketResource.Size, user, ct);
+            var result = await bucketManagementService.StartBucketResourceMultipartUpload(importsBucket, basePath, path, uploadBucketResource.Size, user, ct);
 
             return TypedResults.Ok(result);
         }
     }
 
     [EndpointDescription("Upload a service's import resource")]
-    private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>>> UploadImportsResource(
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, Ok<BucketResourceUrl>, UnauthorizedHttpResult>> UploadImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
         [FromRoute] string name,
+        [FromRoute] string environment,
         [FromRoute] string path,
         [FromQuery] string? contentMd5,
         [FromQuery] string? uploadId,
         [FromQuery] int? partNumber,
         [FromBody] CompleteBucketResourceUpload? completeBucketResourceUpload,
+        HttpContext httpContext,
         CancellationToken ct
     )
     {
-        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
-
+        var importsBucket = $"cdp-{environment}-imports";
+        
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var basePath = $"{entity.Name}/imports/";
+        var basePath = $"{entity.Name}/";
+
+        if (environment == CdpEnvironments.Prod) {
+            var hasBreakGlass = BreakGlass.HasBreakGlass(httpContext.User, entity);
+
+            if (!hasBreakGlass) {
+                return TypedResults.Unauthorized();
+            }
+        }
 
         if (uploadId == null)
         {
@@ -611,7 +630,7 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required payload missing: CompleteBucketResourceUpload");
             }
 
-            await bucketManagementService.CompleteBucketResourceMultipartUpload(migrationsBucket, basePath, path, completeBucketResourceUpload, ct);
+            await bucketManagementService.CompleteBucketResourceMultipartUpload(importsBucket, basePath, path, completeBucketResourceUpload, ct);
             return TypedResults.Ok();
         }
         else
@@ -626,7 +645,7 @@ public static class EntitiesEndpoint
                 return TypedResults.BadRequest("Required param missing: partNumber");
             }
 
-            var result = await bucketManagementService.GetBucketResourceMultipartUploadUrl(migrationsBucket, basePath, path, uploadId, partNumber ?? 0, contentMd5, ct);
+            var result = await bucketManagementService.GetBucketResourceMultipartUploadUrl(importsBucket, basePath, path, uploadId, partNumber ?? 0, contentMd5, ct);
 
             return TypedResults.Ok(result);
         }
@@ -636,18 +655,18 @@ public static class EntitiesEndpoint
     private static async Task<Results<NotFound, Ok, BadRequest<string>, UnauthorizedHttpResult>> DeleteImportsResource(
         [FromServices] IEntitiesService entitiesService,
         [FromServices] IBucketManagementService bucketManagementService,
-        [FromServices] IConfiguration configuration,
         [FromRoute] string name,
+        [FromRoute] string environment,
         [FromRoute] string path,
         HttpContext httpContext,
         CancellationToken ct
     ) {
-        var migrationsBucket = configuration.GetValue<string>("MigrationsBucket") ?? throw new Exception("Config error: MigrationsBucket has not been set");
+        var importsBucket = $"cdp-{environment}-imports";
 
         var entity = await entitiesService.GetEntity(name, ct);
         if (entity == null) return TypedResults.NotFound();
 
-        var basePath = $"{entity.Name}/imports/";
+        var basePath = $"{entity.Name}/";
 
         var user = UserDetailsExtractor.UserDetailsFrom(httpContext.User);
 
@@ -656,7 +675,7 @@ public static class EntitiesEndpoint
             return TypedResults.Unauthorized();
         }
 
-        await bucketManagementService.DeleteBucketResource(migrationsBucket, basePath, path, user, ct);
+        await bucketManagementService.DeleteBucketResource(importsBucket, basePath, path, user, ct);
 
         return TypedResults.Ok();
     }
