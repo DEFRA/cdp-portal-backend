@@ -280,8 +280,8 @@ public class TaskStateChangeEventHandler(
         {
             INotificationEvent? msg = latestStatus switch
             {
-                TestRunStatuses.TestPassed => new TestRunPassedEvent { Entity = run.TestSuite, Environment = run.Environment, RunId = run.RunId },
-                TestRunStatuses.TestFailed => new TestRunFailedEvent { Entity = run.TestSuite, Environment = run.Environment, RunId = run.RunId },
+                TestRunStatuses.TestPassed => new TestRunPassedEvent { Entity = run.TestSuite, Environment = run.Environment, RunId = run.RunId, Profile = run.Profile },
+                TestRunStatuses.TestFailed => new TestRunFailedEvent { Entity = run.TestSuite, Environment = run.Environment, RunId = run.RunId, Profile = run.Profile },
                 _ => null
             };
             

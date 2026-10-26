@@ -22,11 +22,20 @@ public static partial class SlackMessageTemplates
                     Type = "section",
                     Fields =
                     [
-                        new TextObject { Type = "mrkdwn", Text = $"*Environment:*\n{EscapeMarkdown(e.Environment ?? "")}" },
+                        new TextObject
+                        {
+                            Type = "mrkdwn", 
+                            Text = $"*Environment:*\n{EscapeMarkdown(e.Environment ?? "")}"
+                        },
                         new TextObject
                         {
                             Type = "mrkdwn",
                             Text = $"*Test results*:\n <{reportUrlBuilder.Uri.AbsoluteUri}|View in portal>"
+                        },
+                        new TextObject
+                        {
+                            Type = "mrkdwn", 
+                            Text = $"*Profile:*\n{EscapeMarkdown(e.Profile ?? "")}"
                         }
                     ]
                 }
