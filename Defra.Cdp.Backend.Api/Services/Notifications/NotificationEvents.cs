@@ -39,6 +39,7 @@ public class TestRunFailedEvent : INotificationEvent
     public string EventType => NotificationTypes.TestFailed;
     public required string Entity { get; init; }
     public string? Environment { get; init; }
+    public string? Profile { get; init; }
     
     public required string RunId { get; init; }
 
@@ -53,6 +54,7 @@ public class TestRunPassedEvent : INotificationEvent
     public string EventType => NotificationTypes.TestPassed;
     public required string Entity { get; init; }
     public string? Environment { get; init; }
+    public string? Profile { get; init; }
     
     public required string RunId { get; init; }
 
