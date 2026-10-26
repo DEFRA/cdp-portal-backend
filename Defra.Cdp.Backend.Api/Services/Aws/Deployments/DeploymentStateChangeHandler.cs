@@ -11,7 +11,6 @@ public class DeploymentStateChangeEventHandler(
     IDeploymentsService deploymentsService,
     INotificationDispatcher notificationDispatcher,
     ISnowDeploymentTriggerService snowDeploymentTriggerService,
-    IOptions<SnowOptions> snowOptions,
     ILogger<DeploymentStateChangeEventHandler> logger)
 {
     public async Task Handle(string id, EcsDeploymentStateChangeEvent ecsEvent, CancellationToken cancellationToken)
