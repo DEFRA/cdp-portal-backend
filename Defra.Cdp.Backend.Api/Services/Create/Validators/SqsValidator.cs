@@ -8,10 +8,11 @@ public static class SqsValidator
     {
         List<string> errors = [];
 
-        // Check name length
-        if (sqs.Name.Length > 256)
+        // AWS SQS names are max 80 chars; CDP always creates a DLQ as
+        // {name}-deadletter[.fifo], so the base name must leave room for that.
+        if (sqs.Name.Length > 64)
         {
-            errors.Add($"SQS Queue {sqs.Name} name too long (>256 chars)");
+            errors.Add($"SQS Queue {sqs.Name} name too long (max 64 chars)");
         }
         
         // Check service exists
