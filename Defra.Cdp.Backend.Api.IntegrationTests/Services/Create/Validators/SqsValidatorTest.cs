@@ -45,6 +45,36 @@ public class SqsValidatorTest(MongoContainerFixture fixture) : MongoTestSupport(
     }
     
     [Fact]
+    public async Task Test_Sqs_Validator_fails_with_name_too_long()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mongoFactory = CreateMongoDbClientFactory();
+        var entities = new EntitiesService(mongoFactory, new NullLoggerFactory());
+        var entityResourceService = new EntityResourceService(mongoFactory, new NullLoggerFactory());
+        var validator = new CreateResourceValidator(entityResourceService);
+
+        var entity = new Entity
+        {
+            Name = "foo-backend",
+            Status = Status.Created,
+            Type = Type.Microservice,
+            SubType = SubType.Backend,
+            Environments = { { "dev", new CdpTenant() } }
+        };
+        await entities.Create(entity, ct);
+
+        var tooLongName = new string('a', 65);
+        var req = new CreateTenantResourceRequest
+        {
+            SqsQueues = [new CreateTenantSqsQueue { Name = tooLongName, Environments = "tenants", Service = "foo-backend" }]
+        };
+        var errors = await validator.Validate(req, ct);
+
+        Assert.Single(errors);
+        Assert.Equal($"SQS Queue {tooLongName} name too long (max 64 chars)", errors[0]);
+    }
+
+    [Fact]
     public async Task Test_Sqs_Validator_fails_with_invalid_service()
     {
         var ct = TestContext.Current.CancellationToken;
