@@ -36,7 +36,8 @@ public static class TerminalEndpoint
         {
             ["environment"] = session.Environment,
             ["service"] = session.Service,
-            ["token"] = session.Token
+            ["token"] = session.Token,
+            ["tool"] = session.Tool
         };
 
         return new AuditDto

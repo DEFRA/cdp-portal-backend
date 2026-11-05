@@ -59,6 +59,7 @@ public class AuditService(
     {
         var items = await Collection
             .Find(Builders<Audit>.Filter.Empty)
+            .Sort(Builders<Audit>.Sort.Descending(a => a.PerformedAt))
             .ToListAsync(cancellationToken);
 
         return items.Select(a => new AuditDto(
