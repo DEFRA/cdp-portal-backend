@@ -93,6 +93,17 @@ public class CdpBedrockProfile
 }
 
 [BsonIgnoreExtraElements]
+public class CdpExternalIdentity
+{
+    [property: JsonPropertyName("role_arn")]
+    public string RoleArn { get; set; }
+
+    [property: JsonPropertyName("role_id")]
+    public string RoleId { get; set; }
+
+}
+
+[BsonIgnoreExtraElements]
 public class CdpTenant
 {
     [property: JsonPropertyName("urls")]
@@ -137,6 +148,12 @@ public class CdpTenant
     [property: JsonPropertyName("metrics")]
     public List<GrafanaDashboard> Metrics { get; set; }
 
+    [property: JsonPropertyName("custom_dashboards")]
+    public List<GrafanaDashboard> CustomDashboards { get; set; }
+
+    [property: JsonPropertyName("default_dashboards")]
+    public List<GrafanaDashboard> DefaultDashboards { get; set; }
+
     [property: JsonPropertyName("alerts")]
     public List<Alert> Alerts { get; set; }
 
@@ -154,6 +171,9 @@ public class CdpTenant
 
     [property: JsonPropertyName("squid")]
     public Squid? Squid { get; set; }
+
+    [property: JsonPropertyName("external_identities")]
+    public Dictionary<string, CdpExternalIdentity> ExternalIdentities { get; set; }
 
 }
 
@@ -322,6 +342,9 @@ public class Serials
     [property: JsonPropertyName("tfsvcdatabases")]
     public int Tfsvcdatabases { get; set; }
 
+    [property: JsonPropertyName("tfsvciam")]
+    public int Tfsvciam { get; set; }
+
     [property: JsonPropertyName("tfvanityurl")]
     public int Tfvanityurl { get; set; }
 
@@ -333,6 +356,9 @@ public class Serials
 
     [property: JsonPropertyName("tfgrafana")]
     public int Tfgrafana { get; set; }
+
+    [property: JsonPropertyName("tfgrafanadefaultdashboards")]
+    public int Tfgrafanadefaultdashboards { get; set; }
 
     [property: JsonPropertyName("shutterstate")]
     public int Shutterstate { get; set; }
@@ -654,7 +680,7 @@ public class TenantUrl
 
 public static class TenantDataVersion
 {
-    public static readonly string Version = "635ea972815adc007e6daf5796671770fa3300b5464a2b0d3601d37673eab6f1";
+    public static readonly string Version = "e0cc1da00a489f7e2be38f08ea4658c2c6d078ea9deec26866b8720079c08cde";
 }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
